@@ -228,10 +228,27 @@ func deal_melee_damage() -> void:
 		return
 	if global_position.distance_to(player.global_position) > data.attack_range * 1.4:
 		return  # The player escaped the wind-up. That is the point of telegraphing.
+	if not _can_see(player):
+		# Distance alone is not reach. An enemy wedged under a platform is within
+		# 3m of someone standing on top of it, and would otherwise punch through
+		# the floor - damage from nowhere, with nothing on screen to explain it.
+		return
 	var player_health: HealthComponent = _find_health(player)
 	if player_health != null:
 		player_health.apply_damage(data.damage)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+
+
+## Clear line from this enemy's head to the target's chest.
+##
+## Note this is NOT perception - enemies still always know where the player is
+## (CLAUDE.md 5.3). It only stops an attack landing through solid geometry.
+func _can_see(target: Node3D) -> bool:
+	var from: Vector3 = global_position + Vector3.UP * data.head_offset
+	var to: Vector3 = target.global_position + Vector3.UP * 1.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, PhysicsLayers.WORLD)
+	query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func fire_projectile() -> void:
@@ -393,8 +410,17 @@ func _try_step_up() -> bool:
 	if rise <= 0.02 or rise > step_height:
 		return false
 
-	# Place the feet on top of the ledge and let the normal steering carry on.
-	global_position.y = float(hit["position"].y) + 0.02
+	# Lifting the body without checking it fits is what makes an enemy bounce: the
+	# next depenetration shoves it back out and it re-approaches, forever. Test the
+	# destination first, and commit only if it can also move forward from there -
+	# otherwise standing on the very lip would just stall it again.
+	var lifted: Transform3D = global_transform
+	lifted.origin.y = float(hit["position"].y) + 0.05
+	var nudge: Vector3 = heading * (data.collision_radius * 0.5)
+	if test_move(lifted, nudge):
+		return false
+
+	global_position = lifted.origin + nudge
 	return true
 
 

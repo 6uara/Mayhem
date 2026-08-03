@@ -156,3 +156,40 @@ func test_step_height_covers_what_the_navmesh_bake_assumes() -> void:
 		assert_true(data.max_auto_step >= navmesh.agent_max_climb,
 			"%s can step %.2fm but the bake hands out paths with %.2fm climbs" % [
 				archetype, data.max_auto_step, navmesh.agent_max_climb])
+
+
+# ------------------------------------------------------------- reach vs distance
+
+## Reported as "taking damage with no enemy in range". Distance alone is not reach:
+## an enemy wedged under a platform is within melee distance of someone standing on
+## top of it, and would otherwise hit through the floor.
+func test_melee_does_not_pass_through_a_floor() -> void:
+	_make_box(Vector3(20, 0.5, 20), Vector3(0, 2.0, 0))     # platform overhead
+	_player.global_position = Vector3(0, 2.4, 0)             # standing on it
+	var health := HealthComponent.new()
+	health.max_health = 100.0
+	_player.add_child(health)
+
+	_enemy = _spawn("rusher", Vector3(0, 0.2, 0))            # directly underneath
+	await wait_physics_frames(2)
+	assert_lt(_enemy.global_position.distance_to(_player.global_position), 3.0,
+		"the two are within melee distance, which is the point")
+
+	for i: int in 20:
+		_enemy.deal_melee_damage()
+		await wait_physics_frames(1)
+	assert_eq(health.current_health, health.max_health,
+		"a floor between them means the hit does not land")
+
+
+func test_melee_lands_with_a_clear_line() -> void:
+	_player.global_position = Vector3(0, 0.5, 1.5)
+	var health := HealthComponent.new()
+	health.max_health = 100.0
+	_player.add_child(health)
+
+	_enemy = _spawn("rusher", Vector3(0, 0.5, 0))
+	await wait_physics_frames(2)
+	_enemy.deal_melee_damage()
+	assert_lt(health.current_health, health.max_health,
+		"nothing in the way means the hit lands")
