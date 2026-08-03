@@ -158,6 +158,54 @@ def kill_marker() -> list[float]:
     )
 
 
+def dash(rng: random.Random) -> list[float]:
+    """Short air-rush whoosh."""
+    return _mix(
+        (_lowpass(_noise(ms(160), 0.015, 0.3, 0.9, rng), 1400.0), 0),
+        (_tone(ms(140), 220.0, 0.01, 0.25, 0.3, sweep=1.8), 0),
+    )
+
+
+def jump(rng: random.Random) -> list[float]:
+    return _mix(
+        (_lowpass(_noise(ms(60), 0.004, 0.12, 0.5, rng), 1600.0), 0),
+        (_tone(ms(80), 260.0, 0.003, 0.14, 0.4, sweep=1.4), 0),
+    )
+
+
+def land(rng: random.Random) -> list[float]:
+    return _mix(
+        (_lowpass(_noise(ms(70), 0.001, 0.12, 0.8, rng), 900.0), 0),
+        (_tone(ms(110), 120.0, 0.001, 0.18, 0.6, sweep=0.6), 0),
+    )
+
+
+def slide(rng: random.Random) -> list[float]:
+    """Gritty scrape burst - stands in for a loop until the audio pass."""
+    return _lowpass(_noise(ms(300), 0.02, 0.45, 0.8, rng), 2400.0)
+
+
+def grapple_fire(rng: random.Random) -> list[float]:
+    return _mix(
+        (_noise(ms(30), 0.0006, 0.07, 0.8, rng), 0),
+        (_tone(ms(180), 340.0, 0.002, 0.3, 0.5, sweep=2.2), 0),
+    )
+
+
+def grapple_release(rng: random.Random) -> list[float]:
+    return _mix(
+        (_noise(ms(25), 0.0008, 0.06, 0.5, rng), 0),
+        (_tone(ms(120), 520.0, 0.002, 0.2, 0.4, sweep=0.55), 0),
+    )
+
+
+def bounce_pad(rng: random.Random) -> list[float]:
+    return _mix(
+        (_tone(ms(180), 180.0, 0.001, 0.3, 0.8, sweep=2.6), 0),
+        (_lowpass(_noise(ms(80), 0.002, 0.14, 0.4, rng), 1200.0), 0),
+    )
+
+
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
@@ -169,6 +217,13 @@ def main() -> None:
     _write("ui/hitmarker_body.wav", hitmarker(760.0, 60, 0.7))
     _write("ui/hitmarker_headshot.wav", hitmarker(1180.0, 70, 0.85))
     _write("ui/hitmarker_kill.wav", kill_marker())
+    _write("world/dash.wav", dash(rng))
+    _write("world/jump.wav", jump(rng))
+    _write("world/land.wav", land(rng))
+    _write("world/slide.wav", slide(rng))
+    _write("world/grapple_fire.wav", grapple_fire(rng))
+    _write("world/grapple_release.wav", grapple_release(rng))
+    _write("world/bounce_pad.wav", bounce_pad(rng))
     print("Done. These are placeholders - replace them in Phase 5.")
 
 
