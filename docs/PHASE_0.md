@@ -24,21 +24,24 @@
   `default_bus_layout.tres` implements `Master -> {SFX -> {Weapons, Impacts, Enemies, World},
   Music, VO, UI}`.
 - **GUT** 9.7.1 vendored, `.gutconfig.json`, 27 passing tests, GitHub Actions running them
-  headless on every PR.
+  headless on every PR. Beehave 2.9.2 and `DebugDraw3D` were already vendored and are now
+  enabled/committed.
 
 ## Deviations from the handoff, flagged
 
 1. **`ObjectPool` is an autoload.** `CLAUDE.md` 4.2 lists nine autoloads and does not include it,
    but section 2 calls for it as an early custom system and projectiles need a single shared pool
    across scenes. It holds pooling state only - no gameplay knowledge.
-2. **Three addons are not installed** (Phantom Camera, Beehave, Debug Draw 3D). Reasoning and
-   install instructions in `docs/ADDONS.md`. Phantom Camera is a Phase 1 blocker.
+2. **Phantom Camera is not installed** - it is the only missing addon, and it is a Phase 1
+   blocker because it owns camera kick. See `docs/ADDONS.md`. Debug Draw is the pure-GDScript
+   `DebugDraw3D` node rather than the GDExtension build, so there are no platform binaries to
+   keep in sync with the engine version.
 3. **`WaveManager` is a skeleton.** Sequencing, clear detection and bonus payout are implemented;
    spawning delegates to a `spawner` node that does not exist until Phase 3 (spawn doors).
 
 ## Open items for the next session
 
-- Install Phantom Camera before starting Phase 1 camera work.
+- Install Phantom Camera before starting Phase 1 camera work - it is the last missing addon.
 - Author the arena/game/menu scenes - `GameManager` references
   `res://scenes/main/game.tscn` and `res://scenes/main/main_menu.tscn`, which do not exist yet.
   It pushes an error and stays on the current scene rather than crashing.

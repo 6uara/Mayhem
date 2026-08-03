@@ -4,37 +4,38 @@ Vendored under `addons/` and committed to the repo, so a fresh clone runs withou
 
 | Addon | Status | Purpose |
 |---|---|---|
-| **GUT** 9.7.1 | Installed (`addons/gut`) | Unit testing, see `docs/TESTING.md` |
+| **GUT** 9.7.1 | Installed, enabled | Unit testing, see `docs/TESTING.md` |
+| **Beehave** 2.9.2 | Installed, enabled | Behavior trees for enemy AI (Phase 3) |
+| **DebugDraw3D** | Installed (no plugin to enable) | Runtime hitbox / projectile / AI path visualization |
 | **Phantom Camera** | **Not installed** | Camera rig, shake, recoil kick, FOV transitions |
-| **Beehave** | **Not installed** | Behavior trees for enemy AI |
-| **Debug Draw 3D** | **Not installed** | Runtime hitbox / projectile / AI path visualization |
 
-## Why the other three are not installed yet
+## Phantom Camera - install before Phase 1 camera work
 
-Phantom Camera and Beehave are GDScript addons but pin to specific Godot minor versions;
-Debug Draw 3D is a **GDExtension** and ships platform binaries that must match 4.7 exactly.
-Installing the wrong build silently breaks the editor rather than failing loudly, so pick the
-release tagged for Godot 4.7 from the asset library or the project's GitHub releases:
+It owns camera kick, which is part of the gunplay pillar, so it is a Phase 1 blocker. Take the
+release tagged for Godot 4.7: https://github.com/ramokz/phantom-camera
 
-- Phantom Camera - https://github.com/ramokz/phantom-camera (needed for Phase 1: camera kick)
-- Beehave - https://github.com/bitbrain/beehave (needed for Phase 3: enemy AI)
-- Debug Draw 3D - https://github.com/DmitriySalnikov/godot_debug_draw_3d (dev-only)
+After installing: enable it in Project > Project Settings > Plugins, then commit
+`addons/phantom_camera/` together with the updated `[editor_plugins]` line in `project.godot`.
 
-Install order matters only in that **Phantom Camera is a Phase 1 blocker** - it owns camera
-kick, which is part of the gunplay pillar. The other two can wait for their phase.
+## DebugDraw3D
 
-After installing each addon: enable it in Project > Project Settings > Plugins, commit
-`addons/<name>/` and the updated `[editor_plugins]` block in `project.godot`.
+This is the pure-GDScript in-scene node (`class_name DebugDraw3D`), not the GDExtension build -
+no plugin to enable and no platform binaries to keep in sync with the engine version. Add a
+`DebugDraw3D` node to a scene and call its draw methods.
 
-## Debug Draw and release builds
-
-Debug Draw calls must compile out of release builds. Use the `dev` feature tag (see
-`docs/EXPORT.md`) and guard every call:
+Debug draw must not reach release builds. Use the `dev` feature tag (see `docs/EXPORT.md`) and
+guard every call:
 
 ```gdscript
 if OS.has_feature("dev"):
-    DebugDraw3D.draw_sphere(position, radius, Color.RED)
+    _debug_draw.draw_sphere(position, radius, Color.RED)
 ```
+
+## Beehave
+
+Enabled but unused until Phase 3. Behavior trees are referenced from `EnemyData.behavior_tree` as
+a `PackedScene`, so an archetype's AI is swappable from data. The project also carries a Beehave
+script template at `script_templates/BeehaveNode/default.gd`.
 
 ## Adding a new addon
 

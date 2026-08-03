@@ -30,7 +30,7 @@ NarratorManager="*res://scripts/autoload/narrator_manager.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+enabled=PackedStringArray("res://addons/beehave/plugin.cfg", "res://addons/gut/plugin.cfg")
 
 [debug]
 
