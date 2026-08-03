@@ -12,7 +12,7 @@ const CARD_MIN_WIDTH: int = 250
 
 @export var shop: Shop
 ## Seconds the shop stays open before it closes itself.
-@export var duration: float = 25.0
+@export var duration: float = 30.0  ## Tokens.SHOP_TIMER
 
 @onready var _root: Control = $Root
 @onready var _breakdown: Label = $Root/Panel/VBox/Breakdown

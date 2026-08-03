@@ -43,7 +43,8 @@ enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 @export_group("Dash")
 @export var dash_speed: float = 16.0
 @export var dash_duration: float = 0.16
-@export var dash_charges_max: int = 2
+## Tokens.DASH_CHARGES - the HUD reserves three pips, so three is the design.
+@export var dash_charges_max: int = 3
 @export var dash_cooldown: float = 5.0
 ## Fraction of dash speed kept when the dash ends - this is the momentum handoff
 ## that makes dash -> slide chains worth learning.

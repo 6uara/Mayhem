@@ -50,7 +50,7 @@ const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
 @onready var _announce: VBoxContainer = $Root/AnnounceLayer
 @onready var _announce_tag: Label = $Root/AnnounceLayer/TagPill/Tag
 @onready var _announce_title: Label = $Root/AnnounceLayer/Title
-@onready var _damage_indicators: Control = $Root/DamageIndicators
+@onready var _damage_indicators: DamageIndicators = $Root/DamageIndicators
 @onready var _state_overlays: Control = $Root/StateOverlays
 
 var _player: Player
@@ -72,6 +72,7 @@ func _ready() -> void:
 	EventBus.weapon_fired.connect(_on_weapon_fired)
 	EventBus.wave_started.connect(_on_wave_started)
 	EventBus.settings_applied.connect(_apply_hud_scale)
+	UpgradeManager.upgrades_changed.connect(_refresh_powerups)
 	NarratorManager.subtitle_shown.connect(_on_subtitle_shown)
 	NarratorManager.subtitle_hidden.connect(_on_subtitle_hidden)
 
@@ -355,6 +356,18 @@ func _on_currency_changed(total: int) -> void:
 	_currency.text = "%d" % total
 
 
+## Only temporary upgrades get a chip - a permanent one has no countdown to show.
+func _refresh_powerups() -> void:
+	for child: Node in _powerups.get_children():
+		child.queue_free()
+	for upgrade: UpgradeData in UpgradeManager.get_owned():
+		if not upgrade.is_temporary:
+			continue
+		var chip := PowerUpChip.new()
+		_powerups.add_child(chip)
+		chip.setup(upgrade)
+
+
 func _on_utility_changed() -> void:
 	if _player == null or _player.utility == null:
 		return
@@ -389,6 +402,14 @@ func _on_player_damaged(_amount: float, _remaining: float) -> void:
 	_flash_damage()
 
 
+## Called by whatever dealt the damage when it knows where it came from; the
+## indicator falls back to the nearest enemy when nobody reports a direction.
+func note_damage_from(world_position: Vector3) -> void:
+	if _player == null:
+		return
+	_damage_indicators.add_hit_from(world_position - _player.global_position)
+
+
 func _on_wave_started(wave_index: int, config: WaveData) -> void:
 	_wave_number.text = "%02d" % (wave_index + 1)
 	var is_elite: bool = config != null and config.is_elite_wave
@@ -413,15 +434,37 @@ func announce(tag: String, title: String, tint: Color) -> void:
 	_announce_timer = Tokens.ANNOUNCE_LIFE
 
 
-func _on_subtitle_shown(text: String, _duration: float) -> void:
+## Three treatments, per SPEC-MENUS-HOST 7.3. Tier 3 drops the HOST tag and sets
+## the line itself in display type - reserved for the beats that should land.
+func _on_subtitle_shown(text: String, _duration: float, tier: int) -> void:
 	if not bool(SettingsManager.get_value("accessibility/subtitles_enabled")):
 		return
 	_subtitle_text.text = text
-	_subtitle_tag.text = "HOST"
+	_apply_subtitle_tier(tier)
 	_subtitle_box.visible = true
 	_subtitle_box.modulate.a = 0.0
 	var tween: Tween = create_tween()
 	tween.tween_property(_subtitle_box, "modulate:a", 1.0, Tokens.SUBTITLE_FADE_IN)
+
+
+func _apply_subtitle_tier(tier: int) -> void:
+	var is_punchline: bool = tier == NarratorManager.Tier.PUNCHLINE
+	_subtitle_tag.visible = not is_punchline
+	_subtitle_text.theme_type_variation = &"DisplaySmall" if is_punchline else &"Subtitle"
+	_subtitle_text.add_theme_color_override("font_color",
+		Tokens.REWARD if is_punchline else Tokens.TEXT)
+
+	# The rail is the tier's signal: amber for a taunt, acid for a threat.
+	var rail: Color = Tokens.HAZARD if tier == NarratorManager.Tier.WARNING else Tokens.REWARD
+	var box: StyleBox = _subtitle_box.get_theme_stylebox("panel").duplicate()
+	var chamfered := box as ChamferStyleBox
+	if chamfered != null:
+		chamfered.rail_color = rail
+		# A punchline swaps the dark box for a faint wash of its own colour.
+		chamfered.fill_color = Tokens.REWARD if is_punchline else Tokens.VOID
+		chamfered.fill_alpha = 0.10 if is_punchline else Tokens.SUBTITLE_ALPHA
+		_subtitle_box.add_theme_stylebox_override("panel", chamfered)
+	_subtitle_tag.add_theme_color_override("font_color", rail)
 
 
 func _on_subtitle_hidden() -> void:

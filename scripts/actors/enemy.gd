@@ -21,6 +21,8 @@ const GRAVITY: float = 24.0
 @export var body_hitbox_shape: CollisionShape3D
 @export var head_hitbox_shape: CollisionShape3D
 @export var tree_holder: Node
+@export var halo: MeshInstance3D
+@export var tether: MeshInstance3D
 @export var flash_color: Color = Color(1.0, 0.9, 0.75)
 
 var data: EnemyData
@@ -36,6 +38,8 @@ var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
 var _behavior_tree: Node
 var _slow_multiplier: float = 1.0
+## Whoever the healer is currently helping, for the tether beam.
+var _tether_target: Enemy
 
 
 func _ready() -> void:
@@ -63,6 +67,12 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 	else:
 		velocity.y = 0.0
+
+	if halo != null and halo.visible:
+		# The ring reads as a marker, not as part of the body, so it turns on its
+		# own axis rather than following the enemy's facing.
+		halo.rotate_y(delta * 0.8)
+	_update_tether()
 
 	if _stagger_timer > 0.0:
 		# Staggered enemies keep their knockback but stop steering.
@@ -93,6 +103,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 
 	_apply_presentation()
 	_apply_collision()
+	_apply_silhouette_markers()
 
 	if health != null:
 		health.max_health = data.max_health
@@ -234,6 +245,8 @@ func heal_nearby_allies() -> int:
 		if other.health.current_health >= other.health.max_health:
 			continue
 		other.health.heal(data.heal_amount)
+		if _tether_target == null or not is_instance_valid(_tether_target) 				or other.health.get_health_fraction() < _tether_target.health.get_health_fraction():
+			_tether_target = other
 		healed += 1
 	return healed
 
@@ -292,6 +305,50 @@ func _apply_presentation() -> void:
 
 ## Shapes are resized per archetype, so each pooled instance needs its own copy -
 ## sub-resources in a .tscn are shared between instances by default.
+## The halo and the tether are what make the Healer readable; every other archetype
+## turns them off.
+func _apply_silhouette_markers() -> void:
+	if halo != null:
+		halo.visible = data.has_halo
+		if data.has_halo:
+			halo.position.y = data.halo_height
+			halo.scale = Vector3.ONE * data.halo_radius
+			_tint(halo, data.body_color)
+	if tether != null:
+		tether.visible = false
+		_tint(tether, data.body_color)
+	_tether_target = null
+
+
+func _tint(mesh: MeshInstance3D, tint: Color) -> void:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = tint
+	material.emission_enabled = true
+	material.emission = tint
+	material.emission_energy_multiplier = 1.4
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mesh.material_override = material
+
+
+## Beam from the healer to its target, redrawn each frame it is active. Breaking
+## line of sight is not simulated: the tether simply follows whoever is being healed.
+func _update_tether() -> void:
+	if tether == null or not data.has_tether:
+		return
+	if _tether_target == null or not is_instance_valid(_tether_target) 			or not _tether_target.is_active:
+		tether.visible = false
+		return
+	var to_target: Vector3 = _tether_target.global_position - global_position
+	var length: float = to_target.length()
+	if length < 0.1:
+		tether.visible = false
+		return
+	tether.visible = true
+	tether.global_position = global_position + Vector3.UP * data.head_offset * 0.8
+	tether.look_at(_tether_target.global_position + Vector3.UP, Vector3.UP)
+	tether.scale = Vector3(1.0, 1.0, length)
+
+
 func _apply_collision() -> void:
 	_resize_capsule(body_shape, data.collision_height, data.collision_radius, 0.5)
 	_resize_capsule(body_hitbox_shape, maxf(data.collision_height - 0.4, 0.4),

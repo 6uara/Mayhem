@@ -42,6 +42,15 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 @export var summon_interval: float = 6.0
 
 @export_group("Presentation")
+## The Healer's floating ring. It is not decoration: Ranger and Healer share body
+## proportions, so the halo is what separates their silhouettes at range - and it
+## stays visible over cover and through crowds, which is the whole point of a
+## priority target (SPEC-VIEWMODELS 2.2).
+@export var has_halo: bool = false
+@export var halo_radius: float = 0.75
+@export var halo_height: float = 2.6
+## Draws a beam to whoever this enemy is currently helping.
+@export var has_tether: bool = false
 ## Silhouette must be readable at a glance (CLAUDE.md 5.3).
 @export var mesh: Mesh
 @export var body_color: Color = Color(0.6, 0.62, 0.66)

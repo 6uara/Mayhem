@@ -7,11 +7,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_death.wav" id="6_death"]
 
-[sub_resource type="CapsuleMesh" id="Mesh_rusher"]
-radius = 0.35
-height = 1.6
-radial_segments = 8
-rings = 3
+[sub_resource type="BoxMesh" id="Mesh_rusher"]
+size = Vector3(1.4, 0.75, 1.9)
 
 [resource]
 script = ExtResource("1_script")
@@ -27,12 +24,12 @@ attack_cooldown = 1.2
 mass = 0.8
 stagger_resistance = 0.0
 attack_windup = 0.45
-body_color = Color(0.85, 0.35, 0.3, 1)
-body_scale = 0.9
-collision_height = 1.6
-collision_radius = 0.35
-head_offset = 1.45
-head_radius = 0.24
+body_color = Color(1, 0.231, 0.329, 1)
+body_scale = 1.00
+collision_height = 1.20
+collision_radius = 0.50
+head_offset = 0.95
+head_radius = 0.28
 reward_currency = 10
 behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")
