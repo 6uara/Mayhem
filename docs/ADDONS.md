@@ -42,3 +42,15 @@ script template at `script_templates/BeehaveNode/default.gd`.
 ## Adding a new addon
 
 Do not. Section 11 of `CLAUDE.md`: propose it with a justification first.
+
+## Local patch to Beehave
+
+`addons/beehave/debug/debugger_messages.gd` carries a one-line local patch.
+
+Upstream's `can_send_message()` gates debugger traffic on `OS.has_feature("editor")` alone,
+which is true whenever the editor binary runs - including headless CI, GUT runs and
+`--headless` playtests, where no debugger is attached. Every registered behavior tree then
+pushed an `ERROR: Can't send message. No active debugger`, once per enemy spawned.
+
+The patch adds `EngineDebugger.is_active()` to that check. **Re-apply it after any Beehave
+update**; the file is marked with a `LOCAL PATCH` comment.

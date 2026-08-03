@@ -2,7 +2,15 @@ class_name BeehaveDebuggerMessages
 
 
 static func can_send_message() -> bool:
-	return not Engine.is_editor_hint() and OS.has_feature("editor")
+	# LOCAL PATCH (see docs/ADDONS.md): upstream checks only for an editor build, so
+	# running the editor binary headlessly - CI, GUT, --headless playtests - pushes an
+	# "Can't send message. No active debugger" error for every tree registered.
+	# Re-apply this guard after any Beehave update.
+	return (
+		not Engine.is_editor_hint()
+		and OS.has_feature("editor")
+		and EngineDebugger.is_active()
+	)
 
 
 static func register_tree(beehave_tree: Dictionary) -> void:
