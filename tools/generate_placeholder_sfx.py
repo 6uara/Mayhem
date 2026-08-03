@@ -206,6 +206,53 @@ def bounce_pad(rng: random.Random) -> list[float]:
     )
 
 
+def enemy_spawn(rng: random.Random, pitch: float) -> list[float]:
+    """Servo whine - each archetype gets its own pitch so spawns are identifiable."""
+    return _mix(
+        (_tone(ms(260), 300.0 * pitch, 0.01, 0.4, 0.6, sweep=1.7), 0),
+        (_lowpass(_noise(ms(120), 0.005, 0.2, 0.35, rng), 2000.0), 0),
+    )
+
+
+def enemy_windup(rng: random.Random, pitch: float) -> list[float]:
+    """Rising tell. This is the audio half of the telegraph - it must be obvious."""
+    return _mix(
+        (_tone(ms(420), 190.0 * pitch, 0.05, 0.9, 0.75, sweep=2.4), 0),
+        (_lowpass(_noise(ms(200), 0.05, 0.4, 0.2, rng), 1500.0), ms(200)),
+    )
+
+
+def enemy_attack(rng: random.Random, pitch: float) -> list[float]:
+    return _mix(
+        (_noise(ms(40), 0.0008, 0.09, 0.9, rng), 0),
+        (_tone(ms(140), 260.0 * pitch, 0.001, 0.2, 0.6, sweep=0.5), 0),
+    )
+
+
+def enemy_death(rng: random.Random, pitch: float) -> list[float]:
+    """Construct collapsing - metallic clatter, falling pitch."""
+    return _mix(
+        (_lowpass(_noise(ms(280), 0.002, 0.35, 0.8, rng), 1600.0), 0),
+        (_tone(ms(320), 340.0 * pitch, 0.002, 0.4, 0.5, sweep=0.3), 0),
+        (_noise(ms(160), 0.02, 0.25, 0.4, rng), ms(120)),
+    )
+
+
+def door_open(rng: random.Random) -> list[float]:
+    """Gate tell: a low horn plus servo grind, audible across the arena."""
+    return _mix(
+        (_tone(ms(700), 110.0, 0.03, 0.8, 0.85, sweep=1.25), 0),
+        (_lowpass(_noise(ms(600), 0.08, 0.6, 0.4, rng), 1100.0), ms(120)),
+    )
+
+
+def heal_pulse() -> list[float]:
+    return _mix(
+        (_tone(ms(300), 520.0, 0.02, 0.5, 0.6, sweep=1.5), 0),
+        (_tone(ms(240), 780.0, 0.03, 0.45, 0.35, sweep=1.5), ms(60)),
+    )
+
+
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
@@ -224,6 +271,15 @@ def main() -> None:
     _write("world/grapple_fire.wav", grapple_fire(rng))
     _write("world/grapple_release.wav", grapple_release(rng))
     _write("world/bounce_pad.wav", bounce_pad(rng))
+    # Per-archetype pitches, so threats are identifiable without looking.
+    for name, pitch in [("rusher", 1.25), ("ranger", 1.0), ("elite", 0.6),
+                        ("healer", 1.5), ("summoner", 0.8)]:
+        _write("enemies/%s_spawn.wav" % name, enemy_spawn(rng, pitch))
+        _write("enemies/%s_windup.wav" % name, enemy_windup(rng, pitch))
+        _write("enemies/%s_death.wav" % name, enemy_death(rng, pitch))
+        _write("enemies/%s_attack.wav" % name, enemy_attack(rng, pitch))
+    _write("enemies/healer_pulse.wav", heal_pulse())
+    _write("world/spawn_door.wav", door_open(rng))
     print("Done. These are placeholders - replace them in Phase 5.")
 
 
