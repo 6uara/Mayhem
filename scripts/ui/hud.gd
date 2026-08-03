@@ -9,6 +9,7 @@ const LOW_AMMO_FRACTION: float = 0.25
 @onready var _hitmarker: Hitmarker = $Hitmarker
 @onready var _ammo_label: Label = $AmmoLabel
 @onready var _subtitle: Label = $Subtitle
+@onready var _dash_pips: DashPips = $DashPips
 
 var _player: Player
 var _weapon: WeaponComponent
@@ -24,9 +25,18 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _weapon == null or _player == null:
+	if _player == null:
 		return
-	_crosshair.set_spread(_weapon.get_current_spread(), _player.camera.fov)
+	if _weapon != null:
+		_crosshair.set_spread(_weapon.get_current_spread(), _player.camera.fov)
+	if _player.grapple != null:
+		_crosshair.set_anchor_available(_player.grapple.is_anchor_in_range)
+	if _player.movement != null and _dash_pips != null:
+		var movement: MovementComponent = _player.movement
+		_dash_pips.update_charges(
+			movement.get_dash_charges_available(),
+			movement.get_dash_charges_max(),
+			movement.dash_charges.get_next_charge_progress())
 
 
 # Private

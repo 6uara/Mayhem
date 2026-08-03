@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/arena/greybox_range.tscn" id="1_range"]
+[ext_resource type="PackedScene" path="res://scenes/arena/greybox_arena.tscn" id="1_range"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/systems/recoil_visualizer.gd" id="4_visualizer"]
@@ -23,10 +23,10 @@ mesh = SubResource("Mesh_point")
 
 [node name="Game" type="Node3D"]
 
-[node name="GreyboxRange" parent="." instance=ExtResource("1_range")]
+[node name="GreyboxArena" parent="." instance=ExtResource("1_range")]
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 26)
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
 

@@ -1,0 +1,242 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/enemies/target_dummy.tscn" id="1_dummy"]
+[ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.32, 0.33, 0.36, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.42, 0.43, 0.47, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_mid"]
+albedo_color = Color(0.38, 0.42, 0.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_high"]
+albedo_color = Color(0.46, 0.42, 0.38, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_anchor"]
+emission_enabled = true
+emission = Color(0.35, 0.85, 1, 1)
+emission_energy_multiplier = 0.8
+albedo_color = Color(0.2, 0.5, 0.65, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_anchor"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_anchor"]
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="Environment" id="Env_arena"]
+background_mode = 1
+background_color = Color(0.09, 0.1, 0.13, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5, 0.55, 0.65, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+
+[node name="GreyboxArena" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_arena")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.86, -0.35, 0.37, 0, 0.72, 0.69, -0.51, -0.6, 0.62, 0, 14, 0)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(70, 1, 70)
+material = SubResource("Mat_floor")
+
+[node name="WallNorth" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -35)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(70, 12, 1)
+material = SubResource("Mat_wall")
+
+[node name="WallSouth" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 35)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(70, 12, 1)
+material = SubResource("Mat_wall")
+
+[node name="WallEast" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 6, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(1, 12, 70)
+material = SubResource("Mat_wall")
+
+[node name="WallWest" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 6, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(1, 12, 70)
+material = SubResource("Mat_wall")
+
+[node name="PatternWall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 30)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(14, 8, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="MidPlatformWest" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -8)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(16, 0.8, 20)
+material = SubResource("Mat_mid")
+
+[node name="MidPlatformEast" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3, 4)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(16, 0.8, 24)
+material = SubResource("Mat_mid")
+
+[node name="RampToMidWest" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.966, -0.259, 0, 0.259, 0.966, -24, 1.4, 8)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(6, 0.6, 14)
+material = SubResource("Mat_mid")
+
+[node name="RampToMidEast" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 24, 1.4, -14)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(6, 0.6, 14)
+material = SubResource("Mat_mid")
+
+[node name="SlideHill" type="CSGBox3D" parent="."]
+transform = Transform3D(0.966, 0.259, 0, -0.259, 0.966, 0, 0, 0, 1, -6, 1.8, -20)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(18, 0.8, 10)
+material = SubResource("Mat_mid")
+
+[node name="HighWalkwayNorth" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -30)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(50, 0.8, 8)
+material = SubResource("Mat_high")
+
+[node name="HighPerchCenter" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6, 6)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(10, 0.8, 10)
+material = SubResource("Mat_high")
+
+[node name="MantleBoxLow" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.6, 22)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(4, 1.2, 4)
+material = SubResource("Mat_wall")
+
+[node name="MantleBoxHigh" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 22)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(4, 2, 4)
+material = SubResource("Mat_wall")
+
+[node name="BouncePads" type="Node3D" parent="."]
+
+[node name="PadToMid" parent="BouncePads" instance=ExtResource("2_pad")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -8)
+
+[node name="PadToHigh" parent="BouncePads" instance=ExtResource("2_pad")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -2)
+bounce_velocity = 16.0
+
+[node name="PadCenter" parent="BouncePads" instance=ExtResource("2_pad")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 14)
+
+[node name="GrappleAnchors" type="Node3D" parent="."]
+
+[node name="Anchor1" type="StaticBody3D" parent="GrappleAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -12)
+collision_layer = 256
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor1"]
+mesh = SubResource("Mesh_anchor")
+material_override = SubResource("Mat_anchor")
+
+[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor1"]
+shape = SubResource("Shape_anchor")
+
+[node name="Anchor2" type="StaticBody3D" parent="GrappleAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 9, 14)
+collision_layer = 256
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor2"]
+mesh = SubResource("Mesh_anchor")
+material_override = SubResource("Mat_anchor")
+
+[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor2"]
+shape = SubResource("Shape_anchor")
+
+[node name="Anchor3" type="StaticBody3D" parent="GrappleAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 9, -20)
+collision_layer = 256
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor3"]
+mesh = SubResource("Mesh_anchor")
+material_override = SubResource("Mat_anchor")
+
+[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor3"]
+shape = SubResource("Shape_anchor")
+
+[node name="Anchor4" type="StaticBody3D" parent="GrappleAnchors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 7, 24)
+collision_layer = 256
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor4"]
+mesh = SubResource("Mesh_anchor")
+material_override = SubResource("Mat_anchor")
+
+[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor4"]
+shape = SubResource("Shape_anchor")
+
+[node name="Dummies" type="Node3D" parent="."]
+
+[node name="TargetDummy" parent="Dummies" instance=ExtResource("1_dummy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
+
+[node name="TargetDummy2" parent="Dummies" instance=ExtResource("1_dummy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -10)
+
+[node name="TargetDummy3" parent="Dummies" instance=ExtResource("1_dummy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.4, -10)
+
+[node name="TargetDummy4" parent="Dummies" instance=ExtResource("1_dummy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.4, 4)
