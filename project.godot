@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+Tokens="*res://scripts/autoload/theme_tokens.gd"
 EventBus="*res://scripts/autoload/event_bus.gd"
 GameManager="*res://scripts/autoload/game_manager.gd"
 ObjectPool="*res://scripts/autoload/object_pool.gd"
