@@ -1,15 +1,9 @@
 class_name Player
 extends CharacterBody3D
-## Phase 1 first-person controller: move, look, and route weapon input.
-## Slide, dash, grapple and mantle land in Phase 2 via MovementComponent.
+## First-person player root: look and weapon input only. All movement physics,
+## including jump, lives in MovementComponent; grappling in GrappleComponent.
 
 const MAX_PITCH_DEGREES: float = 89.0
-
-@export var base_move_speed: float = 7.5
-@export var acceleration: float = 60.0
-@export var friction: float = 45.0
-@export var jump_velocity: float = 5.5
-@export var gravity: float = 24.0
 
 @export_group("Nodes")
 @export var head: Node3D
@@ -18,6 +12,8 @@ const MAX_PITCH_DEGREES: float = 89.0
 @export var recoil: CameraRecoilComponent
 @export var health: HealthComponent
 @export var stats: StatsComponent
+@export var movement: MovementComponent
+@export var grapple: GrappleComponent
 
 var _look_yaw: float = 0.0
 var _look_pitch: float = 0.0
@@ -64,29 +60,6 @@ func _process(_delta: float) -> void:
 	_apply_fov()
 
 
-func _physics_process(delta: float) -> void:
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-	elif Input.is_action_pressed("jump"):
-		velocity.y = _stat(StatsComponent.JUMP_VELOCITY, jump_velocity)
-
-	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction: Vector3 = (transform.basis * Vector3(input.x, 0.0, input.y)).normalized()
-	var speed: float = _stat(StatsComponent.MOVE_SPEED, base_move_speed)
-	if weapon != null:
-		speed *= weapon.get_move_speed_multiplier()
-
-	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	if direction != Vector3.ZERO:
-		horizontal = horizontal.move_toward(direction * speed, acceleration * delta)
-	else:
-		horizontal = horizontal.move_toward(Vector3.ZERO, friction * delta)
-	velocity.x = horizontal.x
-	velocity.z = horizontal.z
-
-	move_and_slide()
-
-
 # Public API
 
 ## Where bullets actually go: look plus recoil aim offset, never the cosmetic kick.
@@ -112,12 +85,6 @@ func _apply_fov() -> void:
 
 func _is_ads() -> bool:
 	return weapon != null and weapon.is_ads
-
-
-func _stat(stat_key: StringName, base_value: float) -> float:
-	if stats == null:
-		return base_value
-	return stats.get_stat_from(stat_key, base_value)
 
 
 func _on_settings_applied() -> void:
