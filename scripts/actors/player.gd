@@ -8,16 +8,24 @@ const MAX_PITCH_DEGREES: float = 89.0
 @export_group("Nodes")
 @export var head: Node3D
 @export var camera: Camera3D
-@export var weapon: WeaponComponent
+@export var weapon_holder: WeaponHolder
 @export var recoil: CameraRecoilComponent
 @export var health: HealthComponent
 @export var stats: StatsComponent
 @export var movement: MovementComponent
 @export var grapple: GrappleComponent
+@export var utility: UtilityComponent
+
+## The equipped weapon. Everything that used to read `player.weapon` still can;
+## the holder owns which one that is.
+var weapon: WeaponComponent:
+	get:
+		return weapon_holder.current if weapon_holder != null else null
 
 var _look_yaw: float = 0.0
 var _look_pitch: float = 0.0
 var _base_fov: float = 95.0
+var _base_max_health: float = 100.0
 
 
 func _ready() -> void:
@@ -27,6 +35,11 @@ func _ready() -> void:
 	if health != null:
 		health.damaged.connect(_on_damaged)
 		health.died.connect(_on_died)
+		_base_max_health = health.max_health
+	# Survivability upgrades live on HealthComponent, which knows nothing about
+	# UpgradeManager - the player is what bridges them.
+	UpgradeManager.upgrades_changed.connect(_apply_survivability_stats)
+	_apply_survivability_stats()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -41,18 +54,29 @@ func _unhandled_input(event: InputEvent) -> void:
 			-MAX_PITCH_DEGREES, MAX_PITCH_DEGREES)
 		return
 
-	if weapon == null:
+	if weapon_holder != null and weapon_holder.handle_input(event):
 		return
+	if utility != null and utility.handle_input(event):
+		return
+
+	var equipped: WeaponComponent = weapon
+	if equipped == null:
+		return
+	# A weapon mid-swap is not in the player's hands yet.
+	if weapon_holder != null and weapon_holder.is_swapping:
+		equipped.set_trigger(false)
+		return
+
 	if event.is_action_pressed("fire"):
-		weapon.set_trigger(true)
+		equipped.set_trigger(true)
 	elif event.is_action_released("fire"):
-		weapon.set_trigger(false)
+		equipped.set_trigger(false)
 	elif event.is_action_pressed("ads"):
-		weapon.set_ads(true)
+		equipped.set_ads(true)
 	elif event.is_action_released("ads"):
-		weapon.set_ads(false)
+		equipped.set_ads(false)
 	elif event.is_action_pressed("reload"):
-		weapon.try_reload()
+		equipped.try_reload()
 
 
 func _process(_delta: float) -> void:
@@ -85,6 +109,16 @@ func _apply_fov() -> void:
 
 func _is_ads() -> bool:
 	return weapon != null and weapon.is_ads
+
+
+## Max health preserves the current fraction, so buying Plating mid-run tops the
+## player up proportionally rather than handing out a free full heal.
+func _apply_survivability_stats() -> void:
+	if health == null or stats == null:
+		return
+	health.set_max_health(stats.get_stat_from(StatsComponent.MAX_HEALTH, _base_max_health))
+	health.damage_taken_multiplier = stats.get_stat_from(
+		StatsComponent.DAMAGE_TAKEN_MULTIPLIER, 1.0)
 
 
 func _on_settings_applied() -> void:

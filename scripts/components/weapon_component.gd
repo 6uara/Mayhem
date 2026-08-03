@@ -97,6 +97,30 @@ func add_reserve_ammo(amount: int) -> int:
 	return taken
 
 
+## Re-announces this weapon's ammo. Called by WeaponHolder on equip so the HUD
+## shows the new weapon's counts rather than the previous one's.
+func notify_equipped() -> void:
+	_is_trigger_held = false
+	is_ads = false
+	ads_progress = 0.0
+	_emit_ammo()
+
+
+## Back to a full magazine and reserve. Used between runs, not between waves -
+## nothing carries across runs (CLAUDE.md 5.5).
+func reset() -> void:
+	is_reloading = false
+	_reload_timer = 0.0
+	_shot_index = 0
+	_cooldown = 0.0
+	_is_trigger_held = false
+	is_ads = false
+	ads_progress = 0.0
+	_ammo = get_magazine_size()
+	_reserve = get_reserve_max()
+	_emit_ammo()
+
+
 func get_ammo() -> int:
 	return _ammo
 

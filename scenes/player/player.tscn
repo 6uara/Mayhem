@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/components/camera_recoil_component.gd" id="2_recoil"]
@@ -17,23 +17,33 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/slide.wav" id="15_slide"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/grapple_fire.wav" id="16_gfire"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/grapple_release.wav" id="17_grelease"]
+[ext_resource type="Script" path="res://scripts/components/weapon_holder.gd" id="18_holder"]
+[ext_resource type="Script" path="res://scripts/components/utility_component.gd" id="19_utility"]
+[ext_resource type="Resource" path="res://data/weapons/pistol.tres" id="20_pistol"]
+[ext_resource type="Resource" path="res://data/weapons/shotgun.tres" id="21_shotgun"]
+[ext_resource type="Resource" path="res://data/weapons/smg.tres" id="22_smg"]
+[ext_resource type="Resource" path="res://data/utilities/stun_grenade.tres" id="23_stun"]
+[ext_resource type="Resource" path="res://data/utilities/temp_wall.tres" id="24_wall"]
+[ext_resource type="Resource" path="res://data/utilities/slow_field.tres" id="25_slow"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/utility_throw.wav" id="26_throw"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_player"]
 radius = 0.4
 height = 1.8
 
-[node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon", "recoil", "health", "stats", "movement", "grapple")]
+[node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon_holder", "recoil", "health", "stats", "movement", "grapple", "utility")]
 collision_layer = 2
 collision_mask = 1
 script = ExtResource("1_player")
 head = NodePath("HeadPivot")
 camera = NodePath("HeadPivot/CameraRig/Camera3D")
-weapon = NodePath("HeadPivot/Weapon")
+weapon_holder = NodePath("HeadPivot/WeaponHolder")
 recoil = NodePath("CameraRecoilComponent")
 health = NodePath("HealthComponent")
 stats = NodePath("StatsComponent")
 movement = NodePath("MovementComponent")
 grapple = NodePath("GrappleComponent")
+utility = NodePath("UtilityComponent")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -53,31 +63,79 @@ near = 0.05
 target_position = Vector3(0, 0, -3)
 collision_mask = 1025
 
-[node name="Weapon" type="Node3D" parent="HeadPivot" node_paths=PackedStringArray("aim_node", "muzzle", "recoil", "stats", "body")]
+[node name="WeaponHolder" type="Node3D" parent="HeadPivot"]
+script = ExtResource("18_holder")
+swap_time = 0.35
+
+[node name="Pistol" type="Node3D" parent="HeadPivot/WeaponHolder" node_paths=PackedStringArray("aim_node", "muzzle", "recoil", "stats", "body")]
 script = ExtResource("5_weapon")
-data = ExtResource("6_rifle")
-aim_node = NodePath("..")
+data = ExtResource("20_pistol")
+aim_node = NodePath("../..")
 muzzle = NodePath("Muzzle")
-recoil = NodePath("../../CameraRecoilComponent")
-stats = NodePath("../../StatsComponent")
-body = NodePath("../..")
+recoil = NodePath("../../../CameraRecoilComponent")
+stats = NodePath("../../../StatsComponent")
+body = NodePath("../../..")
 fire_sound = ExtResource("7_fire")
 reload_sound = ExtResource("8_reload")
 empty_sound = ExtResource("9_empty")
 
-[node name="Muzzle" type="Node3D" parent="HeadPivot/Weapon"]
+[node name="Muzzle" type="Node3D" parent="HeadPivot/WeaponHolder/Pistol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
+
+[node name="Rifle" type="Node3D" parent="HeadPivot/WeaponHolder" node_paths=PackedStringArray("aim_node", "muzzle", "recoil", "stats", "body")]
+script = ExtResource("5_weapon")
+data = ExtResource("6_rifle")
+aim_node = NodePath("../..")
+muzzle = NodePath("Muzzle")
+recoil = NodePath("../../../CameraRecoilComponent")
+stats = NodePath("../../../StatsComponent")
+body = NodePath("../../..")
+fire_sound = ExtResource("7_fire")
+reload_sound = ExtResource("8_reload")
+empty_sound = ExtResource("9_empty")
+
+[node name="Muzzle" type="Node3D" parent="HeadPivot/WeaponHolder/Rifle"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
+
+[node name="Shotgun" type="Node3D" parent="HeadPivot/WeaponHolder" node_paths=PackedStringArray("aim_node", "muzzle", "recoil", "stats", "body")]
+script = ExtResource("5_weapon")
+data = ExtResource("21_shotgun")
+aim_node = NodePath("../..")
+muzzle = NodePath("Muzzle")
+recoil = NodePath("../../../CameraRecoilComponent")
+stats = NodePath("../../../StatsComponent")
+body = NodePath("../../..")
+fire_sound = ExtResource("7_fire")
+reload_sound = ExtResource("8_reload")
+empty_sound = ExtResource("9_empty")
+
+[node name="Muzzle" type="Node3D" parent="HeadPivot/WeaponHolder/Shotgun"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
+
+[node name="SMG" type="Node3D" parent="HeadPivot/WeaponHolder" node_paths=PackedStringArray("aim_node", "muzzle", "recoil", "stats", "body")]
+script = ExtResource("5_weapon")
+data = ExtResource("22_smg")
+aim_node = NodePath("../..")
+muzzle = NodePath("Muzzle")
+recoil = NodePath("../../../CameraRecoilComponent")
+stats = NodePath("../../../StatsComponent")
+body = NodePath("../../..")
+fire_sound = ExtResource("7_fire")
+reload_sound = ExtResource("8_reload")
+empty_sound = ExtResource("9_empty")
+
+[node name="Muzzle" type="Node3D" parent="HeadPivot/WeaponHolder/SMG"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
 
 [node name="CameraRecoilComponent" type="Node" parent="." node_paths=PackedStringArray("camera_rig")]
 script = ExtResource("2_recoil")
 camera_rig = NodePath("../HeadPivot/CameraRig")
 
-[node name="MovementComponent" type="Node" parent="." node_paths=PackedStringArray("body", "head", "stats", "weapon", "grapple")]
+[node name="MovementComponent" type="Node" parent="." node_paths=PackedStringArray("body", "head", "stats", "grapple")]
 script = ExtResource("10_movement")
 body = NodePath("..")
 head = NodePath("../HeadPivot")
 stats = NodePath("../StatsComponent")
-weapon = NodePath("../HeadPivot/Weapon")
 grapple = NodePath("../GrappleComponent")
 jump_sound = ExtResource("12_jump")
 land_sound = ExtResource("13_land")
@@ -98,3 +156,10 @@ max_health = 100.0
 
 [node name="StatsComponent" type="Node" parent="."]
 script = ExtResource("4_stats")
+
+[node name="UtilityComponent" type="Node" parent="." node_paths=PackedStringArray("aim_node", "body")]
+script = ExtResource("19_utility")
+aim_node = NodePath("../HeadPivot")
+body = NodePath("..")
+slots = Array[Resource]([ExtResource("23_stun"), ExtResource("24_wall"), ExtResource("25_slow")])
+throw_sound = ExtResource("26_throw")
