@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+env:
+  GODOT_VERSION: 4.7
+
+jobs:
+  gut:
+    name: GUT (headless)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Godot
+        run: |
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+
+      - name: Import project
+        run: godot --headless --import --quit-after 200 || true
+
+      - name: Run tests
+        run: godot --headless -s addons/gut/gut_cmdln.gd -gexit
