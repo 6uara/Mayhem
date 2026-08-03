@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="WaveData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/wave_data.gd" id="1_wave"]
+[ext_resource type="Script" path="res://scripts/resources/spawn_group.gd" id="2_group"]
+[ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="3_rusher"]
+[ext_resource type="Resource" path="res://data/enemies/ranger.tres" id="4_ranger"]
+[ext_resource type="Resource" path="res://data/enemies/healer.tres" id="5_healer"]
+[ext_resource type="Resource" path="res://data/enemies/summoner.tres" id="6_summoner"]
+
+[sub_resource type="Resource" id="Group_0"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("3_rusher")
+count = 8
+spawn_door_ids = Array[StringName]([&"door_01", &"door_03", &"door_04"])
+delay = 0.0
+interval = 0.4
+
+[sub_resource type="Resource" id="Group_1"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("4_ranger")
+count = 5
+spawn_door_ids = Array[StringName]([&"door_05", &"door_06", &"door_07"])
+delay = 3.0
+interval = 0.7
+
+[sub_resource type="Resource" id="Group_2"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("5_healer")
+count = 2
+spawn_door_ids = Array[StringName]([&"door_02"])
+delay = 9.0
+interval = 2.0
+
+[sub_resource type="Resource" id="Group_3"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("6_summoner")
+count = 1
+spawn_door_ids = Array[StringName]([&"door_05"])
+delay = 14.0
+interval = 0.0
+
+[resource]
+script = ExtResource("1_wave")
+wave_index = 8
+spawn_groups = Array[Resource]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_3")])
+par_time = 95.0
+completion_bonus = 150
+is_elite_wave = false
