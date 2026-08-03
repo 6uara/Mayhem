@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"reserve_ammo_max"
+operation = 1
+value = 1.4
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"reserve_ammo"
+display_name = "Bandolier"
+description = "+40% reserve ammo capacity."
+cost = 190
+category = 1
+max_stacks = 2
+is_temporary = false
+duration = 0.0
+stat_modifiers = Array[Resource]([SubResource("Mod_0")])
