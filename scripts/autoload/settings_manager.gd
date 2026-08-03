@@ -3,11 +3,12 @@ extends Node
 
 const SETTINGS_PATH: String = "user://settings.cfg"
 
+## Defaults come from the design handoff (theme_tokens.gd), not from taste.
 const DEFAULTS: Dictionary = {
-	"input/mouse_sensitivity": 0.25,
-	"input/ads_sensitivity_multiplier": 0.6,
+	"input/mouse_sensitivity": 2.40,
+	"input/ads_sensitivity_multiplier": 0.72,
 	"input/invert_y": false,
-	"video/fov": 95.0,
+	"video/fov": 104.0,
 	"video/fullscreen": true,
 	"video/vsync": false,
 	"video/fps_cap": 60,
@@ -18,8 +19,16 @@ const DEFAULTS: Dictionary = {
 	"accessibility/screenshake_enabled": true,
 	"accessibility/motion_blur_enabled": false,
 	"accessibility/subtitles_enabled": true,
-	"hud/crosshair_style": 0,
-	"hud/crosshair_color": Color.WHITE,
+	## Replaces the low-health pulse and low-ammo blink with static frames of the
+	## same colour, so no information is lost (SPEC-MENUS-HOST 3.3).
+	"accessibility/reduce_flashing": false,
+	"accessibility/subtitle_size": 1,
+	"hud/scale": 1.0,
+	"hud/crosshair_gap": 8.0,
+	"hud/crosshair_thickness": 2.0,
+	"hud/crosshair_color": Color("#E6E8EF"),
+	"hud/crosshair_dot": true,
+	"hud/damage_indicators": true,
 }
 
 var _values: Dictionary = {}
@@ -36,8 +45,14 @@ func _ready() -> void:
 
 # Public API
 
-func get_value(key: String) -> Variant:
-	return _values.get(key, DEFAULTS.get(key))
+## `fallback` covers keys a caller knows about before they exist in DEFAULTS,
+## so a new setting cannot crash the UI that reads it.
+func get_value(key: String, fallback: Variant = null) -> Variant:
+	if _values.has(key):
+		return _values[key]
+	if DEFAULTS.has(key):
+		return DEFAULTS[key]
+	return fallback
 
 
 func set_value(key: String, value: Variant) -> void:
@@ -93,8 +108,13 @@ func rebind_action(action: StringName, events: Array[InputEvent]) -> void:
 	_bindings[String(action)] = events
 
 
+## The stored value is the handoff's 0.1-10 slider; SENS_TO_DEGREES converts it to
+## degrees of look per pixel of mouse travel.
+const SENS_TO_DEGREES: float = 0.1
+
+
 func get_mouse_sensitivity(is_ads: bool) -> float:
-	var base: float = float(get_value("input/mouse_sensitivity"))
+	var base: float = float(get_value("input/mouse_sensitivity")) * SENS_TO_DEGREES
 	if is_ads:
 		base *= float(get_value("input/ads_sensitivity_multiplier"))
 	return base

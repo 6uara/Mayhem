@@ -1,13 +1,27 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=16 format=3]
 
+[ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="0_theme"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
-[ext_resource type="Script" path="res://scripts/ui/crosshair.gd" id="2_crosshair"]
-[ext_resource type="Script" path="res://scripts/ui/hitmarker.gd" id="3_hitmarker"]
-[ext_resource type="Script" path="res://scripts/ui/viewmodel.gd" id="4_viewmodel"]
-[ext_resource type="Script" path="res://scripts/ui/dash_pips.gd" id="8_pips"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_body.wav" id="5_hit_body"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_headshot.wav" id="6_hit_head"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_kill.wav" id="7_hit_kill"]
+[ext_resource type="Script" path="res://scripts/ui/reticle.gd" id="2_reticle"]
+[ext_resource type="Script" path="res://scripts/ui/segment_strip.gd" id="3_strip"]
+[ext_resource type="Script" path="res://scripts/ui/mayhem_icon.gd" id="4_icon"]
+[ext_resource type="Script" path="res://scripts/ui/stripe_bar.gd" id="5_stripe"]
+[ext_resource type="Script" path="res://scripts/ui/viewmodel.gd" id="6_vm"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_body.wav" id="7_hit_body"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_headshot.wav" id="8_hit_head"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_kill.wav" id="9_hit_kill"]
+
+[sub_resource type="Gradient" id="Grad_vignette"]
+offsets = PackedFloat32Array(0.55, 1)
+colors = PackedColorArray(1, 0.231, 0.329, 0, 1, 0.231, 0.329, 0.42)
+
+[sub_resource type="GradientTexture2D" id="Tex_vignette"]
+gradient = SubResource("Grad_vignette")
+width = 512
+height = 512
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
 
 [sub_resource type="StandardMaterial3D" id="Mat_gun"]
 albedo_color = Color(0.18, 0.19, 0.22, 1)
@@ -19,7 +33,7 @@ size = Vector3(0.07, 0.12, 0.55)
 [sub_resource type="StandardMaterial3D" id="Mat_flash"]
 transparency = 1
 shading_mode = 0
-albedo_color = Color(1, 0.85, 0.45, 0.9)
+albedo_color = Color(1, 0.69, 0.13, 0.9)
 
 [sub_resource type="SphereMesh" id="Mesh_flash"]
 material = SubResource("Mat_flash")
@@ -28,9 +42,423 @@ height = 0.1
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
+layer = 1
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme = ExtResource("0_theme")
+
+[node name="WaveCluster" type="VBoxContainer" parent="Root"]
+anchors_preset = 0
+anchor_left = 0
+anchor_top = 0
+anchor_right = 0
+anchor_bottom = 0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 368.0
+offset_bottom = 158.0
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="WaveRow" type="HBoxContainer" parent="Root/WaveCluster"]
+theme_override_constants/separation = 14
+
+[node name="Label" type="Label" parent="Root/WaveCluster/WaveRow"]
+theme_type_variation = &"HUDLabel"
+vertical_alignment = 1
+text = "WAVE"
+
+[node name="Value" type="Label" parent="Root/WaveCluster/WaveRow"]
+theme_type_variation = &"NumCluster"
+text = "01"
+
+[node name="EnemiesRow" type="HBoxContainer" parent="Root/WaveCluster"]
+theme_override_constants/separation = 10
+
+[node name="Mark" type="Control" parent="Root/WaveCluster/EnemiesRow"]
+script = ExtResource("4_icon")
+custom_minimum_size = Vector2(14, 14)
+size_flags_vertical = 4
+kind = 12
+color = Color(1, 0.231, 0.329, 1)
+
+[node name="Count" type="Label" parent="Root/WaveCluster/EnemiesRow"]
+theme_type_variation = &"NumSecond"
+theme_override_colors/font_color = Color(1, 0.231, 0.329, 1)
+text = "0"
+
+[node name="Label" type="Label" parent="Root/WaveCluster/EnemiesRow"]
+theme_type_variation = &"HUDLabel"
+vertical_alignment = 1
+text = "LEFT"
+
+[node name="TimerCluster" type="VBoxContainer" parent="Root"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 0
+anchor_right = 0.5
+anchor_bottom = 0
+offset_left = -180.0
+offset_top = 40.0
+offset_right = 180.0
+offset_bottom = 150.0
+theme_override_constants/separation = 8
+alignment = 1
+mouse_filter = 2
+
+[node name="TimeRow" type="HBoxContainer" parent="Root/TimerCluster"]
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Elapsed" type="Label" parent="Root/TimerCluster/TimeRow"]
+theme_type_variation = &"NumSecond"
+text = "0:00"
+
+[node name="Par" type="Label" parent="Root/TimerCluster/TimeRow"]
+theme_type_variation = &"HUDLabel"
+vertical_alignment = 1
+text = "/ PAR 0:00"
+
+[node name="ParBar" type="Control" parent="Root/TimerCluster"]
+script = ExtResource("3_strip")
+custom_minimum_size = Vector2(360, 4)
+size_flags_horizontal = 4
+count = 60
+filled = 0
+segment_size = Vector2(5, 4)
+gap = 1.0
+
+[node name="NoDamageRow" type="HBoxContainer" parent="Root/TimerCluster"]
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Mark" type="ColorRect" parent="Root/TimerCluster/NoDamageRow"]
+custom_minimum_size = Vector2(10, 10)
+size_flags_vertical = 4
+color = Color(0.208, 0.878, 0.831, 1)
+
+[node name="Text" type="Label" parent="Root/TimerCluster/NoDamageRow"]
+theme_type_variation = &"HUDLabel"
+text = "NO DAMAGE - INTACT"
+
+[node name="CurrencyCluster" type="VBoxContainer" parent="Root"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 0
+offset_left = -360.0
+offset_top = 48.0
+offset_right = -48.0
+offset_bottom = 288.0
+theme_override_constants/separation = 16
+mouse_filter = 2
+
+[node name="CurrencyRow" type="HBoxContainer" parent="Root/CurrencyCluster"]
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="Ring" type="Control" parent="Root/CurrencyCluster/CurrencyRow"]
+script = ExtResource("4_icon")
+custom_minimum_size = Vector2(20, 20)
+size_flags_vertical = 4
+kind = 25
+color = Color(1, 0.69, 0.125, 1)
+
+[node name="Amount" type="Label" parent="Root/CurrencyCluster/CurrencyRow"]
+theme_type_variation = &"NumCluster"
+theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
+text = "0"
+
+[node name="PowerUpList" type="VBoxContainer" parent="Root/CurrencyCluster"]
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="VitalsCluster" type="VBoxContainer" parent="Root"]
+anchors_preset = 2
+anchor_left = 0
+anchor_top = 1.0
+anchor_right = 0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = -190.0
+offset_right = 518.0
+offset_bottom = -48.0
+theme_override_constants/separation = 14
+alignment = 2
+mouse_filter = 2
+
+[node name="HealthRow" type="HBoxContainer" parent="Root/VitalsCluster"]
+theme_override_constants/separation = 16
+
+[node name="Value" type="Label" parent="Root/VitalsCluster/HealthRow"]
+theme_type_variation = &"NumPrimary"
+text = "100"
+
+[node name="Label" type="Label" parent="Root/VitalsCluster/HealthRow"]
+theme_type_variation = &"HUDLabel"
+vertical_alignment = 2
+text = "HP"
+
+[node name="CriticalTag" type="HBoxContainer" parent="Root/VitalsCluster/HealthRow"]
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="Icon" type="Control" parent="Root/VitalsCluster/HealthRow/CriticalTag"]
+script = ExtResource("4_icon")
+custom_minimum_size = Vector2(18, 18)
+size_flags_vertical = 8
+kind = 12
+color = Color(1, 0.231, 0.329, 1)
+
+[node name="Text" type="Label" parent="Root/VitalsCluster/HealthRow/CriticalTag"]
+theme_type_variation = &"HUDLabel"
+theme_override_colors/font_color = Color(1, 0.231, 0.329, 1)
+vertical_alignment = 2
+text = "CRITICAL"
+
+[node name="HealthSegments" type="Control" parent="Root/VitalsCluster"]
+script = ExtResource("3_strip")
+count = 10
+filled = 10
+segment_size = Vector2(41, 14)
+gap = 3.0
+
+[node name="DashRow" type="HBoxContainer" parent="Root/VitalsCluster"]
+theme_override_constants/separation = 14
+
+[node name="Label" type="Label" parent="Root/VitalsCluster/DashRow"]
+theme_type_variation = &"HUDLabel"
+vertical_alignment = 1
+text = "DASH"
+
+[node name="Pips" type="Control" parent="Root/VitalsCluster/DashRow"]
+script = ExtResource("3_strip")
+count = 3
+filled = 3
+segment_size = Vector2(52, 10)
+gap = 8.0
+shape = 1
+skew = 8.0
+size_flags_vertical = 4
+
+[node name="AbilityBar" type="HBoxContainer" parent="Root"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = -150.0
+offset_right = 280.0
+offset_bottom = -48.0
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="WeaponCluster" type="VBoxContainer" parent="Root"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -480.0
+offset_top = -280.0
+offset_right = -48.0
+offset_bottom = -48.0
+theme_override_constants/separation = 16
+alignment = 2
+mouse_filter = 2
+
+[node name="AmmoRow" type="HBoxContainer" parent="Root/WeaponCluster"]
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="ReloadPrompt" type="HBoxContainer" parent="Root/WeaponCluster/AmmoRow"]
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="Icon" type="Control" parent="Root/WeaponCluster/AmmoRow/ReloadPrompt"]
+script = ExtResource("4_icon")
+custom_minimum_size = Vector2(18, 18)
+size_flags_vertical = 4
+kind = 12
+color = Color(1, 0.69, 0.125, 1)
+
+[node name="Text" type="Label" parent="Root/WeaponCluster/AmmoRow/ReloadPrompt"]
+theme_type_variation = &"HUDLabel"
+theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
+vertical_alignment = 1
+text = "RELOAD [R]"
+
+[node name="Magazine" type="Label" parent="Root/WeaponCluster/AmmoRow"]
+theme_type_variation = &"NumPrimary"
+text = "30"
+
+[node name="Reserve" type="Label" parent="Root/WeaponCluster/AmmoRow"]
+theme_type_variation = &"NumSecond"
+vertical_alignment = 2
+text = "/ 120"
+
+[node name="AmmoPips" type="Control" parent="Root/WeaponCluster"]
+script = ExtResource("3_strip")
+count = 30
+filled = 30
+segment_size = Vector2(8, 12)
+gap = 3.0
+size_flags_horizontal = 8
+
+[node name="WeaponList" type="VBoxContainer" parent="Root/WeaponCluster"]
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="SubtitleBox" type="PanelContainer" parent="Root"]
+theme_type_variation = &"SubtitlePanel"
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -550.0
+offset_top = -280.0
+offset_right = 550.0
+offset_bottom = -190.0
+mouse_filter = 2
+
+[node name="Row" type="HBoxContainer" parent="Root/SubtitleBox"]
+theme_override_constants/separation = 16
+
+[node name="Tag" type="Label" parent="Root/SubtitleBox/Row"]
+theme_type_variation = &"DisplaySmall"
+text = "HOST"
+
+[node name="Body" type="Label" parent="Root/SubtitleBox/Row"]
+theme_type_variation = &"Subtitle"
+size_flags_horizontal = 3
+autowrap_mode = 3
+max_lines_visible = 2
+
+[node name="AnnounceLayer" type="VBoxContainer" parent="Root"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 0
+anchor_right = 0.5
+anchor_bottom = 0
+offset_left = -500.0
+offset_top = 150.0
+offset_right = 500.0
+offset_bottom = 288.0
+theme_override_constants/separation = 10
+alignment = 1
+mouse_filter = 2
+
+[node name="TagPill" type="PanelContainer" parent="Root/AnnounceLayer"]
+theme_type_variation = &"HUDPanel"
+size_flags_horizontal = 4
+
+[node name="Tag" type="Label" parent="Root/AnnounceLayer/TagPill"]
+theme_type_variation = &"HUDLabel"
+theme_override_colors/font_color = Color(0.902, 0.91, 0.937, 1)
+text = "WAVE"
+
+[node name="Title" type="Label" parent="Root/AnnounceLayer"]
+theme_type_variation = &"Announce"
+horizontal_alignment = 1
+
+[node name="Reticle" type="Control" parent="Root"]
+script = ExtResource("2_reticle")
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+body_sound = ExtResource("7_hit_body")
+headshot_sound = ExtResource("8_hit_head")
+kill_sound = ExtResource("9_hit_kill")
+
+[node name="DamageIndicators" type="Control" parent="Root"]
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="StateOverlays" type="Control" parent="Root"]
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="DamageVignette" type="TextureRect" parent="Root/StateOverlays"]
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0)
+texture = SubResource("Tex_vignette")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="LowHealthFrame" type="Control" parent="Root/StateOverlays"]
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+visible = false
+
+[node name="Top" type="ColorRect" parent="Root/StateOverlays/LowHealthFrame"]
+anchor_right = 1.0
+offset_bottom = 6.0
+color = Color(1, 0.231, 0.329, 0.55)
+mouse_filter = 2
+
+[node name="Bottom" type="ColorRect" parent="Root/StateOverlays/LowHealthFrame"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+color = Color(1, 0.231, 0.329, 0.55)
+mouse_filter = 2
+
+[node name="Left" type="ColorRect" parent="Root/StateOverlays/LowHealthFrame"]
+anchor_bottom = 1.0
+offset_right = 6.0
+color = Color(1, 0.231, 0.329, 0.55)
+mouse_filter = 2
+
+[node name="Right" type="ColorRect" parent="Root/StateOverlays/LowHealthFrame"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -6.0
+color = Color(1, 0.231, 0.329, 0.55)
+mouse_filter = 2
+
+[node name="EliteStripe" type="Control" parent="Root/StateOverlays"]
+script = ExtResource("5_stripe")
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 6.0
+visible = false
+mouse_filter = 2
 
 [node name="ViewmodelViewport" type="SubViewportContainer" parent="."]
 anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
@@ -49,7 +477,7 @@ near = 0.01
 
 [node name="Viewmodel" type="Node3D" parent="ViewmodelViewport/SubViewport/ViewmodelCamera" node_paths=PackedStringArray("muzzle_flash", "camera")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, -0.16, -0.4)
-script = ExtResource("4_viewmodel")
+script = ExtResource("6_vm")
 muzzle_flash = NodePath("MuzzleFlash")
 camera = NodePath("..")
 
@@ -65,101 +493,3 @@ mesh = SubResource("Mesh_flash")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, 0.5)
 light_energy = 2.0
 omni_range = 4.0
-
-[node name="Crosshair" type="Control" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-script = ExtResource("2_crosshair")
-
-[node name="Hitmarker" type="Control" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-script = ExtResource("3_hitmarker")
-body_sound = ExtResource("5_hit_body")
-headshot_sound = ExtResource("6_hit_head")
-kill_sound = ExtResource("7_hit_kill")
-
-[node name="DashPips" type="Control" parent="."]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -60.0
-offset_top = -70.0
-offset_right = 60.0
-offset_bottom = -40.0
-mouse_filter = 2
-script = ExtResource("8_pips")
-
-[node name="AmmoLabel" type="Label" parent="."]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -220.0
-offset_top = -90.0
-offset_right = -40.0
-offset_bottom = -40.0
-horizontal_alignment = 2
-vertical_alignment = 2
-text = "30 / 120"
-
-[node name="WeaponLabel" type="Label" parent="."]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -320.0
-offset_top = -128.0
-offset_right = -40.0
-offset_bottom = -96.0
-mouse_filter = 2
-horizontal_alignment = 2
-text = "PISTOL"
-theme_override_font_sizes/font_size = 20
-
-[node name="CurrencyLabel" type="Label" parent="."]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -320.0
-offset_top = 72.0
-offset_right = -40.0
-offset_bottom = 104.0
-mouse_filter = 2
-horizontal_alignment = 2
-text = "0"
-theme_override_font_sizes/font_size = 24
-
-[node name="UtilityLabel" type="Label" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 40.0
-offset_top = -150.0
-offset_right = 380.0
-offset_bottom = -40.0
-mouse_filter = 2
-vertical_alignment = 2
-theme_override_font_sizes/font_size = 18
-
-[node name="Subtitle" type="Label" parent="."]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -500.0
-offset_top = -160.0
-offset_right = 500.0
-offset_bottom = -120.0
-horizontal_alignment = 1
-vertical_alignment = 2
-autowrap_mode = 3

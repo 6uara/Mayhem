@@ -1,0 +1,205 @@
+[gd_resource type="Theme" format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="1_n5uuq"]
+[ext_resource type="FontFile" path="res://ui/fonts/Archivo-Variable.woff2" id="2_n2gag"]
+[ext_resource type="FontFile" path="res://ui/fonts/IBMPlexSans-SemiBold.ttf" id="3_iavxa"]
+[ext_resource type="FontFile" path="res://ui/fonts/IBMPlexMono-SemiBold.ttf" id="4_awc71"]
+[ext_resource type="FontFile" path="res://ui/fonts/IBMPlexSans-Regular.ttf" id="5_fojls"]
+
+[sub_resource type="StyleBox" id="StyleBox_mia6d"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = -1.0
+content_margin_top = -1.0
+content_margin_right = -1.0
+content_margin_bottom = -1.0
+script = ExtResource("1_n5uuq")
+
+[sub_resource type="StyleBox" id="StyleBox_ryjtt"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = -1.0
+content_margin_top = -1.0
+content_margin_right = -1.0
+content_margin_bottom = -1.0
+script = ExtResource("1_n5uuq")
+border_color = Color(0.20784314, 0.8784314, 0.83137256, 1)
+
+[sub_resource type="FontVariation" id="FontVariation_sre2s"]
+base_font = ExtResource("2_n2gag")
+variation_opentype = {
+2003072104: 125.0,
+2003265652: 800.0
+}
+
+[sub_resource type="StyleBox" id="StyleBox_skv6k"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 12.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+script = ExtResource("1_n5uuq")
+fill_color = Color(0.11764706, 0.12941177, 0.16862746, 1)
+fill_alpha = 0.4
+border_width = 2.0
+
+[sub_resource type="StyleBox" id="StyleBox_n7yaa"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 12.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+script = ExtResource("1_n5uuq")
+fill_color = Color(0.11764706, 0.12941177, 0.16862746, 1)
+fill_alpha = 0.0
+border_color = Color(0.20784314, 0.8784314, 0.83137256, 1)
+border_width = 2.0
+
+[sub_resource type="StyleBox" id="StyleBox_qjphx"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 12.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+script = ExtResource("1_n5uuq")
+fill_color = Color(0.11764706, 0.12941177, 0.16862746, 1)
+fill_alpha = 1.0
+border_color = Color(0.20784314, 0.8784314, 0.83137256, 1)
+border_width = 2.0
+
+[sub_resource type="StyleBox" id="StyleBox_ak5u3"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 12.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+script = ExtResource("1_n5uuq")
+fill_color = Color(0.11764706, 0.12941177, 0.16862746, 1)
+fill_alpha = 1.0
+border_width = 2.0
+
+[sub_resource type="FontVariation" id="FontVariation_p14e5"]
+base_font = ExtResource("2_n2gag")
+variation_opentype = {
+2003072104: 118.0,
+2003265652: 700.0
+}
+
+[sub_resource type="StyleBox" id="StyleBox_t6k14"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+script = ExtResource("1_n5uuq")
+
+[sub_resource type="StyleBox" id="StyleBox_osks5"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+script = ExtResource("1_n5uuq")
+
+[sub_resource type="StyleBox" id="StyleBox_d2hor"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+script = ExtResource("1_n5uuq")
+fill_color = Color(0.02745098, 0.03137255, 0.043137256, 1)
+fill_alpha = 0.72
+border_width = 0.0
+chamfer = 0.0
+rail_width = 3.0
+rail_color = Color(1, 0.6901961, 0.1254902, 1)
+
+[resource]
+default_font = ExtResource("5_fojls")
+default_font_size = 15
+AbilitySlot/base_type = &"PanelContainer"
+AbilitySlot/styles/panel = SubResource("StyleBox_mia6d")
+AbilitySlotReady/base_type = &"PanelContainer"
+AbilitySlotReady/styles/panel = SubResource("StyleBox_ryjtt")
+Announce/base_type = &"Label"
+Announce/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+Announce/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+Announce/constants/shadow_offset_x = 0
+Announce/constants/shadow_offset_y = 1
+Announce/font_sizes/font_size = 64
+Announce/fonts/font = SubResource("FontVariation_sre2s")
+Button/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+Button/colors/font_disabled_color = Color(0.27058825, 0.29803923, 0.3764706, 1)
+Button/colors/font_hover_color = Color(0.20784314, 0.8784314, 0.83137256, 1)
+Button/font_sizes/font_size = 16
+Button/fonts/font = ExtResource("3_iavxa")
+Button/styles/disabled = SubResource("StyleBox_skv6k")
+Button/styles/focus = SubResource("StyleBox_n7yaa")
+Button/styles/hover = SubResource("StyleBox_qjphx")
+Button/styles/normal = SubResource("StyleBox_ak5u3")
+Button/styles/pressed = SubResource("StyleBox_qjphx")
+DisplaySmall/base_type = &"Label"
+DisplaySmall/colors/font_color = Color(1, 0.6901961, 0.1254902, 1)
+DisplaySmall/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+DisplaySmall/constants/shadow_offset_x = 0
+DisplaySmall/constants/shadow_offset_y = 1
+DisplaySmall/font_sizes/font_size = 20
+DisplaySmall/fonts/font = SubResource("FontVariation_p14e5")
+HUDLabel/base_type = &"Label"
+HUDLabel/colors/font_color = Color(0.5411765, 0.5647059, 0.6392157, 1)
+HUDLabel/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+HUDLabel/constants/shadow_offset_x = 0
+HUDLabel/constants/shadow_offset_y = 1
+HUDLabel/font_sizes/font_size = 15
+HUDLabel/fonts/font = ExtResource("3_iavxa")
+HUDPanel/base_type = &"PanelContainer"
+HUDPanel/styles/panel = SubResource("StyleBox_t6k14")
+Keybind/base_type = &"Label"
+Keybind/colors/font_color = Color(0.5411765, 0.5647059, 0.6392157, 1)
+Keybind/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+Keybind/constants/shadow_offset_x = 0
+Keybind/constants/shadow_offset_y = 1
+Keybind/font_sizes/font_size = 13
+Keybind/fonts/font = ExtResource("4_awc71")
+Label/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+Label/font_sizes/font_size = 15
+Label/fonts/font = ExtResource("5_fojls")
+NumCluster/base_type = &"Label"
+NumCluster/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+NumCluster/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+NumCluster/constants/shadow_offset_x = 0
+NumCluster/constants/shadow_offset_y = 1
+NumCluster/font_sizes/font_size = 40
+NumCluster/fonts/font = ExtResource("4_awc71")
+NumPrimary/base_type = &"Label"
+NumPrimary/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+NumPrimary/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+NumPrimary/constants/shadow_offset_x = 0
+NumPrimary/constants/shadow_offset_y = 1
+NumPrimary/font_sizes/font_size = 56
+NumPrimary/fonts/font = ExtResource("4_awc71")
+NumSecond/base_type = &"Label"
+NumSecond/colors/font_color = Color(0.5411765, 0.5647059, 0.6392157, 1)
+NumSecond/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+NumSecond/constants/shadow_offset_x = 0
+NumSecond/constants/shadow_offset_y = 1
+NumSecond/font_sizes/font_size = 28
+NumSecond/fonts/font = ExtResource("4_awc71")
+PanelContainer/styles/panel = SubResource("StyleBox_osks5")
+Subtitle/base_type = &"Label"
+Subtitle/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+Subtitle/colors/font_shadow_color = Color(0.02745098, 0.03137255, 0.043137256, 0.55)
+Subtitle/constants/shadow_offset_x = 0
+Subtitle/constants/shadow_offset_y = 1
+Subtitle/font_sizes/font_size = 30
+Subtitle/fonts/font = ExtResource("5_fojls")
+SubtitlePanel/base_type = &"PanelContainer"
+SubtitlePanel/styles/panel = SubResource("StyleBox_d2hor")
