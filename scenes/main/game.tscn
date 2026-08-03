@@ -1,0 +1,38 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/arena/greybox_range.tscn" id="1_range"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/systems/recoil_visualizer.gd" id="4_visualizer"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_point"]
+shading_mode = 0
+albedo_color = Color(0.2, 1, 0.4, 1)
+
+[sub_resource type="SphereMesh" id="Mesh_point"]
+material = SubResource("Mat_point")
+radius = 0.5
+height = 1.0
+radial_segments = 8
+rings = 4
+
+[sub_resource type="MultiMesh" id="MM_points"]
+transform_format = 1
+instance_count = 0
+mesh = SubResource("Mesh_point")
+
+[node name="Game" type="Node3D"]
+
+[node name="GreyboxRange" parent="." instance=ExtResource("1_range")]
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="RecoilVisualizer" type="Node3D" parent="."]
+script = ExtResource("4_visualizer")
+wall_distance = 15.0
+
+[node name="Points" type="MultiMeshInstance3D" parent="RecoilVisualizer"]
+multimesh = SubResource("MM_points")

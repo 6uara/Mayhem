@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/weapon_data.gd" id="1_weapon"]
+[ext_resource type="Resource" path="res://data/weapons/rifle_ak_recoil.tres" id="2_recoil"]
+[ext_resource type="PackedScene" path="res://scenes/projectiles/projectile.tscn" id="3_projectile"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"rifle_ak"
+display_name = "Rifle"
+projectile_scene = ExtResource("3_projectile")
+damage = 18.0
+headshot_multiplier = 2.0
+falloff_start = 25.0
+falloff_end = 55.0
+falloff_min_multiplier = 0.6
+fire_rate = 9.0
+projectiles_per_shot = 1
+projectile_speed = 180.0
+projectile_gravity = 0.0
+magazine_size = 30
+reserve_ammo_max = 120
+reload_time = 2.1
+recoil_pattern = ExtResource("2_recoil")
+spread_hipfire = 1.6
+spread_ads = 0.25
+spread_moving_multiplier = 2.2
+spread_airborne_multiplier = 3.5
+ads_fov = 60.0
+ads_transition_time = 0.16
+ads_move_speed_multiplier = 0.7

@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://bw7nm7vrop8mi"]
+
+[ext_resource type="Script" uid="uid://4w5yb177f3es" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+
+[node name="MainMenu" type="Control" unique_id=1769781481]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="." unique_id=150921305]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.08, 0.1, 1)
+
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1232834073]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -100.0
+offset_right = 160.0
+offset_bottom = 100.0
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="VBox" unique_id=1260988946]
+layout_mode = 2
+text = "MAYHEM"
+horizontal_alignment = 1
+
+[node name="PlayButton" type="Button" parent="VBox" unique_id=1490307365]
+layout_mode = 2
+text = "Play"
+
+[node name="QuitButton" type="Button" parent="VBox" unique_id=822526901]
+layout_mode = 2
+text = "Quit"

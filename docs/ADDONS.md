@@ -9,10 +9,12 @@ Vendored under `addons/` and committed to the repo, so a fresh clone runs withou
 | **DebugDraw3D** | Installed (no plugin to enable) | Runtime hitbox / projectile / AI path visualization |
 | **Phantom Camera** | **Not installed** | Camera rig, shake, recoil kick, FOV transitions |
 
-## Phantom Camera - install before Phase 1 camera work
+## Phantom Camera - still not installed
 
-It owns camera kick, which is part of the gunplay pillar, so it is a Phase 1 blocker. Take the
-release tagged for Godot 4.7: https://github.com/ramokz/phantom-camera
+Camera kick shipped in Phase 1 without it: `CameraRecoilComponent` drives a `CameraRig` node
+between the head pivot and the camera. Phantom Camera can take that node over whenever it is
+installed - the aim-offset half of recoil is deliberately independent of it. Take the release
+tagged for Godot 4.7: https://github.com/ramokz/phantom-camera
 
 After installing: enable it in Project > Project Settings > Plugins, then commit
 `addons/phantom_camera/` together with the updated `[editor_plugins]` line in `project.godot`.
