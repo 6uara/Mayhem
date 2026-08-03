@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
 [ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
 [ext_resource type="Script" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
+[ext_resource type="NavigationMesh" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.32, 0.33, 0.36, 1)
@@ -29,17 +30,6 @@ size = Vector3(1.2, 1.2, 1.2)
 [sub_resource type="BoxMesh" id="Mesh_anchor"]
 size = Vector3(1.2, 1.2, 1.2)
 
-[sub_resource type="NavigationMesh" id="NavMesh_arena"]
-geometry_parsed_geometry_type = 1
-geometry_collision_mask = 1
-cell_size = 0.25
-cell_height = 0.25
-agent_height = 1.9
-agent_radius = 0.5
-agent_max_climb = 0.5
-agent_max_slope = 50.0
-region_min_size = 2.0
-
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
 background_color = Color(0.09, 0.1, 0.13, 1)
@@ -58,7 +48,7 @@ transform = Transform3D(0.86, -0.35, 0.37, 0, 0.72, 0.69, -0.51, -0.6, 0.62, 0, 
 light_energy = 1.1
 shadow_enabled = true
 
-[node name="Floor" type="CSGBox3D" parent="."]
+[node name="Floor" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
 collision_layer = 1
@@ -66,7 +56,7 @@ collision_mask = 0
 size = Vector3(70, 1, 70)
 material = SubResource("Mat_floor")
 
-[node name="WallNorth" type="CSGBox3D" parent="."]
+[node name="WallNorth" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -35)
 use_collision = true
 collision_layer = 1
@@ -74,7 +64,7 @@ collision_mask = 0
 size = Vector3(70, 12, 1)
 material = SubResource("Mat_wall")
 
-[node name="WallSouth" type="CSGBox3D" parent="."]
+[node name="WallSouth" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 35)
 use_collision = true
 collision_layer = 1
@@ -82,7 +72,7 @@ collision_mask = 0
 size = Vector3(70, 12, 1)
 material = SubResource("Mat_wall")
 
-[node name="WallEast" type="CSGBox3D" parent="."]
+[node name="WallEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 6, 0)
 use_collision = true
 collision_layer = 1
@@ -90,7 +80,7 @@ collision_mask = 0
 size = Vector3(1, 12, 70)
 material = SubResource("Mat_wall")
 
-[node name="WallWest" type="CSGBox3D" parent="."]
+[node name="WallWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 6, 0)
 use_collision = true
 collision_layer = 1
@@ -98,7 +88,7 @@ collision_mask = 0
 size = Vector3(1, 12, 70)
 material = SubResource("Mat_wall")
 
-[node name="PatternWall" type="CSGBox3D" parent="."]
+[node name="PatternWall" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 30)
 use_collision = true
 collision_layer = 1
@@ -106,7 +96,7 @@ collision_mask = 0
 size = Vector3(14, 8, 0.5)
 material = SubResource("Mat_wall")
 
-[node name="MidPlatformWest" type="CSGBox3D" parent="."]
+[node name="MidPlatformWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -8)
 use_collision = true
 collision_layer = 1
@@ -114,7 +104,7 @@ collision_mask = 0
 size = Vector3(16, 0.8, 20)
 material = SubResource("Mat_mid")
 
-[node name="MidPlatformEast" type="CSGBox3D" parent="."]
+[node name="MidPlatformEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3, 4)
 use_collision = true
 collision_layer = 1
@@ -122,7 +112,7 @@ collision_mask = 0
 size = Vector3(16, 0.8, 24)
 material = SubResource("Mat_mid")
 
-[node name="RampToMidWest" type="CSGBox3D" parent="."]
+[node name="RampToMidWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 0.966, -0.259, 0, 0.259, 0.966, -24, 1.4, 8)
 use_collision = true
 collision_layer = 1
@@ -130,7 +120,7 @@ collision_mask = 0
 size = Vector3(6, 0.6, 14)
 material = SubResource("Mat_mid")
 
-[node name="RampToMidEast" type="CSGBox3D" parent="."]
+[node name="RampToMidEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 24, 1.4, -14)
 use_collision = true
 collision_layer = 1
@@ -138,7 +128,7 @@ collision_mask = 0
 size = Vector3(6, 0.6, 14)
 material = SubResource("Mat_mid")
 
-[node name="SlideHill" type="CSGBox3D" parent="."]
+[node name="SlideHill" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(0.966, 0.259, 0, -0.259, 0.966, 0, 0, 0, 1, -6, 1.8, -20)
 use_collision = true
 collision_layer = 1
@@ -146,7 +136,7 @@ collision_mask = 0
 size = Vector3(18, 0.8, 10)
 material = SubResource("Mat_mid")
 
-[node name="HighWalkwayNorth" type="CSGBox3D" parent="."]
+[node name="HighWalkwayNorth" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -30)
 use_collision = true
 collision_layer = 1
@@ -154,7 +144,7 @@ collision_mask = 0
 size = Vector3(50, 0.8, 8)
 material = SubResource("Mat_high")
 
-[node name="HighPerchCenter" type="CSGBox3D" parent="."]
+[node name="HighPerchCenter" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6, 6)
 use_collision = true
 collision_layer = 1
@@ -162,7 +152,7 @@ collision_mask = 0
 size = Vector3(10, 0.8, 10)
 material = SubResource("Mat_high")
 
-[node name="MantleBoxLow" type="CSGBox3D" parent="."]
+[node name="MantleBoxLow" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.6, 22)
 use_collision = true
 collision_layer = 1
@@ -170,7 +160,7 @@ collision_mask = 0
 size = Vector3(4, 1.2, 4)
 material = SubResource("Mat_wall")
 
-[node name="MantleBoxHigh" type="CSGBox3D" parent="."]
+[node name="MantleBoxHigh" type="CSGBox3D" parent="." groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 22)
 use_collision = true
 collision_layer = 1
@@ -241,8 +231,9 @@ material_override = SubResource("Mat_anchor")
 shape = SubResource("Shape_anchor")
 
 [node name="Navigation" type="NavigationRegion3D" parent="."]
-navigation_mesh = SubResource("NavMesh_arena")
+navigation_mesh = ExtResource("5_navmesh")
 script = ExtResource("4_nav")
+bake_on_ready = false
 
 [node name="SpawnDoors" type="Node3D" parent="."]
 

@@ -228,12 +228,17 @@ func clear_windup() -> void:
 
 # Private
 
+## Steers along the navmesh when there is a usable path, and straight at the target
+## when there is not. The fallback is not just for flying variants (CLAUDE.md 5.3):
+## an agent that is off-mesh, or on a map with no baked navmesh, reports its own
+## position as the next path point - which reads as the enemy standing still.
 func _steer(delta: float) -> void:
 	var next_point: Vector3 = move_target
-	# Fall back to straight-line steering when no nav map is available - flying and
-	# hovering variants use this path permanently (CLAUDE.md 5.3).
-	if agent != null and agent.get_navigation_map().is_valid() and not agent.is_navigation_finished():
-		next_point = agent.get_next_path_position()
+	if agent != null and not agent.is_navigation_finished():
+		var path_point: Vector3 = agent.get_next_path_position()
+		if path_point.distance_squared_to(global_position) > 0.01:
+			next_point = path_point
+
 	var direction: Vector3 = next_point - global_position
 	direction.y = 0.0
 	if direction.length_squared() < 0.04:
