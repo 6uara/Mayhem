@@ -1,9 +1,10 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/ui/crosshair.gd" id="2_crosshair"]
 [ext_resource type="Script" path="res://scripts/ui/hitmarker.gd" id="3_hitmarker"]
 [ext_resource type="Script" path="res://scripts/ui/viewmodel.gd" id="4_viewmodel"]
+[ext_resource type="Script" path="res://scripts/ui/dash_pips.gd" id="8_pips"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_body.wav" id="5_hit_body"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_headshot.wav" id="6_hit_head"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_kill.wav" id="7_hit_kill"]
@@ -81,6 +82,19 @@ script = ExtResource("3_hitmarker")
 body_sound = ExtResource("5_hit_body")
 headshot_sound = ExtResource("6_hit_head")
 kill_sound = ExtResource("7_hit_kill")
+
+[node name="DashPips" type="Control" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -70.0
+offset_right = 60.0
+offset_bottom = -40.0
+mouse_filter = 2
+script = ExtResource("8_pips")
 
 [node name="AmmoLabel" type="Label" parent="."]
 anchors_preset = 3
