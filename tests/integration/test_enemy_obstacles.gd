@@ -103,3 +103,56 @@ func test_every_archetype_can_clear_its_own_max_step() -> void:
 		assert_gt(peak, data.max_step_height,
 			"%s claims a %.1fm step but can only reach %.2fm" % [
 				archetype, data.max_step_height, peak])
+
+
+# ----------------------------------------------------------------- ledges
+
+## The reported bug, reproduced: a ramp is a rotated box, so head-on it is a slope
+## move_and_slide climbs, and from the side it is a vertical edge that stops a
+## CharacterBody3D dead however low it is.
+func test_enemy_steps_onto_a_ramp_from_the_side() -> void:
+	# A shallow ramp running along X, approached across its edge from +Z.
+	var ramp := _make_box(Vector3(14, 0.5, 6), Vector3(0, 0.25, 0))
+	_player.global_position = Vector3(0, 0.6, -1)
+	_enemy = _spawn("rusher", Vector3(0, 0.5, 7))
+
+	await wait_seconds(4.0)
+	assert_gt(_enemy.global_position.y, 0.3,
+		"the enemy should have stepped up onto the ledge, not stalled beside it")
+	assert_true(ramp.is_inside_tree())
+
+
+func test_enemy_still_walks_up_a_slope_head_on() -> void:
+	# The case that already worked has to keep working.
+	# +15 degrees drops the near (+z) end below the floor and lifts the far end, so
+	# the enemy meets the sloped face. Negative would present its 2.5m end cap - a
+	# wall, which it would be right to refuse.
+	var slope := _make_box(Vector3(8, 0.4, 12), Vector3(0, 1.0, -6))
+	slope.rotation.x = deg_to_rad(15.0)
+	_player.global_position = Vector3(0, 2.6, -11)
+	_enemy = _spawn("rusher", Vector3(0, 0.5, 3))
+
+	await wait_seconds(4.0)
+	assert_gt(_enemy.global_position.y, 1.0, "head-on approach still climbs")
+
+
+func test_a_ledge_taller_than_the_step_is_not_climbed() -> void:
+	# Above max_auto_step it is a wall, and the enemy should route around rather
+	# than teleport up it.
+	_make_box(Vector3(14, 3.0, 2), Vector3(0, 1.5, 0))
+	_player.global_position = Vector3(0, 0.5, -6)
+	_enemy = _spawn("rusher", Vector3(0, 0.5, 4))
+
+	await wait_seconds(2.0)
+	assert_lt(_enemy.global_position.y, 1.5,
+		"a 3m wall is not a step, however hard it is pushed against")
+
+
+## The step height is a promise the navmesh already made on the enemy's behalf.
+func test_step_height_covers_what_the_navmesh_bake_assumes() -> void:
+	var navmesh: NavigationMesh = load("res://scenes/arena/greybox_arena_navmesh.tres")
+	for archetype: String in ["rusher", "ranger", "elite", "healer", "summoner"]:
+		var data: EnemyData = load("res://data/enemies/%s.tres" % archetype)
+		assert_true(data.max_auto_step >= navmesh.agent_max_climb,
+			"%s can step %.2fm but the bake hands out paths with %.2fm climbs" % [
+				archetype, data.max_auto_step, navmesh.agent_max_climb])

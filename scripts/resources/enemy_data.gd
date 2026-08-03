@@ -29,6 +29,15 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 ## a doorway another enemy is filling, geometry the bake smoothed over. All of it
 ## reads to the player as "the AI is broken" unless the enemy can simply get over
 ## the thing in its way.
+## Ledges up to this tall are simply stepped over, no jump involved.
+##
+## This number is a contract with the navmesh, not a taste setting. The bake uses
+## agent_max_climb to decide which surfaces connect, so it hands out paths that
+## cross ledges up to that height - and Godot's CharacterBody3D has no step-up of
+## its own, so without this it would be promised a 0.5m step and deliver none.
+## Keep it at or above the bake's agent_max_climb.
+@export var max_auto_step: float = 0.6
+
 @export var can_jump: bool = true
 @export var jump_velocity: float = 8.0
 ## Tallest obstacle this archetype will attempt; anything higher it walks around.

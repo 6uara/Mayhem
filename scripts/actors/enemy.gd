@@ -336,11 +336,78 @@ func _check_obstruction(delta: float) -> void:
 		_stuck_time = 0.0
 		return
 
+	# A ledge is far commoner than a real obstacle, and stepping is instant, so try
+	# it every frame rather than waiting out the stuck timer.
+	if _try_step_up():
+		_stuck_time = 0.0
+		return
+
 	_stuck_time += delta
 	if _stuck_time < STUCK_TIME or _jump_cooldown_left > 0.0:
 		return
 	if _try_jump_obstacle():
 		_stuck_time = 0.0
+
+
+## Lifts the enemy over a low ledge - the ramp's own side edge, a platform lip, the
+## seam where two boxes meet.
+##
+## This is the case the reported bug actually was: head-on the ramp is a slope and
+## move_and_slide climbs it; from the side it is a vertical edge, and an edge of any
+## height stops a CharacterBody3D dead. The navmesh routes across those edges
+## because the bake believes the agent can climb agent_max_climb, so the body has to
+## be able to as well or the two disagree and the enemy grinds.
+func _try_step_up() -> bool:
+	if data == null or not is_on_wall():
+		return false
+	var step_height: float = data.max_auto_step
+	if step_height <= 0.0:
+		return false
+
+	var heading: Vector3 = _desired_heading()
+	if heading == Vector3.ZERO:
+		return false
+
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var reach: float = data.collision_radius + 0.35
+	var ahead: Vector3 = global_position + heading * reach
+
+	# Nothing to step onto if the space above the ledge is occupied.
+	var head_room: Vector3 = global_position + Vector3.UP * (step_height + 0.1)
+	var head_query := PhysicsRayQueryParameters3D.create(head_room,
+		head_room + heading * reach, PhysicsLayers.WORLD)
+	head_query.exclude = [get_rid()]
+	if not space.intersect_ray(head_query).is_empty():
+		return false
+
+	# Find the top of whatever is in front, by looking down from above it.
+	var from_above: Vector3 = ahead + Vector3.UP * (step_height + 0.1)
+	var down_query := PhysicsRayQueryParameters3D.create(from_above,
+		ahead - Vector3.UP * 0.05, PhysicsLayers.WORLD)
+	down_query.exclude = [get_rid()]
+	var hit: Dictionary = space.intersect_ray(down_query)
+	if hit.is_empty():
+		return false
+
+	var rise: float = float(hit["position"].y) - global_position.y
+	if rise <= 0.02 or rise > step_height:
+		return false
+
+	# Place the feet on top of the ledge and let the normal steering carry on.
+	global_position.y = float(hit["position"].y) + 0.02
+	return true
+
+
+## Where the enemy is trying to go, preferring its actual motion and falling back to
+## its target when a wall has already scrubbed the velocity to nothing.
+func _desired_heading() -> Vector3:
+	var heading := Vector3(velocity.x, 0.0, velocity.z)
+	if heading.length_squared() < 0.01:
+		heading = move_target - global_position
+		heading.y = 0.0
+	if heading.length_squared() < 0.01:
+		return Vector3.ZERO
+	return heading.normalized()
 
 
 ## Probes the obstacle the way the player's mantle does: something solid at knee
@@ -349,23 +416,20 @@ func _try_jump_obstacle() -> bool:
 	if data == null or not data.can_jump:
 		return false
 
-	var heading: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-	if heading.length_squared() < 0.01:
-		heading = move_target - global_position
-		heading.y = 0.0
-	if heading.length_squared() < 0.01:
+	var heading: Vector3 = _desired_heading()
+	if heading == Vector3.ZERO:
 		return false
-	heading = heading.normalized()
 
 	var reach: float = data.collision_radius + 0.6
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 
-	# Something in the way at knee height...
-	var knee: Vector3 = global_position + Vector3.UP * 0.35
-	var knee_query := PhysicsRayQueryParameters3D.create(knee, knee + heading * reach,
+	# Something in the way just above the feet. Probing at knee height would sail
+	# over exactly the low edges that cause the most trouble.
+	var shin: Vector3 = global_position + Vector3.UP * 0.12
+	var shin_query := PhysicsRayQueryParameters3D.create(shin, shin + heading * reach,
 		PhysicsLayers.WORLD | PhysicsLayers.ENEMY)
-	knee_query.exclude = [get_rid()]
-	if space.intersect_ray(knee_query).is_empty():
+	shin_query.exclude = [get_rid()]
+	if space.intersect_ray(shin_query).is_empty():
 		return false
 
 	# ...and nothing above it, or the jump would just be a shorter grind.
