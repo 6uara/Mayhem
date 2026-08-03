@@ -1,0 +1,67 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_screen.gd" id="1_shop"]
+[ext_resource type="Script" path="res://scripts/systems/shop.gd" id="2_shop_logic"]
+[ext_resource type="Resource" path="res://data/economy/shop_catalog.tres" id="3_catalog"]
+
+[node name="ShopScreen" type="CanvasLayer" node_paths=PackedStringArray("shop")]
+layer = 3
+script = ExtResource("1_shop")
+shop = NodePath("Shop")
+duration = 25.0
+
+[node name="Shop" type="Node" parent="."]
+script = ExtResource("2_shop_logic")
+catalog = ExtResource("3_catalog")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Background" type="ColorRect" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.05, 0.07, 0.9)
+
+[node name="Panel" type="MarginContainer" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 80.0
+offset_top = 60.0
+offset_right = -80.0
+offset_bottom = -60.0
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel"]
+theme_override_constants/separation = 18
+
+[node name="Header" type="HBoxContainer" parent="Root/Panel/VBox"]
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Root/Panel/VBox/Header"]
+size_flags_horizontal = 3
+text = "ARMOURY"
+theme_override_font_sizes/font_size = 36
+
+[node name="Currency" type="Label" parent="Root/Panel/VBox/Header"]
+text = "0"
+theme_override_font_sizes/font_size = 30
+
+[node name="Timer" type="Label" parent="Root/Panel/VBox/Header"]
+custom_minimum_size = Vector2(90, 0)
+horizontal_alignment = 2
+text = "25s"
+theme_override_font_sizes/font_size = 30
+
+[node name="Breakdown" type="Label" parent="Root/Panel/VBox"]
+theme_override_font_sizes/font_size = 18
+
+[node name="Cards" type="HBoxContainer" parent="Root/Panel/VBox"]
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="SkipButton" type="Button" parent="Root/Panel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+text = "Back to the arena  (bank the speed bonus)"

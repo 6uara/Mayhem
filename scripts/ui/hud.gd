@@ -10,6 +10,9 @@ const LOW_AMMO_FRACTION: float = 0.25
 @onready var _ammo_label: Label = $AmmoLabel
 @onready var _subtitle: Label = $Subtitle
 @onready var _dash_pips: DashPips = $DashPips
+@onready var _weapon_label: Label = $WeaponLabel
+@onready var _utility_label: Label = $UtilityLabel
+@onready var _currency_label: Label = $CurrencyLabel
 
 var _player: Player
 var _weapon: WeaponComponent
@@ -17,10 +20,13 @@ var _weapon: WeaponComponent
 
 func _ready() -> void:
 	EventBus.ammo_changed.connect(_on_ammo_changed)
+	EventBus.currency_changed.connect(_on_currency_changed)
+	EventBus.weapon_switched.connect(_on_weapon_switched)
 	EventBus.damage_dealt.connect(_on_damage_dealt)
 	NarratorManager.subtitle_shown.connect(_on_subtitle_shown)
 	NarratorManager.subtitle_hidden.connect(_on_subtitle_hidden)
 	_subtitle.text = ""
+	_on_currency_changed(EconomyManager.currency)
 	_bind_player()
 
 
@@ -47,8 +53,50 @@ func _bind_player() -> void:
 		push_warning("HUD: no node in the 'player' group, crosshair spread disabled")
 		return
 	_weapon = _player.weapon
+	if _player.weapon_holder != null:
+		_player.weapon_holder.weapon_changed.connect(_on_weapon_equipped)
 	if _weapon != null:
 		_on_ammo_changed(_weapon.get_ammo(), _weapon.get_reserve())
+		_on_weapon_equipped(_weapon)
+	if _player.utility != null:
+		_player.utility.utility_changed.connect(_on_utility_changed)
+		_refresh_utilities()
+
+
+func _on_weapon_equipped(weapon: WeaponComponent) -> void:
+	_weapon = weapon
+	if weapon == null or weapon.data == null:
+		return
+	_weapon_label.text = weapon.data.display_name.to_upper()
+	_on_ammo_changed(weapon.get_ammo(), weapon.get_reserve())
+
+
+func _on_weapon_switched(_weapon_id: StringName) -> void:
+	if _player != null:
+		_on_weapon_equipped(_player.weapon)
+
+
+func _on_currency_changed(total: int) -> void:
+	_currency_label.text = "%d" % total
+
+
+func _on_utility_changed(_slot: int, _carried: int) -> void:
+	_refresh_utilities()
+
+
+## One line per slot: key, name and how many are carried. Utilities are useless
+## if the player cannot see they have any.
+func _refresh_utilities() -> void:
+	if _player == null or _player.utility == null:
+		return
+	var parts: Array[String] = []
+	for i: int in UtilityComponent.SLOT_COUNT:
+		var data: UtilityData = _player.utility.get_slot_data(i)
+		if data == null:
+			continue
+		parts.push_back("[%d] %s x%d" % [i + 1, data.display_name, _player.utility.get_carried(i)])
+	_utility_label.text = "
+".join(parts)
 
 
 func _on_ammo_changed(current: int, reserve: int) -> void:
