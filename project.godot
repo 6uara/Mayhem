@@ -12,8 +12,8 @@ config_version=5
 
 config/name="Mayhem"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
 run/max_fps=60
+config/icon="res://icon.svg"
 
 [autoload]
 
@@ -27,10 +27,8 @@ EconomyManager="*res://scripts/autoload/economy_manager.gd"
 UpgradeManager="*res://scripts/autoload/upgrade_manager.gd"
 WaveManager="*res://scripts/autoload/wave_manager.gd"
 NarratorManager="*res://scripts/autoload/narrator_manager.gd"
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/beehave/plugin.cfg", "res://addons/gut/plugin.cfg")
+BeehaveGlobalMetrics="*uid://c3ktl6ontsdt7"
+BeehaveGlobalDebugger="*uid://bl3ma400hpvsh"
 
 [debug]
 
@@ -45,6 +43,10 @@ window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/vsync/vsync_mode=0
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/beehave/plugin.cfg", "res://addons/gut/plugin.cfg")
 
 [input]
 
