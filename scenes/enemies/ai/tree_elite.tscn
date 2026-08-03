@@ -1,0 +1,37 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_tree"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector.gd" id="2_selector"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/sequence_reactive.gd" id="3_sequence"]
+[ext_resource type="Script" path="res://scripts/ai/conditions/condition_player_in_range.gd" id="4_in_range"]
+[ext_resource type="Script" path="res://scripts/ai/conditions/condition_attack_ready.gd" id="5_ready"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_telegraph.gd" id="6_telegraph"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_melee_attack.gd" id="7_melee"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_chase_player.gd" id="8_chase"]
+
+[node name="EliteTree" type="Node"]
+script = ExtResource("1_tree")
+
+[node name="Root" type="Node" parent="."]
+script = ExtResource("2_selector")
+
+[node name="SlamBranch" type="Node" parent="Root"]
+script = ExtResource("3_sequence")
+
+[node name="InRange" type="Node" parent="Root/SlamBranch"]
+script = ExtResource("4_in_range")
+range_multiplier = 1.0
+
+[node name="AttackReady" type="Node" parent="Root/SlamBranch"]
+script = ExtResource("5_ready")
+
+[node name="Telegraph" type="Node" parent="Root/SlamBranch"]
+script = ExtResource("6_telegraph")
+windup_multiplier = 1.5
+
+[node name="Slam" type="Node" parent="Root/SlamBranch"]
+script = ExtResource("7_melee")
+
+[node name="Chase" type="Node" parent="Root"]
+script = ExtResource("8_chase")
+stop_at_range_multiplier = 0.85
