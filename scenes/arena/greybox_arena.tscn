@@ -162,6 +162,22 @@ collision_mask = 0
 size = Vector3(4, 2, 4)
 material = SubResource("Mat_wall")
 
+[node name="RampToHighWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
+transform = Transform3D(1, 0, 0, 0, 0.937, -0.35, 0, 0.35, 0.937, -24, 4.9, -22)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(6, 0.6, 9)
+material = SubResource("Mat_mid")
+
+[node name="RampToPerch" type="CSGBox3D" parent="." groups=["navigation_source"]]
+transform = Transform3D(0.937, 0.35, 0, -0.35, 0.937, 0, 0, 0, 1, 15, 4.9, 6)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(9, 0.6, 6)
+material = SubResource("Mat_high")
+
 [node name="BouncePads" type="Node3D" parent="."]
 
 [node name="PadToMid" parent="BouncePads" instance=ExtResource("2_pad")]

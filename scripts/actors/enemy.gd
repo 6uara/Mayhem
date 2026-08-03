@@ -265,27 +265,51 @@ func clear_windup() -> void:
 
 # Private
 
-## Steers along the navmesh when there is a usable path, and straight at the target
-## when there is not. The fallback is not just for flying variants (CLAUDE.md 5.3):
-## an agent that is off-mesh, or on a map with no baked navmesh, reports its own
-## position as the next path point - which reads as the enemy standing still.
+## Steers along the navmesh when there is one, and straight at the target when there
+## is not.
+##
+## The distinction matters. Straight-line steering is correct for flying variants
+## and for a map with no navmesh at all (CLAUDE.md 5.3), but it is wrong when a
+## navmesh exists and the target simply cannot be walked to: charging the straight
+## line then grinds the enemy into whatever wall is in the way, which is what
+## "enemies get stuck beside the ramp" looks like from the outside.
+##
+## So when the path runs out short of an unreachable target, the enemy stops at the
+## closest reachable point instead of pushing into geometry.
 func _steer(delta: float) -> void:
 	var next_point: Vector3 = move_target
-	if agent != null and not agent.is_navigation_finished():
-		var path_point: Vector3 = agent.get_next_path_position()
-		if path_point.distance_squared_to(global_position) > 0.01:
-			next_point = path_point
+
+	if agent != null and _has_navmesh():
+		if not agent.is_navigation_finished():
+			var path_point: Vector3 = agent.get_next_path_position()
+			if path_point.distance_squared_to(global_position) > 0.01:
+				next_point = path_point
+		elif not agent.is_target_reachable():
+			# As close as walking gets. Stop rather than shove.
+			_stop_horizontal(delta)
+			return
 
 	var direction: Vector3 = next_point - global_position
 	direction.y = 0.0
 	if direction.length_squared() < 0.04:
-		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
-		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
+		_stop_horizontal(delta)
 		return
 	direction = direction.normalized()
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+## True when there is baked navigation to follow. False means straight-line
+## steering is the right answer, not a fallback for a broken path.
+func _has_navmesh() -> bool:
+	var map: RID = agent.get_navigation_map()
+	return map.is_valid() and not NavigationServer3D.map_get_regions(map).is_empty()
+
+
+func _stop_horizontal(delta: float) -> void:
+	velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+	velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 
 func _apply_presentation() -> void:
