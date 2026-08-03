@@ -1,0 +1,66 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/components/camera_recoil_component.gd" id="2_recoil"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/components/stats_component.gd" id="4_stats"]
+[ext_resource type="Script" path="res://scripts/components/weapon_component.gd" id="5_weapon"]
+[ext_resource type="Resource" path="res://data/weapons/rifle_ak.tres" id="6_rifle"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_player"]
+radius = 0.4
+height = 1.8
+
+[node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon", "recoil", "health", "stats")]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_player")
+base_move_speed = 7.5
+jump_velocity = 5.5
+head = NodePath("HeadPivot")
+camera = NodePath("HeadPivot/CameraRig/Camera3D")
+weapon = NodePath("HeadPivot/Weapon")
+recoil = NodePath("CameraRecoilComponent")
+health = NodePath("HealthComponent")
+stats = NodePath("StatsComponent")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Shape_player")
+
+[node name="HeadPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="CameraRig" type="Node3D" parent="HeadPivot"]
+
+[node name="Camera3D" type="Camera3D" parent="HeadPivot/CameraRig"]
+current = true
+fov = 95.0
+near = 0.05
+
+[node name="InteractionRay" type="RayCast3D" parent="HeadPivot"]
+target_position = Vector3(0, 0, -3)
+collision_mask = 1025
+
+[node name="Weapon" type="Node3D" parent="HeadPivot" node_paths=PackedStringArray("aim_node", "muzzle", "recoil", "stats", "body")]
+script = ExtResource("5_weapon")
+data = ExtResource("6_rifle")
+aim_node = NodePath("..")
+muzzle = NodePath("Muzzle")
+recoil = NodePath("../../CameraRecoilComponent")
+stats = NodePath("../../StatsComponent")
+body = NodePath("../..")
+
+[node name="Muzzle" type="Node3D" parent="HeadPivot/Weapon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
+
+[node name="CameraRecoilComponent" type="Node" parent="." node_paths=PackedStringArray("camera_rig")]
+script = ExtResource("2_recoil")
+camera_rig = NodePath("../HeadPivot/CameraRig")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+max_health = 100.0
+
+[node name="StatsComponent" type="Node" parent="."]
+script = ExtResource("4_stats")
