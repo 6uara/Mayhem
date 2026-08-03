@@ -35,6 +35,7 @@ var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
 var _behavior_tree: Node
+var _slow_multiplier: float = 1.0
 
 
 func _ready() -> void:
@@ -88,6 +89,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_stagger_timer = 0.0
 	_flash_timer = 0.0
 	_attack_cooldown_left = 0.0
+	_slow_multiplier = 1.0
 
 	_apply_presentation()
 	_apply_collision()
@@ -168,6 +170,28 @@ func is_staggered() -> bool:
 	return _stagger_timer > 0.0
 
 
+## Stun grenade. Reuses the stagger timer, so a stunned enemy also fails its
+## behavior tree's attack branch rather than merely standing still.
+func apply_stun(duration: float) -> void:
+	_stagger_timer = maxf(_stagger_timer, duration)
+	staggered.emit()
+
+
+## Slow field. Multiplier is re-applied every frame the enemy is inside, and
+## cleared when it leaves or the field expires.
+func apply_slow(multiplier: float) -> void:
+	_slow_multiplier = clampf(multiplier, 0.05, 1.0)
+
+
+func clear_slow() -> void:
+	_slow_multiplier = 1.0
+
+
+func get_move_speed() -> float:
+	var speed: float = data.move_speed if data != null else 5.0
+	return speed * _slow_multiplier
+
+
 ## Melee hit on the player, applied only if they are still in range.
 func deal_melee_damage() -> void:
 	var player: Node3D = get_player()
@@ -246,7 +270,7 @@ func _steer(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 		return
 	direction = direction.normalized()
-	var speed: float = data.move_speed if data != null else 5.0
+	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
 

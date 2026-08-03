@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UtilityData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/utility_data.gd" id="1_utility"]
+[ext_resource type="PackedScene" path="res://scenes/utilities/temp_wall.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_utility")
+scene = ExtResource("2_scene")
+id = &"temp_wall"
+display_name = "Barrier"
+cost = 90
+max_carried = 2
+cooldown = 9.0
+throw_force = 13.0
+effect_radius = 0.0
+effect_duration = 7.0
