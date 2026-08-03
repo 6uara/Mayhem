@@ -8,6 +8,13 @@ extends CharacterBody3D
 
 signal staggered()
 
+## How long an enemy may be commanded to move while covering no ground before it
+## treats itself as obstructed.
+const STUCK_TIME: float = 0.3
+## Metres per second of real progress below which it is not actually moving.
+const STUCK_SPEED: float = 0.9
+const JUMP_COOLDOWN: float = 0.9
+
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
 const GRAVITY: float = 24.0
@@ -40,6 +47,9 @@ var _behavior_tree: Node
 var _slow_multiplier: float = 1.0
 ## Whoever the healer is currently helping, for the tether beam.
 var _tether_target: Enemy
+var _stuck_time: float = 0.0
+var _jump_cooldown_left: float = 0.0
+var _last_position: Vector3
 
 
 func _ready() -> void:
@@ -62,10 +72,14 @@ func _physics_process(delta: float) -> void:
 		_material.emission_energy_multiplier = 0.0
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
+	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
-	else:
+	elif velocity.y < 0.0:
+		# Only cancel downward speed. Zeroing unconditionally would wipe the jump
+		# impulse set at the end of the previous frame, since the enemy is still
+		# touching the floor when this runs.
 		velocity.y = 0.0
 
 	if halo != null and halo.visible:
@@ -85,6 +99,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 	move_and_slide()
+	_check_obstruction(delta)
 
 
 # Public API - lifecycle
@@ -100,6 +115,9 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_flash_timer = 0.0
 	_attack_cooldown_left = 0.0
 	_slow_multiplier = 1.0
+	_stuck_time = 0.0
+	_jump_cooldown_left = 0.0
+	_last_position = spawn_position
 
 	_apply_presentation()
 	_apply_collision()
@@ -298,6 +316,68 @@ func _steer(delta: float) -> void:
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+## Watches for the enemy being told to move while covering no ground, and hops the
+## thing in the way.
+##
+## Deliberately reactive rather than predictive: it does not care *why* it is stuck
+## - a ramp lip, a crowded doorway, a navmesh seam, another enemy - only that it is.
+## That is what makes it a safety net for every future layout rather than a patch
+## for the one ramp that was reported.
+func _check_obstruction(delta: float) -> void:
+	var travelled: float = Vector2(global_position.x - _last_position.x,
+		global_position.z - _last_position.z).length()
+	_last_position = global_position
+
+	var wants_to_move: bool = is_moving and not is_staggered()
+	var making_progress: bool = travelled / maxf(delta, 0.0001) > STUCK_SPEED
+	if not wants_to_move or making_progress or not is_on_floor():
+		_stuck_time = 0.0
+		return
+
+	_stuck_time += delta
+	if _stuck_time < STUCK_TIME or _jump_cooldown_left > 0.0:
+		return
+	if _try_jump_obstacle():
+		_stuck_time = 0.0
+
+
+## Probes the obstacle the way the player's mantle does: something solid at knee
+## height with clear air above it is a thing to jump, not a wall to lean on.
+func _try_jump_obstacle() -> bool:
+	if data == null or not data.can_jump:
+		return false
+
+	var heading: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+	if heading.length_squared() < 0.01:
+		heading = move_target - global_position
+		heading.y = 0.0
+	if heading.length_squared() < 0.01:
+		return false
+	heading = heading.normalized()
+
+	var reach: float = data.collision_radius + 0.6
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+
+	# Something in the way at knee height...
+	var knee: Vector3 = global_position + Vector3.UP * 0.35
+	var knee_query := PhysicsRayQueryParameters3D.create(knee, knee + heading * reach,
+		PhysicsLayers.WORLD | PhysicsLayers.ENEMY)
+	knee_query.exclude = [get_rid()]
+	if space.intersect_ray(knee_query).is_empty():
+		return false
+
+	# ...and nothing above it, or the jump would just be a shorter grind.
+	var clearance: Vector3 = global_position + Vector3.UP * data.max_step_height
+	var clear_query := PhysicsRayQueryParameters3D.create(clearance,
+		clearance + heading * reach, PhysicsLayers.WORLD)
+	if not space.intersect_ray(clear_query).is_empty():
+		return false
+
+	velocity.y = data.jump_velocity
+	_jump_cooldown_left = JUMP_COOLDOWN
+	return true
 
 
 ## True when there is baked navigation to follow. False means straight-line

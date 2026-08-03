@@ -22,6 +22,22 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 ## 0 = fully staggered by every hit, 1 = immovable. Elites sit high.
 @export var stagger_resistance: float = 0.0
 
+@export_group("Movement")
+## Enemies hop obstacles rather than grinding against them.
+##
+## A navmesh path is a plan, not a guarantee: the lip where a ramp meets the floor,
+## a doorway another enemy is filling, geometry the bake smoothed over. All of it
+## reads to the player as "the AI is broken" unless the enemy can simply get over
+## the thing in its way.
+@export var can_jump: bool = true
+@export var jump_velocity: float = 8.0
+## Tallest obstacle this archetype will attempt; anything higher it walks around.
+##
+## Must stay under the hop's real apex (jump_velocity^2 / 2g, so 1.33m at the
+## defaults) or the enemy commits to jumps it cannot finish and the clearance probe
+## measures air it will never reach. A test enforces the relationship.
+@export var max_step_height: float = 1.2
+
 @export_group("Attack")
 ## Wind-up before the attack lands. Telegraphing is mandatory (CLAUDE.md 5.3) and
 ## this is the timing half of it - scale it with damage.
