@@ -2,6 +2,8 @@
 
 [ext_resource type="PackedScene" path="res://scenes/enemies/target_dummy.tscn" id="1_dummy"]
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
+[ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
+[ext_resource type="Script" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.32, 0.33, 0.36, 1)
@@ -26,6 +28,17 @@ size = Vector3(1.2, 1.2, 1.2)
 
 [sub_resource type="BoxMesh" id="Mesh_anchor"]
 size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="NavigationMesh" id="NavMesh_arena"]
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 1
+cell_size = 0.25
+cell_height = 0.25
+agent_height = 1.9
+agent_radius = 0.5
+agent_max_climb = 0.5
+agent_max_slope = 50.0
+region_min_size = 2.0
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
@@ -226,6 +239,40 @@ material_override = SubResource("Mat_anchor")
 
 [node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor4"]
 shape = SubResource("Shape_anchor")
+
+[node name="Navigation" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavMesh_arena")
+script = ExtResource("4_nav")
+
+[node name="SpawnDoors" type="Node3D" parent="."]
+
+[node name="Door01" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(0.7074, 0, -0.7068, 0, 1, 0, 0.7068, 0, 0.7074, -30.0, 0.0, -30.0)
+door_id = &"door_01"
+
+[node name="Door02" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(0.7074, 0, 0.7068, 0, 1, 0, -0.7068, 0, 0.7074, 30.0, 0.0, -30.0)
+door_id = &"door_02"
+
+[node name="Door03" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(-0.7070, 0, -0.7072, 0, 1, 0, 0.7072, 0, -0.7070, -30.0, 0.0, 30.0)
+door_id = &"door_03"
+
+[node name="Door04" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(-0.7070, 0, 0.7072, 0, 1, 0, -0.7072, 0, -0.7070, 30.0, 0.0, 30.0)
+door_id = &"door_04"
+
+[node name="Door05" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.0, 0.0, -33.0)
+door_id = &"door_05"
+
+[node name="Door06" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(-0.0002, 0, -1.0000, 0, 1, 0, 1.0000, 0, -0.0002, -24.0, 3.4, -16.0)
+door_id = &"door_06"
+
+[node name="Door07" parent="SpawnDoors" instance=ExtResource("3_door")]
+transform = Transform3D(-0.0002, 0, 1.0000, 0, 1, 0, -1.0000, 0, -0.0002, 24.0, 3.4, 14.0)
+door_id = &"door_07"
 
 [node name="Dummies" type="Node3D" parent="."]
 
