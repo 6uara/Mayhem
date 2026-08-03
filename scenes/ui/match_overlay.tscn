@@ -1,0 +1,70 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/match_overlay.gd" id="1_overlay"]
+
+[node name="MatchOverlay" type="CanvasLayer"]
+layer = 2
+script = ExtResource("1_overlay")
+
+[node name="Banner" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 90.0
+offset_right = 400.0
+offset_bottom = 150.0
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 40
+
+[node name="WaveLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -320.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 66.0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="EndPanel" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Background" type="ColorRect" parent="EndPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.05, 0.07, 0.86)
+
+[node name="VBox" type="VBoxContainer" parent="EndPanel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -160.0
+offset_right = 220.0
+offset_bottom = 160.0
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="EndPanel/VBox"]
+horizontal_alignment = 1
+text = "GAME OVER"
+theme_override_font_sizes/font_size = 52
+
+[node name="Details" type="Label" parent="EndPanel/VBox"]
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+
+[node name="RestartButton" type="Button" parent="EndPanel/VBox"]
+text = "Restart"
+
+[node name="MenuButton" type="Button" parent="EndPanel/VBox"]
+text = "Main Menu"

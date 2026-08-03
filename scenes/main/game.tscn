@@ -1,9 +1,23 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/arena/greybox_arena.tscn" id="1_range"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/systems/recoil_visualizer.gd" id="4_visualizer"]
+[ext_resource type="PackedScene" path="res://scenes/ui/match_overlay.tscn" id="5_overlay"]
+[ext_resource type="Script" path="res://scripts/systems/enemy_spawner.gd" id="6_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy.tscn" id="7_enemy"]
+[ext_resource type="Script" path="res://scripts/systems/match_director.gd" id="8_director"]
+[ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
+[ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
+[ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w03"]
+[ext_resource type="Resource" path="res://data/waves/wave_04.tres" id="w04"]
+[ext_resource type="Resource" path="res://data/waves/wave_05.tres" id="w05"]
+[ext_resource type="Resource" path="res://data/waves/wave_06.tres" id="w06"]
+[ext_resource type="Resource" path="res://data/waves/wave_07.tres" id="w07"]
+[ext_resource type="Resource" path="res://data/waves/wave_08.tres" id="w08"]
+[ext_resource type="Resource" path="res://data/waves/wave_09.tres" id="w09"]
+[ext_resource type="Resource" path="res://data/waves/wave_10.tres" id="w10"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_point"]
 shading_mode = 0
@@ -36,3 +50,15 @@ wall_distance = 15.0
 
 [node name="Points" type="MultiMeshInstance3D" parent="RecoilVisualizer"]
 multimesh = SubResource("MM_points")
+
+[node name="MatchOverlay" parent="." instance=ExtResource("5_overlay")]
+
+[node name="EnemySpawner" type="Node" parent="."]
+script = ExtResource("6_spawner")
+enemy_scene = ExtResource("7_enemy")
+prewarm_count = 24
+
+[node name="MatchDirector" type="Node" parent="." node_paths=PackedStringArray("spawner")]
+script = ExtResource("8_director")
+waves = Array[Resource]([ExtResource("w01"), ExtResource("w02"), ExtResource("w03"), ExtResource("w04"), ExtResource("w05"), ExtResource("w06"), ExtResource("w07"), ExtResource("w08"), ExtResource("w09"), ExtResource("w10")])
+spawner = NodePath("../EnemySpawner")
