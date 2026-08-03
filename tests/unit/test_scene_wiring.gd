@@ -51,3 +51,25 @@ func test_rifle_data_is_complete() -> void:
 	assert_not_null(rifle.projectile_scene, "projectile_scene")
 	assert_not_null(rifle.recoil_pattern, "recoil_pattern")
 	assert_gt(rifle.recoil_pattern.points.size(), 0, "pattern has points")
+
+
+func test_weapon_audio_hooks_are_wired() -> void:
+	var player: Player = _instance(PLAYER_SCENE)
+	var weapon: WeaponComponent = player.weapon
+	assert_not_null(weapon.fire_sound, "fire_sound")
+	assert_not_null(weapon.reload_sound, "reload_sound")
+	assert_not_null(weapon.empty_sound, "empty_sound")
+
+
+func test_impact_audio_hooks_are_wired() -> void:
+	var impact: ImpactEffect = _instance("res://scenes/vfx/impact_effect.tscn")
+	assert_not_null(impact.world_sound, "world_sound")
+	assert_not_null(impact.flesh_sound, "flesh_sound")
+
+
+func test_hitmarker_audio_hooks_are_wired() -> void:
+	var hud: CanvasLayer = _instance("res://scenes/ui/hud.tscn")
+	var marker: Hitmarker = hud.get_node("Hitmarker")
+	assert_not_null(marker.body_sound, "body_sound")
+	assert_not_null(marker.headshot_sound, "headshot_sound")
+	assert_not_null(marker.kill_sound, "kill_sound")

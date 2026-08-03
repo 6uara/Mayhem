@@ -1,6 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/impact_effect.gd" id="1_impact"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/impacts/impact_world.wav" id="2_world"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/impacts/impact_flesh.wav" id="3_flesh"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_spark"]
 transparency = 1
@@ -25,6 +27,8 @@ damping_max = 4.0
 
 [node name="ImpactEffect" type="Node3D"]
 script = ExtResource("1_impact")
+world_sound = ExtResource("2_world")
+flesh_sound = ExtResource("3_flesh")
 
 [node name="Particles" type="GPUParticles3D" parent="."]
 emitting = false

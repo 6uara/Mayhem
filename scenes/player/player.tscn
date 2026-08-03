@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/components/camera_recoil_component.gd" id="2_recoil"]
@@ -6,6 +6,9 @@
 [ext_resource type="Script" path="res://scripts/components/stats_component.gd" id="4_stats"]
 [ext_resource type="Script" path="res://scripts/components/weapon_component.gd" id="5_weapon"]
 [ext_resource type="Resource" path="res://data/weapons/rifle_ak.tres" id="6_rifle"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/rifle_fire.wav" id="7_fire"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/rifle_reload.wav" id="8_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/rifle_empty.wav" id="9_empty"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_player"]
 radius = 0.4
@@ -50,6 +53,9 @@ muzzle = NodePath("Muzzle")
 recoil = NodePath("../../CameraRecoilComponent")
 stats = NodePath("../../StatsComponent")
 body = NodePath("../..")
+fire_sound = ExtResource("7_fire")
+reload_sound = ExtResource("8_reload")
+empty_sound = ExtResource("9_empty")
 
 [node name="Muzzle" type="Node3D" parent="HeadPivot/Weapon"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)

@@ -1,0 +1,176 @@
+"""Generate placeholder weapon, impact and UI sounds for the grey-box build.
+
+These are synthesised stand-ins, not final audio - the point is that every audio hook in
+the game is wired, audible and testable before real samples exist, the same way grey-box
+geometry stands in for the arena. Section 6 of CLAUDE.md: audio carries roughly half of
+"gunplay feel", so it does not get deferred to the art phase.
+
+Fire sounds are layered the way the handoff asks for - transient + body + tail - rather
+than one flat sample, so the layering is already in place when real samples replace these.
+
+Usage:
+    python tools/generate_placeholder_sfx.py
+
+Stdlib only. Rerunning overwrites the files deterministically (fixed RNG seed).
+"""
+
+from __future__ import annotations
+
+import math
+import os
+import random
+import struct
+import wave
+
+SAMPLE_RATE = 44100
+OUT_DIR = os.path.join("assets", "audio", "sfx")
+
+
+def _env(index: int, length: int, attack: float, decay: float) -> float:
+    """Percussive envelope: fast attack, exponential decay."""
+    attack_samples = max(int(attack * SAMPLE_RATE), 1)
+    if index < attack_samples:
+        return index / attack_samples
+    remaining = (index - attack_samples) / max(length - attack_samples, 1)
+    return math.exp(-remaining / max(decay, 1e-4))
+
+
+def _noise(length: int, attack: float, decay: float, gain: float, rng: random.Random) -> list[float]:
+    return [rng.uniform(-1.0, 1.0) * _env(i, length, attack, decay) * gain for i in range(length)]
+
+
+def _tone(length: int, freq: float, attack: float, decay: float, gain: float,
+          sweep: float = 1.0) -> list[float]:
+    """Sine with an optional frequency sweep (sweep = end freq / start freq)."""
+    out = []
+    phase = 0.0
+    for i in range(length):
+        t = i / max(length - 1, 1)
+        current = freq * (sweep ** t)
+        phase += 2.0 * math.pi * current / SAMPLE_RATE
+        out.append(math.sin(phase) * _env(i, length, attack, decay) * gain)
+    return out
+
+
+def _lowpass(samples: list[float], cutoff: float) -> list[float]:
+    """One-pole low pass, enough to take the fizz off white noise."""
+    alpha = 1.0 - math.exp(-2.0 * math.pi * cutoff / SAMPLE_RATE)
+    out = []
+    value = 0.0
+    for sample in samples:
+        value += alpha * (sample - value)
+        out.append(value)
+    return out
+
+
+def _mix(*layers: tuple[list[float], int]) -> list[float]:
+    """Sum layers, each placed at a sample offset."""
+    length = max((offset + len(data) for data, offset in layers), default=0)
+    out = [0.0] * length
+    for data, offset in layers:
+        for i, sample in enumerate(data):
+            out[offset + i] += sample
+    return out
+
+
+def _normalise(samples: list[float], peak: float = 0.89) -> list[float]:
+    loudest = max((abs(s) for s in samples), default=0.0)
+    if loudest <= 0.0:
+        return samples
+    scale = peak / loudest
+    return [s * scale for s in samples]
+
+
+def _write(name: str, samples: list[float]) -> None:
+    path = os.path.join(OUT_DIR, name)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    frames = b"".join(
+        struct.pack("<h", int(max(-1.0, min(1.0, s)) * 32767)) for s in _normalise(samples)
+    )
+    with wave.open(path, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(SAMPLE_RATE)
+        handle.writeframes(frames)
+    print(f"  {path} ({len(samples) / SAMPLE_RATE:.2f}s)")
+
+
+def ms(milliseconds: float) -> int:
+    return int(SAMPLE_RATE * milliseconds / 1000.0)
+
+
+def rifle_fire(rng: random.Random) -> list[float]:
+    transient = _noise(ms(18), 0.0004, 0.10, 1.0, rng)
+    body = _lowpass(_noise(ms(130), 0.001, 0.22, 0.85, rng), 2600.0)
+    thump = _tone(ms(150), 190.0, 0.001, 0.25, 0.7, sweep=0.45)
+    tail = _lowpass(_noise(ms(420), 0.02, 0.5, 0.16, rng), 900.0)
+    return _mix((transient, 0), (body, 0), (thump, 0), (tail, ms(60)))
+
+
+def rifle_reload(rng: random.Random) -> list[float]:
+    """Three tactile stages: magazine out, magazine in, bolt release."""
+    mag_out = _mix(
+        (_noise(ms(60), 0.001, 0.12, 0.6, rng), 0),
+        (_tone(ms(70), 320.0, 0.001, 0.15, 0.35, sweep=0.7), 0),
+    )
+    mag_in = _mix(
+        (_noise(ms(80), 0.001, 0.1, 0.8, rng), 0),
+        (_tone(ms(90), 150.0, 0.001, 0.18, 0.6, sweep=0.6), 0),
+    )
+    bolt = _mix(
+        (_noise(ms(70), 0.0005, 0.09, 0.9, rng), 0),
+        (_tone(ms(60), 620.0, 0.001, 0.12, 0.3, sweep=0.5), 0),
+    )
+    return _mix((mag_out, 0), (mag_in, ms(820)), (bolt, ms(1620)))
+
+
+def empty_click(rng: random.Random) -> list[float]:
+    return _mix(
+        (_noise(ms(22), 0.0003, 0.06, 0.9, rng), 0),
+        (_tone(ms(30), 900.0, 0.0005, 0.07, 0.25, sweep=0.5), 0),
+    )
+
+
+def impact_world(rng: random.Random) -> list[float]:
+    return _mix(
+        (_noise(ms(35), 0.0005, 0.09, 1.0, rng), 0),
+        (_lowpass(_noise(ms(120), 0.002, 0.18, 0.4, rng), 1800.0), 0),
+        (_tone(ms(90), 240.0, 0.001, 0.14, 0.35, sweep=0.5), 0),
+    )
+
+
+def impact_flesh(rng: random.Random) -> list[float]:
+    """Constructs, not flesh - a duller metallic knock so hits on enemies read differently."""
+    return _mix(
+        (_lowpass(_noise(ms(90), 0.001, 0.14, 0.9, rng), 1100.0), 0),
+        (_tone(ms(130), 130.0, 0.001, 0.2, 0.6, sweep=0.55), 0),
+    )
+
+
+def hitmarker(freq: float, length_ms: float, gain: float) -> list[float]:
+    return _tone(ms(length_ms), freq, 0.0008, 0.13, gain, sweep=0.85)
+
+
+def kill_marker() -> list[float]:
+    return _mix(
+        (hitmarker(880.0, 70, 0.8), 0),
+        (hitmarker(1320.0, 90, 0.6), ms(55)),
+    )
+
+
+def main() -> None:
+    rng = random.Random(20260802)
+    print("Generating placeholder SFX:")
+    _write("weapons/rifle_fire.wav", rifle_fire(rng))
+    _write("weapons/rifle_reload.wav", rifle_reload(rng))
+    _write("weapons/rifle_empty.wav", empty_click(rng))
+    _write("impacts/impact_world.wav", impact_world(rng))
+    _write("impacts/impact_flesh.wav", impact_flesh(rng))
+    _write("ui/hitmarker_body.wav", hitmarker(760.0, 60, 0.7))
+    _write("ui/hitmarker_headshot.wav", hitmarker(1180.0, 70, 0.85))
+    _write("ui/hitmarker_kill.wav", kill_marker())
+    print("Done. These are placeholders - replace them in Phase 5.")
+
+
+if __name__ == "__main__":
+    main()
