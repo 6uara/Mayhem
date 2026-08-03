@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EconomyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/economy_config.gd" id="1_economy"]
+
+[resource]
+script = ExtResource("1_economy")
+kill_reward_rusher = 10
+kill_reward_ranger = 14
+kill_reward_elite = 60
+kill_reward_healer = 20
+kill_reward_summoner = 25
+no_damage_bonus = 100
+speed_bonus_tiers = PackedFloat32Array(0.5, 0.75, 1)
+speed_bonus_payouts = PackedInt32Array(150, 100, 50)
+currency_multiplier = 1.0
+starting_currency = 0
