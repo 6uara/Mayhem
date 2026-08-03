@@ -108,13 +108,20 @@ func rebind_action(action: StringName, events: Array[InputEvent]) -> void:
 	_bindings[String(action)] = events
 
 
-## The stored value is the handoff's 0.1-10 slider; SENS_TO_DEGREES converts it to
-## degrees of look per pixel of mouse travel.
-const SENS_TO_DEGREES: float = 0.1
+## Degrees of look per pixel of mouse travel at the slider's default position.
+##
+## Two things have to be true at once: the settings screen shows the handoff's
+## 0.1-10 slider (2.40 by default, as in the mockup), and the game has to actually
+## feel like 0.25 degrees per pixel out of the box. Pinning the feel here and
+## deriving the scale from the token means moving the slider's default position
+## can never silently change how the game plays.
+const SENS_DEGREES_AT_DEFAULT: float = 0.25
 
 
+## Degrees of look per pixel of mouse travel, for the current slider position.
 func get_mouse_sensitivity(is_ads: bool) -> float:
-	var base: float = float(get_value("input/mouse_sensitivity")) * SENS_TO_DEGREES
+	var slider: float = float(get_value("input/mouse_sensitivity"))
+	var base: float = slider * (SENS_DEGREES_AT_DEFAULT / maxf(Tokens.SENS_DEFAULT, 0.01))
 	if is_ads:
 		base *= float(get_value("input/ads_sensitivity_multiplier"))
 	return base

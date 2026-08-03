@@ -93,3 +93,20 @@ func test_settings_defaults_come_from_the_handoff() -> void:
 func test_fov_default_sits_inside_the_allowed_range() -> void:
 	var fov: float = float(SettingsManager.DEFAULTS["video/fov"])
 	assert_between(fov, Tokens.FOV_RANGE.x, Tokens.FOV_RANGE.y)
+
+
+## The slider is the handoff's 0.1-10 scale, but the feel at its default position is
+## pinned to 0.25 degrees per pixel - the value the project has used since Phase 0.
+func test_default_sensitivity_feels_like_the_original() -> void:
+	SettingsManager.set_value("input/mouse_sensitivity", Tokens.SENS_DEFAULT)
+	assert_almost_eq(SettingsManager.get_mouse_sensitivity(false),
+		SettingsManager.SENS_DEGREES_AT_DEFAULT, 0.0001,
+		"the slider default must feel like 0.25 degrees per pixel")
+
+
+func test_ads_sensitivity_scales_off_the_same_base() -> void:
+	SettingsManager.set_value("input/mouse_sensitivity", Tokens.SENS_DEFAULT)
+	var hip: float = SettingsManager.get_mouse_sensitivity(false)
+	var ads: float = SettingsManager.get_mouse_sensitivity(true)
+	assert_almost_eq(ads, hip * float(Tokens.ADS_MULT_DEFAULT), 0.0001)
+	assert_lt(ads, hip, "aiming slows the look, it never speeds it up")
