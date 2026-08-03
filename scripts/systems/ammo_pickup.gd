@@ -31,6 +31,17 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	if mesh != null:
 		_rest_height = mesh.position.y
+		# Amber and circular, always - amber only ever means 'the house': money,
+		# pickups and the Host.
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Tokens.WORLD_PICKUP
+		material.emission_enabled = true
+		material.emission = Tokens.WORLD_PICKUP
+		material.emission_energy_multiplier = 1.4
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mesh.material_override = material
+	if light != null:
+		light.light_color = Tokens.WORLD_PICKUP
 	_start_idle_sound()
 
 

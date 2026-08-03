@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/enemies/target_dummy.tscn" id="1_dummy"]
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
@@ -6,6 +6,11 @@
 [ext_resource type="Script" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
 [ext_resource type="NavigationMesh" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
 [ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
+[ext_resource type="PackedScene" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
+[ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
+[ext_resource type="PackedScene" path="res://scenes/arena/moving_platform.tscn" id="9_moving"]
+[ext_resource type="PackedScene" path="res://scenes/arena/zip_line.tscn" id="10_zip"]
+[ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="11_anchor"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.32, 0.33, 0.36, 1)
@@ -18,18 +23,6 @@ albedo_color = Color(0.38, 0.42, 0.5, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_high"]
 albedo_color = Color(0.46, 0.42, 0.38, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_anchor"]
-emission_enabled = true
-emission = Color(0.35, 0.85, 1, 1)
-emission_energy_multiplier = 0.8
-albedo_color = Color(0.2, 0.5, 0.65, 1)
-
-[sub_resource type="BoxShape3D" id="Shape_anchor"]
-size = Vector3(1.2, 1.2, 1.2)
-
-[sub_resource type="BoxMesh" id="Mesh_anchor"]
-size = Vector3(1.2, 1.2, 1.2)
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
@@ -181,56 +174,6 @@ bounce_velocity = 16.0
 [node name="PadCenter" parent="BouncePads" instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 14)
 
-[node name="GrappleAnchors" type="Node3D" parent="."]
-
-[node name="Anchor1" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -12)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor1"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor1"]
-shape = SubResource("Shape_anchor")
-
-[node name="Anchor2" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 9, 14)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor2"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor2"]
-shape = SubResource("Shape_anchor")
-
-[node name="Anchor3" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 9, -20)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor3"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor3"]
-shape = SubResource("Shape_anchor")
-
-[node name="Anchor4" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 7, 24)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor4"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor4"]
-shape = SubResource("Shape_anchor")
-
 [node name="Navigation" type="NavigationRegion3D" parent="."]
 navigation_mesh = ExtResource("5_navmesh")
 script = ExtResource("4_nav")
@@ -299,3 +242,93 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.4, -10)
 
 [node name="TargetDummy4" parent="Dummies" instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.4, 4)
+
+[node name="GrappleAnchors" type="Node3D" parent="."]
+
+
+[node name="Anchor1" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 0.0, 8.0, -12.0)
+
+
+[node name="Anchor2" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -16.0, 9.0, 14.0)
+
+
+[node name="Anchor3" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 20.0, 9.0, -20.0)
+
+
+[node name="Anchor4" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 28.0, 7.0, 24.0)
+
+
+[node name="Anchor5" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -6.0, 10.0, 4.0)
+
+
+[node name="Hazards" type="Node3D" parent="."]
+
+
+[node name="HazardCentre" parent="Hazards" instance=ExtResource("7_hazard")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 0.0, 0.05, -6.0)
+radius = 4.0
+damage = 14.0
+tick_interval = 0.7
+
+
+[node name="HazardWestRamp" parent="Hazards" instance=ExtResource("7_hazard")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -24.0, 0.05, 2.0)
+radius = 3.0
+damage = 14.0
+tick_interval = 0.7
+
+
+[node name="HazardEastLane" parent="Hazards" instance=ExtResource("7_hazard")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 18.0, 0.05, 20.0)
+radius = 3.5
+damage = 14.0
+tick_interval = 0.7
+
+
+[node name="VanishingRoute" type="Node3D" parent="."]
+
+
+[node name="Step1" parent="VanishingRoute" instance=ExtResource("8_vanish")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -8.0, 2.2, 12.0)
+
+
+[node name="Step2" parent="VanishingRoute" instance=ExtResource("8_vanish")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -2.0, 3.6, 16.0)
+
+
+[node name="Step3" parent="VanishingRoute" instance=ExtResource("8_vanish")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 4.0, 5.0, 20.0)
+
+
+[node name="MovingPlatforms" type="Node3D" parent="."]
+
+
+[node name="FerryNorth" parent="MovingPlatforms" instance=ExtResource("9_moving")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -14.0, 4.5, -24.0)
+travel = Vector3(26, 0, 0)
+speed = 3.2
+
+
+[node name="FerryEast" parent="MovingPlatforms" instance=ExtResource("9_moving")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 30.0, 2.0, -4.0)
+travel = Vector3(0, 4.5, 18)
+speed = 2.6
+
+
+[node name="ZipLines" type="Node3D" parent="."]
+
+
+[node name="ZipHighToFloor" parent="ZipLines" instance=ExtResource("10_zip")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 0.0, 7.2, -28.0)
+speed = 18.0
+
+
+[node name="ZipEastToWest" parent="ZipLines" instance=ExtResource("10_zip")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 24.0, 4.4, 10.0)
+speed = 16.0
+

@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/moving_platform.gd" id="1_move"]
+[ext_resource type="Script" path="res://scripts/components/telegraph_component.gd" id="2_tel"]
+
+[sub_resource type="BoxMesh" id="Mesh_plat"]
+size = Vector3(5, 0.4, 5)
+
+[sub_resource type="BoxShape3D" id="Shape_plat"]
+size = Vector3(5, 0.4, 5)
+
+[node name="MovingPlatform" type="AnimatableBody3D" node_paths=PackedStringArray("telegraph")]
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = true
+script = ExtResource("1_move")
+travel = Vector3(0, 0, 14)
+speed = 3.0
+dwell = 1.2
+telegraph = NodePath("Telegraph")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_plat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_plat")
+
+[node name="Telegraph" type="Node" parent="." node_paths=PackedStringArray("meshes")]
+script = ExtResource("2_tel")
+meaning = 0
+meshes = [NodePath("../Mesh")]

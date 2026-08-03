@@ -77,6 +77,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		equipped.set_ads(false)
 	elif event.is_action_pressed("reload"):
 		equipped.try_reload()
+	elif event.is_action_pressed("interact"):
+		_try_interact()
 
 
 func _process(_delta: float) -> void:
@@ -92,6 +94,22 @@ func get_aim_transform() -> Transform3D:
 
 
 # Private
+
+## Zip lines are the only interactable in the slice, so this stays a direct look-up
+## rather than a general interaction system.
+func _try_interact() -> void:
+	var ray: RayCast3D = head.get_node_or_null("InteractionRay") if head != null else null
+	if ray == null:
+		return
+	ray.force_raycast_update()
+	if not ray.is_colliding():
+		return
+	var line := ray.get_collider() as Node
+	while line != null and not (line is ZipLine):
+		line = line.get_parent()
+	if line is ZipLine:
+		(line as ZipLine).try_mount(self)
+
 
 func _apply_look() -> void:
 	var offset: Vector2 = recoil.aim_offset if recoil != null else Vector2.ZERO
