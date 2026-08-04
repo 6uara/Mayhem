@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_healer.tscn" id="2_tree"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/healer_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/healer_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/healer_pulse.wav" id="5_attack"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/healer_death.wav" id="6_death"]
+
+[sub_resource type="SphereMesh" id="Mesh_healer"]
+radius = 0.55
+height = 1.6
+radial_segments = 10
+rings = 5
+
+[resource]
+script = ExtResource("1_script")
+mesh = SubResource("Mesh_healer")
+archetype = 3
+id = &"healer"
+display_name = "Healer"
+max_health = 90.0
+move_speed = 5.0
+damage = 0.0
+attack_range = 0.0
+attack_cooldown = 1.6
+mass = 1.0
+stagger_resistance = 0.0
+attack_windup = 0.3
+preferred_distance = 18.0
+heal_amount = 14.0
+heal_radius = 9.0
+body_color = Color(0.4, 0.9, 0.55, 1)
+body_scale = 1.0
+collision_height = 1.8
+collision_radius = 0.4
+head_offset = 1.62
+head_radius = 0.25
+reward_currency = 20
+behavior_tree = ExtResource("2_tree")
+spawn_sound = ExtResource("3_spawn")
+windup_sound = ExtResource("4_windup")
+attack_sound = ExtResource("5_attack")
+death_sound = ExtResource("6_death")

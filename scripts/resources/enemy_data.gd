@@ -1,13 +1,15 @@
 class_name EnemyData
 extends Resource
-## Static definition of an enemy archetype.
+## Static definition of an enemy archetype. One enemy scene is shared by every
+## archetype; this resource is what makes a Rusher a Rusher - silhouette, audio,
+## stats and behavior tree all come from here.
 
 enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export var archetype: Archetype = Archetype.RUSHER
-@export var scene: PackedScene
+## Behavior tree scene, instantiated under the enemy at spawn.
 @export var behavior_tree: PackedScene
 
 @export_group("Stats")
@@ -17,7 +19,45 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 @export var attack_range: float = 2.0
 @export var attack_cooldown: float = 1.5
 @export var mass: float = 1.0
+## 0 = fully staggered by every hit, 1 = immovable. Elites sit high.
 @export var stagger_resistance: float = 0.0
+
+@export_group("Attack")
+## Wind-up before the attack lands. Telegraphing is mandatory (CLAUDE.md 5.3) and
+## this is the timing half of it - scale it with damage.
+@export var attack_windup: float = 0.6
+## Ranged archetypes only.
+@export var projectile_scene: PackedScene
+@export var projectile_speed: float = 30.0
+## Distance the archetype tries to hold. 0 = close to attack_range and stay.
+@export var preferred_distance: float = 0.0
+
+@export_group("Support")
+## Healer: health restored per pulse. `attack_cooldown` gates how often it pulses.
+@export var heal_amount: float = 12.0
+@export var heal_radius: float = 8.0
+## Summoner: what it spawns and how often.
+@export var summon_data: EnemyData
+@export var summon_count: int = 2
+@export var summon_interval: float = 6.0
+
+@export_group("Presentation")
+## Silhouette must be readable at a glance (CLAUDE.md 5.3).
+@export var mesh: Mesh
+@export var body_color: Color = Color(0.6, 0.62, 0.66)
+@export var body_scale: float = 1.0
+## Capsule collision, kept in sync with the mesh by hand while grey-boxing.
+@export var collision_height: float = 1.8
+@export var collision_radius: float = 0.4
+@export var head_offset: float = 1.62
+@export var head_radius: float = 0.25
+
+@export_group("Audio")
+## Each archetype must be identifiable by sound alone (CLAUDE.md 6).
+@export var spawn_sound: AudioStream
+@export var windup_sound: AudioStream
+@export var attack_sound: AudioStream
+@export var death_sound: AudioStream
 
 @export_group("Economy")
 @export var reward_currency: int = 10

@@ -1,0 +1,78 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://scripts/components/hitbox_component.gd" id="3_hitbox"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_body"]
+resource_local_to_scene = true
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="Shape_body_hitbox"]
+resource_local_to_scene = true
+radius = 0.4
+height = 1.4
+
+[sub_resource type="SphereShape3D" id="Shape_head"]
+resource_local_to_scene = true
+radius = 0.25
+
+[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder")]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_enemy")
+health = NodePath("HealthComponent")
+agent = NodePath("NavigationAgent3D")
+mesh_instance = NodePath("Mesh")
+body_hitbox = NodePath("BodyHitbox")
+head_hitbox = NodePath("HeadHitbox")
+body_shape = NodePath("CollisionShape3D")
+body_hitbox_shape = NodePath("BodyHitbox/CollisionShape3D")
+head_hitbox_shape = NodePath("HeadHitbox/CollisionShape3D")
+tree_holder = NodePath("BehaviorTree")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Shape_body")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.6
+target_desired_distance = 1.0
+avoidance_enabled = true
+radius = 0.5
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 100.0
+
+[node name="BodyHitbox" type="Area3D" parent="." node_paths=PackedStringArray("health_component")]
+collision_layer = 32
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_hitbox")
+damage_multiplier = 1.0
+is_headshot_zone = false
+health_component = NodePath("../HealthComponent")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BodyHitbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+shape = SubResource("Shape_body_hitbox")
+
+[node name="HeadHitbox" type="Area3D" parent="." node_paths=PackedStringArray("health_component")]
+collision_layer = 32
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_hitbox")
+damage_multiplier = 1.0
+is_headshot_zone = true
+health_component = NodePath("../HealthComponent")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HeadHitbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
+shape = SubResource("Shape_head")
+
+[node name="BehaviorTree" type="Node" parent="."]

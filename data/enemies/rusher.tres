@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_rusher.tscn" id="2_tree"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_attack.wav" id="5_attack"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_death.wav" id="6_death"]
+
+[sub_resource type="CapsuleMesh" id="Mesh_rusher"]
+radius = 0.35
+height = 1.6
+radial_segments = 8
+rings = 3
+
+[resource]
+script = ExtResource("1_script")
+mesh = SubResource("Mesh_rusher")
+archetype = 0
+id = &"rusher"
+display_name = "Rusher"
+max_health = 70.0
+move_speed = 7.2
+damage = 12.0
+attack_range = 2.2
+attack_cooldown = 1.2
+mass = 0.8
+stagger_resistance = 0.0
+attack_windup = 0.45
+body_color = Color(0.85, 0.35, 0.3, 1)
+body_scale = 0.9
+collision_height = 1.6
+collision_radius = 0.35
+head_offset = 1.45
+head_radius = 0.24
+reward_currency = 10
+behavior_tree = ExtResource("2_tree")
+spawn_sound = ExtResource("3_spawn")
+windup_sound = ExtResource("4_windup")
+attack_sound = ExtResource("5_attack")
+death_sound = ExtResource("6_death")

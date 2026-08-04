@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/enemy_projectile.gd" id="1_projectile"]
+[ext_resource type="PackedScene" path="res://scenes/vfx/impact_effect.tscn" id="2_impact"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_bolt"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(1, 0.35, 0.25, 1)
+emission_energy_multiplier = 1.5
+albedo_color = Color(1, 0.4, 0.3, 1)
+
+[sub_resource type="SphereMesh" id="Mesh_bolt"]
+material = SubResource("Mat_bolt")
+radius = 0.16
+height = 0.32
+radial_segments = 8
+rings = 4
+
+[node name="EnemyProjectile" type="Node3D"]
+script = ExtResource("1_projectile")
+impact_scene = ExtResource("2_impact")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_bolt")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.45, 0.3, 1)
+light_energy = 1.5
+omni_range = 3.0

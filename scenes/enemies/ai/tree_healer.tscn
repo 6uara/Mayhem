@@ -1,0 +1,32 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_tree"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector.gd" id="2_selector"]
+[ext_resource type="Script" path="res://addons/beehave/nodes/composites/sequence_reactive.gd" id="3_sequence"]
+[ext_resource type="Script" path="res://scripts/ai/conditions/condition_not_staggered.gd" id="4_steady"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_heal_allies.gd" id="5_heal"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_keep_distance.gd" id="6_kite"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_chase_player.gd" id="7_chase"]
+
+[node name="HealerTree" type="Node"]
+script = ExtResource("1_tree")
+
+[node name="Root" type="Node" parent="."]
+script = ExtResource("2_selector")
+
+[node name="HealBranch" type="Node" parent="Root"]
+script = ExtResource("3_sequence")
+
+[node name="NotStaggered" type="Node" parent="Root/HealBranch"]
+script = ExtResource("4_steady")
+
+[node name="Heal" type="Node" parent="Root/HealBranch"]
+script = ExtResource("5_heal")
+
+[node name="KeepDistance" type="Node" parent="Root"]
+script = ExtResource("6_kite")
+tolerance = 3.0
+
+[node name="Chase" type="Node" parent="Root"]
+script = ExtResource("7_chase")
+stop_at_range_multiplier = 0.9
