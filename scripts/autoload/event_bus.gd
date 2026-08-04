@@ -32,6 +32,9 @@ signal shop_closed()
 
 # Match state
 signal game_state_changed(new_state: int)
+## Pause is not a game state - it can interrupt any of them and leaves the run
+## intact - so it rides its own signal rather than widening the state enum.
+signal game_paused(is_paused: bool)
 
 # Settings
 signal settings_applied()

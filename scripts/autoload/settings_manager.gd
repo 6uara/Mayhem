@@ -3,11 +3,12 @@ extends Node
 
 const SETTINGS_PATH: String = "user://settings.cfg"
 
+## Defaults come from the design handoff (theme_tokens.gd), not from taste.
 const DEFAULTS: Dictionary = {
-	"input/mouse_sensitivity": 0.25,
-	"input/ads_sensitivity_multiplier": 0.6,
+	"input/mouse_sensitivity": 2.40,
+	"input/ads_sensitivity_multiplier": 0.72,
 	"input/invert_y": false,
-	"video/fov": 95.0,
+	"video/fov": 104.0,
 	"video/fullscreen": true,
 	"video/vsync": false,
 	"video/fps_cap": 60,
@@ -17,9 +18,21 @@ const DEFAULTS: Dictionary = {
 	"audio/vo_volume": 1.0,
 	"accessibility/screenshake_enabled": true,
 	"accessibility/motion_blur_enabled": false,
+	## View bob is the most common motion-sickness trigger in a first-person game,
+	## and it carries no information the player needs - so it gets its own switch
+	## rather than riding along with screenshake.
+	"accessibility/view_bob_enabled": true,
 	"accessibility/subtitles_enabled": true,
-	"hud/crosshair_style": 0,
-	"hud/crosshair_color": Color.WHITE,
+	## Replaces the low-health pulse and low-ammo blink with static frames of the
+	## same colour, so no information is lost (SPEC-MENUS-HOST 3.3).
+	"accessibility/reduce_flashing": false,
+	"accessibility/subtitle_size": 1,
+	"hud/scale": 1.0,
+	"hud/crosshair_gap": 8.0,
+	"hud/crosshair_thickness": 2.0,
+	"hud/crosshair_color": Color("#E6E8EF"),
+	"hud/crosshair_dot": true,
+	"hud/damage_indicators": true,
 }
 
 var _values: Dictionary = {}
@@ -36,8 +49,14 @@ func _ready() -> void:
 
 # Public API
 
-func get_value(key: String) -> Variant:
-	return _values.get(key, DEFAULTS.get(key))
+## `fallback` covers keys a caller knows about before they exist in DEFAULTS,
+## so a new setting cannot crash the UI that reads it.
+func get_value(key: String, fallback: Variant = null) -> Variant:
+	if _values.has(key):
+		return _values[key]
+	if DEFAULTS.has(key):
+		return DEFAULTS[key]
+	return fallback
 
 
 func set_value(key: String, value: Variant) -> void:
@@ -93,8 +112,20 @@ func rebind_action(action: StringName, events: Array[InputEvent]) -> void:
 	_bindings[String(action)] = events
 
 
+## Degrees of look per pixel of mouse travel at the slider's default position.
+##
+## Two things have to be true at once: the settings screen shows the handoff's
+## 0.1-10 slider (2.40 by default, as in the mockup), and the game has to actually
+## feel like 0.25 degrees per pixel out of the box. Pinning the feel here and
+## deriving the scale from the token means moving the slider's default position
+## can never silently change how the game plays.
+const SENS_DEGREES_AT_DEFAULT: float = 0.25
+
+
+## Degrees of look per pixel of mouse travel, for the current slider position.
 func get_mouse_sensitivity(is_ads: bool) -> float:
-	var base: float = float(get_value("input/mouse_sensitivity"))
+	var slider: float = float(get_value("input/mouse_sensitivity"))
+	var base: float = slider * (SENS_DEGREES_AT_DEFAULT / maxf(Tokens.SENS_DEFAULT, 0.01))
 	if is_ads:
 		base *= float(get_value("input/ads_sensitivity_multiplier"))
 	return base

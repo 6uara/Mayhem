@@ -6,13 +6,11 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/elite_windup.wav" id="4_windup"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/elite_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/elite_death.wav" id="6_death"]
-
-[sub_resource type="BoxMesh" id="Mesh_elite"]
-size = Vector3(1.3, 2.6, 1.3)
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/ual1_standard.res" id="7_mesh"]
 
 [resource]
 script = ExtResource("1_script")
-mesh = SubResource("Mesh_elite")
+mesh = ExtResource("7_mesh")
 archetype = 2
 id = &"elite"
 display_name = "Elite"
@@ -24,12 +22,12 @@ attack_cooldown = 2.6
 mass = 3.0
 stagger_resistance = 0.85
 attack_windup = 1.1
-body_color = Color(0.9, 0.65, 0.2, 1)
-body_scale = 1.7
-collision_height = 2.8
-collision_radius = 0.7
-head_offset = 2.5
-head_radius = 0.4
+body_color = Color(0.776, 1, 0.239, 1)
+body_scale = 1.00
+collision_height = 2.80
+collision_radius = 0.75
+head_offset = 2.50
+head_radius = 0.42
 reward_currency = 60
 behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")

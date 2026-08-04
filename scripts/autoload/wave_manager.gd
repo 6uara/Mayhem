@@ -18,6 +18,7 @@ var _wave_start_time: float = 0.0
 var _damage_taken_this_wave: float = 0.0
 ## Bumped on reset so in-flight spawn coroutines from an abandoned wave die off.
 var _run_generation: int = 0
+var _last_breakdown: Dictionary = {}
 
 
 func _ready() -> void:
@@ -97,6 +98,12 @@ func get_damage_taken_this_wave() -> float:
 	return _damage_taken_this_wave
 
 
+## The last wave's itemised payout, for the wave-complete breakdown screen.
+## Empty until a wave has been cleared.
+func get_last_breakdown() -> Dictionary:
+	return _last_breakdown
+
+
 # Private
 
 func _schedule_wave(wave: WaveData, generation: int) -> void:
@@ -173,7 +180,8 @@ func _check_wave_cleared() -> void:
 	var duration: float = get_wave_duration()
 	var wave: WaveData = get_current_wave()
 	if wave != null:
-		EconomyManager.award_wave_bonuses(wave, duration, _damage_taken_this_wave > 0.0)
+		_last_breakdown = EconomyManager.award_wave_bonuses(
+			wave, duration, _damage_taken_this_wave > 0.0)
 	EventBus.wave_completed.emit(current_index, duration, _damage_taken_this_wave)
 
 

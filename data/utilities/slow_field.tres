@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UtilityData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/utility_data.gd" id="1_utility"]
+[ext_resource type="PackedScene" path="res://scenes/utilities/slow_field.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_utility")
+scene = ExtResource("2_scene")
+id = &"slow_field"
+display_name = "Slow Field"
+cost = 80
+max_carried = 2
+cooldown = 8.0
+throw_force = 14.0
+effect_radius = 6.5
+effect_duration = 6.0

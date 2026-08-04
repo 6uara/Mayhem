@@ -1,14 +1,19 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/weapon_data.gd" id="1_weapon"]
 [ext_resource type="Resource" path="res://data/weapons/rifle_ak_recoil.tres" id="2_recoil"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/projectile.tscn" id="3_projectile"]
+[ext_resource type="PackedScene" path="res://assets/models/weapons/ak47.fbx" id="4_viewmodel"]
 
 [resource]
 script = ExtResource("1_weapon")
 id = &"rifle_ak"
 display_name = "Rifle"
 projectile_scene = ExtResource("3_projectile")
+viewmodel = ExtResource("4_viewmodel")
+viewmodel_scale = 1.0
+viewmodel_offset = Vector3(0.18, -0.15, -0.5)
+viewmodel_rotation_degrees = Vector3(0, 90, 0)
 damage = 18.0
 headshot_multiplier = 2.0
 falloff_start = 25.0

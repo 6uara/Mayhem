@@ -1,34 +1,19 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://coeqpojfb1pgw"]
 
 [ext_resource type="PackedScene" path="res://scenes/enemies/target_dummy.tscn" id="1_dummy"]
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
 [ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
-[ext_resource type="Script" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
-[ext_resource type="NavigationMesh" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
-
-[sub_resource type="StandardMaterial3D" id="Mat_floor"]
-albedo_color = Color(0.32, 0.33, 0.36, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_wall"]
-albedo_color = Color(0.42, 0.43, 0.47, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_mid"]
-albedo_color = Color(0.38, 0.42, 0.5, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_high"]
-albedo_color = Color(0.46, 0.42, 0.38, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_anchor"]
-emission_enabled = true
-emission = Color(0.35, 0.85, 1, 1)
-emission_energy_multiplier = 0.8
-albedo_color = Color(0.2, 0.5, 0.65, 1)
-
-[sub_resource type="BoxShape3D" id="Shape_anchor"]
-size = Vector3(1.2, 1.2, 1.2)
-
-[sub_resource type="BoxMesh" id="Mesh_anchor"]
-size = Vector3(1.2, 1.2, 1.2)
+[ext_resource type="Script" uid="uid://dg7yh07a2eohc" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
+[ext_resource type="NavigationMesh" uid="uid://bbd8u1bap6a0" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
+[ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
+[ext_resource type="PackedScene" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
+[ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
+[ext_resource type="PackedScene" path="res://scenes/arena/moving_platform.tscn" id="9_moving"]
+[ext_resource type="PackedScene" path="res://scenes/arena/zip_line.tscn" id="10_zip"]
+[ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="11_anchor"]
+[ext_resource type="PackedScene" path="res://scenes/arena/jump_link.tscn" id="12_link"]
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/scifi_container.res" id="13_container"]
+[ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="14_glitch"]
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
@@ -38,243 +23,350 @@ ambient_light_color = Color(0.5, 0.55, 0.65, 1)
 ambient_light_energy = 0.6
 tonemap_mode = 2
 
-[node name="GreyboxArena" type="Node3D"]
+[sub_resource type="ShaderMaterial" id="Mat_floor"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.078, 0.086, 0.106, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.35
+shader_parameter/line_width = 0.05
+shader_parameter/emission_energy = 1.6
+shader_parameter/glitch_strength = 0.4
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.55
+shader_parameter/metallic_value = 0.15
+shader_parameter/fresnel_power = 2.5
+shader_parameter/fresnel_strength = 1.4
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[sub_resource type="ShaderMaterial" id="Mat_wall"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.1, 0.106, 0.125, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.4
+shader_parameter/line_width = 0.045
+shader_parameter/emission_energy = 1.9
+shader_parameter/glitch_strength = 0.5
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_strength = 1.6
+
+[sub_resource type="ShaderMaterial" id="Mat_mid"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.086, 0.098, 0.125, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.5
+shader_parameter/line_width = 0.05
+shader_parameter/emission_energy = 2.1
+shader_parameter/glitch_strength = 0.55
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_strength = 1.8
+
+[sub_resource type="ShaderMaterial" id="Mat_high"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.11, 0.1, 0.09, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.5
+shader_parameter/line_width = 0.05
+shader_parameter/emission_energy = 2.1
+shader_parameter/glitch_strength = 0.55
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_strength = 1.8
+
+[sub_resource type="BoxShape3D" id="Shape_container"]
+size = Vector3(13.25387, 6.018111, 5.675098)
+
+[node name="GreyboxArena" type="Node3D" unique_id=826856576]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=465304421]
 environment = SubResource("Env_arena")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1959423499]
 transform = Transform3D(0.86, -0.35, 0.37, 0, 0.72, 0.69, -0.51, -0.6, 0.62, 0, 14, 0)
 light_energy = 1.1
 shadow_enabled = true
 
-[node name="Floor" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="Floor" type="CSGBox3D" parent="." unique_id=1763754559 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(70, 1, 70)
 material = SubResource("Mat_floor")
 
-[node name="WallNorth" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallNorth" type="CSGBox3D" parent="." unique_id=909491122 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -35)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(70, 12, 1)
 material = SubResource("Mat_wall")
 
-[node name="WallSouth" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallSouth" type="CSGBox3D" parent="." unique_id=85424110 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 35)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(70, 12, 1)
 material = SubResource("Mat_wall")
 
-[node name="WallEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallEast" type="CSGBox3D" parent="." unique_id=131456754 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 6, 0)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(1, 12, 70)
 material = SubResource("Mat_wall")
 
-[node name="WallWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallWest" type="CSGBox3D" parent="." unique_id=784012259 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 6, 0)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(1, 12, 70)
 material = SubResource("Mat_wall")
 
-[node name="PatternWall" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="PatternWall" type="CSGBox3D" parent="." unique_id=2026334196 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 30)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(14, 8, 0.5)
 material = SubResource("Mat_wall")
 
-[node name="MidPlatformWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MidPlatformWest" type="CSGBox3D" parent="." unique_id=111667415 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -8)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(16, 0.8, 20)
 material = SubResource("Mat_mid")
 
-[node name="MidPlatformEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MidPlatformEast" type="CSGBox3D" parent="." unique_id=1671518141 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3, 4)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(16, 0.8, 24)
 material = SubResource("Mat_mid")
 
-[node name="RampToMidWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 0.966, -0.259, 0, 0.259, 0.966, -24, 1.4, 8)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(6, 0.6, 14)
-material = SubResource("Mat_mid")
-
-[node name="RampToMidEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 24, 1.4, -14)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(6, 0.6, 14)
-material = SubResource("Mat_mid")
-
-[node name="SlideHill" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(0.966, 0.259, 0, -0.259, 0.966, 0, 0, 0, 1, -6, 1.8, -20)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(18, 0.8, 10)
-material = SubResource("Mat_mid")
-
-[node name="HighWalkwayNorth" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="HighWalkwayNorth" type="CSGBox3D" parent="." unique_id=206537575 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -30)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(50, 0.8, 8)
 material = SubResource("Mat_high")
 
-[node name="HighPerchCenter" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="HighPerchCenter" type="CSGBox3D" parent="." unique_id=1080192312 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6, 6)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(10, 0.8, 10)
 material = SubResource("Mat_high")
 
-[node name="MantleBoxLow" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MantleBoxLow" type="CSGBox3D" parent="." unique_id=1624422919 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.6, 22)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(4, 1.2, 4)
 material = SubResource("Mat_wall")
 
-[node name="MantleBoxHigh" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MantleBoxHigh" type="CSGBox3D" parent="." unique_id=2115569396 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 22)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(4, 2, 4)
 material = SubResource("Mat_wall")
 
-[node name="BouncePads" type="Node3D" parent="."]
+[node name="BouncePads" type="Node3D" parent="." unique_id=1211143252]
 
-[node name="PadToMid" parent="BouncePads" instance=ExtResource("2_pad")]
+[node name="PadToMid" parent="BouncePads" unique_id=127065830 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -8)
 
-[node name="PadToHigh" parent="BouncePads" instance=ExtResource("2_pad")]
+[node name="PadToHigh" parent="BouncePads" unique_id=1911610862 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -2)
 bounce_velocity = 16.0
 
-[node name="PadCenter" parent="BouncePads" instance=ExtResource("2_pad")]
+[node name="PadCenter" parent="BouncePads" unique_id=1547436473 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 14)
 
-[node name="GrappleAnchors" type="Node3D" parent="."]
-
-[node name="Anchor1" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -12)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor1"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor1"]
-shape = SubResource("Shape_anchor")
-
-[node name="Anchor2" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 9, 14)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor2"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor2"]
-shape = SubResource("Shape_anchor")
-
-[node name="Anchor3" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 9, -20)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor3"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor3"]
-shape = SubResource("Shape_anchor")
-
-[node name="Anchor4" type="StaticBody3D" parent="GrappleAnchors"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 7, 24)
-collision_layer = 256
-collision_mask = 0
-
-[node name="Mesh" type="MeshInstance3D" parent="GrappleAnchors/Anchor4"]
-mesh = SubResource("Mesh_anchor")
-material_override = SubResource("Mat_anchor")
-
-[node name="Shape" type="CollisionShape3D" parent="GrappleAnchors/Anchor4"]
-shape = SubResource("Shape_anchor")
-
-[node name="Navigation" type="NavigationRegion3D" parent="."]
+[node name="Navigation" type="NavigationRegion3D" parent="." unique_id=380616586]
 navigation_mesh = ExtResource("5_navmesh")
 script = ExtResource("4_nav")
-bake_on_ready = false
 
-[node name="SpawnDoors" type="Node3D" parent="."]
+[node name="SpawnDoors" type="Node3D" parent="." unique_id=809450170]
 
-[node name="Door01" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(0.7074, 0, -0.7068, 0, 1, 0, 0.7068, 0, 0.7074, -30.0, 0.0, -30.0)
-door_id = &"door_01"
+[node name="Door01" parent="SpawnDoors" unique_id=1001855610 instance=ExtResource("3_door")]
+transform = Transform3D(0.7074, 0, -0.7068, 0, 1, 0, 0.7068, 0, 0.7074, -30, 0, -30)
 
-[node name="Door02" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(0.7074, 0, 0.7068, 0, 1, 0, -0.7068, 0, 0.7074, 30.0, 0.0, -30.0)
+[node name="Door02" parent="SpawnDoors" unique_id=2119835574 instance=ExtResource("3_door")]
+transform = Transform3D(0.7074, 0, 0.7068, 0, 1, 0, -0.7068, 0, 0.7074, 30, 0, -30)
 door_id = &"door_02"
 
-[node name="Door03" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.7070, 0, -0.7072, 0, 1, 0, 0.7072, 0, -0.7070, -30.0, 0.0, 30.0)
+[node name="Door03" parent="SpawnDoors" unique_id=1761624449 instance=ExtResource("3_door")]
+transform = Transform3D(-0.707, 0, -0.7072, 0, 1, 0, 0.7072, 0, -0.707, -30, 0, 30)
 door_id = &"door_03"
 
-[node name="Door04" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.7070, 0, 0.7072, 0, 1, 0, -0.7072, 0, -0.7070, 30.0, 0.0, 30.0)
+[node name="Door04" parent="SpawnDoors" unique_id=410740972 instance=ExtResource("3_door")]
+transform = Transform3D(-0.707, 0, 0.7072, 0, 1, 0, -0.7072, 0, -0.707, 30, 0, 30)
 door_id = &"door_04"
 
-[node name="Door05" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.0, 0.0, -33.0)
+[node name="Door05" parent="SpawnDoors" unique_id=283957854 instance=ExtResource("3_door")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -33)
 door_id = &"door_05"
 
-[node name="Door06" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.0002, 0, -1.0000, 0, 1, 0, 1.0000, 0, -0.0002, -24.0, 3.4, -16.0)
+[node name="Door06" parent="SpawnDoors" unique_id=2147149839 instance=ExtResource("3_door")]
+transform = Transform3D(-0.0002, 0, -1, 0, 1, 0, 1, 0, -0.0002, -24, 3.4, -16)
 door_id = &"door_06"
 
-[node name="Door07" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.0002, 0, 1.0000, 0, 1, 0, -1.0000, 0, -0.0002, 24.0, 3.4, 14.0)
+[node name="Door07" parent="SpawnDoors" unique_id=2052969368 instance=ExtResource("3_door")]
+transform = Transform3D(-0.0002, 0, 1, 0, 1, 0, -1, 0, -0.0002, 24, 3.4, 14)
 door_id = &"door_07"
 
-[node name="Dummies" type="Node3D" parent="."]
+[node name="AmmoPickups" type="Node3D" parent="." unique_id=1171072071]
 
-[node name="TargetDummy" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="AmmoHighPerch" parent="AmmoPickups" unique_id=651347118 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.6, 6)
+
+[node name="AmmoWalkway" parent="AmmoPickups" unique_id=686354600 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 6.6, -30)
+
+[node name="AmmoCentre" parent="AmmoPickups" unique_id=220389094 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="AmmoMidWest" parent="AmmoPickups" unique_id=1110875395 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.6, -14)
+
+[node name="AmmoMidEast" parent="AmmoPickups" unique_id=1684699852 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3.6, 8)
+
+[node name="AmmoCornerSE" parent="AmmoPickups" unique_id=904848428 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.2, 28)
+
+[node name="Dummies" type="Node3D" parent="." unique_id=890789504]
+
+[node name="TargetDummy" parent="Dummies" unique_id=763614328 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
 
-[node name="TargetDummy2" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy2" parent="Dummies" unique_id=1012697192 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -10)
 
-[node name="TargetDummy3" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy3" parent="Dummies" unique_id=1588701622 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.4, -10)
 
-[node name="TargetDummy4" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy4" parent="Dummies" unique_id=14902844 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.4, 4)
+
+[node name="GrappleAnchors" type="Node3D" parent="." unique_id=944728728]
+
+[node name="Anchor1" parent="GrappleAnchors" unique_id=1130465162 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -12)
+
+[node name="Anchor2" parent="GrappleAnchors" unique_id=1564620295 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 9, 14)
+
+[node name="Anchor3" parent="GrappleAnchors" unique_id=538974136 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 9, -20)
+
+[node name="Anchor4" parent="GrappleAnchors" unique_id=1894173354 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 7, 24)
+
+[node name="Anchor5" parent="GrappleAnchors" unique_id=589730265 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 10, 4)
+
+[node name="Hazards" type="Node3D" parent="." unique_id=322773232]
+
+[node name="HazardCentre" parent="Hazards" unique_id=1231024749 instance=ExtResource("7_hazard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -6)
+damage = 14.0
+tick_interval = 0.7
+radius = 4.0
+
+[node name="HazardWestRamp" parent="Hazards" unique_id=368758660 instance=ExtResource("7_hazard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.05, 2)
+damage = 14.0
+tick_interval = 0.7
+
+[node name="HazardEastLane" parent="Hazards" unique_id=2020916446 instance=ExtResource("7_hazard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.05, 20)
+damage = 14.0
+tick_interval = 0.7
+radius = 3.5
+
+[node name="VanishingRoute" type="Node3D" parent="." unique_id=2102948101]
+
+[node name="Step1" parent="VanishingRoute" unique_id=521997547 instance=ExtResource("8_vanish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2.2, 12)
+
+[node name="Step2" parent="VanishingRoute" unique_id=1001023774 instance=ExtResource("8_vanish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3.6, 16)
+
+[node name="Step3" parent="VanishingRoute" unique_id=1575056928 instance=ExtResource("8_vanish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 5, 20)
+
+[node name="MovingPlatforms" type="Node3D" parent="." unique_id=587535451]
+
+[node name="FerryNorth" parent="MovingPlatforms" unique_id=153433906 instance=ExtResource("9_moving")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 4.5, -24)
+travel = Vector3(26, 0, 0)
+speed = 3.2
+
+[node name="FerryEast" parent="MovingPlatforms" unique_id=1436782362 instance=ExtResource("9_moving")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 2, -4)
+travel = Vector3(0, 4.5, 18)
+speed = 2.6
+
+[node name="ZipLines" type="Node3D" parent="." unique_id=1271715829]
+
+[node name="ZipHighToFloor" parent="ZipLines" unique_id=1504885512 instance=ExtResource("10_zip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.2, -28)
+speed = 18.0
+
+[node name="ZipEastToWest" parent="ZipLines" unique_id=1744568083 instance=ExtResource("10_zip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 4.4, 10)
+
+[node name="JumpLinks" type="Node3D" parent="." unique_id=1606545173]
+
+[node name="LinkToMidWest" parent="JumpLinks" unique_id=1344915176 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.1, 6)
+end_position = Vector3(0, 3.4, -6.5)
+
+[node name="LinkToMidEast" parent="JumpLinks" unique_id=1470204312 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.1, -8)
+end_position = Vector3(0, 3.4, 1.5)
+
+[node name="LinkMidWestUp" parent="JumpLinks" unique_id=1373132923 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.5, -17)
+end_position = Vector3(8, 3, -10)
+
+[node name="LinkMidEastUp" parent="JumpLinks" unique_id=340195946 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 3.5, 8)
+end_position = Vector3(-10, 3, -1)
+
+[node name="LinkPerchToWalk" parent="JumpLinks" unique_id=637018459 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 6.5, 2)
+end_position = Vector3(-8, 0, -28.5)
+
+[node name="Props" type="Node3D" parent="." unique_id=1213261736]
+
+[node name="Container1" type="StaticBody3D" parent="Props" unique_id=1889635683]
+transform = Transform3D(0.2658, 0, 0, 0, 0.2658, 0, 0, 0, 0.2658, -8, 0.8, 12)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Container1" unique_id=796517705]
+mesh = ExtResource("13_container")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container1" unique_id=492057515]
+shape = SubResource("Shape_container")
+
+[node name="Container2" type="StaticBody3D" parent="Props" unique_id=1413366597]
+transform = Transform3D(0.2658, 0, 0, 0, 0.2658, 0, 0, 0, 0.2658, 9, 0.8, 15)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Container2" unique_id=1208907347]
+mesh = ExtResource("13_container")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container2" unique_id=793760517]
+shape = SubResource("Shape_container")

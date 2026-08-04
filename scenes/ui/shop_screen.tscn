@@ -1,0 +1,91 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_screen.gd" id="1_shop"]
+[ext_resource type="Script" path="res://scripts/systems/shop.gd" id="2_shop_logic"]
+[ext_resource type="Resource" path="res://data/economy/shop_catalog.tres" id="3_catalog"]
+[ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="4_theme"]
+[ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="5_chamfer"]
+
+[sub_resource type="StyleBox" id="StyleBox_frame"]
+script = ExtResource("5_chamfer")
+fill_color = Color(0.078, 0.086, 0.106, 1)
+fill_alpha = 0.92
+border_color = Color(0.173, 0.192, 0.251, 1)
+border_width = 1.0
+chamfer = 20.0
+rail_width = 3.0
+rail_color = Color(0.208, 0.878, 0.831, 1)
+rail_side = 3
+tick_length = 28.0
+tick_color = Color(0.208, 0.878, 0.831, 1)
+
+[node name="ShopScreen" type="CanvasLayer" node_paths=PackedStringArray("shop")]
+layer = 3
+script = ExtResource("1_shop")
+shop = NodePath("Shop")
+duration = 30.0
+
+[node name="Shop" type="Node" parent="."]
+script = ExtResource("2_shop_logic")
+catalog = ExtResource("3_catalog")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = ExtResource("4_theme")
+
+[node name="Background" type="ColorRect" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.027, 0.031, 0.043, 0.88)
+
+[node name="Panel" type="MarginContainer" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 80.0
+offset_top = 60.0
+offset_right = -80.0
+offset_bottom = -60.0
+theme_override_styles/panel = SubResource("StyleBox_frame")
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel"]
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="Root/Panel/VBox"]
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Root/Panel/VBox/Header"]
+size_flags_horizontal = 3
+text = "ARMOURY"
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.902, 0.91, 0.937, 1)
+
+[node name="Currency" type="Label" parent="Root/Panel/VBox/Header"]
+theme_type_variation = &"NumCluster"
+text = "0"
+theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
+
+[node name="Timer" type="Label" parent="Root/Panel/VBox/Header"]
+theme_type_variation = &"NumSecond"
+custom_minimum_size = Vector2(90, 0)
+horizontal_alignment = 2
+text = "30s"
+
+[node name="Breakdown" type="Label" parent="Root/Panel/VBox"]
+theme_type_variation = &"HUDLabel"
+theme_override_font_sizes/font_size = 16
+
+[node name="Cards" type="HBoxContainer" parent="Root/Panel/VBox"]
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="SkipButton" type="Button" parent="Root/Panel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+text = "Back to the arena  (bank the speed bonus)"

@@ -1,0 +1,60 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/ammo_pickup.gd" id="1_pickup"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/ammo_pickup.wav" id="2_sound"]
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/ammobox_low.res" id="3_mesh"]
+[ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="4_glitch"]
+
+[sub_resource type="CylinderShape3D" id="Shape_pickup"]
+radius = 1.1
+height = 2.4
+
+[sub_resource type="ShaderMaterial" id="Mat_ring"]
+shader = ExtResource("4_glitch")
+shader_parameter/base_color = Color(0.09, 0.086, 0.07, 1)
+shader_parameter/line_color = Color(1, 0.69, 0.125, 1)
+shader_parameter/grid_scale = 3.0
+shader_parameter/line_width = 0.08
+shader_parameter/emission_energy = 1.8
+shader_parameter/glitch_strength = 0.5
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 2.5
+shader_parameter/fresnel_strength = 1.6
+
+[sub_resource type="CylinderMesh" id="Mesh_ring"]
+material = SubResource("Mat_ring")
+top_radius = 0.55
+bottom_radius = 0.55
+height = 0.05
+radial_segments = 20
+
+[node name="AmmoPickup" type="Area3D" groups=["ammo_pickup"] node_paths=PackedStringArray("mesh", "light")]
+collision_layer = 128
+collision_mask = 2
+monitoring = true
+script = ExtResource("1_pickup")
+reserve_fraction = 0.25
+respawn_time = 20.0
+mesh = NodePath("Mesh")
+light = NodePath("OmniLight3D")
+pickup_sound = ExtResource("2_sound")
+
+[node name="GlitchPad" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_ring")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = ExtResource("3_mesh")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+light_color = Color(1, 0.85, 0.35, 1)
+light_energy = 2.0
+omni_range = 7.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+shape = SubResource("Shape_pickup")

@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="7_projectile"]
 
 [sub_resource type="PrismMesh" id="Mesh_ranger"]
-size = Vector3(0.9, 1.8, 0.7)
+size = Vector3(0.75, 1.9, 0.6)
 
 [resource]
 script = ExtResource("1_script")
@@ -28,12 +28,12 @@ attack_windup = 0.7
 projectile_scene = ExtResource("7_projectile")
 projectile_speed = 26.0
 preferred_distance = 14.0
-body_color = Color(0.35, 0.55, 0.85, 1)
-body_scale = 1.0
-collision_height = 1.8
-collision_radius = 0.4
-head_offset = 1.62
-head_radius = 0.25
+body_color = Color(1, 0.478, 0.122, 1)
+body_scale = 1.00
+collision_height = 1.90
+collision_radius = 0.34
+head_offset = 1.70
+head_radius = 0.24
 reward_currency = 14
 behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")

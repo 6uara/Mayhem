@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UtilityData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/utility_data.gd" id="1_utility"]
+[ext_resource type="PackedScene" path="res://scenes/utilities/stun_grenade.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_utility")
+scene = ExtResource("2_scene")
+id = &"stun_grenade"
+display_name = "Stun Grenade"
+cost = 70
+max_carried = 3
+cooldown = 5.0
+throw_force = 16.0
+effect_radius = 6.0
+effect_duration = 2.5

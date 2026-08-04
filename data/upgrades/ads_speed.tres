@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"ads_transition_time"
+operation = 1
+value = 0.7
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"ads_speed"
+display_name = "Snap Aim"
+description = "Aims down sights 30% faster."
+cost = 150
+category = 1
+max_stacks = 2
+is_temporary = false
+duration = 0.0
+stat_modifiers = Array[Resource]([SubResource("Mod_0")])
