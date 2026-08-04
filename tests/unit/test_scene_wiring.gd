@@ -61,6 +61,24 @@ func test_weapon_audio_hooks_are_wired() -> void:
 	assert_not_null(weapon.empty_sound, "empty_sound")
 
 
+## Every weapon owns its own voice.
+##
+## Four guns sharing one sample are, to the ear, one gun with four fire rates - and
+## section 6 puts roughly half of gunplay feel in the audio. This is the kind of
+## regression that reintroduces itself quietly when a new weapon is copy-pasted from
+## an old one, and nothing else in the build would notice.
+func test_no_two_weapons_share_a_voice() -> void:
+	var player: Player = _instance(PLAYER_SCENE)
+	for slot: StringName in [&"fire_sound", &"reload_sound", &"empty_sound"]:
+		var seen: Array[AudioStream] = []
+		for weapon: WeaponComponent in player.weapon_holder.get_all():
+			var stream: AudioStream = weapon.get(slot)
+			assert_not_null(stream, "%s %s" % [weapon.name, slot])
+			assert_false(seen.has(stream),
+				"%s reuses another weapon's %s" % [weapon.name, slot])
+			seen.push_back(stream)
+
+
 func test_impact_audio_hooks_are_wired() -> void:
 	var impact: ImpactEffect = _instance("res://scenes/vfx/impact_effect.tscn")
 	assert_not_null(impact.world_sound, "world_sound")

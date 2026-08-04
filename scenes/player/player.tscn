@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3]
+[gd_scene load_steps=43 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/components/camera_recoil_component.gd" id="2_recoil"]
@@ -31,6 +31,15 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_2.wav" id="29_step2"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_3.wav" id="30_step3"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_4.wav" id="31_step4"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/pistol_fire.wav" id="32_pistol_fire"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/pistol_reload.wav" id="33_pistol_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/pistol_empty.wav" id="34_pistol_empty"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/shotgun_fire.wav" id="35_shotgun_fire"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/shotgun_reload.wav" id="36_shotgun_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/shotgun_empty.wav" id="37_shotgun_empty"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/smg_fire.wav" id="38_smg_fire"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/smg_reload.wav" id="39_smg_reload"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/smg_empty.wav" id="40_smg_empty"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_player"]
 radius = 0.4
@@ -82,9 +91,9 @@ muzzle = NodePath("Muzzle")
 recoil = NodePath("../../../../CameraRecoilComponent")
 stats = NodePath("../../../../StatsComponent")
 body = NodePath("../../../..")
-fire_sound = ExtResource("7_fire")
-reload_sound = ExtResource("8_reload")
-empty_sound = ExtResource("9_empty")
+fire_sound = ExtResource("32_pistol_fire")
+reload_sound = ExtResource("33_pistol_reload")
+empty_sound = ExtResource("34_pistol_empty")
 
 [node name="Muzzle" type="Node3D" parent="HeadPivot/ViewBob/WeaponHolder/Pistol"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
@@ -112,9 +121,9 @@ muzzle = NodePath("Muzzle")
 recoil = NodePath("../../../../CameraRecoilComponent")
 stats = NodePath("../../../../StatsComponent")
 body = NodePath("../../../..")
-fire_sound = ExtResource("7_fire")
-reload_sound = ExtResource("8_reload")
-empty_sound = ExtResource("9_empty")
+fire_sound = ExtResource("35_shotgun_fire")
+reload_sound = ExtResource("36_shotgun_reload")
+empty_sound = ExtResource("37_shotgun_empty")
 
 [node name="Muzzle" type="Node3D" parent="HeadPivot/ViewBob/WeaponHolder/Shotgun"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)
@@ -127,9 +136,9 @@ muzzle = NodePath("Muzzle")
 recoil = NodePath("../../../../CameraRecoilComponent")
 stats = NodePath("../../../../StatsComponent")
 body = NodePath("../../../..")
-fire_sound = ExtResource("7_fire")
-reload_sound = ExtResource("8_reload")
-empty_sound = ExtResource("9_empty")
+fire_sound = ExtResource("38_smg_fire")
+reload_sound = ExtResource("39_smg_reload")
+empty_sound = ExtResource("40_smg_empty")
 
 [node name="Muzzle" type="Node3D" parent="HeadPivot/ViewBob/WeaponHolder/SMG"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.2, -0.6)

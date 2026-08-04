@@ -99,35 +99,100 @@ def ms(milliseconds: float) -> int:
     return int(SAMPLE_RATE * milliseconds / 1000.0)
 
 
-def rifle_fire(rng: random.Random) -> list[float]:
+def weapon_fire(rng: random.Random, body_ms: float, body_cutoff: float,
+                thump_hz: float, thump_ms: float, thump_gain: float,
+                tail_ms: float, tail_gain: float) -> list[float]:
+    """Transient + body + thump + tail, the layering the handoff asks for.
+
+    Every weapon is the same four layers at different weights: the transient is the
+    mechanical click of the action, the body is the blast, the thump is what you
+    feel in the chest, and the tail is the room answering back. Shifting the balance
+    between them is what separates a pistol from a shotgun far more than volume does.
+
+    Length is not a free parameter. The SMG fires every 67ms, so a 400ms body would
+    have six shots overlapping at all times and the whole thing turns to mud - fast
+    weapons have to be short for the same reason their recoil has to be small.
+    """
     transient = _noise(ms(18), 0.0004, 0.10, 1.0, rng)
-    body = _lowpass(_noise(ms(130), 0.001, 0.22, 0.85, rng), 2600.0)
-    thump = _tone(ms(150), 190.0, 0.001, 0.25, 0.7, sweep=0.45)
-    tail = _lowpass(_noise(ms(420), 0.02, 0.5, 0.16, rng), 900.0)
+    body = _lowpass(_noise(ms(body_ms), 0.001, 0.22, 0.85, rng), body_cutoff)
+    thump = _tone(ms(thump_ms), thump_hz, 0.001, 0.25, thump_gain, sweep=0.45)
+    tail = _lowpass(_noise(ms(tail_ms), 0.02, 0.5, tail_gain, rng), 900.0)
     return _mix((transient, 0), (body, 0), (thump, 0), (tail, ms(60)))
+
+
+def pistol_fire(rng: random.Random) -> list[float]:
+    """A crack, not a boom: little body, almost no tail, gone quickly."""
+    return weapon_fire(rng, body_ms=80, body_cutoff=3600.0, thump_hz=260.0,
+                       thump_ms=90, thump_gain=0.45, tail_ms=220, tail_gain=0.10)
+
+
+def rifle_fire(rng: random.Random) -> list[float]:
+    return weapon_fire(rng, body_ms=130, body_cutoff=2600.0, thump_hz=190.0,
+                       thump_ms=150, thump_gain=0.70, tail_ms=420, tail_gain=0.16)
+
+
+def shotgun_fire(rng: random.Random) -> list[float]:
+    """All chest and room. The one weapon that gets to be slow and enormous."""
+    return weapon_fire(rng, body_ms=220, body_cutoff=1500.0, thump_hz=95.0,
+                       thump_ms=300, thump_gain=1.0, tail_ms=650, tail_gain=0.30)
+
+
+def smg_fire(rng: random.Random) -> list[float]:
+    """Tinny and clipped - 15 rounds a second leaves no room for a tail."""
+    return weapon_fire(rng, body_ms=55, body_cutoff=4200.0, thump_hz=300.0,
+                       thump_ms=60, thump_gain=0.35, tail_ms=140, tail_gain=0.08)
+
+
+def _clack(rng: random.Random, length: float, freq: float, gain: float,
+           noise_gain: float) -> list[float]:
+    """One mechanical stage of a reload: a piece of metal meeting another."""
+    return _mix(
+        (_noise(ms(length), 0.001, 0.11, noise_gain, rng), 0),
+        (_tone(ms(length + 10), freq, 0.001, 0.15, gain, sweep=0.65), 0),
+    )
 
 
 def rifle_reload(rng: random.Random) -> list[float]:
     """Three tactile stages: magazine out, magazine in, bolt release."""
-    mag_out = _mix(
-        (_noise(ms(60), 0.001, 0.12, 0.6, rng), 0),
-        (_tone(ms(70), 320.0, 0.001, 0.15, 0.35, sweep=0.7), 0),
+    return _mix(
+        (_clack(rng, 60, 320.0, 0.35, 0.6), 0),
+        (_clack(rng, 80, 150.0, 0.60, 0.8), ms(820)),
+        (_clack(rng, 70, 620.0, 0.30, 0.9), ms(1620)),
     )
-    mag_in = _mix(
-        (_noise(ms(80), 0.001, 0.1, 0.8, rng), 0),
-        (_tone(ms(90), 150.0, 0.001, 0.18, 0.6, sweep=0.6), 0),
-    )
-    bolt = _mix(
-        (_noise(ms(70), 0.0005, 0.09, 0.9, rng), 0),
-        (_tone(ms(60), 620.0, 0.001, 0.12, 0.3, sweep=0.5), 0),
-    )
-    return _mix((mag_out, 0), (mag_in, ms(820)), (bolt, ms(1620)))
 
 
-def empty_click(rng: random.Random) -> list[float]:
+def pistol_reload(rng: random.Random) -> list[float]:
+    """Lighter and quicker than the rifle, and it ends on a slide, not a bolt."""
+    return _mix(
+        (_clack(rng, 45, 430.0, 0.30, 0.5), 0),
+        (_clack(rng, 60, 210.0, 0.50, 0.7), ms(560)),
+        (_clack(rng, 50, 780.0, 0.28, 0.8), ms(1120)),
+    )
+
+
+def smg_reload(rng: random.Random) -> list[float]:
+    return _mix(
+        (_clack(rng, 50, 380.0, 0.32, 0.55), 0),
+        (_clack(rng, 70, 175.0, 0.55, 0.75), ms(700)),
+        (_clack(rng, 55, 700.0, 0.28, 0.85), ms(1340)),
+    )
+
+
+def shotgun_reload(rng: random.Random) -> list[float]:
+    """Shell by shell, then the pump - the reload you can hear the count of.
+
+    This one carries information the others do not: a player who learns the rhythm
+    knows how many shells are already in without looking at the HUD.
+    """
+    layers = [(_clack(rng, 55, 240.0, 0.45, 0.7), ms(120 + 480 * i)) for i in range(4)]
+    layers.append((_clack(rng, 90, 130.0, 0.65, 0.95), ms(2180)))
+    return _mix(*layers)
+
+
+def empty_click(rng: random.Random, freq: float = 900.0) -> list[float]:
     return _mix(
         (_noise(ms(22), 0.0003, 0.06, 0.9, rng), 0),
-        (_tone(ms(30), 900.0, 0.0005, 0.07, 0.25, sweep=0.5), 0),
+        (_tone(ms(30), freq, 0.0005, 0.07, 0.25, sweep=0.5), 0),
     )
 
 
@@ -356,9 +421,21 @@ def zip_release(rng: random.Random) -> list[float]:
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
+    # Each weapon owns its whole audio identity, not just its damage numbers:
+    # section 6 puts roughly half of gunplay feel in the sound, so four guns that
+    # share one sample are, to the ear, one gun with four fire rates.
+    _write("weapons/pistol_fire.wav", pistol_fire(rng))
+    _write("weapons/pistol_reload.wav", pistol_reload(rng))
+    _write("weapons/pistol_empty.wav", empty_click(rng, 1050.0))
     _write("weapons/rifle_fire.wav", rifle_fire(rng))
     _write("weapons/rifle_reload.wav", rifle_reload(rng))
     _write("weapons/rifle_empty.wav", empty_click(rng))
+    _write("weapons/shotgun_fire.wav", shotgun_fire(rng))
+    _write("weapons/shotgun_reload.wav", shotgun_reload(rng))
+    _write("weapons/shotgun_empty.wav", empty_click(rng, 640.0))
+    _write("weapons/smg_fire.wav", smg_fire(rng))
+    _write("weapons/smg_reload.wav", smg_reload(rng))
+    _write("weapons/smg_empty.wav", empty_click(rng, 1180.0))
     _write("impacts/impact_world.wav", impact_world(rng))
     _write("impacts/impact_flesh.wav", impact_flesh(rng))
     _write("ui/hitmarker_body.wav", hitmarker(760.0, 60, 0.7))
