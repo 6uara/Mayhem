@@ -11,7 +11,7 @@ func test_tokens_autoload_is_registered() -> void:
 	assert_eq(Tokens.PLAYER, Color("#35E0D4"), "PLAYER accent")
 	assert_eq(Tokens.ENEMY, Color("#FF3B54"), "ENEMY accent")
 	assert_eq(Tokens.REWARD, Color("#FFB020"), "REWARD accent")
-	assert_eq(Tokens.HAZARD, Color("#C6FF3D"), "HAZARD accent")
+	assert_eq(Tokens.HAZARD, Color("#FC3A00"), "HAZARD accent")
 
 
 func test_every_named_font_exists_and_loads() -> void:

@@ -15,13 +15,17 @@ const TEXT   := Color("#E6E8EF")  ## primary text, crosshair
 const PLAYER := Color("#35E0D4")  ## yours: health, ammo, dash, grapple. Shape: square
 const ENEMY  := Color("#FF3B54")  ## threat, damage in, hitmarkers. Shape: diamond/chevron
 const REWARD := Color("#FFB020")  ## currency, pickups, Host voice. Shape: circle
-const HAZARD := Color("#C6FF3D")  ## traps, elite waves, power-ups. Shape: triangle
+## Lava orange, not the acid green this shipped with - the pool material is meant to
+## read as molten rock, and this is the one colour every hazard, the elite-wave
+## stripe and the elite archetype itself are keyed to. Distinct from ENEMY's
+## crimson-pink on purpose: one is "this attacks you", the other is "this burns you".
+const HAZARD := Color("#FC3A00")  ## traps, elite waves, power-ups. Shape: triangle
 const HEAL   := Color("#8AF0C4")  ## healing VFX only, never UI
 
 const GLOW_PLAYER := Color("#12706A")
 const GLOW_ENEMY  := Color("#7A1425")
 const GLOW_REWARD := Color("#7A5000")
-const GLOW_HAZARD := Color("#4E6B00")
+const GLOW_HAZARD := Color("#7A1B00")
 
 const PANEL_ALPHA    := 0.82  ## BASE fill over gameplay
 const SUBTITLE_ALPHA := 0.72  ## VOID fill behind subtitles
@@ -124,7 +128,7 @@ const ARM_PULSE_TIME := 1.4  ## seconds, on dash spend
 ## Enemy dominant colours. Silhouette is the primary read; colour confirms.
 const ENEMY_RUSHER   := Color("#FF3B54")
 const ENEMY_RANGER   := Color("#FF7A1F")
-const ENEMY_ELITE    := Color("#C6FF3D")
+const ENEMY_ELITE    := Color("#FC3A00")
 const ENEMY_HEALER   := Color("#B45CFF")
 const ENEMY_SUMMONER := Color("#FF3BC1")
 

@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bjjpjb6uy3hkj"]
+
+[ext_resource type="Texture2D" uid="uid://rdo3mfycnxcf" path="res://assets/textures/Noise128x128/Melt/Melt_11-128x128.png" id="1_8sxhm"]
+
+[resource]
+albedo_color = Color(0.9882353, 0.22745098, 0, 1)
+normal_enabled = true
+normal_texture = ExtResource("1_8sxhm")

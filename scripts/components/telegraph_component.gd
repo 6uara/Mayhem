@@ -48,6 +48,11 @@ var state: State = State.IDLE:
 		state_changed.emit(value)
 
 var _materials: Array[StandardMaterial3D] = []
+## Meshes that arrived with their own ShaderMaterial - a lava pool, a portal - keep
+## it. Driving "glow_energy" on it is how the same WARNING blink / ACTIVE pulse the
+## flat materials get still reaches a custom surface, without this component ever
+## needing to know what that surface looks like.
+var _shader_materials: Array[ShaderMaterial] = []
 var _time: float = 0.0
 var _blink_step: float = 0.25
 var _is_blinking: bool = false
@@ -60,7 +65,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _materials.is_empty():
+	if _materials.is_empty() and _shader_materials.is_empty():
 		return
 	_time += delta
 	if _is_blinking:
@@ -97,9 +102,14 @@ func refresh_materials() -> void:
 
 func _build_materials() -> void:
 	_materials.clear()
+	_shader_materials.clear()
 	var tint: Color = get_color()
 	for mesh: MeshInstance3D in meshes:
 		if mesh == null:
+			continue
+		var existing := mesh.material_override as ShaderMaterial
+		if existing != null:
+			_shader_materials.push_back(existing)
 			continue
 		var material := StandardMaterial3D.new()
 		material.albedo_color = tint
@@ -130,3 +140,5 @@ func _enter_state() -> void:
 func _set_energy(energy: float) -> void:
 	for material: StandardMaterial3D in _materials:
 		material.emission_energy_multiplier = energy
+	for material: ShaderMaterial in _shader_materials:
+		material.set_shader_parameter(&"glow_energy", energy)
