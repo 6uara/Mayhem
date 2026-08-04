@@ -28,6 +28,21 @@ enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 ## Steering acceleration while airborne. Horizontal speed itself is never damped in
 ## air - that is what makes slide-jump chaining conserve momentum.
 @export var air_control: float = 18.0
+## Falling is heavier than rising.
+##
+## A symmetric arc is the single loudest source of "floaty": real weight is sold on
+## the way down, and holding the same gravity both ways makes the descent read as a
+## slow drift back to the ground. The rise keeps its full hang time; only the fall
+## is accelerated (CLAUDE.md 5.2 protects momentum, and this taxes none of it).
+@export var fall_gravity_scale: float = 1.7
+## Releasing jump mid-rise ends the climb early, so a tap and a hold are different
+## heights. Without it every jump is one committed arc the player cannot shape,
+## which is most of what reads as an animation playing rather than a jump.
+@export var jump_cut_multiplier: float = 0.45
+## Grace period after walking off a ledge where a jump still counts.
+@export var coyote_time: float = 0.10
+## A jump pressed this long before touchdown is honoured on landing.
+@export var jump_buffer_time: float = 0.12
 
 @export_group("Slide")
 ## One-time boost when entering a slide from a run. Not applied on bhop re-entry,
@@ -78,6 +93,8 @@ var _head_rest_height: float = 0.0
 var _was_on_floor: bool = true
 ## Set when a slide entry already paid its boost; cleared on standing up.
 var _slide_boost_spent: bool = false
+var _coyote_left: float = 0.0
+var _jump_buffer_left: float = 0.0
 
 
 func _ready() -> void:
@@ -92,6 +109,10 @@ func _physics_process(delta: float) -> void:
 	if body == null:
 		return
 	dash_charges.tick(delta)
+
+	if Input.is_action_just_pressed("jump"):
+		_jump_buffer_left = jump_buffer_time
+	_jump_buffer_left = maxf(_jump_buffer_left - delta, 0.0)
 
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var wish_direction: Vector3 = (body.transform.basis * Vector3(input.x, 0.0, input.y))
@@ -157,12 +178,20 @@ func _tick_grounded(wish_direction: Vector3, delta: float) -> void:
 		horizontal = horizontal.move_toward(Vector3.ZERO, friction * delta)
 	_set_horizontal(horizontal)
 
-	if Input.is_action_pressed("jump") and body.is_on_floor():
+	if _consume_jump():
 		_jump()
 
 
 func _tick_airborne(wish_direction: Vector3, delta: float) -> void:
 	_apply_gravity(delta)
+	# Coyote and buffered jumps both resolve while technically airborne: walking off
+	# a ledge puts the player here a frame before they press, and a press made just
+	# before touchdown is still waiting when the floor arrives.
+	if _consume_jump():
+		_jump()
+		return
+	if Input.is_action_just_released("jump") and body.velocity.y > 0.0:
+		body.velocity.y *= jump_cut_multiplier
 	# Mantle: holding jump against a low ledge boosts up it instead of face-planting.
 	# Momentum-killing geometry snags are a bug by decree of CLAUDE.md 5.2.
 	if Input.is_action_pressed("jump") and wish_direction != Vector3.ZERO:
@@ -197,7 +226,7 @@ func _tick_sliding(wish_direction: Vector3, delta: float) -> void:
 	horizontal = horizontal.move_toward(Vector3.ZERO, slide_friction * delta)
 	_set_horizontal(horizontal)
 
-	if Input.is_action_pressed("jump") and body.is_on_floor():
+	if _consume_jump():
 		# Slide-jump: full horizontal speed carries into the air. This is the bhop.
 		_jump()
 		return
@@ -280,6 +309,24 @@ func _stand_up() -> void:
 	_set_head_height(_head_rest_height)
 
 
+## True when a jump should fire this frame, and consumes whatever allowed it.
+##
+## Three ways in, and they are distinct affordances rather than redundancy: holding
+## the button is auto-bhop, so chaining slides never demands frame-perfect taps; the
+## buffer honours a press made just before the floor arrived; coyote covers a press
+## made just after walking off a ledge. The last two are what separate "the game
+## dropped my input" from "I mistimed that" - the arena is built on jump links and
+## disappearing platforms, where both misses happen constantly.
+func _consume_jump() -> bool:
+	if not body.is_on_floor() and _coyote_left <= 0.0:
+		return false
+	if not Input.is_action_pressed("jump") and _jump_buffer_left <= 0.0:
+		return false
+	_jump_buffer_left = 0.0
+	_coyote_left = 0.0
+	return true
+
+
 func _jump() -> void:
 	body.velocity.y = _stat(StatsComponent.JUMP_VELOCITY, jump_velocity)
 	state = State.AIRBORNE
@@ -287,8 +334,15 @@ func _jump() -> void:
 	AudioPool.play_3d(jump_sound, body.global_position, AudioPool.BUS_WORLD)
 
 
-func _post_move(fall_speed: float, _delta: float) -> void:
+func _post_move(fall_speed: float, delta: float) -> void:
 	var on_floor: bool = body.is_on_floor()
+
+	# The rising check matters: on the frame a jump fires the body is often still
+	# touching the floor, and refreshing coyote there would hand out a second jump.
+	if on_floor and body.velocity.y <= 0.0:
+		_coyote_left = coyote_time
+	else:
+		_coyote_left = maxf(_coyote_left - delta, 0.0)
 
 	if state == State.GROUNDED and not on_floor:
 		state = State.AIRBORNE
@@ -334,8 +388,10 @@ func _fallback_state() -> State:
 
 
 func _apply_gravity(delta: float) -> void:
-	if not body.is_on_floor():
-		body.velocity.y -= gravity * delta
+	if body.is_on_floor():
+		return
+	var scale: float = 1.0 if body.velocity.y > 0.0 else fall_gravity_scale
+	body.velocity.y -= gravity * scale * delta
 
 
 func _horizontal() -> Vector3:

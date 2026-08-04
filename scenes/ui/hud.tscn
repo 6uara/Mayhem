@@ -6,7 +6,6 @@
 [ext_resource type="Script" path="res://scripts/ui/segment_strip.gd" id="3_strip"]
 [ext_resource type="Script" path="res://scripts/ui/mayhem_icon.gd" id="4_icon"]
 [ext_resource type="Script" path="res://scripts/ui/stripe_bar.gd" id="5_stripe"]
-[ext_resource type="Script" path="res://scripts/ui/viewmodel.gd" id="6_vm"]
 [ext_resource type="Script" path="res://scripts/ui/damage_indicators.gd" id="7_dmg"]
 [ext_resource type="Script" path="res://scripts/ui/broadcast_bug.gd" id="8_bug"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_body.wav" id="9_hit_body"]
@@ -24,23 +23,6 @@ height = 512
 fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0.5, 0)
-
-[sub_resource type="StandardMaterial3D" id="Mat_gun"]
-albedo_color = Color(0.18, 0.19, 0.22, 1)
-
-[sub_resource type="BoxMesh" id="Mesh_gun"]
-material = SubResource("Mat_gun")
-size = Vector3(0.07, 0.12, 0.55)
-
-[sub_resource type="StandardMaterial3D" id="Mat_flash"]
-transparency = 1
-shading_mode = 0
-albedo_color = Color(1, 0.69, 0.13, 0.9)
-
-[sub_resource type="SphereMesh" id="Mesh_flash"]
-material = SubResource("Mat_flash")
-radius = 0.05
-height = 0.1
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -465,41 +447,3 @@ offset_bottom = 6.0
 visible = false
 mouse_filter = 2
 
-[node name="ViewmodelViewport" type="SubViewportContainer" parent="."]
-anchors_preset = 15
-anchor_left = 0
-anchor_top = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-stretch = true
-
-[node name="SubViewport" type="SubViewport" parent="ViewmodelViewport"]
-own_world_3d = true
-transparent_bg = true
-handle_input_locally = false
-size = Vector2i(1920, 1080)
-render_target_update_mode = 4
-
-[node name="ViewmodelCamera" type="Camera3D" parent="ViewmodelViewport/SubViewport"]
-fov = 75.0
-near = 0.01
-
-[node name="Viewmodel" type="Node3D" parent="ViewmodelViewport/SubViewport/ViewmodelCamera" node_paths=PackedStringArray("muzzle_flash", "camera")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, -0.16, -0.4)
-script = ExtResource("6_vm")
-muzzle_flash = NodePath("MuzzleFlash")
-camera = NodePath("..")
-
-[node name="Mesh" type="MeshInstance3D" parent="ViewmodelViewport/SubViewport/ViewmodelCamera/Viewmodel"]
-mesh = SubResource("Mesh_gun")
-
-[node name="MuzzleFlash" type="MeshInstance3D" parent="ViewmodelViewport/SubViewport/ViewmodelCamera/Viewmodel"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.3)
-visible = false
-mesh = SubResource("Mesh_flash")
-
-[node name="OmniLight3D" type="OmniLight3D" parent="ViewmodelViewport/SubViewport/ViewmodelCamera"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.5, 0.5)
-light_energy = 2.0
-omni_range = 4.0

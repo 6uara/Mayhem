@@ -18,6 +18,10 @@ const DEFAULTS: Dictionary = {
 	"audio/vo_volume": 1.0,
 	"accessibility/screenshake_enabled": true,
 	"accessibility/motion_blur_enabled": false,
+	## View bob is the most common motion-sickness trigger in a first-person game,
+	## and it carries no information the player needs - so it gets its own switch
+	## rather than riding along with screenshake.
+	"accessibility/view_bob_enabled": true,
 	"accessibility/subtitles_enabled": true,
 	## Replaces the low-health pulse and low-ammo blink with static frames of the
 	## same colour, so no information is lost (SPEC-MENUS-HOST 3.3).

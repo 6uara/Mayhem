@@ -6,13 +6,11 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/elite_windup.wav" id="4_windup"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/elite_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/elite_death.wav" id="6_death"]
-
-[sub_resource type="BoxMesh" id="Mesh_elite"]
-size = Vector3(1.7, 2.8, 1.5)
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/ual1_standard.res" id="7_mesh"]
 
 [resource]
 script = ExtResource("1_script")
-mesh = SubResource("Mesh_elite")
+mesh = ExtResource("7_mesh")
 archetype = 2
 id = &"elite"
 display_name = "Elite"

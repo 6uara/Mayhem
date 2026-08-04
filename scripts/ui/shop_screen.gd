@@ -103,24 +103,39 @@ func _rebuild_cards(offers: Array[Dictionary]) -> void:
 
 
 func _make_card(offer: Dictionary) -> Control:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(CARD_MIN_WIDTH, 0)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override(&"panel", _card_style())
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override(&"margin_left", 18)
+	margin.add_theme_constant_override(&"margin_top", 16)
+	margin.add_theme_constant_override(&"margin_right", 18)
+	margin.add_theme_constant_override(&"margin_bottom", 16)
+	panel.add_child(margin)
+
 	var card := VBoxContainer.new()
-	card.custom_minimum_size = Vector2(CARD_MIN_WIDTH, 0)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_constant_override(&"separation", 8)
+	margin.add_child(card)
+
+	var tag := Label.new()
+	tag.theme_type_variation = &"HUDLabel"
+	tag.text = _category_label(offer)
+	card.add_child(tag)
 
 	var title := Label.new()
 	title.text = String(offer["name"])
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.add_theme_font_size_override(&"font_size", 20)
 	card.add_child(title)
 
-	var tag := Label.new()
-	tag.text = _category_label(offer)
-	tag.modulate = Color(0.7, 0.75, 0.85)
-	card.add_child(tag)
-
 	var description := Label.new()
+	description.theme_type_variation = &"HUDLabel"
 	description.text = String(offer["description"])
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	description.add_theme_color_override(&"font_color", Color(0.902, 0.91, 0.937, 0.85))
 	card.add_child(description)
 
 	var button := Button.new()
@@ -128,7 +143,22 @@ func _make_card(offer: Dictionary) -> Control:
 	button.pressed.connect(_on_buy_pressed.bind(offer))
 	button.set_meta(&"offer", offer)
 	card.add_child(button)
-	return card
+	return panel
+
+
+## Flat dark chamfer panel, thin border - the affordable rail is added in
+## `_refresh_affordability` so a card's own state (not a second stylebox) drives it.
+func _card_style() -> StyleBox:
+	var style := ChamferStyleBox.new()
+	style.fill_color = Color(0.086, 0.098, 0.125, 1)
+	style.fill_alpha = 0.85
+	style.border_color = Color(0.173, 0.192, 0.251, 1)
+	style.border_width = 1.0
+	style.chamfer = 14.0
+	style.rail_width = 3.0
+	style.rail_color = Color(0.208, 0.878, 0.831, 1)
+	style.rail_side = SIDE_LEFT
+	return style
 
 
 func _category_label(offer: Dictionary) -> String:
@@ -145,17 +175,34 @@ func _category_label(offer: Dictionary) -> String:
 	return "%s%s" % [names[category] if category >= 0 and category < 3 else "UPGRADE", suffix]
 
 
-## Unaffordable cards are visibly dead rather than silently failing on click.
+## Unaffordable cards are visibly dead rather than silently failing on click:
+## the panel dims and its rail goes dark, the same "not current" language the
+## rest of the UI uses for an inactive slot.
 func _refresh_affordability() -> void:
-	for card: Node in _cards.get_children():
-		for child: Node in card.get_children():
-			var button := child as Button
-			if button == null or not button.has_meta(&"offer"):
-				continue
-			var offer: Dictionary = button.get_meta(&"offer")
-			var affordable: bool = shop != null and shop.can_afford(offer)
-			button.disabled = not affordable
-			card.modulate = Color.WHITE if affordable else Color(1, 1, 1, 0.45)
+	for node: Node in _cards.get_children():
+		var panel := node as Control
+		var button: Button = _find_button(node)
+		if panel == null or button == null or not button.has_meta(&"offer"):
+			continue
+		var offer: Dictionary = button.get_meta(&"offer")
+		var affordable: bool = shop != null and shop.can_afford(offer)
+		button.disabled = not affordable
+		panel.modulate = Color.WHITE if affordable else Color(1, 1, 1, 0.45)
+		var style: StyleBox = panel.get_theme_stylebox(&"panel")
+		var chamfer_style := style as ChamferStyleBox
+		if chamfer_style != null:
+			chamfer_style.rail_color.a = 1.0 if affordable else 0.0
+
+
+func _find_button(node: Node) -> Button:
+	var button := node as Button
+	if button != null:
+		return button
+	for child: Node in node.get_children():
+		var found: Button = _find_button(child)
+		if found != null:
+			return found
+	return null
 
 
 func _on_buy_pressed(offer: Dictionary) -> void:

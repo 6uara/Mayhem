@@ -180,6 +180,19 @@ def land(rng: random.Random) -> list[float]:
     )
 
 
+def footstep(rng: random.Random, pitch: float) -> list[float]:
+    """A scuff over a low body thump - much quieter and shorter than a landing.
+
+    Four pitched variants ship rather than one sample, because a walk cycle plays
+    this several times a second: an identical step on a fixed interval is the most
+    audible robotic tell in the whole locomotion loop.
+    """
+    return _mix(
+        (_lowpass(_noise(ms(45), 0.001, 0.10, 0.40, rng), 1100.0 * pitch), 0),
+        (_tone(ms(60), 95.0 * pitch, 0.001, 0.13, 0.26, sweep=0.7), 0),
+    )
+
+
 def slide(rng: random.Random) -> list[float]:
     """Gritty scrape burst - stands in for a loop until the audio pass."""
     return _lowpass(_noise(ms(300), 0.02, 0.45, 0.8, rng), 2400.0)
@@ -355,6 +368,8 @@ def main() -> None:
     _write("world/jump.wav", jump(rng))
     _write("world/land.wav", land(rng))
     _write("world/slide.wav", slide(rng))
+    for index, step_pitch in enumerate((0.90, 1.0, 1.09, 1.18)):
+        _write("world/footstep_%d.wav" % (index + 1), footstep(rng, step_pitch))
     _write("world/grapple_fire.wav", grapple_fire(rng))
     _write("world/grapple_release.wav", grapple_release(rng))
     _write("world/bounce_pad.wav", bounce_pad(rng))

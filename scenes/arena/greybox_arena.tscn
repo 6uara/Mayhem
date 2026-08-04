@@ -4,14 +4,16 @@
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
 [ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
 [ext_resource type="Script" uid="uid://dg7yh07a2eohc" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
-[ext_resource type="NavigationMesh" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
+[ext_resource type="NavigationMesh" uid="uid://bbd8u1bap6a0" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
 [ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
-[ext_resource type="PackedScene" path="res://scenes/arena/jump_link.tscn" id="12_link"]
 [ext_resource type="PackedScene" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
 [ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
 [ext_resource type="PackedScene" path="res://scenes/arena/moving_platform.tscn" id="9_moving"]
 [ext_resource type="PackedScene" path="res://scenes/arena/zip_line.tscn" id="10_zip"]
 [ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="11_anchor"]
+[ext_resource type="PackedScene" path="res://scenes/arena/jump_link.tscn" id="12_link"]
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/scifi_container.res" id="13_container"]
+[ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="14_glitch"]
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
@@ -21,17 +23,68 @@ ambient_light_color = Color(0.5, 0.55, 0.65, 1)
 ambient_light_energy = 0.6
 tonemap_mode = 2
 
-[sub_resource type="StandardMaterial3D" id="Mat_floor"]
-albedo_color = Color(0.32, 0.33, 0.36, 1)
+[sub_resource type="ShaderMaterial" id="Mat_floor"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.078, 0.086, 0.106, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.35
+shader_parameter/line_width = 0.05
+shader_parameter/emission_energy = 1.6
+shader_parameter/glitch_strength = 0.4
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.55
+shader_parameter/metallic_value = 0.15
+shader_parameter/fresnel_power = 2.5
+shader_parameter/fresnel_strength = 1.4
 
-[sub_resource type="StandardMaterial3D" id="Mat_wall"]
-albedo_color = Color(0.42, 0.43, 0.47, 1)
+[sub_resource type="ShaderMaterial" id="Mat_wall"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.1, 0.106, 0.125, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.4
+shader_parameter/line_width = 0.045
+shader_parameter/emission_energy = 1.9
+shader_parameter/glitch_strength = 0.5
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_strength = 1.6
 
-[sub_resource type="StandardMaterial3D" id="Mat_mid"]
-albedo_color = Color(0.38, 0.42, 0.5, 1)
+[sub_resource type="ShaderMaterial" id="Mat_mid"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.086, 0.098, 0.125, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.5
+shader_parameter/line_width = 0.05
+shader_parameter/emission_energy = 2.1
+shader_parameter/glitch_strength = 0.55
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_strength = 1.8
 
-[sub_resource type="StandardMaterial3D" id="Mat_high"]
-albedo_color = Color(0.46, 0.42, 0.38, 1)
+[sub_resource type="ShaderMaterial" id="Mat_high"]
+shader = ExtResource("14_glitch")
+shader_parameter/base_color = Color(0.11, 0.1, 0.09, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 0.5
+shader_parameter/line_width = 0.05
+shader_parameter/emission_energy = 2.1
+shader_parameter/glitch_strength = 0.55
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_strength = 1.8
+
+[sub_resource type="BoxShape3D" id="Shape_container"]
+size = Vector3(13.25387, 6.018111, 5.675098)
 
 [node name="GreyboxArena" type="Node3D" unique_id=826856576]
 
@@ -274,29 +327,46 @@ speed = 18.0
 [node name="ZipEastToWest" parent="ZipLines" unique_id=1744568083 instance=ExtResource("10_zip")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 4.4, 10)
 
-[node name="JumpLinks" type="Node3D" parent="."]
+[node name="JumpLinks" type="Node3D" parent="." unique_id=1606545173]
 
-[node name="LinkToMidWest" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 0.1, 6.0)
-start_position = Vector3(0, 0, 0)
-end_position = Vector3(0.0, 3.4, -6.5)
+[node name="LinkToMidWest" parent="JumpLinks" unique_id=1344915176 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.1, 6)
+end_position = Vector3(0, 3.4, -6.5)
 
-[node name="LinkToMidEast" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0, 0.1, -8.0)
-start_position = Vector3(0, 0, 0)
-end_position = Vector3(0.0, 3.4, 1.5)
+[node name="LinkToMidEast" parent="JumpLinks" unique_id=1470204312 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.1, -8)
+end_position = Vector3(0, 3.4, 1.5)
 
-[node name="LinkMidWestUp" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 3.5, -17.0)
-start_position = Vector3(0, 0, 0)
-end_position = Vector3(8.0, 3.0, -10.0)
+[node name="LinkMidWestUp" parent="JumpLinks" unique_id=1373132923 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.5, -17)
+end_position = Vector3(8, 3, -10)
 
-[node name="LinkMidEastUp" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.0, 3.5, 8.0)
-start_position = Vector3(0, 0, 0)
-end_position = Vector3(-10.0, 3.0, -1.0)
+[node name="LinkMidEastUp" parent="JumpLinks" unique_id=340195946 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 3.5, 8)
+end_position = Vector3(-10, 3, -1)
 
-[node name="LinkPerchToWalk" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 6.5, 2.0)
-start_position = Vector3(0, 0, 0)
-end_position = Vector3(-8.0, 0.0, -28.5)
+[node name="LinkPerchToWalk" parent="JumpLinks" unique_id=637018459 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 6.5, 2)
+end_position = Vector3(-8, 0, -28.5)
+
+[node name="Props" type="Node3D" parent="." unique_id=1213261736]
+
+[node name="Container1" type="StaticBody3D" parent="Props" unique_id=1889635683]
+transform = Transform3D(0.2658, 0, 0, 0, 0.2658, 0, 0, 0, 0.2658, -8, 0.8, 12)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Container1" unique_id=796517705]
+mesh = ExtResource("13_container")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container1" unique_id=492057515]
+shape = SubResource("Shape_container")
+
+[node name="Container2" type="StaticBody3D" parent="Props" unique_id=1413366597]
+transform = Transform3D(0.2658, 0, 0, 0, 0.2658, 0, 0, 0, 0.2658, 9, 0.8, 15)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Container2" unique_id=1208907347]
+mesh = ExtResource("13_container")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container2" unique_id=793760517]
+shape = SubResource("Shape_container")

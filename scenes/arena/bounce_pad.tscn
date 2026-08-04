@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/bounce_pad.gd" id="1_pad"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/bounce_pad.wav" id="2_sound"]
+[ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="3_glitch"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_pad"]
 emission_enabled = true
@@ -19,6 +20,28 @@ height = 0.3
 radius = 1.2
 height = 0.6
 
+[sub_resource type="ShaderMaterial" id="Mat_ring"]
+shader = ExtResource("3_glitch")
+shader_parameter/base_color = Color(0.086, 0.098, 0.115, 1)
+shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/grid_scale = 3.0
+shader_parameter/line_width = 0.08
+shader_parameter/emission_energy = 2.0
+shader_parameter/glitch_strength = 0.5
+shader_parameter/glitch_speed = 0.0
+shader_parameter/scanline_speed = 0.0
+shader_parameter/roughness_value = 0.5
+shader_parameter/metallic_value = 0.2
+shader_parameter/fresnel_power = 2.5
+shader_parameter/fresnel_strength = 1.6
+
+[sub_resource type="CylinderMesh" id="Mesh_ring"]
+material = SubResource("Mat_ring")
+top_radius = 1.45
+bottom_radius = 1.45
+height = 0.06
+radial_segments = 24
+
 [node name="BouncePad" type="Area3D"]
 collision_layer = 2048
 collision_mask = 2
@@ -28,6 +51,10 @@ bounce_sound = ExtResource("2_sound")
 [node name="Mesh" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
 mesh = SubResource("Mesh_pad")
+
+[node name="GlitchRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("Mesh_ring")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
