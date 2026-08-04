@@ -14,6 +14,11 @@ signal expired()
 @export var damage: float = 20.0
 ## Seconds between the damage ticks while something stands in it.
 @export var tick_interval: float = 0.6
+## How far above the pool's own floor a body may be and still count as standing in
+## it. Acid on the ground must not reach someone on a platform overhead - the decal
+## is the promise, and a promise that leaks upward through a floor is worse than no
+## telegraph at all.
+@export var damage_height: float = 2.2
 ## 0 = permanent arena trap. Above 0 = a temporary pool, like the Elite's slam.
 @export var duration: float = 0.0
 @export var radius: float = 3.0:
@@ -106,11 +111,30 @@ func _apply_radius() -> void:
 func _damage(body: Node3D) -> void:
 	if not body.is_in_group(&"player") and not body.is_in_group(&"enemy"):
 		return
+	if not _is_standing_in_it(body):
+		return
 	for child: Node in body.get_children():
 		var health := child as HealthComponent
 		if health != null:
 			health.apply_damage(damage)
 			return
+
+
+## A tall trigger volume catches anyone in the column of air above the pool. Being
+## inside the volume is not the same as being in the acid: the feet have to be near
+## the pool's own floor, with nothing solid in between.
+func _is_standing_in_it(body: Node3D) -> bool:
+	var height_above: float = body.global_position.y - global_position.y
+	if height_above < -0.5 or height_above > damage_height:
+		return false
+
+	# Anything solid between the pool and the body means the body is standing on it.
+	var from: Vector3 = body.global_position + Vector3.UP * 0.05
+	var to := Vector3(from.x, global_position.y + 0.02, from.z)
+	if from.y <= to.y:
+		return true
+	var query := PhysicsRayQueryParameters3D.create(from, to, PhysicsLayers.WORLD)
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func _on_body_entered(body: Node3D) -> void:

@@ -1,16 +1,25 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene format=3 uid="uid://coeqpojfb1pgw"]
 
 [ext_resource type="PackedScene" path="res://scenes/enemies/target_dummy.tscn" id="1_dummy"]
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
 [ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
-[ext_resource type="Script" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
+[ext_resource type="Script" uid="uid://dg7yh07a2eohc" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
 [ext_resource type="NavigationMesh" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
 [ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
+[ext_resource type="PackedScene" path="res://scenes/arena/jump_link.tscn" id="12_link"]
 [ext_resource type="PackedScene" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
 [ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
 [ext_resource type="PackedScene" path="res://scenes/arena/moving_platform.tscn" id="9_moving"]
 [ext_resource type="PackedScene" path="res://scenes/arena/zip_line.tscn" id="10_zip"]
 [ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="11_anchor"]
+
+[sub_resource type="Environment" id="Env_arena"]
+background_mode = 1
+background_color = Color(0.09, 0.1, 0.13, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5, 0.55, 0.65, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.32, 0.33, 0.36, 1)
@@ -24,327 +33,270 @@ albedo_color = Color(0.38, 0.42, 0.5, 1)
 [sub_resource type="StandardMaterial3D" id="Mat_high"]
 albedo_color = Color(0.46, 0.42, 0.38, 1)
 
-[sub_resource type="Environment" id="Env_arena"]
-background_mode = 1
-background_color = Color(0.09, 0.1, 0.13, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.5, 0.55, 0.65, 1)
-ambient_light_energy = 0.6
-tonemap_mode = 2
+[node name="GreyboxArena" type="Node3D" unique_id=826856576]
 
-[node name="GreyboxArena" type="Node3D"]
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=465304421]
 environment = SubResource("Env_arena")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1959423499]
 transform = Transform3D(0.86, -0.35, 0.37, 0, 0.72, 0.69, -0.51, -0.6, 0.62, 0, 14, 0)
 light_energy = 1.1
 shadow_enabled = true
 
-[node name="Floor" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="Floor" type="CSGBox3D" parent="." unique_id=1763754559 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(70, 1, 70)
 material = SubResource("Mat_floor")
 
-[node name="WallNorth" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallNorth" type="CSGBox3D" parent="." unique_id=909491122 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -35)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(70, 12, 1)
 material = SubResource("Mat_wall")
 
-[node name="WallSouth" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallSouth" type="CSGBox3D" parent="." unique_id=85424110 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 35)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(70, 12, 1)
 material = SubResource("Mat_wall")
 
-[node name="WallEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallEast" type="CSGBox3D" parent="." unique_id=131456754 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 6, 0)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(1, 12, 70)
 material = SubResource("Mat_wall")
 
-[node name="WallWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="WallWest" type="CSGBox3D" parent="." unique_id=784012259 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 6, 0)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(1, 12, 70)
 material = SubResource("Mat_wall")
 
-[node name="PatternWall" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="PatternWall" type="CSGBox3D" parent="." unique_id=2026334196 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 30)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(14, 8, 0.5)
 material = SubResource("Mat_wall")
 
-[node name="MidPlatformWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MidPlatformWest" type="CSGBox3D" parent="." unique_id=111667415 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3, -8)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(16, 0.8, 20)
 material = SubResource("Mat_mid")
 
-[node name="MidPlatformEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MidPlatformEast" type="CSGBox3D" parent="." unique_id=1671518141 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3, 4)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(16, 0.8, 24)
 material = SubResource("Mat_mid")
 
-[node name="RampToMidWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 0.966, -0.259, 0, 0.259, 0.966, -24, 1.4, 8)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(6, 0.6, 14)
-material = SubResource("Mat_mid")
-
-[node name="RampToMidEast" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 24, 1.4, -14)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(6, 0.6, 14)
-material = SubResource("Mat_mid")
-
-[node name="SlideHill" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(0.966, 0.259, 0, -0.259, 0.966, 0, 0, 0, 1, -6, 1.8, -20)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(18, 0.8, 10)
-material = SubResource("Mat_mid")
-
-[node name="HighWalkwayNorth" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="HighWalkwayNorth" type="CSGBox3D" parent="." unique_id=206537575 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -30)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(50, 0.8, 8)
 material = SubResource("Mat_high")
 
-[node name="HighPerchCenter" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="HighPerchCenter" type="CSGBox3D" parent="." unique_id=1080192312 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6, 6)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(10, 0.8, 10)
 material = SubResource("Mat_high")
 
-[node name="MantleBoxLow" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MantleBoxLow" type="CSGBox3D" parent="." unique_id=1624422919 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.6, 22)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(4, 1.2, 4)
 material = SubResource("Mat_wall")
 
-[node name="MantleBoxHigh" type="CSGBox3D" parent="." groups=["navigation_source"]]
+[node name="MantleBoxHigh" type="CSGBox3D" parent="." unique_id=2115569396 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 22)
 use_collision = true
-collision_layer = 1
 collision_mask = 0
 size = Vector3(4, 2, 4)
 material = SubResource("Mat_wall")
 
-[node name="RampToHighWest" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 0.937, -0.35, 0, 0.35, 0.937, -24, 4.9, -22)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(6, 0.6, 9)
-material = SubResource("Mat_mid")
+[node name="BouncePads" type="Node3D" parent="." unique_id=1211143252]
 
-[node name="RampToPerch" type="CSGBox3D" parent="." groups=["navigation_source"]]
-transform = Transform3D(0.937, 0.35, 0, -0.35, 0.937, 0, 0, 0, 1, 15, 4.9, 6)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(9, 0.6, 6)
-material = SubResource("Mat_high")
-
-[node name="BouncePads" type="Node3D" parent="."]
-
-[node name="PadToMid" parent="BouncePads" instance=ExtResource("2_pad")]
+[node name="PadToMid" parent="BouncePads" unique_id=127065830 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -8)
 
-[node name="PadToHigh" parent="BouncePads" instance=ExtResource("2_pad")]
+[node name="PadToHigh" parent="BouncePads" unique_id=1911610862 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -2)
 bounce_velocity = 16.0
 
-[node name="PadCenter" parent="BouncePads" instance=ExtResource("2_pad")]
+[node name="PadCenter" parent="BouncePads" unique_id=1547436473 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 14)
 
-[node name="Navigation" type="NavigationRegion3D" parent="."]
+[node name="Navigation" type="NavigationRegion3D" parent="." unique_id=380616586]
 navigation_mesh = ExtResource("5_navmesh")
 script = ExtResource("4_nav")
-bake_on_ready = false
 
-[node name="SpawnDoors" type="Node3D" parent="."]
+[node name="SpawnDoors" type="Node3D" parent="." unique_id=809450170]
 
-[node name="Door01" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(0.7074, 0, -0.7068, 0, 1, 0, 0.7068, 0, 0.7074, -30.0, 0.0, -30.0)
-door_id = &"door_01"
+[node name="Door01" parent="SpawnDoors" unique_id=1001855610 instance=ExtResource("3_door")]
+transform = Transform3D(0.7074, 0, -0.7068, 0, 1, 0, 0.7068, 0, 0.7074, -30, 0, -30)
 
-[node name="Door02" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(0.7074, 0, 0.7068, 0, 1, 0, -0.7068, 0, 0.7074, 30.0, 0.0, -30.0)
+[node name="Door02" parent="SpawnDoors" unique_id=2119835574 instance=ExtResource("3_door")]
+transform = Transform3D(0.7074, 0, 0.7068, 0, 1, 0, -0.7068, 0, 0.7074, 30, 0, -30)
 door_id = &"door_02"
 
-[node name="Door03" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.7070, 0, -0.7072, 0, 1, 0, 0.7072, 0, -0.7070, -30.0, 0.0, 30.0)
+[node name="Door03" parent="SpawnDoors" unique_id=1761624449 instance=ExtResource("3_door")]
+transform = Transform3D(-0.707, 0, -0.7072, 0, 1, 0, 0.7072, 0, -0.707, -30, 0, 30)
 door_id = &"door_03"
 
-[node name="Door04" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.7070, 0, 0.7072, 0, 1, 0, -0.7072, 0, -0.7070, 30.0, 0.0, 30.0)
+[node name="Door04" parent="SpawnDoors" unique_id=410740972 instance=ExtResource("3_door")]
+transform = Transform3D(-0.707, 0, 0.7072, 0, 1, 0, -0.7072, 0, -0.707, 30, 0, 30)
 door_id = &"door_04"
 
-[node name="Door05" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(1.0000, 0, -0.0000, 0, 1, 0, 0.0000, 0, 1.0000, 0.0, 0.0, -33.0)
+[node name="Door05" parent="SpawnDoors" unique_id=283957854 instance=ExtResource("3_door")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -33)
 door_id = &"door_05"
 
-[node name="Door06" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.0002, 0, -1.0000, 0, 1, 0, 1.0000, 0, -0.0002, -24.0, 3.4, -16.0)
+[node name="Door06" parent="SpawnDoors" unique_id=2147149839 instance=ExtResource("3_door")]
+transform = Transform3D(-0.0002, 0, -1, 0, 1, 0, 1, 0, -0.0002, -24, 3.4, -16)
 door_id = &"door_06"
 
-[node name="Door07" parent="SpawnDoors" instance=ExtResource("3_door")]
-transform = Transform3D(-0.0002, 0, 1.0000, 0, 1, 0, -1.0000, 0, -0.0002, 24.0, 3.4, 14.0)
+[node name="Door07" parent="SpawnDoors" unique_id=2052969368 instance=ExtResource("3_door")]
+transform = Transform3D(-0.0002, 0, 1, 0, 1, 0, -1, 0, -0.0002, 24, 3.4, 14)
 door_id = &"door_07"
 
-[node name="AmmoPickups" type="Node3D" parent="."]
+[node name="AmmoPickups" type="Node3D" parent="." unique_id=1171072071]
 
-[node name="AmmoHighPerch" parent="AmmoPickups" instance=ExtResource("6_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0, 6.6, 6.0)
+[node name="AmmoHighPerch" parent="AmmoPickups" unique_id=651347118 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.6, 6)
 
-[node name="AmmoWalkway" parent="AmmoPickups" instance=ExtResource("6_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.0, 6.6, -30.0)
+[node name="AmmoWalkway" parent="AmmoPickups" unique_id=686354600 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 6.6, -30)
 
-[node name="AmmoCentre" parent="AmmoPickups" instance=ExtResource("6_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.2, 0.0)
+[node name="AmmoCentre" parent="AmmoPickups" unique_id=220389094 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 
-[node name="AmmoMidWest" parent="AmmoPickups" instance=ExtResource("6_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 3.6, -14.0)
+[node name="AmmoMidWest" parent="AmmoPickups" unique_id=1110875395 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.6, -14)
 
-[node name="AmmoMidEast" parent="AmmoPickups" instance=ExtResource("6_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0, 3.6, 8.0)
+[node name="AmmoMidEast" parent="AmmoPickups" unique_id=1684699852 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3.6, 8)
 
-[node name="AmmoCornerSE" parent="AmmoPickups" instance=ExtResource("6_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.0, 0.2, 28.0)
+[node name="AmmoCornerSE" parent="AmmoPickups" unique_id=904848428 instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.2, 28)
 
-[node name="Dummies" type="Node3D" parent="."]
+[node name="Dummies" type="Node3D" parent="." unique_id=890789504]
 
-[node name="TargetDummy" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy" parent="Dummies" unique_id=763614328 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
 
-[node name="TargetDummy2" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy2" parent="Dummies" unique_id=1012697192 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -10)
 
-[node name="TargetDummy3" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy3" parent="Dummies" unique_id=1588701622 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.4, -10)
 
-[node name="TargetDummy4" parent="Dummies" instance=ExtResource("1_dummy")]
+[node name="TargetDummy4" parent="Dummies" unique_id=14902844 instance=ExtResource("1_dummy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.4, 4)
 
-[node name="GrappleAnchors" type="Node3D" parent="."]
+[node name="GrappleAnchors" type="Node3D" parent="." unique_id=944728728]
 
+[node name="Anchor1" parent="GrappleAnchors" unique_id=1130465162 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -12)
 
-[node name="Anchor1" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 0.0, 8.0, -12.0)
+[node name="Anchor2" parent="GrappleAnchors" unique_id=1564620295 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 9, 14)
 
+[node name="Anchor3" parent="GrappleAnchors" unique_id=538974136 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 9, -20)
 
-[node name="Anchor2" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -16.0, 9.0, 14.0)
+[node name="Anchor4" parent="GrappleAnchors" unique_id=1894173354 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 7, 24)
 
+[node name="Anchor5" parent="GrappleAnchors" unique_id=589730265 instance=ExtResource("11_anchor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 10, 4)
 
-[node name="Anchor3" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 20.0, 9.0, -20.0)
+[node name="Hazards" type="Node3D" parent="." unique_id=322773232]
 
-
-[node name="Anchor4" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 28.0, 7.0, 24.0)
-
-
-[node name="Anchor5" parent="GrappleAnchors" instance=ExtResource("11_anchor")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -6.0, 10.0, 4.0)
-
-
-[node name="Hazards" type="Node3D" parent="."]
-
-
-[node name="HazardCentre" parent="Hazards" instance=ExtResource("7_hazard")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 0.0, 0.05, -6.0)
+[node name="HazardCentre" parent="Hazards" unique_id=1231024749 instance=ExtResource("7_hazard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -6)
+damage = 14.0
+tick_interval = 0.7
 radius = 4.0
+
+[node name="HazardWestRamp" parent="Hazards" unique_id=368758660 instance=ExtResource("7_hazard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0.05, 2)
 damage = 14.0
 tick_interval = 0.7
 
-
-[node name="HazardWestRamp" parent="Hazards" instance=ExtResource("7_hazard")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -24.0, 0.05, 2.0)
-radius = 3.0
+[node name="HazardEastLane" parent="Hazards" unique_id=2020916446 instance=ExtResource("7_hazard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.05, 20)
 damage = 14.0
 tick_interval = 0.7
-
-
-[node name="HazardEastLane" parent="Hazards" instance=ExtResource("7_hazard")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 18.0, 0.05, 20.0)
 radius = 3.5
-damage = 14.0
-tick_interval = 0.7
 
+[node name="VanishingRoute" type="Node3D" parent="." unique_id=2102948101]
 
-[node name="VanishingRoute" type="Node3D" parent="."]
+[node name="Step1" parent="VanishingRoute" unique_id=521997547 instance=ExtResource("8_vanish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2.2, 12)
 
+[node name="Step2" parent="VanishingRoute" unique_id=1001023774 instance=ExtResource("8_vanish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3.6, 16)
 
-[node name="Step1" parent="VanishingRoute" instance=ExtResource("8_vanish")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -8.0, 2.2, 12.0)
+[node name="Step3" parent="VanishingRoute" unique_id=1575056928 instance=ExtResource("8_vanish")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 5, 20)
 
+[node name="MovingPlatforms" type="Node3D" parent="." unique_id=587535451]
 
-[node name="Step2" parent="VanishingRoute" instance=ExtResource("8_vanish")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -2.0, 3.6, 16.0)
-
-
-[node name="Step3" parent="VanishingRoute" instance=ExtResource("8_vanish")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 4.0, 5.0, 20.0)
-
-
-[node name="MovingPlatforms" type="Node3D" parent="."]
-
-
-[node name="FerryNorth" parent="MovingPlatforms" instance=ExtResource("9_moving")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -14.0, 4.5, -24.0)
+[node name="FerryNorth" parent="MovingPlatforms" unique_id=153433906 instance=ExtResource("9_moving")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 4.5, -24)
 travel = Vector3(26, 0, 0)
 speed = 3.2
 
-
-[node name="FerryEast" parent="MovingPlatforms" instance=ExtResource("9_moving")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 30.0, 2.0, -4.0)
+[node name="FerryEast" parent="MovingPlatforms" unique_id=1436782362 instance=ExtResource("9_moving")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 2, -4)
 travel = Vector3(0, 4.5, 18)
 speed = 2.6
 
+[node name="ZipLines" type="Node3D" parent="." unique_id=1271715829]
 
-[node name="ZipLines" type="Node3D" parent="."]
-
-
-[node name="ZipHighToFloor" parent="ZipLines" instance=ExtResource("10_zip")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 0.0, 7.2, -28.0)
+[node name="ZipHighToFloor" parent="ZipLines" unique_id=1504885512 instance=ExtResource("10_zip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.2, -28)
 speed = 18.0
 
+[node name="ZipEastToWest" parent="ZipLines" unique_id=1744568083 instance=ExtResource("10_zip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 4.4, 10)
 
-[node name="ZipEastToWest" parent="ZipLines" instance=ExtResource("10_zip")]
-transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 24.0, 4.4, 10.0)
-speed = 16.0
+[node name="JumpLinks" type="Node3D" parent="."]
 
+[node name="LinkToMidWest" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 0.1, 6.0)
+start_position = Vector3(0, 0, 0)
+end_position = Vector3(0.0, 3.4, -6.5)
+
+[node name="LinkToMidEast" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0, 0.1, -8.0)
+start_position = Vector3(0, 0, 0)
+end_position = Vector3(0.0, 3.4, 1.5)
+
+[node name="LinkMidWestUp" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 3.5, -17.0)
+start_position = Vector3(0, 0, 0)
+end_position = Vector3(8.0, 3.0, -10.0)
+
+[node name="LinkMidEastUp" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.0, 3.5, 8.0)
+start_position = Vector3(0, 0, 0)
+end_position = Vector3(-10.0, 3.0, -1.0)
+
+[node name="LinkPerchToWalk" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 6.5, 2.0)
+start_position = Vector3(0, 0, 0)
+end_position = Vector3(-8.0, 0.0, -28.5)

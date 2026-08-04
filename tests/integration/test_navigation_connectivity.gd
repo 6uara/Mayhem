@@ -28,8 +28,23 @@ func _snap(point: Vector3) -> Vector3:
 	return NavigationServer3D.map_get_closest_point(_map, point)
 
 
+## Links have to be included, or this only measures walkable ground - and with the
+## ramps removed, walkable ground alone reaches nothing.
 func _path(from: Vector3, to: Vector3) -> PackedVector3Array:
-	return NavigationServer3D.map_get_path(_map, _snap(from), _snap(to), true)
+	var parameters := NavigationPathQueryParameters3D.new()
+	parameters.map = _map
+	parameters.start_position = _snap(from)
+	parameters.target_position = _snap(to)
+	parameters.path_postprocessing = NavigationPathQueryParameters3D.PATH_POSTPROCESSING_CORRIDORFUNNEL
+	var result := NavigationPathQueryResult3D.new()
+	NavigationServer3D.query_path(parameters, result)
+	return result.path
+
+
+func test_the_arena_has_jump_links_where_ramps_used_to_be() -> void:
+	var links: Array = get_tree().get_nodes_in_group(&"jump_link")
+	assert_gt(links.size(), 0,
+		"without ramps the raised levels are islands unless links bridge them")
 
 
 func test_the_map_has_a_navmesh_at_all() -> void:

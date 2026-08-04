@@ -50,6 +50,9 @@ var _tether_target: Enemy
 var _stuck_time: float = 0.0
 var _jump_cooldown_left: float = 0.0
 var _last_position: Vector3
+## Set while crossing a NavigationLink3D under our own ballistic arc.
+var _link_target: Vector3 = Vector3.ZERO
+var _is_traversing_link: bool = false
 
 
 func _ready() -> void:
@@ -88,7 +91,10 @@ func _physics_process(delta: float) -> void:
 		halo.rotate_y(delta * 0.8)
 	_update_tether()
 
-	if _stagger_timer > 0.0:
+	if _is_traversing_link:
+		# Mid-arc: steering would fight the ballistic solution and land it short.
+		_tick_link_traversal()
+	elif _stagger_timer > 0.0:
 		# Staggered enemies keep their knockback but stop steering.
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
@@ -118,6 +124,8 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_stuck_time = 0.0
 	_jump_cooldown_left = 0.0
 	_last_position = spawn_position
+	_is_traversing_link = false
+	_link_target = spawn_position
 
 	_apply_presentation()
 	_apply_collision()
@@ -359,11 +367,86 @@ func _check_obstruction(delta: float) -> void:
 		_stuck_time = 0.0
 		return
 
+	# The path may be telling us to cross a gap the navmesh cannot bake.
+	if _try_traverse_link():
+		_stuck_time = 0.0
+		return
+
 	_stuck_time += delta
 	if _stuck_time < STUCK_TIME or _jump_cooldown_left > 0.0:
 		return
 	if _try_jump_obstacle():
 		_stuck_time = 0.0
+
+
+## Rides out a link crossing. The arc was solved at launch, so nothing steers here -
+## the traversal simply ends when the enemy is back on the ground.
+func _tick_link_traversal() -> void:
+	if is_on_floor() and velocity.y <= 0.0:
+		_is_traversing_link = false
+		# Land facing the way it was going, so the walk resumes without a pivot.
+		set_move_target(_link_target)
+		return
+	# Bail out if the arc was interrupted - a wall, a wave reset, anything.
+	if global_position.y < _link_target.y - 12.0:
+		_is_traversing_link = false
+
+
+## Crosses a NavigationLink3D by jumping it.
+##
+## The pathfinder will happily route through a link, but it only ever hands back a
+## point to walk to - so without this the enemy walks to the lip of the gap and
+## stands there. The link supplies the arc; the enemy just commits to it.
+func _try_traverse_link() -> bool:
+	if data == null or not data.can_jump or _is_traversing_link:
+		return false
+	if agent == null or not agent.is_navigation_finished():
+		# Only when walking has run out of road.
+		if agent != null and not _is_at_link_edge():
+			return false
+
+	var link: JumpLink = _find_link_ahead()
+	if link == null:
+		return false
+
+	var exit: Vector3 = link.get_exit_for(global_position)
+	velocity = link.get_launch_velocity(global_position, exit, GRAVITY)
+	_link_target = exit
+	_is_traversing_link = true
+	_jump_cooldown_left = JUMP_COOLDOWN
+	return true
+
+
+## True once we are close enough to a link's mouth for the hop to be the next step.
+func _is_at_link_edge() -> bool:
+	return _find_link_ahead() != null
+
+
+## The nearest link whose near end we are standing on, and whose far end is closer to
+## where we are trying to go than we are now - otherwise jumping is a detour.
+func _find_link_ahead() -> JumpLink:
+	var best: JumpLink = null
+	var best_distance: float = INF
+	for node: Node in get_tree().get_nodes_in_group(&"jump_link"):
+		var link := node as JumpLink
+		if link == null or not link.enabled:
+			continue
+		var distance: float = global_position.distance_to(_nearest_end(link))
+		if distance > data.collision_radius + 1.6 or distance >= best_distance:
+			continue
+		var exit: Vector3 = link.get_exit_for(global_position)
+		if exit.distance_to(move_target) >= global_position.distance_to(move_target):
+			continue  # the far side is no closer to the goal, so jumping is a detour
+		best = link
+		best_distance = distance
+	return best
+
+
+func _nearest_end(link: JumpLink) -> Vector3:
+	var start: Vector3 = link.get_start_global()
+	var end: Vector3 = link.get_end_global()
+	return start if global_position.distance_squared_to(start) \
+		< global_position.distance_squared_to(end) else end
 
 
 ## Lifts the enemy over a low ledge - the ramp's own side edge, a platform lip, the

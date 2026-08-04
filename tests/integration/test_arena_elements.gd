@@ -225,3 +225,42 @@ func test_dismount_keeps_most_of_the_speed() -> void:
 	await wait_seconds(1.6)
 	assert_gt(player.velocity.length(), line.speed * line.exit_speed_fraction * 0.8,
 		"exit momentum is preserved")
+
+
+## Reported from playtest: standing on a platform above a pool still cost health.
+## The trigger volume is a column of air, and being inside the column is not the
+## same as standing in the acid.
+func test_hazard_does_not_reach_someone_on_a_platform_above_it() -> void:
+	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	hazard.tick_interval = 0.05
+
+	# A floor 3m up, and a body standing on it directly over the pool.
+	var platform := StaticBody3D.new()
+	platform.collision_layer = PhysicsLayers.WORLD
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(10, 0.4, 10)
+	shape.shape = box
+	platform.add_child(shape)
+	add_child_autofree(platform)
+	platform.global_position = hazard.global_position + Vector3.UP * 3.0
+
+	var target: CharacterBody3D = _make_target()
+	target.global_position = hazard.global_position + Vector3.UP * 3.2
+
+	var health: HealthComponent = target.get_child(1)
+	await wait_seconds(Tokens.HAZARD_WARNING + 0.4)
+	assert_eq(health.current_health, health.max_health,
+		"acid on the ground must not reach a floor above it")
+
+
+func test_hazard_still_reaches_someone_standing_in_it() -> void:
+	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	hazard.tick_interval = 0.05
+	var target: CharacterBody3D = _make_target()
+	target.global_position = hazard.global_position
+
+	var health: HealthComponent = target.get_child(1)
+	await wait_seconds(Tokens.HAZARD_WARNING + 0.3)
+	assert_lt(health.current_health, health.max_health,
+		"the fix must not make the pool harmless")
