@@ -99,7 +99,11 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
 	elif is_moving:
-		_steer(delta)
+		# Checked every frame while walking, not only once wedged against something.
+		# A link that leads *down* has no wall to stop the enemy first, so gating
+		# traversal behind being stuck meant those were never taken at all.
+		if not _try_traverse_link():
+			_steer(delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
@@ -222,6 +226,14 @@ func apply_slow(multiplier: float) -> void:
 
 func clear_slow() -> void:
 	_slow_multiplier = 1.0
+
+
+## Radius of the shootable volume. Falls back to the body capsule when the archetype
+## has not declared one, which is correct for anything roughly as wide as it is deep.
+func get_hitbox_radius() -> float:
+	if data == null:
+		return 0.4
+	return data.hitbox_radius if data.hitbox_radius > 0.0 else data.collision_radius
 
 
 func get_move_speed() -> float:
@@ -367,11 +379,6 @@ func _check_obstruction(delta: float) -> void:
 		_stuck_time = 0.0
 		return
 
-	# The path may be telling us to cross a gap the navmesh cannot bake.
-	if _try_traverse_link():
-		_stuck_time = 0.0
-		return
-
 	_stuck_time += delta
 	if _stuck_time < STUCK_TIME or _jump_cooldown_left > 0.0:
 		return
@@ -399,6 +406,11 @@ func _tick_link_traversal() -> void:
 ## stands there. The link supplies the arc; the enemy just commits to it.
 func _try_traverse_link() -> bool:
 	if data == null or not data.can_jump or _is_traversing_link:
+		return false
+	# Nothing launches off the ground it is not standing on, and the cooldown is what
+	# stops an enemy that lands beside a link's far end from immediately taking it
+	# back - now that this runs every frame rather than only when wedged.
+	if not is_on_floor() or _jump_cooldown_left > 0.0:
 		return false
 
 	# One scan answers both questions. This used to ask "is a link the next step?"
@@ -623,8 +635,10 @@ func _update_tether() -> void:
 
 func _apply_collision() -> void:
 	_resize_capsule(body_shape, data.collision_height, data.collision_radius, 0.5)
+	# The hitbox tracks the silhouette, the body capsule tracks the navmesh - see
+	# EnemyData.hitbox_radius for why those stopped being the same number.
 	_resize_capsule(body_hitbox_shape, maxf(data.collision_height - 0.4, 0.4),
-		data.collision_radius, 0.5)
+		get_hitbox_radius(), 0.5)
 
 	if head_hitbox_shape == null:
 		return

@@ -3,6 +3,12 @@ extends Node3D
 ## One equipped weapon: firing, deterministic recoil, spread, ADS, reload and ammo.
 ## All numbers come from `data`; upgrades layer on through StatsComponent.
 
+## How far down the aim ray a shot converges when it meets nothing. Past this the
+## angular difference between muzzle and crosshair is far under one pixel.
+const CONVERGE_DISTANCE: float = 300.0
+## Slack past the muzzle before a target counts as point blank.
+const MUZZLE_CLEARANCE: float = 0.25
+
 signal fired(shot_index: int)
 signal reload_started(duration: float)
 signal reload_finished()
@@ -28,6 +34,14 @@ signal ads_changed(is_ads: bool)
 @export var view_kick_back: float = 0.05
 @export var view_kick_up_degrees: float = 3.0
 @export var view_kick_recovery: float = 10.0
+## Ceilings on the accumulated kick.
+##
+## Recovery is a rate, so without a ceiling a weapon that fires faster than the
+## kick recovers accumulates without bound: the rifle adds 3 degrees nine times a
+## second against a 10 degree/second return, and the gun simply rotates away.
+## These are what make the kick a wobble instead of a spin.
+@export var view_kick_max_degrees: float = 6.0
+@export var view_kick_max_back: float = 0.12
 
 var is_reloading: bool = false
 var is_ads: bool = false
@@ -197,18 +211,20 @@ func _try_fire() -> void:
 	_cooldown = 1.0 / get_fire_rate()
 	_time_since_shot = 0.0
 
-	# Projectiles leave from the aim origin, not the muzzle: a muzzle-offset spawn
-	# does not line up with the crosshair at close range, which reads as the weapon
-	# being inaccurate. The muzzle drives the flash only.
-	var origin: Vector3 = aim_node.global_position
+	var aim_origin: Vector3 = aim_node.global_position
 	var aim: Vector3 = -aim_node.global_transform.basis.z
 	var spread: float = get_current_spread()
 	for _i: int in maxi(data.projectiles_per_shot, 1):
-		_spawn_projectile(origin, _apply_spread(aim, spread))
+		var direction: Vector3 = _apply_spread(aim, spread)
+		var target: Vector3 = _converge_target(aim_origin, direction)
+		var origin: Vector3 = _shot_origin(aim_origin, target)
+		var travel: Vector3 = target - origin
+		_spawn_projectile(origin,
+			travel.normalized() if travel.length_squared() > 0.0001 else direction)
 
 	_apply_recoil()
-	_view_kick_offset.z += view_kick_back
-	_view_kick_rot -= view_kick_up_degrees
+	_view_kick_offset.z = minf(_view_kick_offset.z + view_kick_back, view_kick_max_back)
+	_view_kick_rot = maxf(_view_kick_rot - view_kick_up_degrees, -view_kick_max_degrees)
 	AudioPool.play_3d(fire_sound, global_position, AudioPool.BUS_WEAPONS)
 	fired.emit(_shot_index)
 	EventBus.weapon_fired.emit(data.id)
@@ -217,6 +233,38 @@ func _try_fire() -> void:
 
 	if _ammo <= 0:
 		try_reload()
+
+
+## Where the shot is actually going: the first thing the aim ray meets, or a point
+## far enough down it that the difference stops mattering.
+##
+## Rounds used to spawn on the aim ray itself, which put the tracer inside the
+## player's own head - the round was correct and the picture was a lie. Firing from
+## the muzzle parallel to the aim instead would be a different lie: parallel lines
+## never meet, so every shot would sit beside the crosshair by the muzzle's offset,
+## at every range. Aiming the muzzle at the point the crosshair reaches is what
+## makes both true at once.
+func _converge_target(aim_origin: Vector3, direction: Vector3) -> Vector3:
+	var far_point: Vector3 = aim_origin + direction * CONVERGE_DISTANCE
+	var query := PhysicsRayQueryParameters3D.create(aim_origin, far_point,
+		PhysicsLayers.WORLD | PhysicsLayers.HITBOX)
+	query.collide_with_areas = true
+	if body != null:
+		query.exclude = [body.get_rid()]
+	var hit: Dictionary = aim_node.get_world_3d().direct_space_state.intersect_ray(query)
+	return hit["position"] if not hit.is_empty() else far_point
+
+
+## Point blank, the muzzle is already past whatever is being shot at - firing from
+## there would send the round out the far side of it. The aim origin is behind the
+## target in that case, so it stays honest where the muzzle cannot.
+func _shot_origin(aim_origin: Vector3, target: Vector3) -> Vector3:
+	if muzzle == null:
+		return aim_origin
+	var muzzle_reach: float = aim_origin.distance_to(muzzle.global_position)
+	if aim_origin.distance_to(target) <= muzzle_reach + MUZZLE_CLEARANCE:
+		return aim_origin
+	return muzzle.global_position
 
 
 func _spawn_projectile(origin: Vector3, direction: Vector3) -> void:
@@ -303,28 +351,40 @@ func _on_empty() -> void:
 	try_reload()
 
 
-## Instances the weapon's viewmodel mesh as a child of this node. Visibility already
-## follows this node (WeaponHolder toggles it), so the mesh needs no wiring of its own.
+## Instances the weapon's viewmodel under a pivot this component owns. Visibility
+## already follows this node (WeaponHolder toggles it), so nothing else needs wiring.
+##
+## The pivot is not ceremony. Kick is a pitch, and pitch has to happen in the
+## player's frame - but Godot composes a node's local euler as Y * X * Z, so
+## pitching the model itself would rotate about an axis the model's own yaw has
+## already turned. Every current weapon is authored with a 90 degree yaw, which
+## turns that pitch a quarter turn sideways: on screen the gun rolls over instead
+## of kicking up. Keeping the pivot unrotated and letting the model carry its own
+## orientation underneath means the kick axis is always the screen's.
 func _spawn_viewmodel() -> void:
 	if data.viewmodel == null:
 		return
-	_view = data.viewmodel.instantiate()
+	_view = Node3D.new()
+	_view.name = &"ViewPivot"
 	add_child(_view)
 	_view_rest_position = data.viewmodel_offset
 	_view.position = _view_rest_position
-	_view.rotation_degrees = data.viewmodel_rotation_degrees
-	_view.scale = Vector3.ONE * data.viewmodel_scale
+
+	var model: Node3D = data.viewmodel.instantiate()
+	_view.add_child(model)
+	model.rotation_degrees = data.viewmodel_rotation_degrees
+	model.scale = Vector3.ONE * data.viewmodel_scale
 
 
-## Cosmetic-only recoil on the mesh itself - never touches `aim_node`, so it can
-## never nudge where a shot actually lands.
+## Cosmetic-only recoil on the pivot - never touches `aim_node`, so it can never
+## nudge where a shot actually lands.
 func _tick_viewmodel(delta: float) -> void:
 	if _view == null:
 		return
 	_view_kick_offset = _view_kick_offset.move_toward(Vector3.ZERO, view_kick_recovery * delta * 0.1)
 	_view_kick_rot = move_toward(_view_kick_rot, 0.0, view_kick_recovery * delta)
 	_view.position = _view_rest_position + _view_kick_offset
-	_view.rotation_degrees.x = data.viewmodel_rotation_degrees.x + _view_kick_rot
+	_view.rotation_degrees.x = _view_kick_rot
 
 
 func _stat(stat_key: StringName, base_value: float) -> float:

@@ -26,6 +26,7 @@ body_color = Color(0.988, 0.227, 0, 1)
 body_scale = 1.00
 collision_height = 2.80
 collision_radius = 0.75
+hitbox_radius = 1.00
 head_offset = 2.50
 head_radius = 0.42
 reward_currency = 60

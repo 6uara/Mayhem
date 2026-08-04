@@ -83,6 +83,18 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 ## Capsule collision, kept in sync with the mesh by hand while grey-boxing.
 @export var collision_height: float = 1.8
 @export var collision_radius: float = 0.4
+## Radius of the *shootable* volume, when the silhouette is wider than the body.
+##
+## These are two different jobs and they stopped being the same number the moment
+## real meshes arrived. `collision_radius` is a movement contract - it has to stay
+## under the navmesh bake's agent radius or the archetype cannot fit through its
+## own arena. The hitbox only has to answer "did that shot look like it hit?", and
+## the player aims at the silhouette, so a model wider than its capsule is a model
+## whose outer half is quietly bulletproof.
+##
+## 0 means "same as collision_radius", which is right for anything roughly as wide
+## as it is deep.
+@export var hitbox_radius: float = 0.0
 @export var head_offset: float = 1.62
 @export var head_radius: float = 0.25
 

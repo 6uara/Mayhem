@@ -334,10 +334,6 @@ end_position = Vector3(8, 3, -10)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 3.5, 8)
 end_position = Vector3(-10, 3, -1)
 
-[node name="LinkPerchToWalk" parent="JumpLinks" unique_id=637018459 instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 6.5, 2)
-end_position = Vector3(-8, 0, -28.5)
-
 [node name="Props" type="Node3D" parent="." unique_id=1213261736]
 
 [node name="Container1" type="StaticBody3D" parent="Props" unique_id=1889635683]
@@ -359,3 +355,35 @@ mesh = ExtResource("13_container")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container2" unique_id=793760517]
 shape = SubResource("Shape_container")
+
+[node name="LinkMidWestSouth" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 3.5, 1.5)
+end_position = Vector3(0.0, -3.4, 6.5)
+
+[node name="LinkMidWestEast" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.5, 3.5, -8.0)
+end_position = Vector3(6.5, -3.4, 0.0)
+
+[node name="LinkMidEastWest" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 3.5, 4.0)
+end_position = Vector3(-6.5, -3.4, 0.0)
+
+[node name="LinkMidEastSouth" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0, 3.5, 15.5)
+end_position = Vector3(0.0, -3.4, 6.5)
+
+[node name="LinkMidWestUp2" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.0, 3.5, -17.5)
+end_position = Vector3(0.0, 3.0, -9.0)
+
+[node name="LinkMidEastUp2" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 3.5, 10.0)
+end_position = Vector3(-5.5, 3.0, 0.0)
+
+[node name="LinkWalkwayDown" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 6.5, -25.5)
+end_position = Vector3(0.0, -6.4, 5.5)
+
+[node name="LinkPerchDown" parent="JumpLinks" instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0, 6.5, 11.5)
+end_position = Vector3(0.0, -6.4, 5.5)
