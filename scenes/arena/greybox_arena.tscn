@@ -14,6 +14,8 @@
 [ext_resource type="PackedScene" path="res://scenes/arena/jump_link.tscn" id="12_link"]
 [ext_resource type="ArrayMesh" path="res://assets/models/meshes/scifi_container.res" id="13_container"]
 [ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="14_glitch"]
+[ext_resource type="Shader" path="res://assets/shaders/hologram_wall.gdshader" id="15_holo"]
+[ext_resource type="Texture2D" path="res://assets/textures/Noise128x128/Techno/Techno_03-128x128.png" id="16_holonoise"]
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
@@ -28,20 +30,26 @@ albedo_color = Color(0.32, 0.33, 0.36, 1)
 roughness = 0.85
 
 [sub_resource type="ShaderMaterial" id="Mat_wall"]
-shader = ExtResource("14_glitch")
-shader_parameter/base_color = Color(0.1, 0.106, 0.125, 1)
-shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
-shader_parameter/grid_scale = 0.4
-shader_parameter/line_width = 0.045
-shader_parameter/emission_energy = 1.9
-shader_parameter/glitch_strength = 0.5
-shader_parameter/glitch_speed = 0.0
-shader_parameter/scanline_speed = 0.0
-shader_parameter/roughness_value = 0.5
-shader_parameter/metallic_value = 0.2
-shader_parameter/fresnel_power = 3.0
-shader_parameter/fresnel_strength = 1.6
-
+shader = ExtResource("15_holo")
+shader_parameter/noise_texture = ExtResource("16_holonoise")
+shader_parameter/base_color = Color(0.05, 0.055, 0.07, 1)
+shader_parameter/primary_color = Color(0.208, 0.878, 0.831, 1)
+shader_parameter/secondary_color = Color(0.6, 0.95, 1, 1)
+shader_parameter/effect_strength = 2.2
+shader_parameter/wipe_scale = 3.0
+shader_parameter/wipe_speed = 0.5
+shader_parameter/wipe_blend = 0.7
+shader_parameter/signal_scale = 40.0
+shader_parameter/signal_speed = 1.0
+shader_parameter/signal_random_scale = 0.3
+shader_parameter/signal_blend = 1.0
+shader_parameter/noise_distort_amount = 0.1
+shader_parameter/noise_amount = 1.0
+shader_parameter/grain_amount = 0.4
+shader_parameter/flicker_amount = 0.3
+shader_parameter/flicker_speed = 10.0
+shader_parameter/roughness_value = 0.55
+shader_parameter/metallic_value = 0.15
 [sub_resource type="ShaderMaterial" id="Mat_mid"]
 shader = ExtResource("14_glitch")
 shader_parameter/base_color = Color(0.086, 0.098, 0.125, 1)

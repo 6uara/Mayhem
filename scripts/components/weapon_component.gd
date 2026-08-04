@@ -23,6 +23,10 @@ signal ads_changed(is_ads: bool)
 @export var recoil: CameraRecoilComponent
 @export var stats: StatsComponent
 @export var body: CharacterBody3D
+## Where the viewmodel is rendered. Left unset the model hangs off this node in the
+## main world; pointed at the SubViewport rig it renders in its own world instead,
+## which is what keeps a half-metre-long rifle from poking through walls.
+@export var viewmodel_parent: Node3D
 
 @export_group("Audio")
 @export var fire_sound: AudioStream
@@ -366,7 +370,8 @@ func _spawn_viewmodel() -> void:
 		return
 	_view = Node3D.new()
 	_view.name = &"ViewPivot"
-	add_child(_view)
+	var host: Node3D = viewmodel_parent if viewmodel_parent != null else self
+	host.add_child(_view)
 	_view_rest_position = data.viewmodel_offset
 	_view.position = _view_rest_position
 
@@ -374,6 +379,64 @@ func _spawn_viewmodel() -> void:
 	_view.add_child(model)
 	model.rotation_degrees = data.viewmodel_rotation_degrees
 	model.scale = Vector3.ONE * data.viewmodel_scale
+
+	# The pivot no longer lives under this node when a rig is in play, so it cannot
+	# inherit the visibility WeaponHolder toggles here.
+	visibility_changed.connect(_sync_viewmodel_visibility)
+	_sync_viewmodel_visibility()
+	_align_muzzle_to_barrel(model)
+
+
+func _sync_viewmodel_visibility() -> void:
+	if _view != null:
+		_view.visible = visible
+
+
+## Puts the muzzle node at the model's own barrel tip.
+##
+## It was authored at a fixed offset guessed before there were models, and guessed
+## short: the rifle's barrel ends 0.38m further out than the node sat, so rounds
+## spawned inside the receiver and appeared to leave from behind the gun. Measuring
+## the mesh means every weapon is right, including ones added later.
+func _align_muzzle_to_barrel(model: Node3D) -> void:
+	if muzzle == null:
+		return
+	var bounds: AABB = _model_bounds(model)
+	if bounds.size == Vector3.ZERO:
+		return
+	# Forward is -Z, so the tip is the near face; X and Y take the barrel's centre.
+	var centre: Vector3 = bounds.position + bounds.size * 0.5
+	muzzle.position = _view_rest_position + Vector3(centre.x, centre.y, bounds.position.z)
+
+
+## Combined bounds of every mesh under `model`, in `model`'s parent's space.
+func _model_bounds(model: Node3D) -> AABB:
+	var out := AABB()
+	var found: bool = false
+	for node: Node in _descendants(model):
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var local: AABB = _relative_transform(model, mesh_instance) * mesh_instance.mesh.get_aabb()
+		out = local if not found else out.merge(local)
+		found = true
+	return model.transform * out if found else AABB()
+
+
+func _descendants(node: Node) -> Array[Node]:
+	var out: Array[Node] = [node]
+	for child: Node in node.get_children():
+		out.append_array(_descendants(child))
+	return out
+
+
+func _relative_transform(root: Node3D, target: Node3D) -> Transform3D:
+	var result := Transform3D.IDENTITY
+	var node: Node3D = target
+	while node != null and node != root:
+		result = node.transform * result
+		node = node.get_parent() as Node3D
+	return result
 
 
 ## Cosmetic-only recoil on the pivot - never touches `aim_node`, so it can never

@@ -36,7 +36,7 @@ func test_the_kick_rides_a_pivot_so_it_reads_as_pitch() -> void:
 	var player: Player = _player()
 	await wait_physics_frames(2)
 	var weapon: WeaponComponent = player.weapon
-	var pivot: Node3D = weapon.get_node_or_null("ViewPivot")
+	var pivot: Node3D = weapon._view
 	assert_not_null(pivot, "the viewmodel hangs off a pivot the component owns")
 
 	# The pivot carries no authored yaw of its own; the model underneath does.
@@ -44,6 +44,38 @@ func test_the_kick_rides_a_pivot_so_it_reads_as_pitch() -> void:
 	assert_almost_eq(pivot.rotation_degrees.y, 0.0, 0.001,
 		"the pivot must stay unrotated so its X axis is the screen's")
 	assert_gt(pivot.get_child_count(), 0, "the model hangs under the pivot")
+
+
+## The viewmodel renders in the rig's own world, not the arena's - that separation
+## is the whole reason a half-metre rifle can sit 36cm from the eye without
+## intersecting the wall the player is standing against.
+func test_the_viewmodel_renders_in_the_rig_not_the_arena() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(2)
+	var rig: ViewmodelRig = player.get_node(
+		"ViewmodelLayer/ViewmodelRig")
+	var slots: Node3D = rig.get_slot_parent()
+
+	assert_gt(slots.get_child_count(), 0, "weapons mount their models in the rig")
+	for weapon: WeaponComponent in player.weapon_holder.get_all():
+		if weapon._view == null:
+			continue
+		assert_eq(weapon._view.get_parent(), slots,
+			"%s renders in the rig's world" % weapon.name)
+
+
+## The muzzle node was authored at a fixed guess made before the models existed,
+## and it sat inside the receiver - rounds appeared to leave from behind the gun.
+func test_the_muzzle_sits_at_the_barrel_not_inside_the_gun() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(2)
+	for weapon: WeaponComponent in player.weapon_holder.get_all():
+		if weapon._view == null:
+			continue
+		var model: Node3D = weapon._view.get_child(0)
+		var tip: float = weapon._view.position.z + weapon._model_bounds(model).position.z
+		assert_almost_eq(weapon.muzzle.position.z, tip, 0.02,
+			"%s: muzzle should sit at the barrel tip" % weapon.name)
 
 
 # ---------------------------------------------------------------- shot origin
