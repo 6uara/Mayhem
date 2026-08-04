@@ -64,9 +64,12 @@ func toggle_pause() -> void:
 
 
 func set_paused(paused: bool) -> void:
+	if is_paused == paused:
+		return
 	is_paused = paused
 	get_tree().paused = paused
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
+	EventBus.game_paused.emit(paused)
 
 
 func get_run_time() -> float:
