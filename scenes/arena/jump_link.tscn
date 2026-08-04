@@ -1,7 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://d1dv5iepsbyci"]
 
-[ext_resource type="Script" path="res://scripts/systems/jump_link.gd" id="1_link"]
-[ext_resource type="Script" path="res://scripts/components/telegraph_component.gd" id="2_tel"]
+[ext_resource type="Script" uid="uid://byx43bb4jrxkv" path="res://scripts/systems/jump_link.gd" id="1_link"]
 
 [sub_resource type="BoxMesh" id="Mesh_pad"]
 size = Vector3(1.6, 0.08, 1.6)
@@ -9,26 +8,21 @@ size = Vector3(1.6, 0.08, 1.6)
 [sub_resource type="PrismMesh" id="Mesh_chevron"]
 size = Vector3(0.7, 0.5, 0.7)
 
-[node name="JumpLink" type="NavigationLink3D" groups=["jump_link"] node_paths=PackedStringArray("telegraph", "start_marker", "end_marker")]
-bidirectional = true
-start_position = Vector3(0, 0, 0)
+[node name="JumpLink" type="NavigationLink3D" unique_id=568043229 node_paths=PackedStringArray("start_marker", "end_marker") groups=["jump_link"]]
 end_position = Vector3(0, 3, 8)
 script = ExtResource("1_link")
 flight_time = 0.8
-telegraph = NodePath("Telegraph")
 start_marker = NodePath("StartPad")
 end_marker = NodePath("EndPad")
 
-[node name="StartPad" type="MeshInstance3D" parent="."]
+[node name="StartPad" type="MeshInstance3D" parent="." unique_id=1642131791]
+visible = false
 mesh = SubResource("Mesh_pad")
 
-[node name="EndPad" type="MeshInstance3D" parent="."]
+[node name="EndPad" type="MeshInstance3D" parent="." unique_id=636657791]
+visible = false
 mesh = SubResource("Mesh_pad")
 
-[node name="Chevron" type="MeshInstance3D" parent="."]
+[node name="Chevron" type="MeshInstance3D" parent="." unique_id=187629626]
+visible = false
 mesh = SubResource("Mesh_chevron")
-
-[node name="Telegraph" type="Node" parent="." node_paths=PackedStringArray("meshes")]
-script = ExtResource("2_tel")
-meaning = 0
-meshes = [NodePath("../StartPad"), NodePath("../EndPad"), NodePath("../Chevron")]

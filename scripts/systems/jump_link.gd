@@ -7,22 +7,23 @@ extends NavigationLink3D
 ## "these two points connect, at this cost", and the enemy executes the crossing as a
 ## ballistic hop rather than by walking.
 ##
-## Cyan, because it is traversal - the player can take the same line with a dash or
-## the grapple, and the arena should say so.
+## AI-only, and deliberately invisible to the player - this is a navigation aid, not
+## an affordance. It used to carry a telegraph (cyan pad + chevron, on the theory
+## that the player could take the same line), but that read as clutter: a dozen
+## floating cyan markers with no button that does anything at them. The markers stay
+## as hidden nodes so a level designer can still flip `visible` on while placing a
+## link, but they ship off.
 
 ## How long the hop is allowed to take. Longer links need a higher arc, so this also
 ## sets how floaty the jump looks.
 @export var flight_time: float = 0.75
-@export var telegraph: TelegraphComponent
-## Drawn at each end so the route is visible rather than a secret the AI keeps.
+## Editor/debug aid only - hidden by default. See the class comment.
 @export var start_marker: MeshInstance3D
 @export var end_marker: MeshInstance3D
 
 
 func _ready() -> void:
 	add_to_group(&"jump_link")
-	if telegraph != null:
-		telegraph.state = TelegraphComponent.State.AVAILABLE
 	_place_markers()
 
 

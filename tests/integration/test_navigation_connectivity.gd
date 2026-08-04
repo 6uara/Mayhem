@@ -23,17 +23,22 @@ const RAISED := {
 var _map: RID
 
 
-func before_all() -> void:
-	add_child_autofree(load("res://scenes/arena/greybox_arena.tscn").instantiate())
-	_map = get_tree().root.world_3d.navigation_map
-	# Wait for the map to be usable, not for a frame count to elapse.
-	#
-	# NavigationServer3D syncs on its own schedule, so a fixed number of frames was a
-	# bet - and one this suite lost often enough that every navmesh assertion here
-	# looked intermittently broken. Two separate things have to land: the region has
-	# to register, and its polygons have to reach the server. Waiting only on the
-	# first still failed, with queries snapping to the origin because the map existed
-	# and was empty. map_force_update drives the sync rather than hoping for it.
+## Built per test rather than once for the script.
+##
+## This is what the "flaky navmesh" actually was. Doing this in before_all looked
+## right and passed whenever some earlier test had already put an arena in the tree,
+## which is why it failed intermittently and never in isolation - run on its own,
+## this file failed every single time. The region registers correctly from inside a
+## test; from before_all the server never picks it up. Paying for the arena five
+## times is worth a suite that means what it says.
+func before_each() -> void:
+	var arena: Node = add_child_autofree(
+		load("res://scenes/arena/greybox_arena.tscn").instantiate())
+	var region: NavigationRegion3D = arena.get_node("Navigation")
+	_map = region.get_navigation_map()
+
+	# The server still syncs on its own schedule, so wait on the map being usable
+	# rather than on a frame count.
 	for _i: int in MAX_SYNC_FRAMES:
 		await wait_physics_frames(1)
 		NavigationServer3D.map_force_update(_map)
