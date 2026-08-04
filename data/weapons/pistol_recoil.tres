@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RecoilPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/recoil_pattern.gd" id="1_recoil"]
+
+[resource]
+script = ExtResource("1_recoil")
+points = PackedVector2Array(0, 1.1, 0, 1.2, 0.08, 1.15, -0.08, 1.1)
+loop_after_index = 0
+reset_time = 0.35
+recovery_speed = 20.0
+visual_kick_multiplier = 1.0

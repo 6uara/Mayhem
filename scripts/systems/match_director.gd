@@ -12,8 +12,12 @@ signal match_state_changed(is_running: bool)
 @export var waves: Array[WaveData] = []
 @export var spawner: EnemySpawner
 @export var first_wave_delay: float = 3.0
-## Placeholder for the Phase 4 shop phase (CLAUDE.md 5.5: ~20-30s, skippable).
-@export var between_wave_delay: float = 8.0
+## Fallback gap when there is no shop screen wired.
+@export var between_wave_delay: float = 6.0
+## The shop phase between waves (CLAUDE.md 5.5: ~20-30s, skippable).
+@export var shop_screen: CanvasLayer
+## Beat between the wave clearing and the shop opening, so the last kill lands.
+@export var shop_open_delay: float = 1.5
 
 var is_running: bool = false
 
@@ -63,7 +67,7 @@ func _start_wave_after(delay: float, generation: int) -> void:
 		_finish_match()
 
 
-func _on_wave_completed(wave_index: int, _duration: float, _damage: float) -> void:
+func _on_wave_completed(wave_index: int, duration: float, _damage: float) -> void:
 	if not is_running:
 		return
 	NarratorManager.request_line(&"wave_cleared", &"wave",
@@ -72,7 +76,27 @@ func _on_wave_completed(wave_index: int, _duration: float, _damage: float) -> vo
 	if WaveManager.is_last_wave():
 		_finish_match()
 		return
-	_start_wave_after(between_wave_delay, _generation)
+	_run_shop_phase(wave_index, duration, _generation)
+
+
+## Opens the shop, waits for the player to leave it, then starts the next wave.
+func _run_shop_phase(wave_index: int, duration: float, generation: int) -> void:
+	if shop_screen == null or not shop_screen.has_method(&"open"):
+		_start_wave_after(between_wave_delay, generation)
+		return
+
+	await get_tree().create_timer(shop_open_delay).timeout
+	if generation != _generation or not is_running:
+		return
+
+	GameManager.state = GameManager.State.SHOPPING
+	shop_screen.call(&"open", WaveManager.get_last_breakdown(), wave_index, duration)
+	await shop_screen.shop_closed
+	if generation != _generation or not is_running:
+		return
+
+	GameManager.state = GameManager.State.PLAYING
+	_start_wave_after(0.5, generation)
 
 
 ## Victory: score is submitted to the local leaderboard and the run ends.

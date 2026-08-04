@@ -253,6 +253,55 @@ def heal_pulse() -> list[float]:
     )
 
 
+def utility_throw(rng: random.Random) -> list[float]:
+    return _mix(
+        (_lowpass(_noise(ms(90), 0.01, 0.16, 0.5, rng), 1800.0), 0),
+        (_tone(ms(70), 300.0, 0.005, 0.12, 0.25, sweep=1.4), 0),
+    )
+
+
+def stun_pop(rng: random.Random) -> list[float]:
+    """Bright crack then ring-out - unmistakably 'that did something'."""
+    return _mix(
+        (_noise(ms(50), 0.0005, 0.09, 1.0, rng), 0),
+        (_tone(ms(500), 900.0, 0.001, 0.6, 0.45, sweep=0.55), 0),
+        (_tone(ms(420), 1350.0, 0.002, 0.5, 0.3, sweep=0.6), ms(30)),
+    )
+
+
+def wall_deploy(rng: random.Random) -> list[float]:
+    return _mix(
+        (_tone(ms(320), 150.0, 0.005, 0.4, 0.7, sweep=2.0), 0),
+        (_lowpass(_noise(ms(200), 0.01, 0.3, 0.35, rng), 1200.0), 0),
+    )
+
+
+def slow_deploy(rng: random.Random) -> list[float]:
+    """Descending pitch - the sound of things getting slower."""
+    return _mix(
+        (_tone(ms(520), 620.0, 0.02, 0.6, 0.6, sweep=0.35), 0),
+        (_lowpass(_noise(ms(300), 0.05, 0.4, 0.25, rng), 900.0), 0),
+    )
+
+
+def ammo_pickup() -> list[float]:
+    return _mix(
+        (_tone(ms(90), 620.0, 0.002, 0.16, 0.55, sweep=1.3), 0),
+        (_tone(ms(110), 930.0, 0.003, 0.18, 0.4, sweep=1.3), ms(60)),
+    )
+
+
+def purchase() -> list[float]:
+    return _mix(
+        (_tone(ms(110), 520.0, 0.002, 0.2, 0.5, sweep=1.25), 0),
+        (_tone(ms(140), 780.0, 0.003, 0.24, 0.4, sweep=1.25), ms(70)),
+    )
+
+
+def denied() -> list[float]:
+    return _tone(ms(160), 220.0, 0.002, 0.25, 0.6, sweep=0.75)
+
+
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
@@ -280,6 +329,13 @@ def main() -> None:
         _write("enemies/%s_attack.wav" % name, enemy_attack(rng, pitch))
     _write("enemies/healer_pulse.wav", heal_pulse())
     _write("world/spawn_door.wav", door_open(rng))
+    _write("world/utility_throw.wav", utility_throw(rng))
+    _write("world/stun_grenade.wav", stun_pop(rng))
+    _write("world/temp_wall.wav", wall_deploy(rng))
+    _write("world/slow_field.wav", slow_deploy(rng))
+    _write("world/ammo_pickup.wav", ammo_pickup())
+    _write("ui/purchase.wav", purchase())
+    _write("ui/denied.wav", denied())
     print("Done. These are placeholders - replace them in Phase 5.")
 
 

@@ -15,7 +15,6 @@ enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 @export var body: CharacterBody3D
 @export var head: Node3D
 @export var stats: StatsComponent
-@export var weapon: WeaponComponent
 @export var grapple: GrappleComponent
 
 @export_group("Ground")
@@ -133,8 +132,11 @@ func get_dash_cooldown() -> float:
 
 func get_move_speed() -> float:
 	var speed: float = _stat(StatsComponent.MOVE_SPEED, base_move_speed)
-	if weapon != null:
-		speed *= weapon.get_move_speed_multiplier()
+	# Which weapon is equipped changes between waves, so ask the player rather
+	# than caching a reference the holder will invalidate on the next swap.
+	var player := body as Player
+	if player != null and player.weapon != null:
+		speed *= player.weapon.get_move_speed_multiplier()
 	return speed
 
 
@@ -168,7 +170,8 @@ func _tick_airborne(wish_direction: Vector3, delta: float) -> void:
 	# or a wall takes it away.
 	if wish_direction != Vector3.ZERO:
 		var horizontal: Vector3 = _horizontal()
-		var target: Vector3 = horizontal + wish_direction * air_control * delta
+		var steering: float = _stat(StatsComponent.AIR_CONTROL, air_control)
+		var target: Vector3 = horizontal + wish_direction * steering * delta
 		# Air control may redirect but never accelerate past current speed.
 		if target.length() > maxf(horizontal.length(), get_move_speed()):
 			target = target.normalized() * maxf(horizontal.length(), get_move_speed())

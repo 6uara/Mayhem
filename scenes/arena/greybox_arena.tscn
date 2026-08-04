@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
 [ext_resource type="Script" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
 [ext_resource type="NavigationMesh" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
+[ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.32, 0.33, 0.36, 1)
@@ -264,6 +265,26 @@ door_id = &"door_06"
 [node name="Door07" parent="SpawnDoors" instance=ExtResource("3_door")]
 transform = Transform3D(-0.0002, 0, 1.0000, 0, 1, 0, -1.0000, 0, -0.0002, 24.0, 3.4, 14.0)
 door_id = &"door_07"
+
+[node name="AmmoPickups" type="Node3D" parent="."]
+
+[node name="AmmoHighPerch" parent="AmmoPickups" instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0, 6.6, 6.0)
+
+[node name="AmmoWalkway" parent="AmmoPickups" instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.0, 6.6, -30.0)
+
+[node name="AmmoCentre" parent="AmmoPickups" instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.2, 0.0)
+
+[node name="AmmoMidWest" parent="AmmoPickups" instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 3.6, -14.0)
+
+[node name="AmmoMidEast" parent="AmmoPickups" instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0, 3.6, 8.0)
+
+[node name="AmmoCornerSE" parent="AmmoPickups" instance=ExtResource("6_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.0, 0.2, 28.0)
 
 [node name="Dummies" type="Node3D" parent="."]
 
