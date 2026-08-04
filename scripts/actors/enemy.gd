@@ -400,11 +400,11 @@ func _tick_link_traversal() -> void:
 func _try_traverse_link() -> bool:
 	if data == null or not data.can_jump or _is_traversing_link:
 		return false
-	if agent == null or not agent.is_navigation_finished():
-		# Only when walking has run out of road.
-		if agent != null and not _is_at_link_edge():
-			return false
 
+	# One scan answers both questions. This used to ask "is a link the next step?"
+	# and "which link is it?" separately, walking the whole link group twice - and
+	# the first question was answered by looking for exactly the link the second one
+	# then went and found again, so it could never actually reject anything.
 	var link: JumpLink = _find_link_ahead()
 	if link == null:
 		return false
@@ -415,11 +415,6 @@ func _try_traverse_link() -> bool:
 	_is_traversing_link = true
 	_jump_cooldown_left = JUMP_COOLDOWN
 	return true
-
-
-## True once we are close enough to a link's mouth for the hop to be the next step.
-func _is_at_link_edge() -> bool:
-	return _find_link_ahead() != null
 
 
 ## The nearest link whose near end we are standing on, and whose far end is closer to
