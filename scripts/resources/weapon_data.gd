@@ -5,6 +5,11 @@ extends Resource
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export var projectile_scene: PackedScene
+## First-person viewmodel, instantiated under the weapon's ViewModel node.
+@export var viewmodel: PackedScene
+@export var viewmodel_scale: float = 1.0
+@export var viewmodel_offset: Vector3 = Vector3.ZERO
+@export var viewmodel_rotation_degrees: Vector3 = Vector3.ZERO
 
 @export_group("Damage")
 @export var damage: float = 10.0

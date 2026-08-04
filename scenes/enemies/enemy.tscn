@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://scripts/components/health_component.gd" id="2_health"]
@@ -14,11 +14,19 @@ resource_local_to_scene = true
 radius = 0.4
 height = 1.4
 
+[sub_resource type="TorusMesh" id="Mesh_halo"]
+inner_radius = 0.42
+outer_radius = 0.6
+rings = 24
+
+[sub_resource type="BoxMesh" id="Mesh_tether"]
+size = Vector3(0.07, 0.07, 1)
+
 [sub_resource type="SphereShape3D" id="Shape_head"]
 resource_local_to_scene = true
 radius = 0.25
 
-[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder")]
+[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder", "halo", "tether")]
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_enemy")
@@ -31,6 +39,8 @@ body_shape = NodePath("CollisionShape3D")
 body_hitbox_shape = NodePath("BodyHitbox/CollisionShape3D")
 head_hitbox_shape = NodePath("HeadHitbox/CollisionShape3D")
 tree_holder = NodePath("BehaviorTree")
+halo = NodePath("Halo")
+tether = NodePath("Tether")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -76,3 +86,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
 shape = SubResource("Shape_head")
 
 [node name="BehaviorTree" type="Node" parent="."]
+
+[node name="Halo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.55, 0)
+visible = false
+mesh = SubResource("Mesh_halo")
+
+[node name="Tether" type="MeshInstance3D" parent="."]
+visible = false
+# The beam is scaled along -Z toward the heal target each frame.
+mesh = SubResource("Mesh_tether")

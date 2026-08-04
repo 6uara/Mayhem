@@ -8,6 +8,13 @@ extends CharacterBody3D
 
 signal staggered()
 
+## How long an enemy may be commanded to move while covering no ground before it
+## treats itself as obstructed.
+const STUCK_TIME: float = 0.3
+## Metres per second of real progress below which it is not actually moving.
+const STUCK_SPEED: float = 0.9
+const JUMP_COOLDOWN: float = 0.9
+
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
 const GRAVITY: float = 24.0
@@ -21,6 +28,8 @@ const GRAVITY: float = 24.0
 @export var body_hitbox_shape: CollisionShape3D
 @export var head_hitbox_shape: CollisionShape3D
 @export var tree_holder: Node
+@export var halo: MeshInstance3D
+@export var tether: MeshInstance3D
 @export var flash_color: Color = Color(1.0, 0.9, 0.75)
 
 var data: EnemyData
@@ -36,6 +45,14 @@ var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
 var _behavior_tree: Node
 var _slow_multiplier: float = 1.0
+## Whoever the healer is currently helping, for the tether beam.
+var _tether_target: Enemy
+var _stuck_time: float = 0.0
+var _jump_cooldown_left: float = 0.0
+var _last_position: Vector3
+## Set while crossing a NavigationLink3D under our own ballistic arc.
+var _link_target: Vector3 = Vector3.ZERO
+var _is_traversing_link: bool = false
 
 
 func _ready() -> void:
@@ -58,13 +75,26 @@ func _physics_process(delta: float) -> void:
 		_material.emission_energy_multiplier = 0.0
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
+	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
-	else:
+	elif velocity.y < 0.0:
+		# Only cancel downward speed. Zeroing unconditionally would wipe the jump
+		# impulse set at the end of the previous frame, since the enemy is still
+		# touching the floor when this runs.
 		velocity.y = 0.0
 
-	if _stagger_timer > 0.0:
+	if halo != null and halo.visible:
+		# The ring reads as a marker, not as part of the body, so it turns on its
+		# own axis rather than following the enemy's facing.
+		halo.rotate_y(delta * 0.8)
+	_update_tether()
+
+	if _is_traversing_link:
+		# Mid-arc: steering would fight the ballistic solution and land it short.
+		_tick_link_traversal()
+	elif _stagger_timer > 0.0:
 		# Staggered enemies keep their knockback but stop steering.
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
@@ -75,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 	move_and_slide()
+	_check_obstruction(delta)
 
 
 # Public API - lifecycle
@@ -90,9 +121,15 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_flash_timer = 0.0
 	_attack_cooldown_left = 0.0
 	_slow_multiplier = 1.0
+	_stuck_time = 0.0
+	_jump_cooldown_left = 0.0
+	_last_position = spawn_position
+	_is_traversing_link = false
+	_link_target = spawn_position
 
 	_apply_presentation()
 	_apply_collision()
+	_apply_silhouette_markers()
 
 	if health != null:
 		health.max_health = data.max_health
@@ -199,10 +236,27 @@ func deal_melee_damage() -> void:
 		return
 	if global_position.distance_to(player.global_position) > data.attack_range * 1.4:
 		return  # The player escaped the wind-up. That is the point of telegraphing.
+	if not _can_see(player):
+		# Distance alone is not reach. An enemy wedged under a platform is within
+		# 3m of someone standing on top of it, and would otherwise punch through
+		# the floor - damage from nowhere, with nothing on screen to explain it.
+		return
 	var player_health: HealthComponent = _find_health(player)
 	if player_health != null:
 		player_health.apply_damage(data.damage)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+
+
+## Clear line from this enemy's head to the target's chest.
+##
+## Note this is NOT perception - enemies still always know where the player is
+## (CLAUDE.md 5.3). It only stops an attack landing through solid geometry.
+func _can_see(target: Node3D) -> bool:
+	var from: Vector3 = global_position + Vector3.UP * data.head_offset
+	var to: Vector3 = target.global_position + Vector3.UP * 1.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, PhysicsLayers.WORLD)
+	query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func fire_projectile() -> void:
@@ -234,6 +288,8 @@ func heal_nearby_allies() -> int:
 		if other.health.current_health >= other.health.max_health:
 			continue
 		other.health.heal(data.heal_amount)
+		if _tether_target == null or not is_instance_valid(_tether_target) 				or other.health.get_health_fraction() < _tether_target.health.get_health_fraction():
+			_tether_target = other
 		healed += 1
 	return healed
 
@@ -252,27 +308,261 @@ func clear_windup() -> void:
 
 # Private
 
-## Steers along the navmesh when there is a usable path, and straight at the target
-## when there is not. The fallback is not just for flying variants (CLAUDE.md 5.3):
-## an agent that is off-mesh, or on a map with no baked navmesh, reports its own
-## position as the next path point - which reads as the enemy standing still.
+## Steers along the navmesh when there is one, and straight at the target when there
+## is not.
+##
+## The distinction matters. Straight-line steering is correct for flying variants
+## and for a map with no navmesh at all (CLAUDE.md 5.3), but it is wrong when a
+## navmesh exists and the target simply cannot be walked to: charging the straight
+## line then grinds the enemy into whatever wall is in the way, which is what
+## "enemies get stuck beside the ramp" looks like from the outside.
+##
+## So when the path runs out short of an unreachable target, the enemy stops at the
+## closest reachable point instead of pushing into geometry.
 func _steer(delta: float) -> void:
 	var next_point: Vector3 = move_target
-	if agent != null and not agent.is_navigation_finished():
-		var path_point: Vector3 = agent.get_next_path_position()
-		if path_point.distance_squared_to(global_position) > 0.01:
-			next_point = path_point
+
+	if agent != null and _has_navmesh():
+		if not agent.is_navigation_finished():
+			var path_point: Vector3 = agent.get_next_path_position()
+			if path_point.distance_squared_to(global_position) > 0.01:
+				next_point = path_point
+		elif not agent.is_target_reachable():
+			# As close as walking gets. Stop rather than shove.
+			_stop_horizontal(delta)
+			return
 
 	var direction: Vector3 = next_point - global_position
 	direction.y = 0.0
 	if direction.length_squared() < 0.04:
-		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
-		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
+		_stop_horizontal(delta)
 		return
 	direction = direction.normalized()
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+## Watches for the enemy being told to move while covering no ground, and hops the
+## thing in the way.
+##
+## Deliberately reactive rather than predictive: it does not care *why* it is stuck
+## - a ramp lip, a crowded doorway, a navmesh seam, another enemy - only that it is.
+## That is what makes it a safety net for every future layout rather than a patch
+## for the one ramp that was reported.
+func _check_obstruction(delta: float) -> void:
+	var travelled: float = Vector2(global_position.x - _last_position.x,
+		global_position.z - _last_position.z).length()
+	_last_position = global_position
+
+	var wants_to_move: bool = is_moving and not is_staggered()
+	var making_progress: bool = travelled / maxf(delta, 0.0001) > STUCK_SPEED
+	if not wants_to_move or making_progress or not is_on_floor():
+		_stuck_time = 0.0
+		return
+
+	# A ledge is far commoner than a real obstacle, and stepping is instant, so try
+	# it every frame rather than waiting out the stuck timer.
+	if _try_step_up():
+		_stuck_time = 0.0
+		return
+
+	# The path may be telling us to cross a gap the navmesh cannot bake.
+	if _try_traverse_link():
+		_stuck_time = 0.0
+		return
+
+	_stuck_time += delta
+	if _stuck_time < STUCK_TIME or _jump_cooldown_left > 0.0:
+		return
+	if _try_jump_obstacle():
+		_stuck_time = 0.0
+
+
+## Rides out a link crossing. The arc was solved at launch, so nothing steers here -
+## the traversal simply ends when the enemy is back on the ground.
+func _tick_link_traversal() -> void:
+	if is_on_floor() and velocity.y <= 0.0:
+		_is_traversing_link = false
+		# Land facing the way it was going, so the walk resumes without a pivot.
+		set_move_target(_link_target)
+		return
+	# Bail out if the arc was interrupted - a wall, a wave reset, anything.
+	if global_position.y < _link_target.y - 12.0:
+		_is_traversing_link = false
+
+
+## Crosses a NavigationLink3D by jumping it.
+##
+## The pathfinder will happily route through a link, but it only ever hands back a
+## point to walk to - so without this the enemy walks to the lip of the gap and
+## stands there. The link supplies the arc; the enemy just commits to it.
+func _try_traverse_link() -> bool:
+	if data == null or not data.can_jump or _is_traversing_link:
+		return false
+	if agent == null or not agent.is_navigation_finished():
+		# Only when walking has run out of road.
+		if agent != null and not _is_at_link_edge():
+			return false
+
+	var link: JumpLink = _find_link_ahead()
+	if link == null:
+		return false
+
+	var exit: Vector3 = link.get_exit_for(global_position)
+	velocity = link.get_launch_velocity(global_position, exit, GRAVITY)
+	_link_target = exit
+	_is_traversing_link = true
+	_jump_cooldown_left = JUMP_COOLDOWN
+	return true
+
+
+## True once we are close enough to a link's mouth for the hop to be the next step.
+func _is_at_link_edge() -> bool:
+	return _find_link_ahead() != null
+
+
+## The nearest link whose near end we are standing on, and whose far end is closer to
+## where we are trying to go than we are now - otherwise jumping is a detour.
+func _find_link_ahead() -> JumpLink:
+	var best: JumpLink = null
+	var best_distance: float = INF
+	for node: Node in get_tree().get_nodes_in_group(&"jump_link"):
+		var link := node as JumpLink
+		if link == null or not link.enabled:
+			continue
+		var distance: float = global_position.distance_to(_nearest_end(link))
+		if distance > data.collision_radius + 1.6 or distance >= best_distance:
+			continue
+		var exit: Vector3 = link.get_exit_for(global_position)
+		if exit.distance_to(move_target) >= global_position.distance_to(move_target):
+			continue  # the far side is no closer to the goal, so jumping is a detour
+		best = link
+		best_distance = distance
+	return best
+
+
+func _nearest_end(link: JumpLink) -> Vector3:
+	var start: Vector3 = link.get_start_global()
+	var end: Vector3 = link.get_end_global()
+	return start if global_position.distance_squared_to(start) \
+		< global_position.distance_squared_to(end) else end
+
+
+## Lifts the enemy over a low ledge - the ramp's own side edge, a platform lip, the
+## seam where two boxes meet.
+##
+## This is the case the reported bug actually was: head-on the ramp is a slope and
+## move_and_slide climbs it; from the side it is a vertical edge, and an edge of any
+## height stops a CharacterBody3D dead. The navmesh routes across those edges
+## because the bake believes the agent can climb agent_max_climb, so the body has to
+## be able to as well or the two disagree and the enemy grinds.
+func _try_step_up() -> bool:
+	if data == null or not is_on_wall():
+		return false
+	var step_height: float = data.max_auto_step
+	if step_height <= 0.0:
+		return false
+
+	var heading: Vector3 = _desired_heading()
+	if heading == Vector3.ZERO:
+		return false
+
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var reach: float = data.collision_radius + 0.35
+	var ahead: Vector3 = global_position + heading * reach
+
+	# Nothing to step onto if the space above the ledge is occupied.
+	var head_room: Vector3 = global_position + Vector3.UP * (step_height + 0.1)
+	var head_query := PhysicsRayQueryParameters3D.create(head_room,
+		head_room + heading * reach, PhysicsLayers.WORLD)
+	head_query.exclude = [get_rid()]
+	if not space.intersect_ray(head_query).is_empty():
+		return false
+
+	# Find the top of whatever is in front, by looking down from above it.
+	var from_above: Vector3 = ahead + Vector3.UP * (step_height + 0.1)
+	var down_query := PhysicsRayQueryParameters3D.create(from_above,
+		ahead - Vector3.UP * 0.05, PhysicsLayers.WORLD)
+	down_query.exclude = [get_rid()]
+	var hit: Dictionary = space.intersect_ray(down_query)
+	if hit.is_empty():
+		return false
+
+	var rise: float = float(hit["position"].y) - global_position.y
+	if rise <= 0.02 or rise > step_height:
+		return false
+
+	# Lifting the body without checking it fits is what makes an enemy bounce: the
+	# next depenetration shoves it back out and it re-approaches, forever. Test the
+	# destination first, and commit only if it can also move forward from there -
+	# otherwise standing on the very lip would just stall it again.
+	var lifted: Transform3D = global_transform
+	lifted.origin.y = float(hit["position"].y) + 0.05
+	var nudge: Vector3 = heading * (data.collision_radius * 0.5)
+	if test_move(lifted, nudge):
+		return false
+
+	global_position = lifted.origin + nudge
+	return true
+
+
+## Where the enemy is trying to go, preferring its actual motion and falling back to
+## its target when a wall has already scrubbed the velocity to nothing.
+func _desired_heading() -> Vector3:
+	var heading := Vector3(velocity.x, 0.0, velocity.z)
+	if heading.length_squared() < 0.01:
+		heading = move_target - global_position
+		heading.y = 0.0
+	if heading.length_squared() < 0.01:
+		return Vector3.ZERO
+	return heading.normalized()
+
+
+## Probes the obstacle the way the player's mantle does: something solid at knee
+## height with clear air above it is a thing to jump, not a wall to lean on.
+func _try_jump_obstacle() -> bool:
+	if data == null or not data.can_jump:
+		return false
+
+	var heading: Vector3 = _desired_heading()
+	if heading == Vector3.ZERO:
+		return false
+
+	var reach: float = data.collision_radius + 0.6
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+
+	# Something in the way just above the feet. Probing at knee height would sail
+	# over exactly the low edges that cause the most trouble.
+	var shin: Vector3 = global_position + Vector3.UP * 0.12
+	var shin_query := PhysicsRayQueryParameters3D.create(shin, shin + heading * reach,
+		PhysicsLayers.WORLD | PhysicsLayers.ENEMY)
+	shin_query.exclude = [get_rid()]
+	if space.intersect_ray(shin_query).is_empty():
+		return false
+
+	# ...and nothing above it, or the jump would just be a shorter grind.
+	var clearance: Vector3 = global_position + Vector3.UP * data.max_step_height
+	var clear_query := PhysicsRayQueryParameters3D.create(clearance,
+		clearance + heading * reach, PhysicsLayers.WORLD)
+	if not space.intersect_ray(clear_query).is_empty():
+		return false
+
+	velocity.y = data.jump_velocity
+	_jump_cooldown_left = JUMP_COOLDOWN
+	return true
+
+
+## True when there is baked navigation to follow. False means straight-line
+## steering is the right answer, not a fallback for a broken path.
+func _has_navmesh() -> bool:
+	var map: RID = agent.get_navigation_map()
+	return map.is_valid() and not NavigationServer3D.map_get_regions(map).is_empty()
+
+
+func _stop_horizontal(delta: float) -> void:
+	velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+	velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 
 func _apply_presentation() -> void:
@@ -292,6 +582,50 @@ func _apply_presentation() -> void:
 
 ## Shapes are resized per archetype, so each pooled instance needs its own copy -
 ## sub-resources in a .tscn are shared between instances by default.
+## The halo and the tether are what make the Healer readable; every other archetype
+## turns them off.
+func _apply_silhouette_markers() -> void:
+	if halo != null:
+		halo.visible = data.has_halo
+		if data.has_halo:
+			halo.position.y = data.halo_height
+			halo.scale = Vector3.ONE * data.halo_radius
+			_tint(halo, data.body_color)
+	if tether != null:
+		tether.visible = false
+		_tint(tether, data.body_color)
+	_tether_target = null
+
+
+func _tint(mesh: MeshInstance3D, tint: Color) -> void:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = tint
+	material.emission_enabled = true
+	material.emission = tint
+	material.emission_energy_multiplier = 1.4
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mesh.material_override = material
+
+
+## Beam from the healer to its target, redrawn each frame it is active. Breaking
+## line of sight is not simulated: the tether simply follows whoever is being healed.
+func _update_tether() -> void:
+	if tether == null or not data.has_tether:
+		return
+	if _tether_target == null or not is_instance_valid(_tether_target) 			or not _tether_target.is_active:
+		tether.visible = false
+		return
+	var to_target: Vector3 = _tether_target.global_position - global_position
+	var length: float = to_target.length()
+	if length < 0.1:
+		tether.visible = false
+		return
+	tether.visible = true
+	tether.global_position = global_position + Vector3.UP * data.head_offset * 0.8
+	tether.look_at(_tether_target.global_position + Vector3.UP, Vector3.UP)
+	tether.scale = Vector3(1.0, 1.0, length)
+
+
 func _apply_collision() -> void:
 	_resize_capsule(body_shape, data.collision_height, data.collision_radius, 0.5)
 	_resize_capsule(body_hitbox_shape, maxf(data.collision_height - 0.4, 0.4),

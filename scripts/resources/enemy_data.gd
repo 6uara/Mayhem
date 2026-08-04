@@ -22,6 +22,31 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 ## 0 = fully staggered by every hit, 1 = immovable. Elites sit high.
 @export var stagger_resistance: float = 0.0
 
+@export_group("Movement")
+## Enemies hop obstacles rather than grinding against them.
+##
+## A navmesh path is a plan, not a guarantee: the lip where a ramp meets the floor,
+## a doorway another enemy is filling, geometry the bake smoothed over. All of it
+## reads to the player as "the AI is broken" unless the enemy can simply get over
+## the thing in its way.
+## Ledges up to this tall are simply stepped over, no jump involved.
+##
+## This number is a contract with the navmesh, not a taste setting. The bake uses
+## agent_max_climb to decide which surfaces connect, so it hands out paths that
+## cross ledges up to that height - and Godot's CharacterBody3D has no step-up of
+## its own, so without this it would be promised a 0.5m step and deliver none.
+## Keep it at or above the bake's agent_max_climb.
+@export var max_auto_step: float = 0.6
+
+@export var can_jump: bool = true
+@export var jump_velocity: float = 8.0
+## Tallest obstacle this archetype will attempt; anything higher it walks around.
+##
+## Must stay under the hop's real apex (jump_velocity^2 / 2g, so 1.33m at the
+## defaults) or the enemy commits to jumps it cannot finish and the clearance probe
+## measures air it will never reach. A test enforces the relationship.
+@export var max_step_height: float = 1.2
+
 @export_group("Attack")
 ## Wind-up before the attack lands. Telegraphing is mandatory (CLAUDE.md 5.3) and
 ## this is the timing half of it - scale it with damage.
@@ -42,6 +67,15 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 @export var summon_interval: float = 6.0
 
 @export_group("Presentation")
+## The Healer's floating ring. It is not decoration: Ranger and Healer share body
+## proportions, so the halo is what separates their silhouettes at range - and it
+## stays visible over cover and through crowds, which is the whole point of a
+## priority target (SPEC-VIEWMODELS 2.2).
+@export var has_halo: bool = false
+@export var halo_radius: float = 0.75
+@export var halo_height: float = 2.6
+## Draws a beam to whoever this enemy is currently helping.
+@export var has_tether: bool = false
 ## Silhouette must be readable at a glance (CLAUDE.md 5.3).
 @export var mesh: Mesh
 @export var body_color: Color = Color(0.6, 0.62, 0.66)

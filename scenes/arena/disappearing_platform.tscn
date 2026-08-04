@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/disappearing_platform.gd" id="1_plat"]
+[ext_resource type="Script" path="res://scripts/components/telegraph_component.gd" id="2_tel"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/platform_warning.wav" id="3_warn"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/platform_vanish.wav" id="4_gone"]
+
+[sub_resource type="BoxMesh" id="Mesh_solid"]
+size = Vector3(4, 0.4, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_solid"]
+size = Vector3(4, 0.4, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_trigger"]
+size = Vector3(4, 1.4, 4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_ghost"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.271, 0.302, 0.376, 0.35)
+
+[node name="DisappearingPlatform" type="Node3D" groups=["navigation_source"] node_paths=PackedStringArray("body", "solid_mesh", "ghost_mesh", "telegraph")]
+script = ExtResource("1_plat")
+body = NodePath("Body")
+solid_mesh = NodePath("Body/Mesh")
+ghost_mesh = NodePath("Ghost")
+telegraph = NodePath("Telegraph")
+respawn_time = 4.0
+warning_sound = ExtResource("3_warn")
+vanish_sound = ExtResource("4_gone")
+
+[node name="Body" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Body"]
+mesh = SubResource("Mesh_solid")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body"]
+shape = SubResource("Shape_solid")
+
+[node name="Ghost" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("Mesh_solid")
+material_override = SubResource("Mat_ghost")
+
+[node name="Trigger" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Trigger"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("Shape_trigger")
+
+[node name="Telegraph" type="Node" parent="." node_paths=PackedStringArray("meshes")]
+script = ExtResource("2_tel")
+meaning = 0
+meshes = [NodePath("../Body/Mesh")]

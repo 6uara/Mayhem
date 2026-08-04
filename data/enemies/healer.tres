@@ -7,11 +7,11 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/healer_pulse.wav" id="5_attack"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/healer_death.wav" id="6_death"]
 
-[sub_resource type="SphereMesh" id="Mesh_healer"]
-radius = 0.55
-height = 1.6
+[sub_resource type="CapsuleMesh" id="Mesh_healer"]
+radius = 0.34
+height = 2.0
 radial_segments = 10
-rings = 5
+rings = 4
 
 [resource]
 script = ExtResource("1_script")
@@ -30,11 +30,15 @@ attack_windup = 0.3
 preferred_distance = 18.0
 heal_amount = 14.0
 heal_radius = 9.0
-body_color = Color(0.4, 0.9, 0.55, 1)
-body_scale = 1.0
-collision_height = 1.8
-collision_radius = 0.4
-head_offset = 1.62
+has_halo = true
+has_tether = true
+halo_radius = 0.75
+halo_height = 2.55
+body_color = Color(0.706, 0.361, 1, 1)
+body_scale = 1.00
+collision_height = 2.00
+collision_radius = 0.36
+head_offset = 1.80
 head_radius = 0.25
 reward_currency = 20
 behavior_tree = ExtResource("2_tree")

@@ -2,8 +2,10 @@ extends Node
 ## Local leaderboard persistence. Holds no gameplay state.
 ## Nothing carries between runs - there is no meta-progression in the slice.
 
-const SAVE_PATH: String = "user://leaderboard.cfg"
-const MAX_ENTRIES: int = 20
+## Tokens.LEADERBOARD_PATH. JSON rather than ConfigFile because the handoff
+## names the file, and a leaderboard is a list rather than a settings tree.
+const SAVE_PATH: String = "user://leaderboard.json"
+const MAX_ENTRIES: int = 10  ## Tokens.LEADERBOARD_ENTRIES
 
 ## Array of { "score": int, "time": float, "waves": int, "date": String }
 var _entries: Array[Dictionary] = []
@@ -46,21 +48,24 @@ func clear_leaderboard() -> void:
 
 func load_leaderboard() -> void:
 	_entries.clear()
-	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	if not FileAccess.file_exists(SAVE_PATH):
 		return
-	if not config.has_section("entries"):
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_error("SaveManager: cannot read %s" % SAVE_PATH)
 		return
-	for key: String in config.get_section_keys("entries"):
-		var entry: Variant = config.get_value("entries", key, null)
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not parsed is Array:
+		push_warning("SaveManager: %s is not a leaderboard, ignoring it" % SAVE_PATH)
+		return
+	for entry: Variant in parsed:
 		if entry is Dictionary:
 			_entries.push_back(entry)
 
 
 func save_leaderboard() -> void:
-	var config := ConfigFile.new()
-	for i: int in _entries.size():
-		config.set_value("entries", "entry_%02d" % i, _entries[i])
-	var error: int = config.save(SAVE_PATH)
-	if error != OK:
-		push_error("SaveManager: failed to save leaderboard (%d)" % error)
+	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_error("SaveManager: cannot write %s" % SAVE_PATH)
+		return
+	file.store_string(JSON.stringify(_entries, "	"))

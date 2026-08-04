@@ -10,7 +10,9 @@ const TELEGRAPH_TIME: float = 1.2
 @export var light: OmniLight3D
 @export var frame_mesh: MeshInstance3D
 @export var spawn_point: Node3D
-@export var telegraph_color: Color = Color(1.0, 0.35, 0.2)
+## Magenta is reserved entirely for "enemies come from here", so a door
+## lighting up is unambiguous anywhere in the arena.
+@export var telegraph_color: Color = Color("#FF3BC1")
 @export var open_sound: AudioStream
 
 var _is_telegraphing: bool = false

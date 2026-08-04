@@ -11,8 +11,23 @@ extends Area3D
 @onready var _mesh: MeshInstance3D = $Mesh
 
 
+## Cyan, because a pad is something you use. The chevron motion states the
+## direction; the colour only confirms it.
+func _apply_colour_law() -> void:
+	if _mesh == null:
+		return
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Tokens.WORLD_TRAVERSAL
+	material.emission_enabled = true
+	material.emission = Tokens.WORLD_TRAVERSAL
+	material.emission_energy_multiplier = 0.9
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_mesh.material_override = material
+
+
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	_apply_colour_law.call_deferred()
 
 
 func _on_body_entered(entered: Node3D) -> void:

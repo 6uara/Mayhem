@@ -5,6 +5,11 @@ extends CharacterBody3D
 
 const MAX_PITCH_DEGREES: float = 89.0
 
+## Degrees of extra FOV per m/s of ground speed above the base run.
+const SPEED_FOV_PER_UNIT: float = 1.1
+const SPEED_FOV_MAX: float = 12.0
+const SPEED_FOV_BLEND: float = 5.0
+
 @export_group("Nodes")
 @export var head: Node3D
 @export var camera: Camera3D
@@ -26,6 +31,7 @@ var _look_yaw: float = 0.0
 var _look_pitch: float = 0.0
 var _base_fov: float = 95.0
 var _base_max_health: float = 100.0
+var _speed_fov: float = 0.0
 
 
 func _ready() -> void:
@@ -77,11 +83,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		equipped.set_ads(false)
 	elif event.is_action_pressed("reload"):
 		equipped.try_reload()
+	elif event.is_action_pressed("interact"):
+		_try_interact()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_apply_look()
-	_apply_fov()
+	_apply_fov(delta)
 
 
 # Public API
@@ -93,6 +101,22 @@ func get_aim_transform() -> Transform3D:
 
 # Private
 
+## Zip lines are the only interactable in the slice, so this stays a direct look-up
+## rather than a general interaction system.
+func _try_interact() -> void:
+	var ray: RayCast3D = head.get_node_or_null("InteractionRay") if head != null else null
+	if ray == null:
+		return
+	ray.force_raycast_update()
+	if not ray.is_colliding():
+		return
+	var line := ray.get_collider() as Node
+	while line != null and not (line is ZipLine):
+		line = line.get_parent()
+	if line is ZipLine:
+		(line as ZipLine).try_mount(self)
+
+
 func _apply_look() -> void:
 	var offset: Vector2 = recoil.aim_offset if recoil != null else Vector2.ZERO
 	rotation.y = deg_to_rad(_look_yaw + offset.x)
@@ -101,10 +125,31 @@ func _apply_look() -> void:
 			-MAX_PITCH_DEGREES, MAX_PITCH_DEGREES))
 
 
-func _apply_fov() -> void:
+func _apply_fov(delta: float) -> void:
 	if camera == null:
 		return
-	camera.fov = weapon.get_current_fov(_base_fov) if weapon != null else _base_fov
+	var target: float = weapon.get_current_fov(_base_fov) if weapon != null else _base_fov
+	camera.fov = target + _tick_speed_fov(delta)
+
+
+## Widens the view as ground speed climbs past a normal run.
+##
+## Sense of speed is a camera property, not a physics one. The movement system hands
+## out real momentum through slides, dashes and pads, but without this the screen
+## looks identical at 7 m/s and 14 - so the reward for chaining well is invisible,
+## and the whole thing reads as gliding. Suppressed while aiming, where a drifting
+## FOV would fight the sight picture rather than sell anything.
+func _tick_speed_fov(delta: float) -> float:
+	var goal: float = 0.0
+	if movement != null:
+		var speed: float = Vector3(velocity.x, 0.0, velocity.z).length()
+		var excess: float = speed - movement.base_move_speed
+		if excess > 0.0:
+			goal = minf(excess * SPEED_FOV_PER_UNIT, SPEED_FOV_MAX)
+	if weapon != null:
+		goal *= 1.0 - weapon.ads_progress
+	_speed_fov = lerpf(_speed_fov, goal, clampf(SPEED_FOV_BLEND * delta, 0.0, 1.0))
+	return _speed_fov
 
 
 func _is_ads() -> bool:

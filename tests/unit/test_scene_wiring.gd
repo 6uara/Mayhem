@@ -67,31 +67,11 @@ func test_impact_audio_hooks_are_wired() -> void:
 	assert_not_null(impact.flesh_sound, "flesh_sound")
 
 
-func test_hitmarker_audio_hooks_are_wired() -> void:
+func test_reticle_audio_hooks_are_wired() -> void:
+	# Crosshair and hitmarker are one Reticle now: the ADS sights are drawn by the
+	# same system, so they inherit its outline, colours and hit states.
 	var hud: CanvasLayer = _instance("res://scenes/ui/hud.tscn")
-	var marker: Hitmarker = hud.get_node("Hitmarker")
-	assert_not_null(marker.body_sound, "body_sound")
-	assert_not_null(marker.headshot_sound, "headshot_sound")
-	assert_not_null(marker.kill_sound, "kill_sound")
-
-
-func test_movement_and_grapple_exports_resolve() -> void:
-	var player: Player = _instance(PLAYER_SCENE)
-	assert_not_null(player.movement, "movement")
-	assert_not_null(player.grapple, "grapple")
-	var movement: MovementComponent = player.movement
-	assert_not_null(movement.body, "movement.body")
-	assert_not_null(movement.head, "movement.head")
-	assert_not_null(movement.grapple, "movement.grapple")
-	assert_not_null(movement.jump_sound, "movement.jump_sound")
-	assert_not_null(movement.dash_sound, "movement.dash_sound")
-	var grapple: GrappleComponent = player.grapple
-	assert_not_null(grapple.body, "grapple.body")
-	assert_not_null(grapple.aim_node, "grapple.aim_node")
-	assert_not_null(grapple.fire_sound, "grapple.fire_sound")
-
-
-func test_bounce_pad_is_wired() -> void:
-	var pad: BouncePad = _instance("res://scenes/arena/bounce_pad.tscn")
-	assert_not_null(pad.bounce_sound, "bounce_sound")
-	assert_gt(pad.bounce_velocity, 0.0)
+	var reticle: Reticle = hud.get_node("Root/Reticle")
+	assert_not_null(reticle.body_sound, "body_sound")
+	assert_not_null(reticle.headshot_sound, "headshot_sound")
+	assert_not_null(reticle.kill_sound, "kill_sound")

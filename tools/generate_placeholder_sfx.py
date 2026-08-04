@@ -180,6 +180,19 @@ def land(rng: random.Random) -> list[float]:
     )
 
 
+def footstep(rng: random.Random, pitch: float) -> list[float]:
+    """A scuff over a low body thump - much quieter and shorter than a landing.
+
+    Four pitched variants ship rather than one sample, because a walk cycle plays
+    this several times a second: an identical step on a fixed interval is the most
+    audible robotic tell in the whole locomotion loop.
+    """
+    return _mix(
+        (_lowpass(_noise(ms(45), 0.001, 0.10, 0.40, rng), 1100.0 * pitch), 0),
+        (_tone(ms(60), 95.0 * pitch, 0.001, 0.13, 0.26, sweep=0.7), 0),
+    )
+
+
 def slide(rng: random.Random) -> list[float]:
     """Gritty scrape burst - stands in for a loop until the audio pass."""
     return _lowpass(_noise(ms(300), 0.02, 0.45, 0.8, rng), 2400.0)
@@ -302,6 +315,44 @@ def denied() -> list[float]:
     return _tone(ms(160), 220.0, 0.002, 0.25, 0.6, sweep=0.75)
 
 
+def hazard_warning(rng: random.Random) -> list[float]:
+    """Two rising blips - the 0.6s tell before a hazard can damage."""
+    return _mix(
+        (_tone(ms(120), 480.0, 0.004, 0.2, 0.6, sweep=1.5), 0),
+        (_tone(ms(120), 480.0, 0.004, 0.2, 0.6, sweep=1.5), ms(180)),
+        (_lowpass(_noise(ms(90), 0.01, 0.16, 0.25, rng), 1400.0), 0),
+    )
+
+
+def platform_warning(rng: random.Random) -> list[float]:
+    return _mix(
+        (_tone(ms(90), 700.0, 0.003, 0.14, 0.45, sweep=1.2), 0),
+        (_lowpass(_noise(ms(60), 0.004, 0.1, 0.3, rng), 2000.0), 0),
+    )
+
+
+def platform_vanish(rng: random.Random) -> list[float]:
+    """Falling pitch: the floor just left."""
+    return _mix(
+        (_tone(ms(300), 420.0, 0.002, 0.35, 0.6, sweep=0.35), 0),
+        (_lowpass(_noise(ms(160), 0.005, 0.24, 0.4, rng), 1100.0), 0),
+    )
+
+
+def zip_attach(rng: random.Random) -> list[float]:
+    return _mix(
+        (_noise(ms(40), 0.001, 0.08, 0.7, rng), 0),
+        (_tone(ms(220), 300.0, 0.003, 0.3, 0.5, sweep=2.4), 0),
+    )
+
+
+def zip_release(rng: random.Random) -> list[float]:
+    return _mix(
+        (_noise(ms(35), 0.001, 0.07, 0.5, rng), 0),
+        (_tone(ms(140), 560.0, 0.002, 0.2, 0.4, sweep=0.5), 0),
+    )
+
+
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
@@ -317,6 +368,8 @@ def main() -> None:
     _write("world/jump.wav", jump(rng))
     _write("world/land.wav", land(rng))
     _write("world/slide.wav", slide(rng))
+    for index, step_pitch in enumerate((0.90, 1.0, 1.09, 1.18)):
+        _write("world/footstep_%d.wav" % (index + 1), footstep(rng, step_pitch))
     _write("world/grapple_fire.wav", grapple_fire(rng))
     _write("world/grapple_release.wav", grapple_release(rng))
     _write("world/bounce_pad.wav", bounce_pad(rng))
@@ -329,6 +382,11 @@ def main() -> None:
         _write("enemies/%s_attack.wav" % name, enemy_attack(rng, pitch))
     _write("enemies/healer_pulse.wav", heal_pulse())
     _write("world/spawn_door.wav", door_open(rng))
+    _write("world/hazard_warning.wav", hazard_warning(rng))
+    _write("world/platform_warning.wav", platform_warning(rng))
+    _write("world/platform_vanish.wav", platform_vanish(rng))
+    _write("world/zip_attach.wav", zip_attach(rng))
+    _write("world/zip_release.wav", zip_release(rng))
     _write("world/utility_throw.wav", utility_throw(rng))
     _write("world/stun_grenade.wav", stun_pop(rng))
     _write("world/temp_wall.wav", wall_deploy(rng))

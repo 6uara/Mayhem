@@ -9,9 +9,9 @@
 [ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="7_summon"]
 
 [sub_resource type="CylinderMesh" id="Mesh_summoner"]
-top_radius = 0.15
-bottom_radius = 0.7
-height = 2.0
+top_radius = 0.18
+bottom_radius = 0.9
+height = 2.2
 radial_segments = 6
 
 [resource]
@@ -31,12 +31,12 @@ attack_windup = 1.0
 preferred_distance = 16.0
 summon_data = ExtResource("7_summon")
 summon_count = 2
-body_color = Color(0.7, 0.4, 0.85, 1)
-body_scale = 1.2
-collision_height = 2.0
-collision_radius = 0.45
-head_offset = 1.85
-head_radius = 0.28
+body_color = Color(1, 0.231, 0.757, 1)
+body_scale = 1.00
+collision_height = 2.20
+collision_radius = 0.55
+head_offset = 1.95
+head_radius = 0.30
 reward_currency = 25
 behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")

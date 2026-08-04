@@ -23,6 +23,12 @@ signal ads_changed(is_ads: bool)
 @export var reload_sound: AudioStream
 @export var empty_sound: AudioStream
 
+@export_group("Viewmodel feel")
+## Purely cosmetic kick on the viewmodel mesh - it moves the model, never the aim.
+@export var view_kick_back: float = 0.05
+@export var view_kick_up_degrees: float = 3.0
+@export var view_kick_recovery: float = 10.0
+
 var is_reloading: bool = false
 var is_ads: bool = false
 ## 0 = hipfire, 1 = fully aimed. Drives FOV and spread interpolation.
@@ -37,6 +43,11 @@ var _is_trigger_held: bool = false
 var _reload_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
+var _view: Node3D
+var _view_rest_position: Vector3 = Vector3.ZERO
+var _view_kick_offset: Vector3 = Vector3.ZERO
+var _view_kick_rot: float = 0.0
+
 
 func _ready() -> void:
 	if data == null:
@@ -47,6 +58,7 @@ func _ready() -> void:
 	_ammo = get_magazine_size()
 	_reserve = get_reserve_max()
 	_emit_ammo()
+	_spawn_viewmodel()
 
 
 func _process(delta: float) -> void:
@@ -55,6 +67,7 @@ func _process(delta: float) -> void:
 	_tick_reload(delta)
 	_tick_ads(delta)
 	_tick_recoil_reset()
+	_tick_viewmodel(delta)
 	if _is_trigger_held:
 		_try_fire()
 
@@ -194,6 +207,8 @@ func _try_fire() -> void:
 		_spawn_projectile(origin, _apply_spread(aim, spread))
 
 	_apply_recoil()
+	_view_kick_offset.z += view_kick_back
+	_view_kick_rot -= view_kick_up_degrees
 	AudioPool.play_3d(fire_sound, global_position, AudioPool.BUS_WEAPONS)
 	fired.emit(_shot_index)
 	EventBus.weapon_fired.emit(data.id)
@@ -286,6 +301,30 @@ func _on_empty() -> void:
 	_cooldown = 0.25
 	AudioPool.play_3d(empty_sound, global_position, AudioPool.BUS_WEAPONS)
 	try_reload()
+
+
+## Instances the weapon's viewmodel mesh as a child of this node. Visibility already
+## follows this node (WeaponHolder toggles it), so the mesh needs no wiring of its own.
+func _spawn_viewmodel() -> void:
+	if data.viewmodel == null:
+		return
+	_view = data.viewmodel.instantiate()
+	add_child(_view)
+	_view_rest_position = data.viewmodel_offset
+	_view.position = _view_rest_position
+	_view.rotation_degrees = data.viewmodel_rotation_degrees
+	_view.scale = Vector3.ONE * data.viewmodel_scale
+
+
+## Cosmetic-only recoil on the mesh itself - never touches `aim_node`, so it can
+## never nudge where a shot actually lands.
+func _tick_viewmodel(delta: float) -> void:
+	if _view == null:
+		return
+	_view_kick_offset = _view_kick_offset.move_toward(Vector3.ZERO, view_kick_recovery * delta * 0.1)
+	_view_kick_rot = move_toward(_view_kick_rot, 0.0, view_kick_recovery * delta)
+	_view.position = _view_rest_position + _view_kick_offset
+	_view.rotation_degrees.x = data.viewmodel_rotation_degrees.x + _view_kick_rot
 
 
 func _stat(stat_key: StringName, base_value: float) -> float:
