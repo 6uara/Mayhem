@@ -70,9 +70,7 @@ func _start_wave_after(delay: float, generation: int) -> void:
 func _on_wave_completed(wave_index: int, duration: float, _damage: float) -> void:
 	if not is_running:
 		return
-	NarratorManager.request_line(&"wave_cleared", &"wave",
-		"Wave %d down. The crowd wants more." % (wave_index + 1),
-		NarratorManager.Priority.STATE)
+	# Commentary is HostDirector's job - this one sequences waves.
 	if WaveManager.is_last_wave():
 		_finish_match()
 		return
@@ -118,9 +116,6 @@ func _on_player_died() -> void:
 		return
 	is_running = false
 	_generation += 1
-	NarratorManager.request_line(&"player_died", &"death",
-		"And that is how the story ends for most of them.",
-		NarratorManager.Priority.CRITICAL)
 	match_state_changed.emit(false)
 
 

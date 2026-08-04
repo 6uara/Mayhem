@@ -102,6 +102,14 @@ func setup(hazard_damage: float, hazard_radius: float, hazard_duration: float) -
 ## them separately is how a hazard ends up lying about where it hurts.
 func _apply_radius() -> void:
 	if collision != null and collision.shape is CylinderShape3D:
+		# A sub-resource authored in a .tscn is shared by every instance of it unless
+		# it says otherwise, so writing the radius here wrote it into the scene's own
+		# shape - and the editor then saved that runtime value back to disk, shrinking
+		# the authored hazard a little more each time. The scene marks this one
+		# local_to_scene; this duplicate covers hazards built from code, which have no
+		# scene to inherit that from.
+		if not collision.shape.resource_local_to_scene:
+			collision.shape = collision.shape.duplicate()
 		var cylinder := collision.shape as CylinderShape3D
 		cylinder.radius = radius
 	if decal_mesh != null:

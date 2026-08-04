@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/arena/greybox_arena.tscn" id="1_range"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/systems/match_director.gd" id="8_director"]
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_screen.tscn" id="9_shop"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="10_pause"]
+[ext_resource type="Script" path="res://scripts/systems/host_director.gd" id="11_host"]
 [ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
 [ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
 [ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w03"]
@@ -69,3 +70,6 @@ spawner = NodePath("../EnemySpawner")
 shop_screen = NodePath("../ShopScreen")
 
 [node name="PauseMenu" parent="." instance=ExtResource("10_pause")]
+
+[node name="HostDirector" type="Node" parent="."]
+script = ExtResource("11_host")

@@ -1,10 +1,10 @@
-[gd_resource type="Theme" format=3]
+[gd_resource type="Theme" format=3 uid="uid://bs52imyfholid"]
 
-[ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="1_n5uuq"]
-[ext_resource type="FontFile" path="res://ui/fonts/Archivo-Variable.woff2" id="2_n2gag"]
-[ext_resource type="FontFile" path="res://ui/fonts/IBMPlexSans-SemiBold.ttf" id="3_iavxa"]
-[ext_resource type="FontFile" path="res://ui/fonts/IBMPlexMono-SemiBold.ttf" id="4_awc71"]
-[ext_resource type="FontFile" path="res://ui/fonts/IBMPlexSans-Regular.ttf" id="5_fojls"]
+[ext_resource type="Script" uid="uid://diy64audi15ki" path="res://scripts/ui/chamfer_style_box.gd" id="1_n5uuq"]
+[ext_resource type="FontFile" uid="uid://bjsipowfxstwj" path="res://ui/fonts/Archivo-Variable.woff2" id="2_n2gag"]
+[ext_resource type="FontFile" uid="uid://dxq346t4nkjio" path="res://ui/fonts/IBMPlexSans-SemiBold.ttf" id="3_iavxa"]
+[ext_resource type="FontFile" uid="uid://he2exrhw38ix" path="res://ui/fonts/IBMPlexMono-SemiBold.ttf" id="4_awc71"]
+[ext_resource type="FontFile" uid="uid://cbljnh7ta07v1" path="res://ui/fonts/IBMPlexSans-Regular.ttf" id="5_fojls"]
 
 [sub_resource type="StyleBox" id="StyleBox_mia6d"]
 resource_local_to_scene = false

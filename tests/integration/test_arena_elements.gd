@@ -77,6 +77,38 @@ func test_hazard_decal_matches_its_damage_radius() -> void:
 	assert_almost_eq(hazard.decal_mesh.scale.z, 5.0, 0.001, "decal radius")
 
 
+## Two hazards must not share one collision shape.
+##
+## They did, and it corrupted the source file three times: a sub-resource authored
+## in a .tscn is shared across every instance unless it says otherwise, so setting
+## the radius at runtime wrote into the scene's own shape, and the editor then saved
+## that value back to disk - each pass shrinking the authored hazard further. It
+## fails nothing at runtime, which is what made it survive so long.
+func test_each_hazard_owns_its_own_collision_shape() -> void:
+	var first: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	var second: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	await wait_physics_frames(2)
+
+	first.radius = 7.0
+	second.radius = 2.0
+	await wait_physics_frames(2)
+
+	assert_ne(first.collision.shape, second.collision.shape,
+		"hazards must not share a shape resource")
+	assert_almost_eq((first.collision.shape as CylinderShape3D).radius, 7.0, 0.001,
+		"resizing one hazard...")
+	assert_almost_eq((second.collision.shape as CylinderShape3D).radius, 2.0, 0.001,
+		"...must not follow the other")
+
+
+## The decal is the damage footprint, so it has to sit on the damage.
+func test_the_decal_sits_on_the_pool_it_marks() -> void:
+	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	await wait_physics_frames(2)
+	assert_almost_eq(hazard.decal_mesh.position, Vector3.ZERO, Vector3.ONE * 0.05,
+		"a decal offset from its own hazard is a telegraph pointing at the wrong place")
+
+
 func test_hazard_warns_before_it_can_damage() -> void:
 	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
 	assert_false(hazard.is_armed, "a hazard never damages during its warning")

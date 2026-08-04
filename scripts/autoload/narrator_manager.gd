@@ -15,6 +15,8 @@ enum Priority { FLAVOR = 0, FEEDBACK = 1, STATE = 2, CRITICAL = 3 }
 ##               stops landing.
 enum Tier { STANDARD = 1, WARNING = 2, PUNCHLINE = 3 }
 
+const CATALOG_PATH: String = "res://data/host/host_catalog.tres"
+
 const DEFAULT_CATEGORY_COOLDOWN: float = 8.0
 ## He addresses the crowd, not the player, and he does it sparingly - a Host who
 ## never shuts up stops being cruel and starts being noise.
@@ -23,8 +25,14 @@ const DEFAULT_LINE_COOLDOWN: float = 30.0
 const PLACEHOLDER_DURATION: float = 2.5
 
 var is_speaking: bool = false
+var catalog: HostCatalog
 
 var _queue: Array[Dictionary] = []
+## category -> index last spoken, so a set never repeats itself back to back.
+var _last_spoken: Dictionary = {}
+## category -> cooldown a line set asked for instead of the default.
+var _category_overrides: Dictionary = {}
+var _rng := RandomNumberGenerator.new()
 var _category_cooldowns: Dictionary = {}  # StringName -> seconds remaining
 var _line_cooldowns: Dictionary = {}      # StringName -> seconds remaining
 var _current_priority: int = -1
@@ -36,6 +44,9 @@ var _generation: int = 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_rng.randomize()
+	if ResourceLoader.exists(CATALOG_PATH):
+		catalog = load(CATALOG_PATH)
 	EventBus.wave_started.connect(_on_wave_started.unbind(2))
 
 
@@ -77,6 +88,46 @@ func request_line(line_id: StringName, category: StringName, text: String,
 		return int(a["priority"]) > int(b["priority"]))
 
 
+## Say something for `occasion`, if the catalogue has anything and the pacing allows.
+##
+## The line, its tier and its priority all come from the catalogue, so callers name
+## the moment and nothing else - a gameplay system should not be choosing between a
+## taunt and a warning, and it certainly should not be holding the wording.
+##
+## `format_args` fills a line's placeholders, so "Wave %d down" can be content.
+func say(occasion: StringName, format_args: Array = []) -> void:
+	if catalog == null:
+		return
+	var line_set: HostLineSet = catalog.find(occasion)
+	if line_set == null or not line_set.has_lines():
+		return
+
+	var index: int = _pick_index(occasion, line_set.lines.size())
+	var text: String = line_set.lines[index]
+	if not format_args.is_empty():
+		text = text % format_args
+	# The id identifies the sentence, the category identifies the occasion. Passing
+	# the occasion as both would collapse the two cooldowns into one and throw away
+	# the variety the line set exists to provide.
+	request_line(StringName("%s_%d" % [occasion, index]), occasion, text,
+		line_set.priority, null, line_set.tier)
+	if line_set.category_cooldown > 0.0:
+		_category_overrides[occasion] = line_set.category_cooldown
+
+
+## Never the same line twice running. With one line there is no choice; with more,
+## the previous index is excluded rather than re-rolled, so it cannot get unlucky.
+func _pick_index(occasion: StringName, count: int) -> int:
+	if count <= 1:
+		return 0
+	var previous: int = int(_last_spoken.get(occasion, -1))
+	var index: int = _rng.randi_range(0, count - 2)
+	if index >= previous:
+		index += 1
+	_last_spoken[occasion] = index
+	return index
+
+
 func clear_queue() -> void:
 	_queue.clear()
 
@@ -96,7 +147,8 @@ func _play(line: Dictionary) -> void:
 	var generation: int = _generation
 	_current_priority = int(line["priority"])
 	_line_cooldowns[line["line_id"]] = DEFAULT_LINE_COOLDOWN
-	_category_cooldowns[line["category"]] = DEFAULT_CATEGORY_COOLDOWN
+	_category_cooldowns[line["category"]] = float(_category_overrides.get(
+		line["category"], DEFAULT_CATEGORY_COOLDOWN))
 
 	var stream: AudioStream = line["stream"]
 	var duration: float = PLACEHOLDER_DURATION
