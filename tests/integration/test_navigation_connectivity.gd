@@ -7,6 +7,11 @@ extends GutTest
 
 const GROUND := Vector3(0, 0.2, 20)
 
+## Ceiling on the wait for NavigationServer3D to register the arena's region. Well
+## past what it has ever needed - this is a guard against hanging, not a timing
+## assumption.
+const MAX_SYNC_FRAMES: int = 120
+
 ## Destinations that can only be reached by walking up something.
 const RAISED := {
 	"mid west platform": Vector3(-24, 3.4, -8),
@@ -20,8 +25,21 @@ var _map: RID
 
 func before_all() -> void:
 	add_child_autofree(load("res://scenes/arena/greybox_arena.tscn").instantiate())
-	await wait_physics_frames(4)
 	_map = get_tree().root.world_3d.navigation_map
+	# Wait for the map to be usable, not for a frame count to elapse.
+	#
+	# NavigationServer3D syncs on its own schedule, so a fixed number of frames was a
+	# bet - and one this suite lost often enough that every navmesh assertion here
+	# looked intermittently broken. Two separate things have to land: the region has
+	# to register, and its polygons have to reach the server. Waiting only on the
+	# first still failed, with queries snapping to the origin because the map existed
+	# and was empty. map_force_update drives the sync rather than hoping for it.
+	for _i: int in MAX_SYNC_FRAMES:
+		await wait_physics_frames(1)
+		NavigationServer3D.map_force_update(_map)
+		if NavigationServer3D.map_get_regions(_map).size() > 0 \
+				and _snap(GROUND).distance_to(GROUND) < 2.0:
+			return
 
 
 func _snap(point: Vector3) -> Vector3:

@@ -4,8 +4,13 @@ extends Node
 ## manager's spawner and pools every enemy through the single enemy scene.
 
 @export var enemy_scene: PackedScene
-## Prewarmed so the first wave never hitches on instantiation.
-@export var prewarm_count: int = 24
+## Prewarmed so no wave ever hitches on instantiation.
+##
+## This has to cover the largest authored wave, not the first one - falling short
+## means the shortfall is instantiated live, and the wave that overruns the pool is
+## by construction the biggest one in the run. A test pins it to the actual content
+## so raising a wave's counts cannot quietly reintroduce the hitch.
+@export var prewarm_count: int = 32
 
 var _doors: Dictionary = {}  # StringName -> SpawnDoor
 var _rng := RandomNumberGenerator.new()

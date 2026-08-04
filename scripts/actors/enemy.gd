@@ -53,6 +53,10 @@ var _last_position: Vector3
 ## Set while crossing a NavigationLink3D under our own ballistic arc.
 var _link_target: Vector3 = Vector3.ZERO
 var _is_traversing_link: bool = false
+## The arena's jump links, resolved once per spawn. They are placed at author time
+## and never change during a run, so paying for a group query every frame - which
+## allocates a fresh array each call - buys nothing.
+var _links: Array[JumpLink] = []
 
 
 func _ready() -> void:
@@ -130,6 +134,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_last_position = spawn_position
 	_is_traversing_link = false
 	_link_target = spawn_position
+	_cache_links()
 
 	_apply_presentation()
 	_apply_collision()
@@ -429,14 +434,29 @@ func _try_traverse_link() -> bool:
 	return true
 
 
+## Resolved on spawn rather than in _ready(): a pooled enemy is built once but reused
+## across waves and arenas, so the links it should know about are the ones present
+## the moment it is put into play.
+func _cache_links() -> void:
+	_links.clear()
+	for node: Node in get_tree().get_nodes_in_group(&"jump_link"):
+		var link := node as JumpLink
+		if link != null:
+			_links.push_back(link)
+
+
 ## The nearest link whose near end we are standing on, and whose far end is closer to
 ## where we are trying to go than we are now - otherwise jumping is a detour.
+##
+## Reads the cached list rather than the scene tree. This runs every frame for every
+## walking enemy now, and a group query allocates its result array on each call - at
+## a full wave that was well over a thousand throwaway arrays a second, for a set of
+## links that never changes during a run.
 func _find_link_ahead() -> JumpLink:
 	var best: JumpLink = null
 	var best_distance: float = INF
-	for node: Node in get_tree().get_nodes_in_group(&"jump_link"):
-		var link := node as JumpLink
-		if link == null or not link.enabled:
+	for link: JumpLink in _links:
+		if not is_instance_valid(link) or not link.enabled:
 			continue
 		var distance: float = global_position.distance_to(_nearest_end(link))
 		if distance > data.collision_radius + 1.6 or distance >= best_distance:

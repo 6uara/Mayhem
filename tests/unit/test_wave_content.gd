@@ -49,6 +49,36 @@ func test_difficulty_curve_never_goes_backwards() -> void:
 		previous = count
 
 
+## The enemy pool has to cover the biggest authored wave, not the first one.
+##
+## Falling short does not fail anything - the shortfall is just instantiated live,
+## which means the one wave that hitches is by construction the largest fight in the
+## run. Raising a wave's counts without raising the pool is an easy thing to do and
+## an invisible thing to have done, so the two are pinned together here.
+func test_the_enemy_pool_covers_the_largest_wave() -> void:
+	var largest: int = 0
+	for i: int in range(1, WAVE_COUNT + 1):
+		largest = maxi(largest, _load(i).get_total_enemy_count())
+
+	var prewarm: int = _authored_prewarm()
+	assert_gt(prewarm, 0, "found the spawner's prewarm_count in game.tscn")
+	assert_true(prewarm >= largest,
+		"pool prewarms %d but wave content peaks at %d" % [prewarm, largest])
+
+
+## Read from the packed scene rather than instantiated - this needs one exported
+## number, not a running match.
+func _authored_prewarm() -> int:
+	var state: SceneState = load("res://scenes/main/game.tscn").get_state()
+	for node: int in state.get_node_count():
+		if state.get_node_name(node) != "EnemySpawner":
+			continue
+		for property: int in state.get_node_property_count(node):
+			if state.get_node_property_name(node, property) == &"prewarm_count":
+				return int(state.get_node_property_value(node, property))
+	return -1
+
+
 func test_every_wave_has_a_par_time() -> void:
 	for i: int in range(1, WAVE_COUNT + 1):
 		assert_gt(_load(i).par_time, 0.0, "wave %d par_time" % i)
