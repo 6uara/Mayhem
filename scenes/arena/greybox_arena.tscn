@@ -23,20 +23,9 @@ ambient_light_color = Color(0.5, 0.55, 0.65, 1)
 ambient_light_energy = 0.6
 tonemap_mode = 2
 
-[sub_resource type="ShaderMaterial" id="Mat_floor"]
-shader = ExtResource("14_glitch")
-shader_parameter/base_color = Color(0.078, 0.086, 0.106, 1)
-shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
-shader_parameter/grid_scale = 0.35
-shader_parameter/line_width = 0.05
-shader_parameter/emission_energy = 1.6
-shader_parameter/glitch_strength = 0.4
-shader_parameter/glitch_speed = 0.0
-shader_parameter/scanline_speed = 0.0
-shader_parameter/roughness_value = 0.55
-shader_parameter/metallic_value = 0.15
-shader_parameter/fresnel_power = 2.5
-shader_parameter/fresnel_strength = 1.4
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.32, 0.33, 0.36, 1)
+roughness = 0.85
 
 [sub_resource type="ShaderMaterial" id="Mat_wall"]
 shader = ExtResource("14_glitch")

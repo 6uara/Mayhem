@@ -7,7 +7,7 @@
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")
 enemy_data = ExtResource("3_rusher")
-count = 4
+count = 6
 spawn_door_ids = Array[StringName]([&"door_01", &"door_02"])
 delay = 0.0
 interval = 0.8
@@ -16,6 +16,6 @@ interval = 0.8
 script = ExtResource("1_wave")
 wave_index = 0
 spawn_groups = Array[Resource]([SubResource("Group_0")])
-par_time = 35.0
+par_time = 40.0
 completion_bonus = 60
 is_elite_wave = false
