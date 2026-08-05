@@ -241,3 +241,30 @@ func test_footsteps_track_distance_not_time() -> void:
 	assert_gt(fast, slow,
 		"equal time at triple the speed must mean more steps (%d fast vs %d slow)"
 			% [fast, slow])
+
+
+# ------------------------------------------------------------- movement VFX
+
+## A dash trail that outlives the dash it marks would keep burning on a charge
+## the player has already spent, so it fires once, off the same signal the HUD's
+## charge pips read - not off polling movement.state every frame.
+func test_dashing_bursts_the_dash_trail() -> void:
+	var trail: GPUParticles3D = _player.get_node("DashTrail")
+	assert_false(trail.emitting, "precondition: no trail before any dash")
+
+	EventBus.dash_used.emit(2)
+	assert_true(trail.emitting, "a spent charge has to show as a trail burst")
+
+
+## Sparks are the tell that a slide is live, so they must track the state exactly:
+## on for every physics tick spent sliding, and gone the instant the player is not.
+func test_sliding_streams_sparks_only_while_sliding() -> void:
+	var sparks: GPUParticles3D = _player.get_node("SlideSparks")
+	var movement: MovementComponent = _player.movement
+	assert_false(sparks.emitting, "precondition: no sparks before any slide")
+
+	movement.state = MovementComponent.State.SLIDING
+	assert_true(sparks.emitting, "sliding has to read as sparks underfoot")
+
+	movement.state = MovementComponent.State.GROUNDED
+	assert_false(sparks.emitting, "standing up has to cut the sparks immediately")

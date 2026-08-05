@@ -41,10 +41,55 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/smg_reload.wav" id="39_smg_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/smg_empty.wav" id="40_smg_empty"]
 [ext_resource type="PackedScene" path="res://scenes/player/viewmodel_rig.tscn" id="41_vmrig"]
+[ext_resource type="Script" path="res://scripts/components/movement_vfx_component.gd" id="42_movement_vfx"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_player"]
 radius = 0.4
 height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_dash_trail"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.4, 0.85, 1, 0.6)
+
+[sub_resource type="QuadMesh" id="Mesh_dash_trail"]
+material = SubResource("Mat_dash_trail")
+size = Vector2(0.5, 0.5)
+
+[sub_resource type="ParticleProcessMaterial" id="Proc_dash_trail"]
+emission_shape = 1
+emission_sphere_radius = 0.35
+direction = Vector3(0, 0, 1)
+spread = 15.0
+initial_velocity_min = 0.5
+initial_velocity_max = 1.5
+gravity = Vector3(0, 0, 0)
+scale_min = 0.6
+scale_max = 1.0
+damping_min = 3.0
+damping_max = 5.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_slide_sparks"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.8, 0.4, 0.85)
+
+[sub_resource type="QuadMesh" id="Mesh_slide_sparks"]
+material = SubResource("Mat_slide_sparks")
+size = Vector2(0.04, 0.04)
+
+[sub_resource type="ParticleProcessMaterial" id="Proc_slide_sparks"]
+emission_shape = 1
+emission_sphere_radius = 0.1
+direction = Vector3(0, 1, 0)
+spread = 60.0
+initial_velocity_min = 1.0
+initial_velocity_max = 2.5
+gravity = Vector3(0, -9.8, 0)
+scale_min = 0.4
+scale_max = 0.8
+damping_min = 2.0
+damping_max = 4.0
 
 [node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon_holder", "recoil", "health", "stats", "movement", "grapple", "utility")]
 collision_layer = 2
@@ -191,6 +236,29 @@ body = NodePath("..")
 movement = NodePath("../MovementComponent")
 view_node = NodePath("../HeadPivot/ViewBob")
 step_sounds = Array[AudioStream]([ExtResource("28_step1"), ExtResource("29_step2"), ExtResource("30_step3"), ExtResource("31_step4")])
+
+[node name="DashTrail" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+emitting = false
+amount = 16
+lifetime = 0.3
+one_shot = true
+explosiveness = 0.6
+process_material = SubResource("Proc_dash_trail")
+draw_pass_1 = SubResource("Mesh_dash_trail")
+
+[node name="SlideSparks" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 20
+lifetime = 0.4
+process_material = SubResource("Proc_slide_sparks")
+draw_pass_1 = SubResource("Mesh_slide_sparks")
+
+[node name="MovementVfxComponent" type="Node" parent="." node_paths=PackedStringArray("movement", "dash_trail", "slide_sparks")]
+script = ExtResource("42_movement_vfx")
+movement = NodePath("../MovementComponent")
+dash_trail = NodePath("../DashTrail")
+slide_sparks = NodePath("../SlideSparks")
 
 [node name="ViewmodelLayer" type="CanvasLayer" parent="."]
 layer = 0
