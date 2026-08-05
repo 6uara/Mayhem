@@ -165,3 +165,38 @@ func test_a_wide_hitbox_does_not_widen_the_navigation_body() -> void:
 func _hitbox_radius(enemy_data: EnemyData) -> float:
 	return enemy_data.hitbox_radius if enemy_data.hitbox_radius > 0.0 \
 		else enemy_data.collision_radius
+
+
+# ---------------------------------------------------------------- muzzle VFX
+
+## The flash/shell marker lives inside the viewmodel rig, at the barrel tip, with
+## the model's own orientation - not at `muzzle` itself, which is deliberately in
+## the main world and would put a flash in a space with no relation to what's
+## drawn on screen once the player turns.
+func test_every_weapon_gets_a_muzzle_marker() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(2)
+	for weapon: WeaponComponent in player.weapon_holder.get_all():
+		if weapon._view == null:
+			continue
+		var marker: Node3D = weapon._view.get_node_or_null("MuzzleMarker")
+		assert_not_null(marker, "%s has no muzzle marker" % weapon.name)
+
+
+## Firing must not error even though the marker lives in a different world than
+## `muzzle` - this is the regression a mismatched parent would produce.
+func test_firing_spawns_muzzle_vfx_without_error() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(2)
+	var weapon: WeaponComponent = player.weapon
+	var marker: Node3D = weapon._view.get_node_or_null("MuzzleMarker")
+	assert_not_null(marker, "precondition: marker exists")
+
+	# set_trigger(true) fires synchronously rather than waiting for the next
+	# _process tick, so the check must not wait either - the flash lives only
+	# 0.06s and awaiting even one frame first was long enough for it to have
+	# already freed itself by the time this looked.
+	weapon.set_trigger(true)
+	weapon.set_trigger(false)
+
+	assert_gt(marker.get_child_count(), 0, "the flash should have spawned on the marker")

@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_screen.tscn" id="9_shop"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="10_pause"]
 [ext_resource type="Script" path="res://scripts/systems/host_director.gd" id="11_host"]
+[ext_resource type="Script" path="res://scripts/systems/hitstop_controller.gd" id="12_hitstop"]
 [ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
 [ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
 [ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w03"]
@@ -73,3 +74,6 @@ shop_screen = NodePath("../ShopScreen")
 
 [node name="HostDirector" type="Node" parent="."]
 script = ExtResource("11_host")
+
+[node name="HitstopController" type="Node" parent="."]
+script = ExtResource("12_hitstop")

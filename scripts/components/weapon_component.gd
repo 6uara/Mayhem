@@ -9,6 +9,9 @@ const CONVERGE_DISTANCE: float = 300.0
 ## Slack past the muzzle before a target counts as point blank.
 const MUZZLE_CLEARANCE: float = 0.25
 
+const MUZZLE_FLASH_SCENE: PackedScene = preload("res://scenes/vfx/muzzle_flash.tscn")
+const EJECTED_SHELL_SCENE: PackedScene = preload("res://scenes/vfx/ejected_shell.tscn")
+
 signal fired(shot_index: int)
 signal reload_started(duration: float)
 signal reload_finished()
@@ -18,7 +21,13 @@ signal ads_changed(is_ads: bool)
 @export var data: WeaponData
 ## Aim source - the head pivot, not the camera, so cosmetic kick never moves bullets.
 @export var aim_node: Node3D
-## Visual muzzle position, used for the tracer's spawn point and muzzle flash.
+## Where shots actually spawn - deliberately in the main world, not the viewmodel
+## rig, so damage math never depends on which world a cosmetic model happens to
+## render in. This is NOT where the muzzle flash renders: that lives on
+## `_muzzle_marker`, inside the rig, because the viewmodel's camera has a fixed
+## orientation independent of where the player is looking - a flash placed here,
+## in the main world, would drift out of alignment with the gun the moment the
+## player turns.
 @export var muzzle: Node3D
 @export var recoil: CameraRecoilComponent
 @export var stats: StatsComponent
@@ -63,6 +72,10 @@ var _rng := RandomNumberGenerator.new()
 
 var _view: Node3D
 var _view_rest_position: Vector3 = Vector3.ZERO
+## Sits at the barrel tip with the model's own orientation, inside the viewmodel
+## rig - flash and shell VFX hang off this, never off `muzzle` (see the comment on
+## `muzzle` itself for why those are two different points in two different worlds).
+var _muzzle_marker: Node3D
 var _view_kick_offset: Vector3 = Vector3.ZERO
 var _view_kick_rot: float = 0.0
 
@@ -229,6 +242,7 @@ func _try_fire() -> void:
 	_apply_recoil()
 	_view_kick_offset.z = minf(_view_kick_offset.z + view_kick_back, view_kick_max_back)
 	_view_kick_rot = maxf(_view_kick_rot - view_kick_up_degrees, -view_kick_max_degrees)
+	_spawn_muzzle_vfx()
 	AudioPool.play_3d(fire_sound, global_position, AudioPool.BUS_WEAPONS)
 	fired.emit(_shot_index)
 	EventBus.weapon_fired.emit(data.id)
@@ -269,6 +283,32 @@ func _shot_origin(aim_origin: Vector3, target: Vector3) -> Vector3:
 	if aim_origin.distance_to(target) <= muzzle_reach + MUZZLE_CLEARANCE:
 		return aim_origin
 	return muzzle.global_position
+
+
+## Flash and shell, both hung off `_muzzle_marker` - see that variable's comment
+## for why they can't go anywhere near `muzzle` itself. Plain instantiate, not
+## ObjectPool: the pool's container lives in the main world, and pooling something
+## into the wrong World3D is worse than not pooling it at all. Nothing here fires
+## often enough for that cost to matter - even the SMG tops out at 15/s.
+func _spawn_muzzle_vfx() -> void:
+	if _muzzle_marker == null:
+		return
+
+	var flash: MuzzleFlash = MUZZLE_FLASH_SCENE.instantiate()
+	_muzzle_marker.add_child(flash)
+	flash.play()
+
+	var shell: EjectedShell = EJECTED_SHELL_SCENE.instantiate()
+	_muzzle_marker.add_child(shell)
+	# Reparented to the rig's static slot container immediately: staying under
+	# _muzzle_marker would make the casing ride the weapon's own kick and sway
+	# instead of tumbling on its own, which is the entire point of ejecting it.
+	if viewmodel_parent != null:
+		var eject_transform: Transform3D = shell.global_transform
+		_muzzle_marker.remove_child(shell)
+		viewmodel_parent.add_child(shell)
+		shell.global_transform = eject_transform
+	shell.eject(Vector3.RIGHT, Vector3.UP)
 
 
 func _spawn_projectile(origin: Vector3, direction: Vector3) -> void:
@@ -406,7 +446,18 @@ func _align_muzzle_to_barrel(model: Node3D) -> void:
 		return
 	# Forward is -Z, so the tip is the near face; X and Y take the barrel's centre.
 	var centre: Vector3 = bounds.position + bounds.size * 0.5
-	muzzle.position = _view_rest_position + Vector3(centre.x, centre.y, bounds.position.z)
+	var tip: Vector3 = Vector3(centre.x, centre.y, bounds.position.z)
+	muzzle.position = _view_rest_position + tip
+
+	# The marker is a sibling of the model (both children of _view), so it needs
+	# the model's own rotation to point the same way the barrel actually renders -
+	# _view itself only carries kick, never the weapon's authored orientation.
+	if _muzzle_marker == null:
+		_muzzle_marker = Node3D.new()
+		_muzzle_marker.name = &"MuzzleMarker"
+		_view.add_child(_muzzle_marker)
+	var model_basis := Basis.from_euler(data.viewmodel_rotation_degrees * (PI / 180.0))
+	_muzzle_marker.transform = Transform3D(model_basis, tip)
 
 
 ## Combined bounds of every mesh under `model`, in `model`'s parent's space.
