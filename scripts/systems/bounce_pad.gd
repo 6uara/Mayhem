@@ -3,7 +3,11 @@ extends Area3D
 ## Static momentum source: launches anything in the player group straight up while
 ## leaving horizontal velocity alone, so pads combo with dash and slide by design.
 
-@export var bounce_velocity: float = 13.0
+## Apex under the player's gravity (24.0) is v^2/48. At the default that's 4.69m -
+## comfortable clearance over the mid platforms (3.4m), where 13.0 (3.52m apex)
+## used to leave only 0.12m of margin. Pads that specifically target the high
+## level (6.4m) should override this rather than relying on the default's margin.
+@export var bounce_velocity: float = 15.0
 ## Pads never *reduce* an incoming upward velocity - a fast arrival stays fast.
 @export var preserve_higher_velocity: bool = true
 @export var bounce_sound: AudioStream

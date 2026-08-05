@@ -11,7 +11,6 @@ const BANNER_TIME: float = 2.0
 @onready var _end_details: Label = $EndPanel/VBox/Details
 @onready var _restart_button: Button = $EndPanel/VBox/RestartButton
 @onready var _menu_button: Button = $EndPanel/VBox/MenuButton
-@onready var _wave_label: Label = $WaveLabel
 
 var _banner_timer: float = 0.0
 
@@ -34,9 +33,6 @@ func _process(delta: float) -> void:
 		_banner.modulate.a = clampf(_banner_timer / BANNER_TIME, 0.0, 1.0)
 		if _banner_timer <= 0.0:
 			_banner.text = ""
-	if WaveManager.is_wave_active:
-		_wave_label.text = "WAVE %d   -   %d LEFT" % [
-			WaveManager.current_index + 1, WaveManager.get_remaining_count()]
 
 
 # Private
@@ -57,7 +53,6 @@ func _on_wave_completed(wave_index: int, duration: float, damage_taken: float) -
 	# screen; this is the interim readout.
 	var flawless: String = "  -  NO DAMAGE" if damage_taken <= 0.0 else ""
 	_show_banner("WAVE %d CLEAR  -  %.1fs%s" % [wave_index + 1, duration, flawless])
-	_wave_label.text = ""
 
 
 func _on_match_completed(score: int, total_time: float) -> void:
@@ -75,7 +70,6 @@ func _show_end(title: String, details: String) -> void:
 	_end_details.text = details
 	_end_panel.visible = true
 	_banner.text = ""
-	_wave_label.text = ""
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_restart_button.grab_focus()
 

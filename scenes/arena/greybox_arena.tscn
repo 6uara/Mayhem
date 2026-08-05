@@ -6,16 +6,16 @@
 [ext_resource type="Script" uid="uid://dg7yh07a2eohc" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
 [ext_resource type="NavigationMesh" uid="uid://bbd8u1bap6a0" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
 [ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
-[ext_resource type="PackedScene" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
+[ext_resource type="PackedScene" uid="uid://nhxdwxrtbidm" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
 [ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
 [ext_resource type="PackedScene" path="res://scenes/arena/moving_platform.tscn" id="9_moving"]
 [ext_resource type="PackedScene" path="res://scenes/arena/zip_line.tscn" id="10_zip"]
 [ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="11_anchor"]
-[ext_resource type="PackedScene" path="res://scenes/arena/jump_link.tscn" id="12_link"]
+[ext_resource type="PackedScene" uid="uid://d1dv5iepsbyci" path="res://scenes/arena/jump_link.tscn" id="12_link"]
 [ext_resource type="ArrayMesh" path="res://assets/models/meshes/scifi_container.res" id="13_container"]
-[ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="14_glitch"]
-[ext_resource type="Shader" path="res://assets/shaders/hologram_wall.gdshader" id="15_holo"]
-[ext_resource type="Texture2D" path="res://assets/textures/Noise128x128/Techno/Techno_03-128x128.png" id="16_holonoise"]
+[ext_resource type="Shader" uid="uid://c42rrpioq1j2y" path="res://assets/shaders/arena_glitch_panel.gdshader" id="14_glitch"]
+[ext_resource type="Shader" uid="uid://dddq5ttb4c1vq" path="res://assets/shaders/hologram_wall.gdshader" id="15_holo"]
+[ext_resource type="Texture2D" uid="uid://cm3erd5wp2jjq" path="res://assets/textures/Noise128x128/Techno/Techno_03-128x128.png" id="16_holonoise"]
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
@@ -30,8 +30,8 @@ albedo_color = Color(0.32, 0.33, 0.36, 1)
 roughness = 0.85
 
 [sub_resource type="ShaderMaterial" id="Mat_wall"]
+render_priority = 0
 shader = ExtResource("15_holo")
-shader_parameter/noise_texture = ExtResource("16_holonoise")
 shader_parameter/base_color = Color(0.05, 0.055, 0.07, 1)
 shader_parameter/primary_color = Color(0.208, 0.878, 0.831, 1)
 shader_parameter/secondary_color = Color(0.6, 0.95, 1, 1)
@@ -43,6 +43,7 @@ shader_parameter/signal_scale = 40.0
 shader_parameter/signal_speed = 1.0
 shader_parameter/signal_random_scale = 0.3
 shader_parameter/signal_blend = 1.0
+shader_parameter/noise_texture = ExtResource("16_holonoise")
 shader_parameter/noise_distort_amount = 0.1
 shader_parameter/noise_amount = 1.0
 shader_parameter/grain_amount = 0.4
@@ -50,7 +51,9 @@ shader_parameter/flicker_amount = 0.3
 shader_parameter/flicker_speed = 10.0
 shader_parameter/roughness_value = 0.55
 shader_parameter/metallic_value = 0.15
+
 [sub_resource type="ShaderMaterial" id="Mat_mid"]
+render_priority = 0
 shader = ExtResource("14_glitch")
 shader_parameter/base_color = Color(0.086, 0.098, 0.125, 1)
 shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
@@ -66,6 +69,7 @@ shader_parameter/fresnel_power = 3.0
 shader_parameter/fresnel_strength = 1.8
 
 [sub_resource type="ShaderMaterial" id="Mat_high"]
+render_priority = 0
 shader = ExtResource("14_glitch")
 shader_parameter/base_color = Color(0.11, 0.1, 0.09, 1)
 shader_parameter/line_color = Color(0.208, 0.878, 0.831, 1)
@@ -184,7 +188,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -8)
 
 [node name="PadToHigh" parent="BouncePads" unique_id=1911610862 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -2)
-bounce_velocity = 16.0
+bounce_velocity = 19.0
 
 [node name="PadCenter" parent="BouncePads" unique_id=1547436473 instance=ExtResource("2_pad")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 14)
@@ -342,6 +346,38 @@ end_position = Vector3(8, 3, -10)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 3.5, 8)
 end_position = Vector3(-10, 3, -1)
 
+[node name="LinkMidWestSouth" parent="JumpLinks" unique_id=2016113920 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 3.5, 1.5)
+end_position = Vector3(0, -3.4, 6.5)
+
+[node name="LinkMidWestEast" parent="JumpLinks" unique_id=587874092 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.5, 3.5, -8)
+end_position = Vector3(6.5, -3.4, 0)
+
+[node name="LinkMidEastWest" parent="JumpLinks" unique_id=1507317998 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 3.5, 4)
+end_position = Vector3(-6.5, -3.4, 0)
+
+[node name="LinkMidEastSouth" parent="JumpLinks" unique_id=819745753 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 3.5, 15.5)
+end_position = Vector3(0, -3.4, 6.5)
+
+[node name="LinkMidWestUp2" parent="JumpLinks" unique_id=1728075336 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 3.5, -17.008413)
+end_position = Vector3(-0.009967804, 3.0232, -10.200733)
+
+[node name="LinkMidEastUp2" parent="JumpLinks" unique_id=1733502852 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 3.5, 10)
+end_position = Vector3(-5.5, 3, 0)
+
+[node name="LinkWalkwayDown" parent="JumpLinks" unique_id=1323738027 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -26.927275)
+end_position = Vector3(0, -6.4, 5.5)
+
+[node name="LinkPerchDown" parent="JumpLinks" unique_id=831782006 instance=ExtResource("12_link")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 6.5, 11.5)
+end_position = Vector3(0, -6.4, 5.5)
+
 [node name="Props" type="Node3D" parent="." unique_id=1213261736]
 
 [node name="Container1" type="StaticBody3D" parent="Props" unique_id=1889635683]
@@ -363,35 +399,3 @@ mesh = ExtResource("13_container")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container2" unique_id=793760517]
 shape = SubResource("Shape_container")
-
-[node name="LinkMidWestSouth" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.0, 3.5, 1.5)
-end_position = Vector3(0.0, -3.4, 6.5)
-
-[node name="LinkMidWestEast" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.5, 3.5, -8.0)
-end_position = Vector3(6.5, -3.4, 0.0)
-
-[node name="LinkMidEastWest" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 3.5, 4.0)
-end_position = Vector3(-6.5, -3.4, 0.0)
-
-[node name="LinkMidEastSouth" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.0, 3.5, 15.5)
-end_position = Vector3(0.0, -3.4, 6.5)
-
-[node name="LinkMidWestUp2" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.0, 3.5, -17.5)
-end_position = Vector3(0.0, 3.0, -9.0)
-
-[node name="LinkMidEastUp2" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 3.5, 10.0)
-end_position = Vector3(-5.5, 3.0, 0.0)
-
-[node name="LinkWalkwayDown" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 6.5, -25.5)
-end_position = Vector3(0.0, -6.4, 5.5)
-
-[node name="LinkPerchDown" parent="JumpLinks" instance=ExtResource("12_link")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0, 6.5, 11.5)
-end_position = Vector3(0.0, -6.4, 5.5)

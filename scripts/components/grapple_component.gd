@@ -20,6 +20,16 @@ signal anchor_state_changed(is_available: bool)
 @export var arrive_distance: float = 2.5
 ## Small upward kick on release so ledge exits feel generous, not sticky.
 @export var release_up_boost: float = 2.0
+## Grace window where should_release() ignores "moving away from the anchor".
+##
+## should_release() is evaluated the same physics frame try_fire() succeeds, before
+## the pull has touched velocity even once. Firing while backpedaling, strafing, or
+## carrying any residual velocity with a component away from the anchor made that
+## check true on frame one - the grapple ended before it started, and all the
+## player felt was release_up_boost: a small hop, not a swing. Distance-to-anchor
+## still ends a grapple instantly regardless of this window; only the velocity
+## direction check waits for the pull to actually have a say.
+@export var min_flight_time: float = 0.15
 
 @export_group("Audio")
 @export var fire_sound: AudioStream
@@ -31,6 +41,7 @@ var is_anchor_in_range: bool = false
 
 var _anchor: Vector3 = Vector3.ZERO
 var _cooldown_left: float = 0.0
+var _fired_at_msec: int = 0
 
 
 func _physics_process(delta: float) -> void:
@@ -52,6 +63,7 @@ func try_fire() -> bool:
 		return false
 	_anchor = hit["position"]
 	is_grappling = true
+	_fired_at_msec = Time.get_ticks_msec()
 	AudioPool.play_3d(fire_sound, body.global_position, AudioPool.BUS_WORLD)
 	EventBus.grapple_started.emit(_anchor)
 	return true
@@ -81,6 +93,9 @@ func should_release() -> bool:
 	var to_anchor: Vector3 = _anchor - body.global_position
 	if to_anchor.length() <= arrive_distance:
 		return true
+	var flight_time: float = float(Time.get_ticks_msec() - _fired_at_msec) / 1000.0
+	if flight_time < min_flight_time:
+		return false
 	return to_anchor.dot(body.velocity) < 0.0 and body.velocity.length() > 1.0
 
 

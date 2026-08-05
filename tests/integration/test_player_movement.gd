@@ -74,6 +74,19 @@ func test_falling_is_heavier_than_rising() -> void:
 			% movement.fall_gravity_scale)
 
 
+## A jump too short to clear a knee-height ledge reads as a movement bug, not
+## restraint - pins the apex well above that floor so it can't regress silently.
+func test_a_normal_jump_clears_a_knee_height_ledge() -> void:
+	var movement: MovementComponent = _player.movement
+	Input.action_press("jump")
+	var apex: float = await _apex_over(30)
+	Input.action_release("jump")
+
+	assert_gt(apex, 1.0,
+		"apex %0.2fm from jump_velocity %0.1f clears less than a 1m ledge"
+			% [apex, movement.jump_velocity])
+
+
 func test_a_tapped_jump_is_shorter_than_a_held_one() -> void:
 	Input.action_press("jump")
 	var held: float = await _apex_over(24)
