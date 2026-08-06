@@ -136,13 +136,9 @@ func test_the_shot_converges_on_what_the_crosshair_points_at() -> void:
 ## The player aims at the silhouette. A mesh wider than its hitbox has an outer
 ## band that is quietly bulletproof, which reads in play as shots passing through.
 func test_no_enemy_is_narrower_to_shoot_than_it_looks() -> void:
-	var meshes: Dictionary = {
-		"rusher": "res://assets/models/meshes/spiderbot.res",
-		"elite": "res://assets/models/meshes/ual1_standard.res",
-	}
-	for archetype: String in meshes:
+	for archetype: String in ["rusher", "elite"]:
 		var enemy_data: EnemyData = load("res://data/enemies/%s.tres" % archetype)
-		var mesh: Mesh = load(meshes[archetype])
+		var mesh: Mesh = enemy_data.mesh
 		var footprint: float = maxf(mesh.get_aabb().size.x, mesh.get_aabb().size.z)
 		var hitbox_width: float = _hitbox_radius(enemy_data) * 2.0
 		# Half the footprint is the generous reading - a capsule cannot cover the

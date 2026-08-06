@@ -58,8 +58,6 @@ signal stepped()
 @export var land_stiffness: float = 150.0
 @export var land_damping: float = 15.0
 
-@export_group("Audio")
-@export var step_sounds: Array[AudioStream] = []
 ## Below this speed the player is not really walking, so no step fires.
 @export var step_min_speed: float = 1.5
 
@@ -69,12 +67,9 @@ var _tilt_degrees: float = 0.0
 var _land_offset: float = 0.0
 var _land_velocity: float = 0.0
 var _rest_position: Vector3 = Vector3.ZERO
-var _step_rng := RandomNumberGenerator.new()
-var _last_step_sound: int = -1
 
 
 func _ready() -> void:
-	_step_rng.randomize()
 	if view_node != null:
 		_rest_position = view_node.position
 	if movement != null:
@@ -113,7 +108,6 @@ func _tick_bob(speed: float, grounded: bool, delta: float) -> void:
 	# A footfall is a half cycle: one per foot. Comparing floor(phase / PI) catches
 	# the crossing regardless of how many cycles a long frame covered.
 	if int(floor(_bob_phase / PI)) != int(floor(previous / PI)):
-		_play_step()
 		stepped.emit()
 
 
@@ -170,15 +164,3 @@ func _on_landed(fall_speed: float) -> void:
 	var punch: float = minf(fall_speed * land_punch_scale, land_punch_max)
 	_land_offset = -punch
 	_land_velocity = 0.0
-
-
-## Never the same sample twice in a row - an identical step repeating on a fixed
-## interval is the loudest robotic tell in the whole locomotion loop.
-func _play_step() -> void:
-	if step_sounds.is_empty() or body == null:
-		return
-	var index: int = _step_rng.randi_range(0, step_sounds.size() - 1)
-	if step_sounds.size() > 1 and index == _last_step_sound:
-		index = (index + 1) % step_sounds.size()
-	_last_step_sound = index
-	AudioPool.play_3d(step_sounds[index], body.global_position, AudioPool.BUS_WORLD)

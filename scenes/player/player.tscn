@@ -27,10 +27,6 @@
 [ext_resource type="Resource" path="res://data/utilities/slow_field.tres" id="25_slow"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/utility_throw.wav" id="26_throw"]
 [ext_resource type="Script" path="res://scripts/components/camera_feel_component.gd" id="27_feel"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_1.wav" id="28_step1"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_2.wav" id="29_step2"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_3.wav" id="30_step3"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/footstep_4.wav" id="31_step4"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/pistol_fire.wav" id="32_pistol_fire"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/pistol_reload.wav" id="33_pistol_reload"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/pistol_empty.wav" id="34_pistol_empty"]
@@ -42,6 +38,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/weapons/smg_empty.wav" id="40_smg_empty"]
 [ext_resource type="PackedScene" path="res://scenes/player/viewmodel_rig.tscn" id="41_vmrig"]
 [ext_resource type="Script" path="res://scripts/components/movement_vfx_component.gd" id="42_movement_vfx"]
+[ext_resource type="PackedScene" path="res://assets/models/UAL1_Standard.glb" id="43_ual1"]
+[ext_resource type="Script" path="res://scripts/components/player_body_animator.gd" id="44_body_anim"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_player"]
 radius = 0.4
@@ -108,6 +106,16 @@ utility = NodePath("UtilityComponent")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("Shape_player")
+
+[node name="Body" parent="." instance=ExtResource("43_ual1")]
+
+[node name="PlayerBodyAnimator" type="Node3D" parent="." node_paths=PackedStringArray("movement", "health", "camera", "animation_player", "mesh_instance")]
+script = ExtResource("44_body_anim")
+movement = NodePath("../MovementComponent")
+health = NodePath("../HealthComponent")
+camera = NodePath("../HeadPivot/ViewBob/CameraRig/Camera3D")
+animation_player = NodePath("../Body/AnimationPlayer")
+mesh_instance = NodePath("../Body/Armature/Skeleton3D/Mannequin")
 
 [node name="HeadPivot" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
@@ -235,7 +243,6 @@ script = ExtResource("27_feel")
 body = NodePath("..")
 movement = NodePath("../MovementComponent")
 view_node = NodePath("../HeadPivot/ViewBob")
-step_sounds = Array[AudioStream]([ExtResource("28_step1"), ExtResource("29_step2"), ExtResource("30_step3"), ExtResource("31_step4")])
 
 [node name="DashTrail" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

@@ -268,3 +268,48 @@ func test_sliding_streams_sparks_only_while_sliding() -> void:
 
 	movement.state = MovementComponent.State.GROUNDED
 	assert_false(sparks.emitting, "standing up has to cut the sparks immediately")
+
+
+# --------------------------------------------------------------- player body
+
+## The mannequin body is there for the world - a shadow to cast, a silhouette other
+## systems could one day see - not for the player's own eyes. If it leaked into the
+## first-person view it would fill the screen from the inside.
+func test_the_players_own_camera_cannot_see_its_own_body() -> void:
+	var animator: PlayerBodyAnimator = _player.get_node("PlayerBodyAnimator")
+	var camera: Camera3D = _player.get_node("HeadPivot/ViewBob/CameraRig/Camera3D")
+	var body_layer_bit: int = 1 << (animator.own_body_layer - 1)
+
+	assert_eq(animator.mesh_instance.layers, body_layer_bit,
+		"the body has to sit on its own dedicated render layer")
+	assert_eq(camera.cull_mask & body_layer_bit, 0,
+		"and the player's camera has to be told to ignore exactly that layer")
+
+
+## Standing still and running are different clips - if the state machine were wired
+## backwards or not wired at all, this is the cheapest way to catch it.
+func test_running_switches_off_the_idle_clip() -> void:
+	var animator: PlayerBodyAnimator = _player.get_node("PlayerBodyAnimator")
+	var anim: AnimationPlayer = animator.animation_player
+	# The fixture spawns the player a hair above the floor, so it lands for real on
+	# the first few frames - outlast that lock before reading the resting pose.
+	await wait_physics_frames(30)
+	assert_eq(anim.current_animation, "Idle", "precondition: standing still is idle")
+
+	for _i: int in 10:
+		_player.velocity.x = 9.0
+		await wait_physics_frames(1)
+	assert_ne(anim.current_animation, "Idle", "covering ground has to leave idle behind")
+
+
+## A landing plays its own clip and holds it briefly rather than being instantly
+## overwritten by whatever ground clip the speed at touchdown would otherwise pick -
+## the whole reason it existed was to be seen.
+func test_landing_holds_its_clip_before_the_ground_state_can_overwrite_it() -> void:
+	var animator: PlayerBodyAnimator = _player.get_node("PlayerBodyAnimator")
+	var movement: MovementComponent = _player.movement
+	movement.landed.emit(10.0)
+	assert_eq(animator.animation_player.current_animation, "Jump_Land",
+		"a landing has to show its own clip on the frame it happens")
+	assert_gt(animator._land_lock_left, 0.0,
+		"and hold it briefly rather than letting the next tick's ground clip erase it")
