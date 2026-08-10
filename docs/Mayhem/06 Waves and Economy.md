@@ -60,18 +60,33 @@ which have no door to telegraph from.
 (`scripts/ui/shop_screen.gd` + `scenes/ui/shop_screen.tscn`).
 
 `Kind` enum: `UPGRADE`, `WEAPON`, `UTILITY`. `roll_offers()` builds a randomized
-set from `ShopCatalog` (`_build_pool()` — excludes weapons already owned and
-maxed-stack upgrades), emits `offers_changed`. `can_afford(offer)` /
-`buy(offer)` → `_execute()` dispatches to `_buy_weapon()` / `_buy_utility()` /
-straight to `EconomyManager.try_purchase_upgrade()` for plain upgrades.
+set from `ShopCatalog` (`_build_pool()` — excludes the weapon currently
+equipped and upgrades maxed out for their scope, see
+[[02 Autoloads#UpgradeManager]]), resets the reroll price, emits
+`offers_changed`. `can_afford(offer)` / `buy(offer)` → `_execute()` dispatches
+to `_buy_weapon()` / `_buy_utility()` / `_buy_upgrade()` (threads the currently
+equipped `weapon_id` into `EconomyManager.try_purchase_upgrade()` for
+`Category.WEAPON` offers, empty otherwise).
+
+`offers_per_visit = 4` (down from the catalogue's full size) plus
+`reroll()`: spends currency (`ShopCatalog.reroll_base_cost`, rising by
+`reroll_cost_increment` per use within the same visit, reset by the next
+`roll_offers()`) to rebuild the offer list without leaving the shop.
+`get_reroll_cost()` / `can_reroll()` for the UI to show/gate the button.
+Still respects `guarantee_one_per_category` — the whole point of that
+guarantee is that bad luck can't lock a run out of a track, and a reroll that
+bypassed it would just reintroduce the same problem at a price.
 
 `ShopScreen` itself: `open(breakdown, wave_index, duration_seconds)` formats the
 wave-clear breakdown (kills / completion / speed bonus / no-damage bonus —
 shown explicitly, because that legibility is what makes the economy teachable),
 pauses the tree, shows the cursor. Cards are built procedurally
 (`_make_card()`) from a `ChamferStyleBox` panel per offer — see
-[[07 UI and HUD#Theme system]]. `duration` (default from `Tokens.SHOP_TIMER`) is
-a self-closing timer; the shop is skippable, but banking the speed bonus by
+[[07 UI and HUD#Theme system]]. A `Category.WEAPON` upgrade card is labelled
+with the weapon it applies to (`_category_label()` → `_weapon_name()`), and a
+weapon offer's description warns it replaces the current weapon before the
+player spends money on a surprise. `duration` (default from `Tokens.SHOP_TIMER`)
+is a self-closing timer; the shop is skippable, but banking the speed bonus by
 leaving quickly is a real decision the player can make.
 
 ## EconomyManager / UpgradeManager

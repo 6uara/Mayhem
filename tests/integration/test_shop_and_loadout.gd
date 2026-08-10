@@ -287,3 +287,52 @@ func test_buying_a_weapon_upgrade_through_the_shop_scopes_it_to_the_equipped_wea
 	assert_eq(_shop.buy(offer), EconomyManager.PurchaseResult.OK)
 	assert_true(UpgradeManager.has_upgrade(StringName(offer["id"]), &"pistol"),
 		"the shop must scope a WEAPON upgrade purchase to the equipped weapon")
+
+
+# Reroll
+
+func test_rerolling_costs_more_each_time_within_a_visit() -> void:
+	EconomyManager.currency = 100000
+	_shop.roll_offers()
+	var first_cost: int = _shop.get_reroll_cost()
+	assert_eq(_shop.reroll(), EconomyManager.PurchaseResult.OK)
+	assert_gt(_shop.get_reroll_cost(), first_cost, "the next reroll costs more")
+
+
+func test_the_reroll_cost_resets_when_the_shop_reopens() -> void:
+	EconomyManager.currency = 100000
+	_shop.roll_offers()
+	_shop.reroll()
+	_shop.reroll()
+	var raised_cost: int = _shop.get_reroll_cost()
+
+	_shop.roll_offers()
+	assert_lt(_shop.get_reroll_cost(), raised_cost,
+		"a fresh visit must not inherit the previous visit's reroll price")
+	assert_eq(_shop.get_reroll_cost(), _shop.catalog.reroll_base_cost)
+
+
+func test_a_reroll_the_player_cannot_afford_changes_nothing() -> void:
+	EconomyManager.currency = 100000
+	_shop.roll_offers()
+	var before: Array[Dictionary] = _shop.offers.duplicate(true)
+	EconomyManager.currency = 0
+
+	assert_eq(_shop.reroll(), EconomyManager.PurchaseResult.INSUFFICIENT_FUNDS)
+	assert_eq(_shop.offers, before, "a refused reroll must not touch the offer list")
+	assert_eq(EconomyManager.currency, 0, "a refused reroll must not take money")
+
+
+func test_a_reroll_still_offers_one_of_each_category() -> void:
+	EconomyManager.currency = 100000
+	assert_true(_shop.catalog.guarantee_one_per_category)
+	_shop.roll_offers()
+	assert_eq(_shop.reroll(), EconomyManager.PurchaseResult.OK)
+
+	for category: int in [
+			UpgradeData.Category.MOBILITY, UpgradeData.Category.WEAPON,
+			UpgradeData.Category.SURVIVABILITY]:
+		var has_category: bool = _shop.offers.any(
+			func(offer: Dictionary) -> bool:
+				return int(offer["kind"]) == Shop.Kind.UPGRADE and int(offer["category"]) == category)
+		assert_true(has_category, "a reroll dropped the guarantee for category %d" % category)
