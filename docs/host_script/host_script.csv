@@ -1,0 +1,38 @@
+occasion,line_id,filename,tier,priority,text
+wave_start,wave_start_01,wave_start_01.ogg,STANDARD,STATE,"Wave %d. Places, everyone."
+wave_start,wave_start_02,wave_start_02.ogg,STANDARD,STATE,Here comes wave %d. Try to make it interesting.
+wave_start,wave_start_03,wave_start_03.ogg,STANDARD,STATE,Wave %d is on the floor. The house is watching.
+wave_start,wave_start_04,wave_start_04.ogg,STANDARD,STATE,Doors are open. Wave %d.
+wave_cleared,wave_cleared_01,wave_cleared_01.ogg,STANDARD,STATE,Wave %d down. The crowd wants more.
+wave_cleared,wave_cleared_02,wave_cleared_02.ogg,STANDARD,STATE,That is wave %d. Nobody is impressed yet.
+wave_cleared,wave_cleared_03,wave_cleared_03.ogg,STANDARD,STATE,"Wave %d, finished. We have plenty more."
+wave_cleared,wave_cleared_04,wave_cleared_04.ogg,STANDARD,STATE,Clean enough. Wave %d goes in the book.
+first_blood,first_blood_01,first_blood_01.ogg,STANDARD,FEEDBACK,First one down. The rest are watching.
+first_blood,first_blood_02,first_blood_02.ogg,STANDARD,FEEDBACK,One. Only a few dozen to go.
+first_blood,first_blood_03,first_blood_03.ogg,STANDARD,FEEDBACK,There it is. The floor is warm now.
+streak,streak_01,streak_01.ogg,STANDARD,FEEDBACK,Look at this. Somebody came to work.
+streak,streak_02,streak_02.ogg,STANDARD,FEEDBACK,The crowd is starting to learn a name.
+streak,streak_03,streak_03.ogg,STANDARD,FEEDBACK,Well now. That is a rhythm.
+streak,streak_04,streak_04.ogg,STANDARD,FEEDBACK,Somebody is enjoying themselves out there.
+elite_wave,elite_wave_01,elite_wave_01.ogg,WARNING,STATE,Something bigger is coming. Do keep up.
+elite_wave,elite_wave_02,elite_wave_02.ogg,WARNING,STATE,The house is sending its best. Enjoy.
+elite_wave,elite_wave_03,elite_wave_03.ogg,WARNING,STATE,This one does not fall over politely.
+low_health,low_health_01,low_health_01.ogg,WARNING,CRITICAL,"Oh, this is the good part."
+low_health,low_health_02,low_health_02.ogg,WARNING,CRITICAL,The crowd can smell it from here.
+low_health,low_health_03,low_health_03.ogg,WARNING,CRITICAL,Careful now. They love this bit.
+no_damage,no_damage_01,no_damage_01.ogg,PUNCHLINE,STATE,Untouched. The house does not like that.
+no_damage,no_damage_02,no_damage_02.ogg,PUNCHLINE,STATE,Not a scratch. Somebody is showing off.
+no_damage,no_damage_03,no_damage_03.ogg,PUNCHLINE,STATE,Perfect. Disgusting. Do it again.
+too_slow,too_slow_01,too_slow_01.ogg,STANDARD,FEEDBACK,Slow. The crowd checks its watch.
+too_slow,too_slow_02,too_slow_02.ogg,STANDARD,FEEDBACK,That took a while. Nobody claps for a while.
+too_slow,too_slow_03,too_slow_03.ogg,STANDARD,FEEDBACK,We are on a schedule out here.
+purchase,purchase_01,purchase_01.ogg,,FLAVOR,Spending it already. Bold.
+purchase,purchase_02,purchase_02.ogg,,FLAVOR,The house appreciates your business.
+purchase,purchase_03,purchase_03.ogg,,FLAVOR,Money well spent. Probably.
+death,death_01,death_01.ogg,STANDARD,CRITICAL,And that is how the story ends for most of them.
+death,death_02,death_02.ogg,STANDARD,CRITICAL,The crowd will remember this for almost a minute.
+death,death_03,death_03.ogg,STANDARD,CRITICAL,Every show needs one of these. Thank you for volunteering.
+death,death_04,death_04.ogg,STANDARD,CRITICAL,Well. That happened.
+match_won,match_won_01,match_won_01.ogg,PUNCHLINE,CRITICAL,All ten. The house is not used to paying out.
+match_won,match_won_02,match_won_02.ogg,PUNCHLINE,CRITICAL,You survived the whole card. That is new.
+match_won,match_won_03,match_won_03.ogg,PUNCHLINE,CRITICAL,"Ten waves, still upright. The crowd is yours."

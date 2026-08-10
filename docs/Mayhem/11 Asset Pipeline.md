@@ -7,7 +7,10 @@ tags: [mayhem, assets, tooling]
 `tools/` — offline scripts, run by hand, output committed to the repo:
 
 - `bake_navmesh.gd` — see [[05 Enemies and AI#Navmesh baking]].
+- `bake_enemy_meshes.gd` — see below.
 - `build_theme.gd` — generates `ui/mayhem_theme.tres` from the design tokens.
+- `export_host_script.gd` — see [[07 UI and HUD]] / dumps `data/host/host_catalog.tres`
+  to a checklist for external VO recording. See below.
 - `generate_placeholder_sfx.py` — synthesizes every placeholder sound
   (stdlib-only Python, fixed RNG seed, deterministic re-runs). See below.
 
@@ -24,19 +27,28 @@ matters for two different fields that consume models differently:
   automatically. Positioning is then just `viewmodel_offset` /
   `viewmodel_rotation_degrees` / `viewmodel_scale` on `WeaponData`.
 - **`EnemyData.mesh: Mesh`** — typed as a bare `Mesh`, not a scene, so the
-  `.fbx`'s root transform has to be baked in manually. The offline process:
-  instantiate the scene, find the `MeshInstance3D`, compose its local transform
-  down from the scene root, then `SurfaceTool.append_from(mesh, surface, transform)`
-  into a new `ArrayMesh` per surface. The result is then recentred on its own
-  AABB and rescaled to the target archetype's `collision_height`, matching how
-  the box/capsule placeholders were already authored (pivot at the shape's own
-  center, not at the source rig's origin — which for at least one imported
-  model was nowhere near the body). Saved as `.res` files under
-  `assets/models/meshes/` and referenced from `data/enemies/*.tres`.
+  `.fbx`'s root transform has to be baked in manually via `tools/bake_enemy_meshes.gd`:
 
-This was a one-off manual process (done via a scratch `SceneTree` script, not a
-committed tool) rather than a repeatable `tools/` script — worth promoting to a
-real tool if more enemy meshes get imported. See [[12 Known Issues and Gaps]].
+  ```
+  godot --headless --path . -s tools/bake_enemy_meshes.gd -- \
+      res://assets/models/enemies/<Name>/<file>.fbx \
+      res://assets/models/meshes/<name>.res \
+      --height=1.8
+  ```
+
+  The tool instantiates the source scene, finds the `MeshInstance3D`, composes its
+  local transform down from the scene root, then `SurfaceTool.append_from(mesh,
+  surface, transform)` into a new `ArrayMesh` per surface (materials carried over).
+  The result is recentred on its own AABB and rescaled so its tallest axis matches
+  `--height` (typically the target archetype's `EnemyData.collision_height`),
+  matching how the box/capsule placeholders were already authored (pivot at the
+  shape's own center, not at the source rig's origin — which for at least one
+  imported model was nowhere near the body). Save the output under
+  `assets/models/meshes/` and point `data/enemies/*.tres`'s `mesh` field at it.
+
+  Verified against the existing `spiderbot.res`: re-running the tool on
+  `LowPoly_SpiderBot_Rzenn.fbx` with `--height=1.2` (the Rusher's
+  `collision_height`) reproduces the same vertex/attribute data.
 
 ## Placeholder audio
 
