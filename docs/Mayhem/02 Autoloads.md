@@ -120,17 +120,29 @@ Local leaderboard only — `user://leaderboard.json`, top `MAX_ENTRIES = 10`.
 Wraps `EconomyConfig` (`data/economy/economy_config.tres`). `begin_wave()`,
 `get_wave_kill_income()`, `award_wave_bonuses(wave, duration, took_damage)`
 (returns a breakdown `Dictionary` — kills / completion / speed / no-damage — shown
-verbatim by the shop screen), `try_purchase_upgrade(data)`, `try_spend(item_id, cost)`.
+verbatim by the shop screen), `try_purchase_upgrade(data, weapon_id)`,
+`try_spend(item_id, cost)`.
 
 ## UpgradeManager
 
-Owns everything the player has bought this run. `get_stat(stat_key, base_value)`
-is the read path every other component's `_stat()` helper calls through
-(`StatsComponent`, `WeaponComponent`, `MovementComponent` all resolve their live
-values this way rather than reading `data` directly, so an upgrade changes
-behavior without any component needing upgrade-awareness). `add_upgrade(data)`,
-`can_add(data)` (stack limits), `get_temporary_remaining(id)` for time-limited
-effects.
+Owns everything the player has bought this run. `get_stat(stat_key, base_value,
+weapon_id)` is the read path every other component's `_stat()` helper calls
+through (`StatsComponent`, `WeaponComponent`, `MovementComponent` all resolve
+their live values this way rather than reading `data` directly, so an upgrade
+changes behavior without any component needing upgrade-awareness).
+`add_upgrade(data, weapon_id)`, `can_add(data, weapon_id)` (stack limits),
+`get_temporary_remaining(id, weapon_id)` for time-limited effects.
+
+`weapon_id` scopes `Category.WEAPON` upgrades to the weapon they were bought
+for (loadout design: one weapon at a time, buying a new one replaces the
+current one — see [[04 Weapons and Combat#WeaponHolder]] — and its upgrades
+stay behind rather than following the player to the new gun). Every dictionary
+inside `UpgradeManager` is keyed by a *scope key* (`_key()`): `"<id>::<weapon_id>"`
+when a weapon_id is given, or the bare id otherwise. `Category.MOBILITY` and
+`Category.SURVIVABILITY` upgrades never pass a weapon_id and stay global, same
+as before this scoping existed. Omitting `weapon_id` for a `Category.WEAPON`
+purchase is a programming error — `add_upgrade` rejects it with `push_error`
+rather than silently going global.
 
 ## WaveManager
 

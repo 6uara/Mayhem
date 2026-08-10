@@ -111,7 +111,7 @@ func _bind_player() -> void:
 		_refresh_health()
 	if _player.weapon_holder != null:
 		_player.weapon_holder.weapon_changed.connect(_on_weapon_equipped)
-		_player.weapon_holder.owned_weapons_changed.connect(_rebuild_weapon_list)
+		_player.weapon_holder.weapon_replaced.connect(_rebuild_weapon_list)
 		_on_weapon_equipped(_player.weapon)
 		_rebuild_weapon_list()
 	if _player.utility != null:
@@ -316,40 +316,29 @@ func _sight_for(weapon_id: StringName) -> Reticle.Sight:
 	return Reticle.Sight.HIPFIRE
 
 
-## Equipped weapon carries the cyan rail; the rest sit at half opacity. Same rail
-## idea as the selected menu row and the affordable shop card.
+## One weapon carried at a time (loadout design, see WeaponHolder), so this is a
+## single indicator rather than a list - same cyan-rail HUDPanel treatment the
+## multi-weapon list used to give the equipped row.
 func _rebuild_weapon_list() -> void:
 	if _player == null or _player.weapon_holder == null:
 		return
 	for child: Node in _weapon_list.get_children():
 		child.queue_free()
 
-	var owned: Array[WeaponComponent] = _player.weapon_holder.get_owned()
-	var all: Array[WeaponComponent] = _player.weapon_holder.get_all()
-	for weapon: WeaponComponent in owned:
-		var is_equipped: bool = weapon == _weapon
-		var row := PanelContainer.new()
-		row.theme_type_variation = &"HUDPanel" if is_equipped else &"PanelContainer"
-		if not is_equipped:
-			row.self_modulate.a = 0.0
-			row.modulate.a = 0.5
+	var weapon: WeaponComponent = _player.weapon_holder.current
+	if weapon == null or weapon.data == null:
+		return
 
-		var line := HBoxContainer.new()
-		line.add_theme_constant_override("separation", 12)
-		var name_label := Label.new()
-		name_label.theme_type_variation = &"HUDLabel"
-		name_label.text = weapon.data.display_name.to_upper()
-		if is_equipped:
-			name_label.add_theme_color_override("font_color", Tokens.TEXT)
-		line.add_child(name_label)
+	var row := PanelContainer.new()
+	row.theme_type_variation = &"HUDPanel"
 
-		var slot_label := Label.new()
-		slot_label.theme_type_variation = &"Keybind"
-		slot_label.text = "%d" % (all.find(weapon) + 1)
-		line.add_child(slot_label)
+	var name_label := Label.new()
+	name_label.theme_type_variation = &"HUDLabel"
+	name_label.text = weapon.data.display_name.to_upper()
+	name_label.add_theme_color_override("font_color", Tokens.TEXT)
+	row.add_child(name_label)
 
-		row.add_child(line)
-		_weapon_list.add_child(row)
+	_weapon_list.add_child(row)
 
 
 func _on_currency_changed(total: int) -> void:

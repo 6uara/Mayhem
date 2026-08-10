@@ -18,8 +18,9 @@ originally (see [[#Viewmodel]] for why one exists now). Groups: Damage
 the one place damage math actually happens; callers never compute it inline.
 
 Instances: `data/weapons/pistol.tres`, `rifle_ak.tres`, `shotgun.tres`, `smg.tres`.
-The player starts with only the pistol (`WeaponHolder._ready()` — `_owned.push_back(_weapons[0])`,
-first child by convention); the other three are shop purchases.
+The player starts with the pistol equipped (`WeaponHolder._ready()` equips
+`_weapons[0]`, first child by convention); buying another weapon from the shop
+*replaces* it rather than adding a second slot — see [[#WeaponHolder]].
 
 ## WeaponComponent
 
@@ -77,10 +78,28 @@ stale; the file itself was deleted.
 
 ## WeaponHolder
 
-`scripts/components/weapon_holder.gd`. Owns switching (`select_slot`, `cycle`,
-`start_swap` — firing is blocked for `swap_time` during a swap), ownership
-(`acquire(weapon_id)`, `owns(weapon_id)`), and fan-out (`add_reserve_ammo_fraction`
-— what an ammo pickup grants, applied to every *owned* weapon at once).
+`scripts/components/weapon_holder.gd`. One weapon carried at a time (loadout
+design). Owns the swap (`start_swap` — firing is blocked for `swap_time` during
+a swap), replacement (`acquire(weapon_id)` — equips `weapon_id`, replacing
+whatever was current; returns `false` if it's already equipped), and top-up
+(`add_reserve_ammo_fraction` — what an ammo pickup grants, applied to the
+currently equipped weapon only).
+
+`owns(weapon_id)` means "is this the weapon equipped right now", not "was this
+ever bought" — a replaced weapon is not destroyed (it keeps its ammo and just
+stops being `current`), and the shop offers it again like any other weapon not
+currently equipped. Buying it back re-equips that same node.
+
+Every WEAPON-category upgrade purchase is scoped by `weapon_id` in
+`UpgradeManager` (see [[02 Autoloads#UpgradeManager]]) — a replaced
+weapon's upgrades stay behind with it rather than following the player to the
+new gun, and reappear if that weapon is bought back later. MOBILITY and
+SURVIVABILITY upgrades are unaffected by any of this; they stay global.
+
+No weapon-switch input remains — `handle_input()` is a no-op kept only because
+`Player` still calls it every event. The `weapon_next`/`weapon_prev`/`weapon_1..4`
+actions stay defined in the input map (remap screens list every action) but
+nothing consumes them.
 
 ## Projectile / hitbox / health
 

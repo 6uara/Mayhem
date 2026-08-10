@@ -76,6 +76,9 @@ func test_stacking_respects_max_stacks() -> void:
 	upgrade.id = &"test_damage_up"
 	upgrade.max_stacks = 2
 	upgrade.stat_modifiers = [_make(&"damage", StatModifier.Operation.ADD, 5.0)]
+	# Global: this test is about stacking, not weapon scoping (see
+	# test_weapon_upgrades_need_a_weapon_id in test_shop_and_loadout.gd).
+	upgrade.category = UpgradeData.Category.SURVIVABILITY
 
 	UpgradeManager.reset()
 	assert_true(UpgradeManager.add_upgrade(upgrade), "first stack accepted")
@@ -91,6 +94,7 @@ func test_reset_clears_owned_upgrades() -> void:
 	upgrade.id = &"test_reset"
 	upgrade.max_stacks = 1
 	upgrade.stat_modifiers = [_make(&"speed", StatModifier.Operation.ADD, 5.0)]
+	upgrade.category = UpgradeData.Category.MOBILITY
 
 	UpgradeManager.reset()
 	UpgradeManager.add_upgrade(upgrade)

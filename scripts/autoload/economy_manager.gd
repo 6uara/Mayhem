@@ -64,14 +64,17 @@ func can_afford(cost: int) -> bool:
 	return currency >= cost
 
 
-func try_purchase_upgrade(data: UpgradeData) -> PurchaseResult:
+## `weapon_id` is required when `data.category == UpgradeData.Category.WEAPON` -
+## it scopes the purchase to the weapon currently equipped (see UpgradeManager).
+## Ignored for MOBILITY/SURVIVABILITY upgrades, which stay global.
+func try_purchase_upgrade(data: UpgradeData, weapon_id: StringName = &"") -> PurchaseResult:
 	if data == null:
 		return PurchaseResult.INVALID
-	if not UpgradeManager.can_add(data):
+	if not UpgradeManager.can_add(data, weapon_id):
 		return PurchaseResult.MAX_STACKS
 	if not can_afford(data.cost):
 		return PurchaseResult.INSUFFICIENT_FUNDS
-	if not UpgradeManager.add_upgrade(data):
+	if not UpgradeManager.add_upgrade(data, weapon_id):
 		return PurchaseResult.INVALID
 	currency -= data.cost
 	EventBus.purchase_made.emit(data.id, data.cost)

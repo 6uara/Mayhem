@@ -501,10 +501,12 @@ func _tick_viewmodel(delta: float) -> void:
 	_view.rotation_degrees.x = _view_kick_rot
 
 
+## Scoped to this weapon's own id, so WEAPON-category upgrades bought for a
+## different (previously equipped) weapon never leak into this one's stats.
 func _stat(stat_key: StringName, base_value: float) -> float:
 	if stats == null:
 		return base_value
-	return stats.get_stat_from(stat_key, base_value)
+	return stats.get_stat_from(stat_key, base_value, data.id if data != null else &"")
 
 
 func _emit_ammo() -> void:

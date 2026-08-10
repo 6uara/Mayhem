@@ -1,6 +1,11 @@
 extends GutTest
-## The shop, weapon switching and utility charges, driven through the real player
-## scene - these only mean anything wired together.
+## The shop, weapon replacement and utility charges, driven through the real
+## player scene - these only mean anything wired together.
+##
+## Loadout design: the player carries one weapon at a time. Buying a new one
+## replaces the current one; a replaced weapon's WEAPON-category upgrades stay
+## behind with it (UpgradeManager scopes them by weapon id) rather than
+## following the player to the new gun.
 
 var _player: Player
 var _shop: Shop
@@ -23,9 +28,8 @@ func after_each() -> void:
 
 # Weapons
 
-func test_player_starts_with_only_the_pistol() -> void:
+func test_player_starts_with_the_pistol_equipped() -> void:
 	var holder: WeaponHolder = _player.weapon_holder
-	assert_eq(holder.get_owned().size(), 1)
 	assert_true(holder.owns(&"pistol"), "the pistol is the starting weapon")
 	assert_false(holder.owns(&"shotgun"))
 
@@ -34,42 +38,113 @@ func test_all_four_weapons_exist_on_the_player() -> void:
 	assert_eq(_player.weapon_holder.get_all().size(), 4)
 
 
-func test_switching_to_an_unowned_weapon_does_nothing() -> void:
-	_player.weapon_holder.select_slot(2)
-	await wait_physics_frames(2)
-	assert_eq(_player.weapon.data.id, &"pistol")
-
-
 func test_acquiring_a_weapon_equips_it_after_the_swap() -> void:
 	var holder: WeaponHolder = _player.weapon_holder
 	assert_true(holder.acquire(&"shotgun"))
-	assert_true(holder.owns(&"shotgun"))
+	assert_true(holder.owns(&"pistol"), "still equipped until the swap finishes")
 	# The swap is not instant; that delay is the cost of switching.
 	assert_true(holder.is_swapping, "a swap should be in progress")
 	await wait_seconds(holder.swap_time + 0.1)
 	assert_eq(_player.weapon.data.id, &"shotgun")
+	assert_true(holder.owns(&"shotgun"))
 
 
-func test_a_weapon_cannot_be_acquired_twice() -> void:
+func test_buying_a_weapon_replaces_the_current_one() -> void:
 	var holder: WeaponHolder = _player.weapon_holder
-	assert_true(holder.acquire(&"smg"))
-	assert_false(holder.acquire(&"smg"), "already owned")
-
-
-func test_each_weapon_keeps_its_own_ammo_across_switches() -> void:
-	var holder: WeaponHolder = _player.weapon_holder
-	holder.acquire(&"smg")
+	holder.acquire(&"shotgun")
 	await wait_seconds(holder.swap_time + 0.1)
+	assert_true(holder.owns(&"shotgun"))
+	assert_false(holder.owns(&"pistol"), "the pistol was replaced, not kept alongside")
 
-	var smg: WeaponComponent = holder.find_by_id(&"smg")
+
+func test_acquiring_the_currently_equipped_weapon_does_nothing() -> void:
+	var holder: WeaponHolder = _player.weapon_holder
+	assert_false(holder.acquire(&"pistol"), "already equipped")
+
+
+func test_a_replaced_weapon_can_be_bought_back() -> void:
+	var holder: WeaponHolder = _player.weapon_holder
+	holder.acquire(&"shotgun")
+	await wait_seconds(holder.swap_time + 0.1)
+	assert_true(holder.acquire(&"pistol"), "a previously-equipped weapon can be re-bought")
+	await wait_seconds(holder.swap_time + 0.1)
+	assert_true(holder.owns(&"pistol"))
+
+
+func test_each_weapon_keeps_its_own_ammo_across_a_replacement() -> void:
+	var holder: WeaponHolder = _player.weapon_holder
 	var pistol: WeaponComponent = holder.find_by_id(&"pistol")
-	smg._ammo = 3
 	pistol._ammo = 9
 
-	holder.select_slot(0)
+	holder.acquire(&"shotgun")
 	await wait_seconds(holder.swap_time + 0.1)
-	assert_eq(_player.weapon.get_ammo(), 9, "the pistol kept its own count")
-	assert_eq(smg.get_ammo(), 3, "the SMG kept its own count while holstered")
+	var shotgun: WeaponComponent = holder.find_by_id(&"shotgun")
+	shotgun._ammo = 3
+
+	holder.acquire(&"pistol")
+	await wait_seconds(holder.swap_time + 0.1)
+	assert_eq(_player.weapon.get_ammo(), 9, "the pistol kept its own count while holstered")
+	assert_eq(shotgun.get_ammo(), 3, "the shotgun kept its own count too")
+
+
+# Weapon-scoped upgrades
+
+func test_weapon_upgrades_need_a_weapon_id() -> void:
+	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"magazine")
+	assert_eq(upgrade.category, UpgradeData.Category.WEAPON)
+	assert_false(UpgradeManager.add_upgrade(upgrade),
+		"a WEAPON upgrade with no weapon_id must be rejected, not silently global")
+	assert_push_error("needs a weapon_id")
+
+
+func test_weapon_upgrades_stay_with_the_weapon_they_were_bought_for() -> void:
+	EconomyManager.currency = 100000
+	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"magazine")
+	var holder: WeaponHolder = _player.weapon_holder
+
+	assert_eq(EconomyManager.try_purchase_upgrade(upgrade, &"pistol"),
+		EconomyManager.PurchaseResult.OK)
+	assert_true(UpgradeManager.has_upgrade(&"magazine", &"pistol"))
+	assert_false(UpgradeManager.has_upgrade(&"magazine", &"shotgun"),
+		"a different weapon must not see the pistol's upgrade")
+
+	holder.acquire(&"shotgun")
+	await wait_seconds(holder.swap_time + 0.1)
+	assert_true(UpgradeManager.has_upgrade(&"magazine", &"pistol"),
+		"the pistol's upgrade is still there, just not equipped")
+
+
+func test_replacing_a_weapon_does_not_carry_its_upgrades_forward() -> void:
+	EconomyManager.currency = 100000
+	var magazine: UpgradeData = _shop.catalog.find_upgrade(&"magazine")
+	var holder: WeaponHolder = _player.weapon_holder
+	var pistol: WeaponComponent = holder.find_by_id(&"pistol")
+	var base_magazine: int = pistol.data.magazine_size
+
+	EconomyManager.try_purchase_upgrade(magazine, &"pistol")
+	await wait_physics_frames(2)
+	assert_gt(pistol.get_magazine_size(), base_magazine, "the upgrade reached the pistol")
+
+	holder.acquire(&"shotgun")
+	await wait_seconds(holder.swap_time + 0.1)
+	var shotgun: WeaponComponent = holder.find_by_id(&"shotgun")
+	assert_eq(shotgun.get_magazine_size(), shotgun.data.magazine_size,
+		"the shotgun starts clean - the pistol's magazine upgrade did not follow it")
+
+
+func test_mobility_and_survivability_upgrades_stay_global() -> void:
+	EconomyManager.currency = 100000
+	var dash: UpgradeData = _shop.catalog.find_upgrade(&"dash_charge")
+	assert_eq(dash.category, UpgradeData.Category.MOBILITY)
+
+	assert_eq(EconomyManager.try_purchase_upgrade(dash), EconomyManager.PurchaseResult.OK)
+	assert_true(UpgradeManager.has_upgrade(&"dash_charge"))
+
+	var holder: WeaponHolder = _player.weapon_holder
+	holder.acquire(&"shotgun")
+	await wait_seconds(holder.swap_time + 0.1)
+	assert_true(UpgradeManager.has_upgrade(&"dash_charge"),
+		"a global upgrade must survive a weapon swap untouched")
 
 
 # Utilities
@@ -109,13 +184,39 @@ func test_shop_offers_are_rolled_and_bounded() -> void:
 	assert_true(_shop.offers.size() <= _shop.catalog.offers_per_visit)
 
 
-func test_shop_never_offers_a_weapon_the_player_owns() -> void:
-	_player.weapon_holder.acquire(&"shotgun")
+func test_shop_never_offers_the_weapon_currently_equipped() -> void:
 	for i: int in 12:
 		_shop.roll_offers()
 		for offer: Dictionary in _shop.offers:
 			if int(offer["kind"]) == Shop.Kind.WEAPON:
-				assert_ne(offer["id"], &"shotgun", "owned weapons must not be offered")
+				assert_ne(offer["id"], &"pistol", "the equipped weapon must not be offered")
+
+
+func test_shop_offers_a_previously_equipped_weapon_again() -> void:
+	var holder: WeaponHolder = _player.weapon_holder
+	holder.acquire(&"shotgun")
+	await wait_seconds(holder.swap_time + 0.1)
+
+	# Weapon offers fill the random remainder of the visit, not a guaranteed
+	# slot (only the three upgrade categories are guaranteed) - a fixed seed
+	# makes this deterministic instead of an occasional-miss flake.
+	_shop._rng.seed = 1
+	var saw_pistol: bool = false
+	for i: int in 40:
+		_shop.roll_offers()
+		for offer: Dictionary in _shop.offers:
+			if int(offer["kind"]) == Shop.Kind.WEAPON and offer["id"] == &"pistol":
+				saw_pistol = true
+	assert_true(saw_pistol, "a replaced weapon is buyable again")
+
+
+func test_weapon_offers_warn_that_they_replace_the_current_weapon() -> void:
+	for i: int in 12:
+		_shop.roll_offers()
+		for offer: Dictionary in _shop.offers:
+			if int(offer["kind"]) == Shop.Kind.WEAPON:
+				assert_true(String(offer["description"]).contains("Replaces"),
+					"a weapon offer must say it replaces the current weapon")
 
 
 func test_shop_never_offers_a_maxed_upgrade() -> void:
@@ -128,6 +229,18 @@ func test_shop_never_offers_a_maxed_upgrade() -> void:
 		_shop.roll_offers()
 		for offer: Dictionary in _shop.offers:
 			assert_ne(offer["id"], &"dash_charge", "maxed upgrades must not be offered")
+
+
+func test_shop_never_offers_a_weapon_upgrade_maxed_for_the_equipped_weapon() -> void:
+	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"magazine")
+	EconomyManager.currency = 100000
+	for i: int in upgrade.max_stacks:
+		EconomyManager.try_purchase_upgrade(upgrade, &"pistol")
+
+	for i: int in 12:
+		_shop.roll_offers()
+		for offer: Dictionary in _shop.offers:
+			assert_ne(offer["id"], &"magazine", "maxed out for the equipped weapon")
 
 
 func test_buying_an_offer_charges_and_applies_it() -> void:
@@ -157,3 +270,20 @@ func test_upgrades_reach_the_player_through_stats() -> void:
 	await wait_physics_frames(2)
 	assert_gt(_player.health.max_health, before,
 		"a survivability upgrade must actually reach HealthComponent")
+
+
+func test_buying_a_weapon_upgrade_through_the_shop_scopes_it_to_the_equipped_weapon() -> void:
+	EconomyManager.currency = 100000
+	_shop.roll_offers()
+	var offer: Dictionary
+	for candidate: Dictionary in _shop.offers:
+		if int(candidate["kind"]) == Shop.Kind.UPGRADE \
+				and int(candidate["category"]) == UpgradeData.Category.WEAPON:
+			offer = candidate
+			break
+	if offer.is_empty():
+		pending("no WEAPON-category upgrade was rolled this visit")
+		return
+	assert_eq(_shop.buy(offer), EconomyManager.PurchaseResult.OK)
+	assert_true(UpgradeManager.has_upgrade(StringName(offer["id"]), &"pistol"),
+		"the shop must scope a WEAPON upgrade purchase to the equipped weapon")

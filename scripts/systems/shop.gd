@@ -84,12 +84,19 @@ func buy(offer: Dictionary) -> EconomyManager.PurchaseResult:
 func _execute(offer: Dictionary) -> EconomyManager.PurchaseResult:
 	match int(offer["kind"]):
 		Kind.UPGRADE:
-			return EconomyManager.try_purchase_upgrade(catalog.find_upgrade(offer["id"]))
+			return _buy_upgrade(offer)
 		Kind.WEAPON:
 			return _buy_weapon(offer)
 		Kind.UTILITY:
 			return _buy_utility(offer)
 	return EconomyManager.PurchaseResult.INVALID
+
+
+func _buy_upgrade(offer: Dictionary) -> EconomyManager.PurchaseResult:
+	var data: UpgradeData = catalog.find_upgrade(offer["id"])
+	# Empty for MOBILITY/SURVIVABILITY - try_purchase_upgrade ignores it then.
+	var weapon_id: StringName = StringName(offer.get("weapon_id", &""))
+	return EconomyManager.try_purchase_upgrade(data, weapon_id)
 
 
 func _buy_weapon(offer: Dictionary) -> EconomyManager.PurchaseResult:
@@ -128,24 +135,38 @@ func _build_pool() -> Array[Dictionary]:
 	var pool: Array[Dictionary] = []
 	var holder: WeaponHolder = _get_holder()
 	var utility: UtilityComponent = _get_utility()
+	var equipped_id: StringName = (
+		holder.current.data.id if holder != null and holder.current != null
+			and holder.current.data != null else &"")
 
 	for upgrade: UpgradeData in catalog.upgrades:
-		if upgrade == null or not UpgradeManager.can_add(upgrade):
-			continue  # Maxed out: never offered.
+		# A WEAPON upgrade is scoped to whatever is equipped right now - it is
+		# offered/maxed-out per weapon, not once for the whole run.
+		var scope: StringName = equipped_id if upgrade.category == UpgradeData.Category.WEAPON \
+			else &""
+		if upgrade == null or not UpgradeManager.can_add(upgrade, scope):
+			continue  # Maxed out for this scope: never offered.
 		pool.push_back({
 			"kind": Kind.UPGRADE, "id": upgrade.id, "name": upgrade.display_name,
 			"description": upgrade.description, "cost": upgrade.cost,
 			"category": int(upgrade.category),
-			"owned": UpgradeManager.get_stacks(upgrade.id),
+			"owned": UpgradeManager.get_stacks(upgrade.id, scope),
 			"max_stacks": upgrade.max_stacks,
+			"weapon_id": scope,
 		})
 
 	for weapon: WeaponData in catalog.weapons:
 		if weapon == null or (holder != null and holder.owns(weapon.id)):
-			continue
+			continue  # Never offer the weapon already equipped.
+		# Replacing the current weapon leaves its WEAPON upgrades behind - the
+		# shop card has to say so before the player spends money on a surprise.
+		var replaces: String = (
+			" Replaces your current weapon; its upgrades stay behind."
+				if holder != null and holder.current != null else "")
 		pool.push_back({
 			"kind": Kind.WEAPON, "id": weapon.id, "name": weapon.display_name,
-			"description": "New weapon.", "cost": catalog.get_weapon_price(weapon.id),
+			"description": "New weapon.%s" % replaces,
+			"cost": catalog.get_weapon_price(weapon.id),
 			"category": -1, "owned": 0, "max_stacks": 1,
 		})
 
