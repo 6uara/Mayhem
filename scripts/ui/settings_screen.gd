@@ -49,6 +49,7 @@ const SCHEMA: Array = [
 	{"key": "accessibility/subtitle_size", "label": "Subtitle size", "type": "option",
 		"choices": [["Small", 0], ["Medium", 1], ["Large", 2]]},
 	{"key": "accessibility/reduce_flashing", "label": "Reduce flashing", "type": "toggle"},
+	{"key": "accessibility/speed_lines_enabled", "label": "Speed lines", "type": "toggle"},
 
 	{"section": "HUD"},
 	{"key": "hud/scale", "label": "HUD scale",

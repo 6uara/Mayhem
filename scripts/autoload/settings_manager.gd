@@ -27,6 +27,11 @@ const DEFAULTS: Dictionary = {
 	## same colour, so no information is lost (SPEC-MENUS-HOST 3.3).
 	"accessibility/reduce_flashing": false,
 	"accessibility/subtitle_size": 1,
+	## Screen-space speed lines are the visual half of the same reward
+	## Player._tick_speed_fov() sells with the camera - a distinct discomfort
+	## trigger from screenshake, so it gets its own switch rather than riding
+	## along with it.
+	"accessibility/speed_lines_enabled": true,
 	"hud/scale": 1.0,
 	"hud/crosshair_gap": 8.0,
 	"hud/crosshair_thickness": 2.0,

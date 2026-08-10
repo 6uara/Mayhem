@@ -54,6 +54,7 @@ const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
 @onready var _announce_title: Label = $Root/AnnounceLayer/Title
 @onready var _damage_indicators: DamageIndicators = $Root/DamageIndicators
 @onready var _state_overlays: Control = $Root/StateOverlays
+@onready var _speed_lines: SpeedLinesOverlay = $Root/StateOverlays/SpeedLines
 
 var _player: Player
 var _weapon: WeaponComponent
@@ -216,6 +217,12 @@ func _tick_movement() -> void:
 		_dash_pips.configure(movement.get_dash_charges_max(),
 			movement.get_dash_charges_available())
 		_dash_pips.progress = movement.dash_charges.get_next_charge_progress()
+
+	# Real horizontal speed, not MovementComponent.get_move_speed()'s target -
+	# the same "excess over a normal run" Player._tick_speed_fov() already
+	# computes for FOV. Runs even if the grapple slot below is unwired.
+	if _speed_lines != null:
+		_speed_lines.set_speed(Vector3(_player.velocity.x, 0.0, _player.velocity.z).length())
 
 	if _grapple_slot == null or _player.grapple == null:
 		return

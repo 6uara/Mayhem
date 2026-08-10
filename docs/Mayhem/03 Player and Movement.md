@@ -151,6 +151,13 @@ Exists because the movement system hands out real momentum through slides, dashe
 and pads, but without a visible consequence the screen looks identical at 7 m/s
 and 14 — the reward for chaining well was otherwise invisible.
 
+`SpeedLinesOverlay` (`scripts/ui/speed_lines_overlay.gd`, a `ColorRect` inside
+`HUD/Root/StateOverlays`, `assets/shaders/speed_lines.gdshader`) is the screen
+half of the same reward — see [[08 VFX and Shaders#Speed lines]]. `HUD._tick_movement()`
+feeds it the player's actual horizontal speed (`Vector3(velocity.x, 0,
+velocity.z).length()`, the same quantity `_tick_speed_fov()` reads), not
+`MovementComponent.get_move_speed()`'s target.
+
 ## Weapon viewmodel kick
 
 Lives on `WeaponComponent`, not `CameraFeelComponent` — see
