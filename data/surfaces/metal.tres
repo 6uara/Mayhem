@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SurfaceMaterialData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/surface_material_data.gd" id="1_data"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/impacts/impact_world.wav" id="2_sound"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"metal"
+impact_sound = ExtResource("2_sound")
+accent_color = Color(0.6, 0.66, 0.72, 1)
+spawns_decal = true

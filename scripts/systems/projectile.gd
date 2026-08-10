@@ -106,7 +106,7 @@ func _resolve_hit(hit: Dictionary) -> void:
 		if hitbox.is_headshot_zone:
 			damage *= _headshot_multiplier
 		hitbox.take_hit(damage, hit_position)
-	_spawn_impact(hit_position, normal, hitbox != null)
+	_spawn_impact(hit_position, normal, collider)
 	_expire()
 
 
@@ -118,14 +118,14 @@ func _get_falloff(distance: float) -> float:
 	return lerpf(1.0, _falloff_min, (distance - _falloff_start) / (_falloff_end - _falloff_start))
 
 
-func _spawn_impact(hit_position: Vector3, normal: Vector3, is_flesh: bool) -> void:
+func _spawn_impact(hit_position: Vector3, normal: Vector3, collider: Object) -> void:
 	if impact_scene == null:
 		return
 	var impact: Node = ObjectPool.acquire(impact_scene)
 	if impact == null:
 		return
 	if impact.has_method(&"play_at"):
-		impact.call(&"play_at", hit_position, normal, is_flesh)
+		impact.call(&"play_at", hit_position, normal, SurfaceMaterials.resolve(collider))
 
 
 func _face_travel() -> void:

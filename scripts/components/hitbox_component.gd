@@ -15,6 +15,10 @@ func _ready() -> void:
 	if health_component == null:
 		# Degrade gracefully: a hitbox with no health still absorbs the shot.
 		push_warning("HitboxComponent on %s has no HealthComponent" % get_path())
+	# Every hitbox is flesh - lets ImpactEffect resolve its material the same
+	# way for a hitbox or bare world geometry (SurfaceMaterials.resolve()),
+	# with no is_flesh special-case anywhere in the projectile code.
+	set_meta(SurfaceMaterials.META_KEY, &"flesh")
 
 
 # Public API
