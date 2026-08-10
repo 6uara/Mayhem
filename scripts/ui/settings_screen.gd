@@ -60,6 +60,7 @@ const SCHEMA: Array = [
 	{"key": "hud/crosshair_dot", "label": "Centre dot", "type": "toggle"},
 	{"key": "hud/crosshair_color", "label": "Crosshair colour", "type": "color"},
 	{"key": "hud/damage_indicators", "label": "Damage indicators", "type": "toggle"},
+	{"key": "hud/damage_numbers", "label": "Damage numbers", "type": "toggle"},
 ]
 
 const ROW_CONTROL_WIDTH: int = 260

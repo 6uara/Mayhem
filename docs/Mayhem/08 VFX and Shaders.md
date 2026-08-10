@@ -110,6 +110,28 @@ hit's `accent_color` can never bleed into a different pooled instance mid-flight
 already varies sound per material; only the audio content lags. See
 [[12 Known Issues and Gaps]].
 
+## Floating damage numbers
+
+`DamageNumberSpawner` (`scripts/systems/damage_number_spawner.gd`, a node in
+`game.tscn` beside `HitstopController`) listens to the same
+`EventBus.damage_dealt` signal `HitstopController` already does, and pools a
+`DamageNumber` (`scripts/ui/damage_number.gd` + `scenes/vfx/damage_number.tscn`
+— a billboarded `Label3D`) over whatever got hit.
+
+That signal carries the target `Node`, not the exact hit position, so numbers
+spawn at `target.global_position + height_offset` (enemy origins sit at the
+feet) rather than the precise impact point — close enough to read as attached
+to what got hit, without adding a new EventBus parameter just for this.
+A small random per-number jitter keeps simultaneous hits (a shotgun blast, a
+handful of enemies dying the same frame) from stacking into one unreadable
+column. Rises and fades out over `DamageNumber.LIFETIME` via a `Tween`.
+
+Headshots read differently by design, same as the hitmarker treatment in
+`Reticle` — bigger (`HEADSHOT_FONT_SIZE`), tinted `Tokens.REWARD` instead of
+`Tokens.TEXT`. Gated by `hud/damage_numbers` in `SettingsManager` (off is a
+legitimate preference — floating numbers are divisive — same accessibility
+section as the screenshake toggle).
+
 ## Color law tie-in
 
 `glow_color` on the lava shader and `tint` on the portal shader are set to match
