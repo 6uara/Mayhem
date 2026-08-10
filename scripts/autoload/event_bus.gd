@@ -13,6 +13,10 @@ signal weapon_fired(weapon_id: StringName)
 signal weapon_reloaded(weapon_id: StringName)
 signal ammo_changed(current: int, reserve: int)
 signal weapon_switched(weapon_id: StringName)
+## The equipped weapon's ADS state, whichever weapon that is - a global hook so
+## listeners (TutorialHintManager) don't have to re-subscribe to each
+## WeaponComponent's own local ads_changed on every swap.
+signal weapon_ads_changed(is_ads: bool)
 
 # Movement
 signal dash_used(charges_remaining: int)

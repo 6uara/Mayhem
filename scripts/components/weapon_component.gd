@@ -116,6 +116,7 @@ func set_ads(value: bool) -> void:
 		return
 	is_ads = value
 	ads_changed.emit(is_ads)
+	EventBus.weapon_ads_changed.emit(is_ads)
 
 
 func try_reload() -> bool:

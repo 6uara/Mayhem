@@ -40,7 +40,14 @@ chaining is intentional.
   (`_try_mantle()`) triggers automatically while airborne, moving toward a wall,
   holding jump: a chest-height ray finds the wall, a head-height ray confirms
   clearance, and finding both boosts `velocity.y` — geometry snags that would
-  otherwise kill momentum are a bug by design decree.
+  otherwise kill momentum are a bug by design decree. Emits `mantled()` only on
+  a successful boost, not on every probe.
+
+`started_moving()` / `jumped()` / `mantled()` exist solely as
+`TutorialHintManager`'s hook for each mechanic's first-time hint (see
+[[02 Autoloads#TutorialHintManager]]) — `started_moving()` fires once ever, the
+first frame `wish_direction` goes nonzero; `jumped()` fires from `_jump()`,
+covering the ground/air/slide-jump paths alike since they all funnel through it.
 
 ### Gravity is asymmetric
 

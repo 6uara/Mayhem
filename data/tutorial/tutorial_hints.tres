@@ -1,0 +1,71 @@
+[gd_resource type="Resource" script_class="TutorialHintCatalog" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/tutorial_hint_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/resources/tutorial_hint.gd" id="2_hint"]
+
+[sub_resource type="Resource" id="Hint_move"]
+script = ExtResource("2_hint")
+id = &"move"
+text = "Move with WASD."
+duration = 4.0
+action = &""
+
+[sub_resource type="Resource" id="Hint_jump"]
+script = ExtResource("2_hint")
+id = &"jump"
+text = "Press {action} to jump."
+duration = 4.0
+action = &"jump"
+
+[sub_resource type="Resource" id="Hint_mantle"]
+script = ExtResource("2_hint")
+id = &"mantle"
+text = "Hold jump against a ledge to climb it."
+duration = 4.5
+action = &""
+
+[sub_resource type="Resource" id="Hint_slide"]
+script = ExtResource("2_hint")
+id = &"slide"
+text = "Press {action} while moving to slide."
+duration = 4.0
+action = &"crouch_slide"
+
+[sub_resource type="Resource" id="Hint_dash"]
+script = ExtResource("2_hint")
+id = &"dash"
+text = "Press {action} to dash."
+duration = 4.0
+action = &"dash"
+
+[sub_resource type="Resource" id="Hint_grapple"]
+script = ExtResource("2_hint")
+id = &"grapple"
+text = "Press {action} to grapple onto a lit anchor."
+duration = 4.5
+action = &"grapple"
+
+[sub_resource type="Resource" id="Hint_ads"]
+script = ExtResource("2_hint")
+id = &"ads"
+text = "Hold {action} to aim down sights."
+duration = 4.0
+action = &"ads"
+
+[sub_resource type="Resource" id="Hint_reload"]
+script = ExtResource("2_hint")
+id = &"reload"
+text = "Press {action} to reload."
+duration = 4.0
+action = &"reload"
+
+[sub_resource type="Resource" id="Hint_shop"]
+script = ExtResource("2_hint")
+id = &"shop"
+text = "Spend currency here between waves."
+duration = 5.0
+action = &""
+
+[resource]
+script = ExtResource("1_catalog")
+hints = Array[Resource]([SubResource("Hint_move"), SubResource("Hint_jump"), SubResource("Hint_mantle"), SubResource("Hint_slide"), SubResource("Hint_dash"), SubResource("Hint_grapple"), SubResource("Hint_ads"), SubResource("Hint_reload"), SubResource("Hint_shop")])

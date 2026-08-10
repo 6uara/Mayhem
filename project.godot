@@ -29,6 +29,7 @@ EconomyManager="*res://scripts/autoload/economy_manager.gd"
 UpgradeManager="*res://scripts/autoload/upgrade_manager.gd"
 WaveManager="*res://scripts/autoload/wave_manager.gd"
 NarratorManager="*res://scripts/autoload/narrator_manager.gd"
+TutorialHintManager="*res://scripts/autoload/tutorial_hint_manager.gd"
 BeehaveGlobalMetrics="*uid://c3ktl6ontsdt7"
 BeehaveGlobalDebugger="*uid://bl3ma400hpvsh"
 

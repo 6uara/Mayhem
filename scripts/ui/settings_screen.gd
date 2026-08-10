@@ -67,6 +67,7 @@ const ROW_CONTROL_WIDTH: int = 260
 @onready var _rows: VBoxContainer = $Panel/Margin/Layout/Scroll/Rows
 @onready var _back_button: Button = $Panel/Margin/Layout/Footer/BackButton
 @onready var _reset_button: Button = $Panel/Margin/Layout/Footer/ResetButton
+@onready var _reset_hints_button: Button = $Panel/Margin/Layout/Footer/ResetHintsButton
 
 ## key -> the control showing it, so a reset can refresh every row in place.
 var _controls: Dictionary = {}
@@ -78,6 +79,7 @@ func _ready() -> void:
 	_build()
 	_back_button.pressed.connect(close)
 	_reset_button.pressed.connect(_on_reset_pressed)
+	_reset_hints_button.pressed.connect(_on_reset_hints_pressed)
 
 
 ## `_input` rather than `_unhandled_input`: this has to beat GameManager to the
@@ -269,3 +271,18 @@ func _refresh_all() -> void:
 func _on_reset_pressed() -> void:
 	SettingsManager.reset_to_defaults()
 	_refresh_all()
+
+
+## Not a setting - lets a playtester (or the dev, mid-session) see every
+## first-time hint again from a clean slate. Brief label swap is the only
+## confirmation this needs; there's no value to refresh in the rows above.
+func _on_reset_hints_pressed() -> void:
+	SaveManager.clear_tutorial_hints()
+	var original_text: String = _reset_hints_button.text
+	_reset_hints_button.text = "Hints reset"
+	_reset_hints_button.disabled = true
+	var tween: Tween = create_tween()
+	tween.tween_interval(1.2)
+	tween.tween_callback(func() -> void:
+		_reset_hints_button.text = original_text
+		_reset_hints_button.disabled = false)

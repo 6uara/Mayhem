@@ -21,6 +21,7 @@ globals):
 | `UpgradeManager` | `upgrade_manager.gd` | Owned upgrades, stat modifiers |
 | `WaveManager` | `wave_manager.gd` | Wave sequencing, enemy spawn scheduling |
 | `NarratorManager` | `narrator_manager.gd` | Host VO lines, subtitle queue |
+| `TutorialHintManager` | `tutorial_hint_manager.gd` | First-time-mechanic HUD hints |
 | `BeehaveGlobalMetrics` / `BeehaveGlobalDebugger` | addon | Beehave's own (not ours) |
 
 ## EventBus
@@ -39,6 +40,7 @@ signal weapon_fired(weapon_id: StringName)
 signal weapon_reloaded(weapon_id: StringName)
 signal ammo_changed(current: int, reserve: int)
 signal weapon_switched(weapon_id: StringName)
+signal weapon_ads_changed(is_ads: bool)   # whichever weapon is equipped
 
 # Movement
 signal dash_used(charges_remaining: int)
@@ -111,9 +113,16 @@ all (pinning feel independent of the slider's default UI position).
 
 ## SaveManager
 
-Local leaderboard only — `user://leaderboard.json`, top `MAX_ENTRIES = 10`.
+Local leaderboard — `user://leaderboard.json`, top `MAX_ENTRIES = 10`.
 `submit_score(score, total_time, waves_cleared)`. **No UI currently reads this**
 — see [[12 Known Issues and Gaps]].
+
+Also owns which first-time tutorial hints have already been shown, in a
+**separate** file (`user://tutorial.json`) with its own lifetime — clearing the
+leaderboard must never also reset hints, or vice versa. `has_seen_hint(id)` /
+`mark_hint_seen(id)` / `clear_tutorial_hints()` (wired to the options screen's
+"Reset tutorial hints" button — see [[07 UI and HUD#Options screen]]). Neither
+of these is meta-progression; nothing here affects a run's balance.
 
 ## EconomyManager
 
@@ -149,3 +158,36 @@ constants: `LINE_COOLDOWN = 20.0`, `DEFAULT_CATEGORY_COOLDOWN = 8.0`,
 category cooldown prevents the same *kind* of line spamming even if the specific
 line differs; the line cooldown prevents the exact line repeating too soon.
 Emits `subtitle_shown` / `subtitle_hidden`, consumed by the HUD's subtitle box.
+
+## TutorialHintManager
+
+`scripts/autoload/tutorial_hint_manager.gd`. Shows a one-line HUD overlay the
+first time the player does each core mechanic — move, jump, mantle, slide,
+dash, grapple, ADS, reload, first shop visit. Content is data
+(`TutorialHint` / `TutorialHintCatalog`, `data/tutorial/tutorial_hints.tres`),
+never string literals in the manager.
+
+**Deliberately not `NarratorManager`**: the Host talks to the crowd, not the
+player (Game Treatment) — a tutorial prompt is a neutral overlay, never a Host
+line. "Seen" is permanent (`SaveManager.has_seen_hint`/`mark_hint_seen`), so a
+hint never repeats once learned, across runs, until the player explicitly
+resets it in Settings.
+
+A small queue (`_queue`, `MAX_QUEUED = 4`) guarantees hints never overlap on
+screen: `_try_show_next()` refuses to show a second hint while `_current` is
+still set, even if called directly rather than from `_process()` — the
+non-overlap guarantee lives on the method itself, not on caller discipline.
+
+Hooks into gameplay two ways: global `EventBus` signals for anything that
+already has one (`dash_used`, `grapple_started`, `weapon_reloaded`,
+`shop_opened`, and the ADS-only `weapon_ads_changed` added for this), and a
+direct binding to the current player's `MovementComponent` for the rest
+(`started_moving`, `jumped`, `mantled`, and `state_changed` for `SLIDING`).
+The `MovementComponent` binding rebinds on `EventBus.game_state_changed ==
+GameManager.State.PLAYING` rather than once at startup, because the player
+scene (and its `MovementComponent`) is recreated every run.
+
+`{action}` in a hint's text substitutes the actually-bound key for
+`TutorialHint.action`, read live from `InputMap` — a remapped key is never
+wrong. Hints with no single key to name (movement, the shop) leave `action`
+empty and skip substitution.

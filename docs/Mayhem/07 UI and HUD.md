@@ -102,6 +102,12 @@ Listens on `_input()`, not `_unhandled_input()`, specifically so it beats
 `GameManager`'s own pause-key handler — otherwise closing the options screen
 with the pause key would also unpause the match underneath it.
 
+The footer's "Reset tutorial hints" button (`_on_reset_hints_pressed()`) sits
+outside the schema — it isn't a setting, it calls
+`SaveManager.clear_tutorial_hints()` directly (see
+[[02 Autoloads#TutorialHintManager]]). Exists for playtest sessions: reset the
+build between testers so everyone sees the first-time hints fresh.
+
 ## Match overlay
 
 `scripts/ui/match_overlay.gd` + `scenes/ui/match_overlay.tscn`. Wave banners,

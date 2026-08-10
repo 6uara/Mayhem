@@ -153,3 +153,14 @@ func test_settings_reach_the_manager() -> void:
 	SettingsManager.set_value("audio/sfx_volume", 0.33)
 	_settings._refresh_all()
 	assert_almost_eq(float(SettingsManager.get_value("audio/sfx_volume")), 0.33, 0.001)
+
+
+func test_reset_hints_button_clears_seen_tutorial_hints() -> void:
+	SaveManager.mark_hint_seen(&"dash")
+	_settings.open()
+	await wait_frames(2)
+
+	_settings._reset_hints_button.pressed.emit()
+	assert_false(SaveManager.has_seen_hint(&"dash"),
+		"the reset button must forget every hint the player has already seen")
+	SaveManager.clear_tutorial_hints()
