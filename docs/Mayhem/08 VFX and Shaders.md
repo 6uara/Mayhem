@@ -73,6 +73,43 @@ before mutating it — without this, telegraphing one spawn door would visually
 light up all seven, since they'd all be pointing at the same `ShaderMaterial`
 instance. See `spawn_door.gd::_ready()` for the pattern.
 
+## Impact VFX keyed to surface material
+
+`ImpactEffect` (`scripts/systems/impact_effect.gd` + `scenes/vfx/impact_effect.tscn`,
+pooled) no longer hardcodes a world/flesh split. `play_at(hit_position, normal,
+material: SurfaceMaterialData)` takes a `SurfaceMaterialData`
+(`scripts/resources/surface_material_data.gd`) resolved by
+`SurfaceMaterials.resolve(collider)` (`scripts/util/surface_materials.gd`) —
+a static utility, same shape as `PhysicsLayers`. Every material lives as data
+under `data/surfaces/` (`concrete.tres`, `metal.tres`, `flesh.tres`): `id`,
+`impact_sound`, `decal_texture` (nullable — grey-box materials have none yet,
+same phase the rest of this pass is in), `accent_color` (tints both the decal
+and the spark particles), `spawns_decal` (always `false` for flesh, data-driven
+rather than an `is_flesh` branch in the code).
+
+**Tagging a collider**: `set_meta(SurfaceMaterials.META_KEY, &"metal")` — a
+meta value, not a group (a group would collide with gameplay groups like
+`&"player"`, and doesn't show in the inspector the way meta does).
+`HitboxComponent._ready()` tags itself `&"flesh"` unconditionally, and `Player`
+does the same for its own body (enemy projectiles raycast directly onto it,
+with no `HitboxComponent` in between) — so `projectile.gd` and
+`enemy_projectile.gd` both just call `SurfaceMaterials.resolve(collider)`
+uniformly, with **no** `is_flesh` special-case left anywhere in either. An
+untagged collider (most world geometry, until more of it is tagged) resolves
+to `SurfaceMaterials.DEFAULT_ID` (`&"concrete"`) rather than erroring — the two
+`StaticBody3D` scifi containers in `greybox_arena.tscn` are tagged `&"metal"`
+via `metadata/surface = &"metal"` as the first real example.
+
+**Per-instance retinting, not per-scene**: same pitfall as the section above —
+`ImpactEffect._ready()` duplicates its spark `QuadMesh` and `StandardMaterial3D`
+once per pooled instance (`_spark_material`), so setting `albedo_color` to one
+hit's `accent_color` can never bleed into a different pooled instance mid-flight.
+
+**Content debt, not a code gap**: `metal.tres` currently reuses
+`impact_world.wav` — no metal-specific sample has been recorded. The system
+already varies sound per material; only the audio content lags. See
+[[12 Known Issues and Gaps]].
+
 ## Color law tie-in
 
 `glow_color` on the lava shader and `tint` on the portal shader are set to match

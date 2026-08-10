@@ -56,7 +56,7 @@ func _physics_process(delta: float) -> void:
 		var health: HealthComponent = _find_health(player)
 		if health != null:
 			health.apply_damage(_damage)
-	_spawn_impact(hit["position"], hit["normal"])
+	_spawn_impact(hit["position"], hit["normal"], hit["collider"])
 	_expire()
 
 
@@ -71,12 +71,12 @@ func _on_released() -> void:
 	_shooter = null
 
 
-func _spawn_impact(hit_position: Vector3, normal: Vector3) -> void:
+func _spawn_impact(hit_position: Vector3, normal: Vector3, collider: Object) -> void:
 	if impact_scene == null:
 		return
 	var impact: Node = ObjectPool.acquire(impact_scene)
 	if impact != null and impact.has_method(&"play_at"):
-		impact.call(&"play_at", hit_position, normal, false)
+		impact.call(&"play_at", hit_position, normal, SurfaceMaterials.resolve(collider))
 
 
 func _expire() -> void:

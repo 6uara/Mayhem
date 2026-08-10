@@ -383,6 +383,7 @@ end_position = Vector3(0, -6.4, 5.5)
 [node name="Container1" type="StaticBody3D" parent="Props" unique_id=1889635683]
 transform = Transform3D(0.2658, 0, 0, 0, 0.2658, 0, 0, 0, 0.2658, -8, 0.8, 12)
 collision_mask = 0
+metadata/surface = &"metal"
 
 [node name="Mesh" type="MeshInstance3D" parent="Props/Container1" unique_id=796517705]
 mesh = ExtResource("13_container")
@@ -393,6 +394,7 @@ shape = SubResource("Shape_container")
 [node name="Container2" type="StaticBody3D" parent="Props" unique_id=1413366597]
 transform = Transform3D(0.2658, 0, 0, 0, 0.2658, 0, 0, 0, 0.2658, 9, 0.8, 15)
 collision_mask = 0
+metadata/surface = &"metal"
 
 [node name="Mesh" type="MeshInstance3D" parent="Props/Container2" unique_id=1208907347]
 mesh = ExtResource("13_container")

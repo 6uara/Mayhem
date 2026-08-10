@@ -81,8 +81,8 @@ func test_no_two_weapons_share_a_voice() -> void:
 
 func test_impact_audio_hooks_are_wired() -> void:
 	var impact: ImpactEffect = _instance("res://scenes/vfx/impact_effect.tscn")
-	assert_not_null(impact.world_sound, "world_sound")
-	assert_not_null(impact.flesh_sound, "flesh_sound")
+	assert_not_null(impact.fallback_material, "fallback_material")
+	assert_not_null(impact.fallback_material.impact_sound, "fallback_material.impact_sound")
 
 
 func test_reticle_audio_hooks_are_wired() -> void:

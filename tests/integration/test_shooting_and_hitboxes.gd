@@ -196,3 +196,49 @@ func test_firing_spawns_muzzle_vfx_without_error() -> void:
 	weapon.set_trigger(false)
 
 	assert_gt(marker.get_child_count(), 0, "the flash should have spawned on the marker")
+
+
+# ------------------------------------------------------------- impact material
+
+const IMPACT_SCENE: String = "res://scenes/vfx/impact_effect.tscn"
+
+
+func test_a_hard_surface_impact_shows_a_decal_tinted_by_its_material() -> void:
+	var impact: ImpactEffect = add_child_autofree(load(IMPACT_SCENE).instantiate())
+	var metal: SurfaceMaterialData = SurfaceMaterials.get_material(&"metal")
+	impact.play_at(Vector3.ZERO, Vector3.UP, metal)
+
+	var decal: Decal = impact.get_node("Decal")
+	assert_true(decal.visible, "a hard surface must show a decal")
+	assert_eq(decal.modulate, metal.accent_color)
+
+
+func test_a_flesh_impact_shows_no_decal() -> void:
+	var impact: ImpactEffect = add_child_autofree(load(IMPACT_SCENE).instantiate())
+	var flesh: SurfaceMaterialData = SurfaceMaterials.get_material(&"flesh")
+	impact.play_at(Vector3.ZERO, Vector3.UP, flesh)
+
+	var decal: Decal = impact.get_node("Decal")
+	assert_false(decal.visible, "flesh must never show a decal")
+
+
+## Two pooled ImpactEffect instances retinting concrete then metal in a row must
+## not bleed into each other - each owns its own spark material copy.
+func test_retinting_one_impact_does_not_bleed_into_another() -> void:
+	var first: ImpactEffect = add_child_autofree(load(IMPACT_SCENE).instantiate())
+	var second: ImpactEffect = add_child_autofree(load(IMPACT_SCENE).instantiate())
+	first.play_at(Vector3.ZERO, Vector3.UP, SurfaceMaterials.get_material(&"metal"))
+	second.play_at(Vector3.ZERO, Vector3.UP, SurfaceMaterials.get_material(&"flesh"))
+
+	assert_ne(first._spark_material, second._spark_material,
+		"each ImpactEffect must own its own spark material instance")
+	assert_eq(first._spark_material.albedo_color, SurfaceMaterials.get_material(&"metal").accent_color)
+	assert_eq(second._spark_material.albedo_color,
+		SurfaceMaterials.get_material(&"flesh").accent_color)
+
+
+func test_shooting_a_tagged_prop_resolves_to_its_surface_material() -> void:
+	var body := StaticBody3D.new()
+	body.set_meta(SurfaceMaterials.META_KEY, &"metal")
+	add_child_autofree(body)
+	assert_eq(SurfaceMaterials.resolve(body).id, &"metal")

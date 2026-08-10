@@ -36,6 +36,10 @@ var _speed_fov: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"player")
+	# Enemy projectiles raycast straight onto this body (no HitboxComponent on
+	# the player) - tag it flesh directly so its impact VFX matches the
+	# enemy-hit case rather than reading as a wall.
+	set_meta(SurfaceMaterials.META_KEY, &"flesh")
 	_base_fov = float(SettingsManager.get_value("video/fov"))
 	EventBus.settings_applied.connect(_on_settings_applied)
 	if health != null:

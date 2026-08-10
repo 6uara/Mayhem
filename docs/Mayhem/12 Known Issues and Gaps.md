@@ -53,6 +53,15 @@ any specific recent change, not yet root-caused.
   lava and portal shaders need a manual update to follow — there's no test
   currently catching that specific drift, unlike the Elite/hazard coupling
   which *is* tested.
+- **`data/surfaces/metal.tres` reuses `impact_world.wav`** — no metal-specific
+  impact sample has been recorded yet, so metal currently sounds identical to
+  concrete despite looking different (see
+  [[08 VFX and Shaders#Impact VFX keyed to surface material]]). The variation
+  system is real; only that one sample is a placeholder. Same story for every
+  `SurfaceMaterialData.decal_texture` — all null, grey-box tint only, until
+  real decal art exists. Only two world `StaticBody3D`s (the scifi containers
+  in `greybox_arena.tscn`) are tagged `&"metal"` so far; the rest of the arena
+  resolves to the `concrete` default until more geometry gets tagged.
 
 ## Housekeeping
 
