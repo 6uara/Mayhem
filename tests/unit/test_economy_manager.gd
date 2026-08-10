@@ -15,6 +15,10 @@ func _make_upgrade(id: StringName, cost: int, stacks: int = 1) -> UpgradeData:
 	upgrade.cost = cost
 	upgrade.max_stacks = stacks
 	upgrade.stat_modifiers = [modifier]
+	# Global rather than the WEAPON default: these tests exercise purchase flow
+	# and stacking, not weapon scoping - a WEAPON upgrade needs a weapon_id or
+	# UpgradeManager rejects it outright (see test_weapon_upgrades_need_a_weapon_id).
+	upgrade.category = UpgradeData.Category.SURVIVABILITY
 	return upgrade
 
 

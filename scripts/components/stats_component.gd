@@ -48,9 +48,12 @@ func get_stat(stat_key: StringName, fallback: float = 0.0) -> float:
 
 
 ## Reads the base from `data` rather than `base_values` - lets a weapon's own
-## resource supply the base while upgrades still apply.
-func get_stat_from(stat_key: StringName, base_value: float) -> float:
-	return UpgradeManager.get_stat(stat_key, base_value)
+## resource supply the base while upgrades still apply. Never cached (unlike
+## `get_stat()`): a weapon-scoped value depends on which weapon is asking, so
+## caching it here by `stat_key` alone would hand another weapon a stale answer.
+func get_stat_from(stat_key: StringName, base_value: float,
+		weapon_id: StringName = &"") -> float:
+	return UpgradeManager.get_stat(stat_key, base_value, weapon_id)
 
 
 func set_base(stat_key: StringName, value: float) -> void:

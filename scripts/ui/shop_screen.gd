@@ -167,12 +167,26 @@ func _category_label(offer: Dictionary) -> String:
 			return "WEAPON"
 		Shop.Kind.UTILITY:
 			return "UTILITY   carried %d/%d" % [int(offer["owned"]), int(offer["max_stacks"])]
-	var names: Array[String] = ["MOBILITY", "WEAPON", "SURVIVABILITY"]
 	var category: int = int(offer["category"])
 	var suffix: String = ""
 	if int(offer["max_stacks"]) > 1:
 		suffix = "   owned %d/%d" % [int(offer["owned"]), int(offer["max_stacks"])]
+	# WEAPON-category upgrades are scoped to whatever is equipped right now (see
+	# Shop._build_pool) - name it, so the card never implies it follows the
+	# player to whatever gets bought next.
+	if category == UpgradeData.Category.WEAPON:
+		var weapon_name: String = _weapon_name(StringName(offer.get("weapon_id", &"")))
+		return "%s UPGRADE%s" % [weapon_name.to_upper(), suffix] if not weapon_name.is_empty() \
+			else "WEAPON UPGRADE%s" % suffix
+	var names: Array[String] = ["MOBILITY", "WEAPON", "SURVIVABILITY"]
 	return "%s%s" % [names[category] if category >= 0 and category < 3 else "UPGRADE", suffix]
+
+
+func _weapon_name(weapon_id: StringName) -> String:
+	if weapon_id == &"" or shop == null or shop.catalog == null:
+		return ""
+	var data: WeaponData = shop.catalog.find_weapon(weapon_id)
+	return data.display_name if data != null else ""
 
 
 ## Unaffordable cards are visibly dead rather than silently failing on click:
