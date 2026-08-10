@@ -14,10 +14,17 @@ extends Resource
 @export_group("Offer")
 ## How many entries the shop offers per visit. Fewer than the catalogue holds, so
 ## a run does not see everything and purchase order matters.
-@export var offers_per_visit: int = 6
+@export var offers_per_visit: int = 4
 ## Offers always include at least one of each category when possible, so a run is
 ## never forced down a single track by bad luck.
 @export var guarantee_one_per_category: bool = true
+
+@export_group("Reroll")
+## Cost of the first reroll in a visit. 0 (or less) turns the reroll off entirely.
+@export var reroll_base_cost: int = 50
+## Added to the cost for every reroll already used THIS visit - resets when the
+## shop is reopened (Shop.roll_offers()), not when the run ends.
+@export var reroll_cost_increment: int = 50
 
 
 func get_weapon_price(weapon_id: StringName) -> int:

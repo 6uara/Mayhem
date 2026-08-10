@@ -19,6 +19,7 @@ const CARD_MIN_WIDTH: int = 250
 @onready var _currency: Label = $Root/Panel/VBox/Header/Currency
 @onready var _timer_label: Label = $Root/Panel/VBox/Header/Timer
 @onready var _cards: HBoxContainer = $Root/Panel/VBox/Cards
+@onready var _reroll_button: Button = $Root/Panel/VBox/RerollRow/RerollButton
 @onready var _skip_button: Button = $Root/Panel/VBox/SkipButton
 
 var is_open: bool = false
@@ -30,9 +31,12 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_root.visible = false
 	_skip_button.pressed.connect(close)
+	_reroll_button.pressed.connect(_on_reroll_pressed)
 	EventBus.currency_changed.connect(_on_currency_changed)
 	if shop != null:
 		shop.offers_changed.connect(_rebuild_cards)
+		shop.reroll_cost_changed.connect(_on_reroll_cost_changed)
+		_reroll_button.visible = shop.catalog != null and shop.catalog.reroll_base_cost > 0
 
 
 func _process(delta: float) -> void:
@@ -92,6 +96,17 @@ func _format_breakdown(breakdown: Dictionary, wave_index: int, seconds: float) -
 func _on_currency_changed(total: int) -> void:
 	_currency.text = "%d" % total
 	_refresh_affordability()
+
+
+func _on_reroll_cost_changed(cost: int) -> void:
+	_reroll_button.text = "Reroll  %d" % cost
+	_refresh_affordability()
+
+
+func _on_reroll_pressed() -> void:
+	if shop == null:
+		return
+	shop.reroll()
 
 
 func _rebuild_cards(offers: Array[Dictionary]) -> void:
@@ -193,6 +208,8 @@ func _weapon_name(weapon_id: StringName) -> String:
 ## the panel dims and its rail goes dark, the same "not current" language the
 ## rest of the UI uses for an inactive slot.
 func _refresh_affordability() -> void:
+	if shop != null and _reroll_button.visible:
+		_reroll_button.disabled = not shop.can_reroll()
 	for node: Node in _cards.get_children():
 		var panel := node as Control
 		var button: Button = _find_button(node)

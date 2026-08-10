@@ -8,6 +8,7 @@ extends Node
 signal offers_changed(offers: Array[Dictionary])
 signal purchase_succeeded(offer: Dictionary)
 signal purchase_failed(offer: Dictionary, reason: EconomyManager.PurchaseResult)
+signal reroll_cost_changed(cost: int)
 
 enum Kind { UPGRADE, WEAPON, UTILITY }
 
@@ -20,6 +21,9 @@ var offers: Array[Dictionary] = []
 
 var _player: Player
 var _rng := RandomNumberGenerator.new()
+## Resets to 0 every time `roll_offers()` opens a fresh visit - a reroll only
+## gets pricier within the SAME visit, per `catalog.reroll_cost_increment`.
+var _rerolls_this_visit: int = 0
 
 
 func _ready() -> void:
@@ -28,9 +32,71 @@ func _ready() -> void:
 
 # Public API
 
-## Rebuilds the offer list. Sold-out entries (max stacks, already-owned weapons,
-## full utility slots) are filtered before the player ever sees them.
+## Rebuilds the offer list for a fresh shop visit and resets the reroll price.
+## Sold-out entries (max stacks, already-owned weapons, full utility slots) are
+## filtered before the player ever sees them.
 func roll_offers() -> void:
+	_rerolls_this_visit = 0
+	reroll_cost_changed.emit(get_reroll_cost())
+	_roll()
+
+
+func can_afford(offer: Dictionary) -> bool:
+	return EconomyManager.can_afford(int(offer["cost"]))
+
+
+## 0 when `catalog.reroll_base_cost <= 0` - a zero-or-negative base cost is how
+## a catalog turns the reroll off entirely, per ShopCatalog's docstring.
+func get_reroll_cost() -> int:
+	if catalog == null or catalog.reroll_base_cost <= 0:
+		return 0
+	return catalog.reroll_base_cost + catalog.reroll_cost_increment * _rerolls_this_visit
+
+
+func can_reroll() -> bool:
+	return catalog != null and catalog.reroll_base_cost > 0 \
+		and EconomyManager.can_afford(get_reroll_cost())
+
+
+## Spends currency to rebuild the offer list within the SAME visit, at an
+## increasing cost (`catalog.reroll_cost_increment` per use, reset by the next
+## `roll_offers()`). Still respects `guarantee_one_per_category` - the
+## guarantee exists so bad luck can never lock a run out of a whole track, and
+## a reroll that bypassed it would reintroduce exactly that, at a price.
+func reroll() -> EconomyManager.PurchaseResult:
+	if catalog == null or catalog.reroll_base_cost <= 0:
+		return EconomyManager.PurchaseResult.INVALID
+	var result: EconomyManager.PurchaseResult = EconomyManager.try_spend(
+		&"shop_reroll", get_reroll_cost())
+	if result != EconomyManager.PurchaseResult.OK:
+		AudioPool.play_2d(denied_sound, AudioPool.BUS_UI)
+		return result
+	_rerolls_this_visit += 1
+	reroll_cost_changed.emit(get_reroll_cost())
+	AudioPool.play_2d(purchase_sound, AudioPool.BUS_UI)
+	_roll()
+	return EconomyManager.PurchaseResult.OK
+
+
+## Executes a purchase. Returns OK, or the reason it was refused.
+func buy(offer: Dictionary) -> EconomyManager.PurchaseResult:
+	var result: EconomyManager.PurchaseResult = _execute(offer)
+	if result == EconomyManager.PurchaseResult.OK:
+		AudioPool.play_2d(purchase_sound, AudioPool.BUS_UI)
+		offers.erase(offer)
+		purchase_succeeded.emit(offer)
+		offers_changed.emit(offers)
+	else:
+		AudioPool.play_2d(denied_sound, AudioPool.BUS_UI)
+		purchase_failed.emit(offer, result)
+	return result
+
+
+# Private
+
+## Shared by roll_offers() and reroll() - the only difference between them is
+## whether _rerolls_this_visit gets reset first.
+func _roll() -> void:
 	offers.clear()
 	if catalog == null:
 		push_warning("Shop: no catalog assigned")
@@ -60,26 +126,6 @@ func roll_offers() -> void:
 	offers = picked
 	offers_changed.emit(offers)
 
-
-func can_afford(offer: Dictionary) -> bool:
-	return EconomyManager.can_afford(int(offer["cost"]))
-
-
-## Executes a purchase. Returns OK, or the reason it was refused.
-func buy(offer: Dictionary) -> EconomyManager.PurchaseResult:
-	var result: EconomyManager.PurchaseResult = _execute(offer)
-	if result == EconomyManager.PurchaseResult.OK:
-		AudioPool.play_2d(purchase_sound, AudioPool.BUS_UI)
-		offers.erase(offer)
-		purchase_succeeded.emit(offer)
-		offers_changed.emit(offers)
-	else:
-		AudioPool.play_2d(denied_sound, AudioPool.BUS_UI)
-		purchase_failed.emit(offer, result)
-	return result
-
-
-# Private
 
 func _execute(offer: Dictionary) -> EconomyManager.PurchaseResult:
 	match int(offer["kind"]):
