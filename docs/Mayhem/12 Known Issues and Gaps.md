@@ -53,11 +53,6 @@ any specific recent change, not yet root-caused.
   lava and portal shaders need a manual update to follow — there's no test
   currently catching that specific drift, unlike the Elite/hazard coupling
   which *is* tested.
-- **Enemy mesh baking is a one-off script, not a `tools/` entry.** The
-  SpiderBot/UAL1 mesh-baking process (see
-  [[11 Asset Pipeline#Weapon/enemy model import]]) was done via a scratch
-  `SceneTree` script, not committed as a repeatable tool. Worth promoting if
-  more enemy models get imported.
 
 ## Housekeeping
 
