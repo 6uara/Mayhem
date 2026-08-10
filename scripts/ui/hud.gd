@@ -47,6 +47,8 @@ const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
 @onready var _subtitle_box: PanelContainer = $Root/SubtitleBox
 @onready var _subtitle_tag: Label = $Root/SubtitleBox/Row/Tag
 @onready var _subtitle_text: Label = $Root/SubtitleBox/Row/Body
+@onready var _hint_box: PanelContainer = $Root/TutorialHintBox
+@onready var _hint_text: Label = $Root/TutorialHintBox/Text
 @onready var _announce: VBoxContainer = $Root/AnnounceLayer
 @onready var _announce_tag: Label = $Root/AnnounceLayer/TagPill/Tag
 @onready var _announce_title: Label = $Root/AnnounceLayer/Title
@@ -75,8 +77,11 @@ func _ready() -> void:
 	UpgradeManager.upgrades_changed.connect(_refresh_powerups)
 	NarratorManager.subtitle_shown.connect(_on_subtitle_shown)
 	NarratorManager.subtitle_hidden.connect(_on_subtitle_hidden)
+	TutorialHintManager.hint_shown.connect(_on_hint_shown)
+	TutorialHintManager.hint_hidden.connect(_on_hint_hidden)
 
 	_subtitle_box.visible = false
+	_hint_box.visible = false
 	_announce.visible = false
 	_critical_tag.visible = false
 	_reload_prompt.visible = false
@@ -462,6 +467,25 @@ func _on_subtitle_hidden() -> void:
 	var tween: Tween = create_tween()
 	tween.tween_property(_subtitle_box, "modulate:a", 0.0, Tokens.SUBTITLE_FADE_OUT)
 	tween.tween_callback(func() -> void: _subtitle_box.visible = false)
+
+
+## A first-time-mechanic prompt (TutorialHintManager) - neutral HUD overlay,
+## same fade treatment as the subtitle box but never a Host line: the Host
+## talks to the crowd, not the player.
+func _on_hint_shown(text: String, _duration: float) -> void:
+	_hint_text.text = text
+	_hint_box.visible = true
+	_hint_box.modulate.a = 0.0
+	var tween: Tween = create_tween()
+	tween.tween_property(_hint_box, "modulate:a", 1.0, Tokens.SUBTITLE_FADE_IN)
+
+
+func _on_hint_hidden() -> void:
+	if not _hint_box.visible:
+		return
+	var tween: Tween = create_tween()
+	tween.tween_property(_hint_box, "modulate:a", 0.0, Tokens.SUBTITLE_FADE_OUT)
+	tween.tween_callback(func() -> void: _hint_box.visible = false)
 
 
 func _set_low_health_overlay(is_critical: bool) -> void:

@@ -9,6 +9,13 @@ extends Node
 
 signal state_changed(new_state: State)
 signal landed(fall_speed: float)
+## Fires once ever, the first frame movement input produces nonzero wish_direction -
+## TutorialHintManager's hook for the "how do I move" hint. Never fires again.
+signal started_moving()
+signal jumped()
+## Fires only when a mantle actually boosts the player up a ledge - a probe that
+## finds nothing mantleable is not "mantling".
+signal mantled()
 
 enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 
@@ -98,6 +105,7 @@ var _was_on_floor: bool = true
 var _slide_boost_spent: bool = false
 var _coyote_left: float = 0.0
 var _jump_buffer_left: float = 0.0
+var _has_moved: bool = false
 
 
 func _ready() -> void:
@@ -121,6 +129,9 @@ func _physics_process(delta: float) -> void:
 	var wish_direction: Vector3 = (body.transform.basis * Vector3(input.x, 0.0, input.y))
 	wish_direction = wish_direction.normalized() if wish_direction.length_squared() > 0.0 \
 		else Vector3.ZERO
+	if not _has_moved and wish_direction != Vector3.ZERO:
+		_has_moved = true
+		started_moving.emit()
 
 	_handle_action_input(wish_direction)
 
@@ -335,6 +346,7 @@ func _jump() -> void:
 	state = State.AIRBORNE
 	_set_head_height(_head_rest_height)
 	AudioPool.play_3d(jump_sound, body.global_position, AudioPool.BUS_WORLD)
+	jumped.emit()
 
 
 func _post_move(fall_speed: float, delta: float) -> void:
@@ -382,6 +394,7 @@ func _try_mantle(wish_direction: Vector3) -> void:
 	if not space.intersect_ray(head_query).is_empty():
 		return
 	body.velocity.y = mantle_boost
+	mantled.emit()
 
 
 # Helpers

@@ -66,6 +66,10 @@ theme_override_constants/separation = 10
 theme_override_constants/separation = 12
 alignment = 2
 
+[node name="ResetHintsButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+custom_minimum_size = Vector2(210, 44)
+text = "Reset tutorial hints"
+
 [node name="ResetButton" type="Button" parent="Panel/Margin/Layout/Footer"]
 custom_minimum_size = Vector2(190, 44)
 text = "Reset to defaults"
