@@ -185,11 +185,20 @@ func test_shop_offers_are_rolled_and_bounded() -> void:
 
 
 func test_shop_never_offers_the_weapon_currently_equipped() -> void:
-	for i: int in 12:
+	# Weapon offers fill the random remainder of the visit, not a guaranteed
+	# slot - with offers_per_visit down to 4, 12 unseeded rolls could
+	# occasionally never surface one at all, leaving the assert below
+	# unexercised (a GUT "Risky: did not assert", not a real pass). A fixed
+	# seed plus more rolls makes this deterministic instead.
+	_shop._rng.seed = 1
+	var saw_a_weapon_offer: bool = false
+	for i: int in 40:
 		_shop.roll_offers()
 		for offer: Dictionary in _shop.offers:
 			if int(offer["kind"]) == Shop.Kind.WEAPON:
+				saw_a_weapon_offer = true
 				assert_ne(offer["id"], &"pistol", "the equipped weapon must not be offered")
+	assert_true(saw_a_weapon_offer, "precondition: at least one weapon offer must appear")
 
 
 func test_shop_offers_a_previously_equipped_weapon_again() -> void:
