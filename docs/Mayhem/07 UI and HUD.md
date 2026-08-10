@@ -126,3 +126,21 @@ identity pass. See [[12 Known Issues and Gaps]].
 
 `SaveManager` (autoload) persists scores, but **no screen currently displays
 them**. See [[12 Known Issues and Gaps]].
+
+## Scene transitions
+
+`SceneTransition` (`scripts/ui/scene_transition.gd` + `scenes/ui/scene_transition.tscn`)
+— a `CanvasLayer` at `layer = 10` (above every other layer in the game; the
+pause menu, the next highest, sits at 4) driving `assets/shaders/scene_change.gdshader`
+(a Persona-5-style rotated square wipe, `canvas_item`, `t` uniform 0→1) over a
+full-screen `ColorRect`, tinted `Tokens.VOID`. `GameManager` owns the only
+instance as its own child (see [[02 Autoloads#GameManager]]) and is the only
+thing that ever calls `fade_out()` / `fade_in()` — no other code should touch
+this directly, or a scene change could start racing its own transition.
+
+`_play()` polls `tween.is_running()` every frame instead of `await
+tween.finished` directly, against a `safety_timeout` ceiling (`@export`, not a
+const, so a test can shrink it) — if the tween is ever interrupted, the game
+must force the target value and move on rather than hang on a black screen
+waiting for a signal that will never come. `test_a_stalled_fade_is_forced_to_finish_rather_than_hanging_forever`
+proves this without actually waiting out the real 3-second default.
