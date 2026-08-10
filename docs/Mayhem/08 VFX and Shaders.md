@@ -73,6 +73,29 @@ before mutating it — without this, telegraphing one spawn door would visually
 light up all seven, since they'd all be pointing at the same `ShaderMaterial`
 instance. See `spawn_door.gd::_ready()` for the pattern.
 
+## Speed lines
+
+`SpeedLinesOverlay` (`scripts/ui/speed_lines_overlay.gd`, a `ColorRect` inside
+`HUD/Root/StateOverlays`) drives `assets/shaders/speed_lines.gdshader` — a
+procedural radial streak vignette, `canvas_item`, no texture assets needed
+(same grey-box-first approach as the rest of this VFX pass). Each of
+`line_count` angular slices gets its own randomized width (`hash()` seeded by
+the slice index) so the streaks read as uneven, organic lines rather than a
+perfectly even fan; `inner_radius` keeps the centre (the HUD's own no-UI zone)
+clear, and a second fade kills it again before the very edge.
+
+`set_speed(horizontal_speed)` (called every physics frame from
+`HUD._tick_movement()`, see [[03 Player and Movement#Speed-scaled FOV]]) maps
+`[min_speed, max_speed]` to `[0, 1]` intensity — both `@export`ed tuning knobs,
+not hardcoded, since "fast" depends on the mobility upgrade catalogue's own
+numbers. The shown intensity chases that target via `move_toward()` on
+`_physics_process` (not idle `_process` - doesn't reliably tick under the
+headless test runner, same reason `HitstopController` ticks on physics too)
+rather than snapping, so a strafe correction or a half-second of ground
+friction reads as a smooth ramp rather than a flicker. Gated by its own
+`accessibility/speed_lines_enabled` setting — a distinct discomfort trigger
+from screenshake, so it doesn't ride along with that toggle.
+
 ## Color law tie-in
 
 `glow_color` on the lava shader and `tint` on the portal shader are set to match
