@@ -5,6 +5,7 @@ enum State { MENU, PLAYING, SHOPPING, GAME_OVER }
 
 const GAME_SCENE_PATH: String = "res://scenes/main/game.tscn"
 const MENU_SCENE_PATH: String = "res://scenes/main/main_menu.tscn"
+const TRANSITION_SCENE: PackedScene = preload("res://scenes/ui/scene_transition.tscn")
 
 var state: State = State.MENU:
 	set(value):
@@ -16,11 +17,17 @@ var state: State = State.MENU:
 var is_paused: bool = false
 
 var _run_start_time: float = 0.0
+## GameManager's own child, not part of whatever scene is being replaced -
+## survives every change_scene_to_file() call untouched. See
+## scripts/ui/scene_transition.gd.
+var _transition: SceneTransition
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	EventBus.player_died.connect(_on_player_died)
+	_transition = TRANSITION_SCENE.instantiate()
+	add_child(_transition)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -39,17 +46,23 @@ func start_run() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## Must land the player back in a shooting state in under 2 seconds - the fade
+## (SceneTransition.duration, each way) eats a fraction of that budget on
+## purpose, short enough to leave the rest of it intact.
 func restart_run() -> void:
-	## Must land the player back in a shooting state in under 2 seconds.
+	await _transition.fade_out()
 	get_tree().paused = false
 	var error: int = get_tree().change_scene_to_file(GAME_SCENE_PATH)
 	if error != OK:
 		push_error("GameManager: failed to load game scene (%d)" % error)
+		await _transition.fade_in()
 		return
 	start_run()
+	await _transition.fade_in()
 
 
 func return_to_menu() -> void:
+	await _transition.fade_out()
 	get_tree().paused = false
 	is_paused = false
 	state = State.MENU
@@ -57,6 +70,7 @@ func return_to_menu() -> void:
 	var error: int = get_tree().change_scene_to_file(MENU_SCENE_PATH)
 	if error != OK:
 		push_error("GameManager: failed to load menu scene (%d)" % error)
+	await _transition.fade_in()
 
 
 func toggle_pause() -> void:

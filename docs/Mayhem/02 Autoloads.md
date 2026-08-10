@@ -78,6 +78,16 @@ shooting state in under 2 seconds — a design constraint, not a suggestion),
 `return_to_menu()`, `toggle_pause()` / `set_paused(bool)`. Listens for the
 `pause` input action itself and for `EventBus.player_died`.
 
+`restart_run()` / `return_to_menu()` are both `await _transition.fade_out()` →
+`change_scene_to_file()` → `await _transition.fade_in()` — every scene change
+in the game goes through this one path, so nothing can skip the fade and cut
+straight to a new scene. `_transition` (`SceneTransition`,
+`scripts/ui/scene_transition.gd` + `scenes/ui/scene_transition.tscn`) is
+instantiated as `GameManager`'s own child in `_ready()` — since it is not part
+of whatever scene `change_scene_to_file()` is about to replace, it survives
+every change untouched, the same reason `GameManager` itself does. See
+[[07 UI and HUD#Scene transitions]].
+
 ## ObjectPool
 
 `acquire(scene: PackedScene) -> Node` / `release(instance: Node) -> void`.
