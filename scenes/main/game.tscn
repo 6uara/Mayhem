@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/arena/greybox_arena.tscn" id="1_range"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="10_pause"]
 [ext_resource type="Script" path="res://scripts/systems/host_director.gd" id="11_host"]
 [ext_resource type="Script" path="res://scripts/systems/hitstop_controller.gd" id="12_hitstop"]
+[ext_resource type="Script" path="res://scripts/systems/damage_number_spawner.gd" id="13_dmg_numbers"]
+[ext_resource type="PackedScene" path="res://scenes/vfx/damage_number.tscn" id="14_dmg_number_scene"]
 [ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
 [ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
 [ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w03"]
@@ -77,3 +79,7 @@ script = ExtResource("11_host")
 
 [node name="HitstopController" type="Node" parent="."]
 script = ExtResource("12_hitstop")
+
+[node name="DamageNumberSpawner" type="Node" parent="."]
+script = ExtResource("13_dmg_numbers")
+damage_number_scene = ExtResource("14_dmg_number_scene")
