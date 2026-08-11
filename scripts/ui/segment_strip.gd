@@ -13,9 +13,17 @@ enum Shape { RECT, SKEWED }
 		count = maxi(value, 0)
 		queue_redraw()
 
+## Guarded rather than redrawing on every write: the HUD pushes `filled` and
+## `progress` into the par bar, the dash pips and the ammo pips from _process()
+## every frame, and an unguarded setter turns each of those into a full _draw()
+## - a per-segment rebuild of the canvas command buffer - for a number that
+## actually changes a few times a second at most.
 @export var filled: int = 10:
 	set(value):
-		filled = clampi(value, 0, count)
+		var clamped: int = clampi(value, 0, count)
+		if clamped == filled:
+			return
+		filled = clamped
 		queue_redraw()
 
 @export var segment_size: Vector2 = Vector2(41, 14)
@@ -31,6 +39,8 @@ enum Shape { RECT, SKEWED }
 ## 0..1 fill of the first empty segment. -1 disables it.
 @export var progress: float = -1.0:
 	set(value):
+		if value == progress:
+			return
 		progress = value
 		queue_redraw()
 
