@@ -92,20 +92,10 @@ pass.
   nodes, no theme, no `ChamferStyleBox`. Everything else in [[07 UI and HUD]]
   uses the shared theme system; this doesn't yet.
 
-## Known flaky test
-
-`test_navigation_connectivity.gd::test_the_map_has_a_navmesh_at_all` — see
-[[10 Testing#Known flaky test]]. Present on unmodified `develop`, not caused by
-any specific recent change, not yet root-caused.
-
 ## Minor drift
 
-- **`Tokens.CROSSHAIR_COLORS`** still contains the *old* hazard green
-  (`#C6FF3D`) as a preset option, unchanged when `Tokens.HAZARD` moved to lava
-  orange (`#FC3A00`). Currently harmless — nothing consumes this constant yet,
-  the settings screen's crosshair color control is a free `ColorPickerButton`,
-  not limited to this preset list — but it should move if that preset picker
-  ever gets built.
+- ~~`Tokens.CROSSHAIR_COLORS`~~ — fixed (backlog tanda G6): the stale preset
+  swapped for `HAZARD` itself, so it can't drift again the same way.
 - **Shader `tint`/`glow_color` uniforms are set once, at `.tscn` authoring
   time**, matching `Tokens.HAZARD` / `Tokens.SPAWN` by hand rather than being
   derived from the token live at runtime (see
@@ -125,17 +115,15 @@ any specific recent change, not yet root-caused.
 
 ## Housekeeping
 
-- `assets/materials/Lava.tres` — an earlier, superseded lava material attempt
-  (flat `StandardMaterial3D` + normal map). No longer referenced anywhere
-  (`hazard_zone.tscn` now uses the `lava_pool.gdshader` `ShaderMaterial`
-  directly). Left in place rather than deleted since it wasn't clearly
-  abandoned vs. kept for reference — safe to remove if confirmed unwanted.
-- Stray `assets/shaders/vhs.gdshader` / `vhs.gdshader.uid` / `vhs.tres` appeared
-  in the working tree during a documentation-writing session, containing only
-  an empty shader stub (`shader_type spatial;`, nothing else). Timing strongly
-  suggests they're debris from a concurrently-running local editor session
-  rather than intentional content — never committed, flagged rather than
-  deleted.
+- ~~`assets/materials/Lava.tres`~~ — removed (backlog tanda G6). Confirmed
+  unreferenced anywhere (`hazard_zone.tscn` uses the `lava_pool.gdshader`
+  `ShaderMaterial` directly) before deleting.
+- `assets/shaders/vhs.gdshader` — this note used to describe it as a stray,
+  empty stub (`shader_type spatial;`, nothing else), presumed editor debris.
+  That's stale: as of this writing it's a real, substantial `canvas_item`
+  VHS post-processing shader (signal distortion, glass-crack, tape-artifact
+  uniform groups) — active work in progress on another branch, not debris.
+  Left untouched; re-check before assuming either description next time.
 - Godot's editor performs **auto-resaves of open scenes** when the project is
   loaded (e.g. via `--import`), which can silently revert recent hand-edits to
   a `.tscn` if that scene is open in a stale editor window — this has

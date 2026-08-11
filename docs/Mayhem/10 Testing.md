@@ -62,15 +62,20 @@ tests/integration/
   elite-wave cadence, non-decreasing difficulty, rising par times. Catches a
   broken wave file before a playtest does.
 
-## Known flaky test
+## Formerly-flaky test (root-caused, fixed)
 
-`test_navigation_connectivity.gd::test_the_map_has_a_navmesh_at_all` fails
-intermittently (`NavigationServer3D.map_get_regions(_map).size() == 0`) —
-confirmed present on unmodified `develop`, unrelated to any recent change,
-reproduces roughly 1-in-3 to 1-in-4 runs. Root cause not yet diagnosed; suspected
-timing race between the committed navmesh resource loading and the test's
-`await wait_physics_frames(4)` in `before_all()`. Re-running a failed suite once
-is currently the workaround. See [[12 Known Issues and Gaps]].
+`test_navigation_connectivity.gd::test_the_map_has_a_navmesh_at_all` used to
+fail intermittently. Root cause: the arena was instantiated once in
+`before_all()`, so `NavigationServer3D` only ever picked up the region
+correctly when some *earlier* test in the run had already put an arena in the
+tree first — passing by accident, not by correctness, and failing every time
+this file ran in isolation. Fixed by building the arena fresh per test
+(`before_each()`) and polling `NavigationServer3D.map_get_regions(_map)` /
+`map_force_update()` for up to `MAX_SYNC_FRAMES` instead of waiting a fixed
+frame count — see the docstring on `before_each()` in the test file itself.
+Verified stable across multiple consecutive full-suite runs (backlog tanda
+G6). If this ever flakes again it is a *new* bug, not a recurrence of this one
+— don't reach for "known flaky, rerun it" as the reflex.
 
 ## What's explicitly *not* covered
 

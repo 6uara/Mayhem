@@ -236,7 +236,10 @@ const ADS_MULT_DEFAULT := 0.72
 const HUD_SCALES      := [0.8, 1.0, 1.2]
 const CROSSHAIR_GAP_RANGE   := Vector2(0, 20)
 const CROSSHAIR_THICK_RANGE := Vector2(1, 6)
-const CROSSHAIR_COLORS      := [Color("#E6E8EF"), Color("#35E0D4"), Color("#C6FF3D"), Color("#FF3BC1")]
+## Third preset used to be the old hazard green (#C6FF3D), stale since HAZARD
+## moved to lava orange - swapped to HAZARD itself so a future crosshair-preset
+## picker can't offer a color the rest of the game's color law abandoned.
+const CROSSHAIR_COLORS      := [Color("#E6E8EF"), Color("#35E0D4"), HAZARD, Color("#FF3BC1")]
 const LEADERBOARD_ENTRIES   := 10
 const LEADERBOARD_PATH      := "user://leaderboard.json"
 
