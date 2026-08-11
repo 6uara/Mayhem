@@ -47,6 +47,13 @@ func start_match() -> void:
 	WaveManager.setup(waves)
 	GameManager.start_run()
 	match_state_changed.emit(true)
+	# Every peer sets the match up - the wave list feeds the HUD, and the run
+	# has to start locally for input and the reticle to come alive. Only the
+	# host sequences the waves: a client running this too would spawn a second
+	# horde that only it can see, on its own timer, while the host's enemies
+	# arrive over the network alongside them.
+	if not NetworkManager.is_host():
+		return
 	_start_wave_after(first_wave_delay, _generation)
 
 

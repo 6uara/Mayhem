@@ -38,6 +38,16 @@ var is_active: bool = false
 var move_target: Vector3 = Vector3.ZERO
 var is_moving: bool = false
 
+## Identifies this enemy across the network. Assigned by the host on spawn and
+## carried in every snapshot, so a client can tell which body a position update
+## belongs to. Zero means "not replicated" - the single-player case.
+var net_id: int = 0
+## True on a client's copy of a host-owned enemy. A remote enemy is a puppet:
+## it has no brain, takes no damage locally and never moves itself. Everything
+## it does arrives from the host, and simulating any of it here would fight the
+## incoming snapshot rather than smooth it.
+var is_remote: bool = false
+
 var _player: Node3D
 var _material: StandardMaterial3D
 var _flash_timer: float = 0.0
@@ -80,6 +90,16 @@ func _physics_process(delta: float) -> void:
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
+
+	if is_remote:
+		# Keep the cosmetics that are purely local - the halo spin and the
+		# healer's tether are decoration, not state anyone needs to agree on.
+		# Everything below this line is simulation, and on a client it would
+		# argue with the host's snapshot instead of following it.
+		if halo != null and halo.visible:
+			halo.rotate_y(delta * 0.8)
+		_update_tether()
+		return
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -145,11 +165,33 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 		health.reset()
 	if agent != null:
 		agent.max_speed = data.move_speed
+	# A puppet keeps its hitboxes so local shots still register a hit to report
+	# to the host, but it is never given a brain - the host owns every decision
+	# this enemy makes, and a second tree running here would pick different ones.
 	_set_hitboxes_enabled(true)
-	_rebuild_behavior_tree()
+	if not is_remote:
+		_rebuild_behavior_tree()
 
 	is_active = true
 	AudioPool.play_3d(data.spawn_sound, global_position, AudioPool.BUS_ENEMIES)
+
+
+## Client-side exit: the host has decided this enemy is gone.
+##
+## Plays the same death beat a real kill does but claims none of its
+## consequences. The reward and the wave's remaining count belong to the host's
+## simulation; emitting enemy_killed here would pay every client its own copy of
+## the bounty and let four machines disagree about when the wave is clear.
+func despawn_remote() -> void:
+	if not is_active:
+		return
+	is_active = false
+	is_moving = false
+	_set_hitboxes_enabled(false)
+	_clear_behavior_tree()
+	if data != null:
+		AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
+	ObjectPool.release(self)
 
 
 func _on_acquired() -> void:

@@ -90,6 +90,25 @@ func get_remaining_count() -> int:
 	return _alive_enemies + _pending_spawns
 
 
+## Client mirror of the host's wave state.
+##
+## Only the host runs waves - it owns the spawn timers, the kill count and when
+## a wave is clear. A client still has a HUD to keep honest, so it is handed the
+## same numbers rather than being left to guess them from the enemies it can see
+## (which would miss anything still queued to spawn).
+func apply_remote_state(index: int, active: bool, remaining: int, duration: float) -> void:
+	current_index = index
+	is_wave_active = active
+	# Folded into one counter: get_remaining_count() is the sum of the two, and
+	# a client has no way to tell which side a given enemy falls on - nor does
+	# anything on a client read them apart.
+	_alive_enemies = maxi(remaining, 0)
+	_pending_spawns = 0
+	# Clocks are not shared between machines, so the host's start timestamp
+	# means nothing here. The elapsed time is the part that transfers.
+	_wave_start_time = _now() - duration
+
+
 func is_last_wave() -> bool:
 	return current_index >= waves.size() - 1
 
