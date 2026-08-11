@@ -8,6 +8,41 @@ State as of this writing. Update this note as items get resolved — it's meant
 to stay current, not be a historical log (that's what `docs/PHASE_*.md` and git
 history are for).
 
+## Performance
+
+Backlog tanda G2: does the game "hold 60 FPS on a full elite wave"?
+`tools/profile_elite_wave.gd` forces wave 10 (27 enemies — the largest
+authored wave), makes the player invincible (so it can't die and reset the
+wave mid-measurement — a real risk, since nothing in the scenario fights
+back), removes the video/fps_cap and vsync default (both would otherwise
+silently ceiling the reading at 60), and samples `Engine.get_frames_per_second()`
+for 20 real seconds once all 27 are alive.
+
+```
+godot --path . -s tools/profile_elite_wave.gd -- 20
+```
+
+**Must run with real rendering, not `--headless`** — headless skips the
+renderer, so it would only ever measure script/physics cost and miss glow,
+particles, decals and the panel shaders entirely.
+
+**Last verified result** (2026-08-10, AMD Radeon RX 7700 XT, Windows, D3D12
+Forward+, this repo's own dev machine): two runs, `min 519–547 / avg 590–599 /
+max 619–636 FPS`, **0.0% of frames under 60** both times. Comfortably clears
+the target on this hardware — by roughly 9-10x at the floor, not a marginal
+pass.
+
+**What this does NOT tell you**, and needs a person to actually check:
+- **Lower-end / integrated GPUs.** One machine, one (strong, discrete) GPU.
+  A number this far above target is a good sign, not a guarantee for a
+  laptop iGPU.
+- **Full combat load.** The player stands still — no player weapon fire, no
+  muzzle flash/projectile/impact VFX from the player's side, no camera
+  movement. It measures the enemy-density floor, not "worst frame during a
+  real firefight."
+- Rerun this after tanda D1 (arena dressing) and F1 (real enemy models) land
+  — both add real cost this number doesn't include yet.
+
 ## Needs a human at the editor, not more unattended passes
 
 - **Arena dressing/geometry pass** (backlog tanda D1) — un-started on purpose.

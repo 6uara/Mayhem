@@ -19,6 +19,10 @@ tags: [mayhem, assets, tooling]
 - `configure_audio_mix.gd` — writes `default_bus_layout.tres`: a first-pass
   per-bus gain hierarchy plus a Master limiter. Not a real mix — see
   [[12 Known Issues and Gaps]].
+- `profile_elite_wave.gd` — measures real (uncapped, rendered, not
+  `--headless`) frame time with wave 10's full 27 enemies alive. See
+  [[12 Known Issues and Gaps#Performance]] for the last verified result and
+  how to rerun it.
 
 ## Weapon/enemy model import
 
