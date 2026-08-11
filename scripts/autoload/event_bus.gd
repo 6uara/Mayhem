@@ -40,5 +40,12 @@ signal game_state_changed(new_state: int)
 ## intact - so it rides its own signal rather than widening the state enum.
 signal game_paused(is_paused: bool)
 
+# Coop
+## The body this machine drives entered the arena. Everything that binds to
+## "the player" waits on this rather than looking it up at _ready(): players are
+## spawned by PlayerSpawnController now, and on a client the local body arrives
+## over the network several frames after the scene is up.
+signal local_player_spawned(player: Node3D)
+
 # Settings
 signal settings_applied()

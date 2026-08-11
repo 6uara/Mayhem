@@ -165,9 +165,14 @@ func _on_released() -> void:
 
 # Public API - used by the AI leaves
 
+## The player this enemy is fighting. Re-targets only when the current one dies
+## or leaves, never on distance alone: the AI is aggro-locked by design (see
+## MovementComponent's note on why player speed is safe), and picking the
+## closest player every frame would make enemies flip between two teammates
+## running past each other instead of committing to one.
 func get_player() -> Node3D:
-	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group(&"player") as Node3D
+	if _player == null or not Players.is_alive(_player):
+		_player = Players.nearest(global_position)
 	return _player
 
 

@@ -113,7 +113,7 @@ func _load_catalog() -> void:
 
 
 func _bind_player() -> void:
-	var player: Player = get_tree().get_first_node_in_group(&"player") as Player
+	var player: Player = Players.local() as Player
 	if player == null or player.movement == null or player.movement == _movement:
 		return
 	_movement = player.movement

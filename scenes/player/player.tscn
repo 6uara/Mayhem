@@ -1,4 +1,4 @@
-[gd_scene load_steps=44 format=3]
+[gd_scene load_steps=45 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/components/camera_recoil_component.gd" id="2_recoil"]
@@ -88,6 +88,17 @@ scale_min = 0.4
 scale_max = 0.8
 damping_min = 2.0
 damping_max = 4.0
+
+[sub_resource type="SceneReplicationConfig" id="SRC_player_net"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath("HeadPivot:rotation")
+properties/2/spawn = true
+properties/2/replication_mode = 1
 
 [node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon_holder", "recoil", "health", "stats", "movement", "grapple", "utility")]
 collision_layer = 2
@@ -271,3 +282,6 @@ slide_sparks = NodePath("../SlideSparks")
 layer = 0
 
 [node name="ViewmodelRig" parent="ViewmodelLayer" instance=ExtResource("41_vmrig")]
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SRC_player_net")

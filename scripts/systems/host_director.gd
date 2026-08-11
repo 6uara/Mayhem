@@ -74,7 +74,7 @@ func _on_enemy_killed() -> void:
 func _on_player_damaged(remaining: float) -> void:
 	if _low_health_announced:
 		return
-	var player: Node = get_tree().get_first_node_in_group(&"player")
+	var player: Node = Players.local()
 	if player == null:
 		return
 	var health: HealthComponent = (player as Player).health if player is Player else null

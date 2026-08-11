@@ -106,9 +106,14 @@ func _process(delta: float) -> void:
 # Binding
 
 func _bind_player() -> void:
-	_player = get_tree().get_first_node_in_group(&"player") as Player
+	# Our own body, never a teammate's - this HUD shows one player's health, ammo
+	# and dash charges, and on every machine that player is the local one.
+	_player = Players.local() as Player
 	if _player == null:
-		push_warning("HUD: no node in the 'player' group")
+		# Normal on a client: the scene is up but our body is still in flight
+		# from the host. Bind when it lands instead of warning about it.
+		if not EventBus.local_player_spawned.is_connected(_on_local_player_spawned):
+			EventBus.local_player_spawned.connect(_on_local_player_spawned)
 		return
 
 	if _player.health != null:
@@ -123,6 +128,11 @@ func _bind_player() -> void:
 	if _player.utility != null:
 		_player.utility.utility_changed.connect(_on_utility_changed.unbind(2))
 	_build_ability_bar()
+
+
+func _on_local_player_spawned(_player_node: Node3D) -> void:
+	EventBus.local_player_spawned.disconnect(_on_local_player_spawned)
+	_bind_player()
 
 
 ## Three utility slots plus the grapple, separated by a divider.

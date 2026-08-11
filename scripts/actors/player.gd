@@ -34,8 +34,22 @@ var _base_max_health: float = 100.0
 var _speed_fov: float = 0.0
 
 
+## Authority is read off the node name, which the spawner sets to the owning peer
+## id. Claiming it here rather than in _ready() means it is already correct when
+## the components' own _ready() runs and they ask whether they should simulate.
+func _enter_tree() -> void:
+	var owner_id: int = name.to_int()
+	if owner_id > 0:
+		set_multiplayer_authority(owner_id)
+
+
 func _ready() -> void:
 	add_to_group(&"player")
+	# One player per session answers true here. Everything that used to mean
+	# "the player" - HUD binding, the reticle, mouse capture - means this one,
+	# and remote bodies are just other actors in the world.
+	if is_local():
+		add_to_group(&"local_player")
 	# Enemy projectiles raycast straight onto this body (no HitboxComponent on
 	# the player) - tag it flesh directly so its impact VFX matches the
 	# enemy-hit case rather than reading as a wall.
@@ -50,10 +64,42 @@ func _ready() -> void:
 	# UpgradeManager - the player is what bridges them.
 	UpgradeManager.upgrades_changed.connect(_apply_survivability_stats)
 	_apply_survivability_stats()
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_apply_local_only_nodes()
+	if is_local():
+		EventBus.local_player_spawned.emit(self)
+
+
+## True for the body this machine drives. In single player there is no peer, so
+## the default authority of 1 makes the only player local - no branch needed.
+func is_local() -> bool:
+	return is_multiplayer_authority()
+
+
+## A remote player is scenery: it must not steal the viewport or paint its
+## first-person arms over ours. The ViewmodelLayer is a CanvasLayer living
+## inside the player scene, so without this every connected peer would render
+## their own gun on top of everyone else's screen.
+func _apply_local_only_nodes() -> void:
+	var local: bool = is_local()
+	if camera != null:
+		camera.current = local
+	var viewmodel := get_node_or_null("ViewmodelLayer") as CanvasLayer
+	if viewmodel != null:
+		viewmodel.visible = local
+	# The third-person body is what other people see of us; hiding it locally
+	# keeps it out of our own first-person view.
+	var third_person := get_node_or_null("Body") as Node3D
+	if third_person != null:
+		third_person.visible = not local
+	if local:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Input drives only our own body. Without this every peer's keyboard would
+	# move every player on their screen at once.
+	if not is_local():
+		return
 	var motion := event as InputEventMouseMotion
 	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var sensitivity: float = SettingsManager.get_mouse_sensitivity(_is_ads())
@@ -92,6 +138,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	# A remote player's yaw and head pitch arrive over the network. Running the
+	# look code on them would immediately overwrite what was replicated with our
+	# own (never-updated) angles, pinning every other player to a fixed stare.
+	if not is_local():
+		return
 	_apply_look()
 	_apply_fov(delta)
 

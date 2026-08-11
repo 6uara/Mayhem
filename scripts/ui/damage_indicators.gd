@@ -86,7 +86,7 @@ func _screen_angle(world_direction: Vector3) -> float:
 func _get_camera() -> Camera3D:
 	if _camera != null and is_instance_valid(_camera):
 		return _camera
-	var player := get_tree().get_first_node_in_group(&"player") as Player
+	var player := Players.local() as Player
 	if player == null:
 		return null
 	_player = player
@@ -112,8 +112,7 @@ func _on_player_damaged() -> void:
 
 func _last_attacker_direction() -> Vector3:
 	# Nearest live enemy is the best guess when the damage source is not reported.
-	var player: Node3D = _player if _player != null else \
-		get_tree().get_first_node_in_group(&"player") as Node3D
+	var player: Node3D = _player if _player != null else Players.local()
 	if player == null:
 		return Vector3.FORWARD
 	var closest: Vector3 = Vector3.FORWARD
