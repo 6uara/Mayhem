@@ -105,7 +105,15 @@ func _resolve_hit(hit: Dictionary) -> void:
 		# per-enemy damage_multiplier and applies it in take_hit().
 		if hitbox.is_headshot_zone:
 			damage *= _headshot_multiplier
-		hitbox.take_hit(damage, hit_position)
+		# Not applied here any more: in coop the host owns every enemy's health,
+		# and a client that damaged its own copy would watch an enemy it had
+		# already killed keep walking. The replicator decides whether this
+		# machine may resolve the hit or has to ask. Solo takes the same call and
+		# resolves it on the spot.
+		if EnemyReplicator.instance != null:
+			EnemyReplicator.instance.report_hit(hitbox, damage, hit_position)
+		else:
+			hitbox.take_hit(damage, hit_position)
 	_spawn_impact(hit_position, normal, collider)
 	_expire()
 

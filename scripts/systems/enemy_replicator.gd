@@ -27,7 +27,19 @@ const SEND_RATE: float = 20.0
 const INTERP_SPEED: float = 14.0
 const CATALOG_DIR: String = "res://data/enemies/"
 
+## A client may not claim more than this in one hit. Not anti-cheat - the
+## movement is client-authoritative anyway, and this is a game for friends - just
+## a bound so a corrupted or badly-scaled value cannot one-shot a whole wave.
+const MAX_REPORTED_DAMAGE: float = 500.0
+
 @export var enemy_scene: PackedScene
+
+## The live replicator, for callers that cannot reach it through the tree.
+##
+## Projectiles are pooled under the ObjectPool autoload and get generated node
+## names, so their paths do not match across peers and they cannot carry an rpc
+## of their own. They route damage through here, which does sit at a stable path.
+static var instance: EnemyReplicator
 
 ## Enemy types in a stable order. The index is what goes on the wire, and it is
 ## derived by sorting the catalog by id so host and client agree without having
@@ -42,7 +54,13 @@ var _send_countdown: float = 0.0
 
 
 func _ready() -> void:
+	instance = self
 	_build_catalog()
+
+
+func _exit_tree() -> void:
+	if instance == self:
+		instance = null
 
 
 func _physics_process(delta: float) -> void:
@@ -58,6 +76,64 @@ func _physics_process(delta: float) -> void:
 		return
 	_send_countdown = 1.0 / SEND_RATE
 	_broadcast()
+
+
+# Damage
+
+## Routes a hit to whoever is entitled to apply it.
+##
+## Clients still raycast locally - that is what keeps shooting feel immediate,
+## and it lets them draw their own hitmarker on the frame they pulled the
+## trigger. But the hit they found is a request, not a result. Applying it
+## locally as well would kill the enemy twice: once here, where nobody else
+## agrees it happened, and again when the host works through the same shot.
+func report_hit(hitbox: HitboxComponent, damage: float, hit_position: Vector3) -> void:
+	if hitbox == null:
+		return
+	if not NetworkManager.is_online() or NetworkManager.is_host():
+		hitbox.take_hit(damage, hit_position)
+		return
+
+	var target := hitbox.owner as Enemy
+	# Anything that is not a replicated enemy - a target dummy in the practice
+	# range - is nobody's business but this machine's.
+	if target == null or target.net_id == 0:
+		hitbox.take_hit(damage, hit_position)
+		return
+
+	_receive_hit.rpc_id(NetworkManager.SERVER_ID, target.net_id, damage,
+		hitbox.is_headshot_zone, hit_position)
+	# Optimistic feedback: the hitmarker and damage number fire now rather than
+	# after a round trip. The host may resolve a slightly different number - the
+	# enemy could already be dead - but a hitmarker that lags the shot by a ping
+	# is worse than one that is occasionally generous.
+	EventBus.damage_dealt.emit(target, damage, hitbox.is_headshot_zone)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _receive_hit(net_id: int, damage: float, is_headshot: bool,
+		hit_position: Vector3) -> void:
+	if not multiplayer.is_server():
+		return
+	var target: Enemy = _find_owned(net_id)
+	if target == null or not target.is_active:
+		# Already dead, or never existed. Both are ordinary: the client fired at
+		# what it could see, which is always a little behind what the host knows.
+		return
+	var hitbox: HitboxComponent = target.head_hitbox if is_headshot else target.body_hitbox
+	if hitbox == null:
+		hitbox = target.body_hitbox
+	if hitbox == null:
+		return
+	hitbox.take_hit(clampf(damage, 0.0, MAX_REPORTED_DAMAGE), hit_position)
+
+
+func _find_owned(net_id: int) -> Enemy:
+	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
+		var enemy := node as Enemy
+		if enemy != null and not enemy.is_remote and enemy.net_id == net_id:
+			return enemy
+	return null
 
 
 # Host

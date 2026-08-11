@@ -82,6 +82,29 @@ func test_all_sees_every_player_but_local_is_only_ours() -> void:
 	assert_null(Players.local(), "no local body until one claims the group")
 
 
+# --------------------------------------------------------------------- damage
+
+## Every bullet in the game resolves through report_hit() now, so the solo path
+## through it has to stay a plain function call. If this regressed, single
+## player would stop dealing damage at all - the loudest possible bug, but only
+## for the mode nobody opens a second window to test.
+func test_a_solo_hit_is_applied_on_the_spot() -> void:
+	var health := HealthComponent.new()
+	health.max_health = 100.0
+	add_child_autofree(health)
+	health.reset()
+
+	var hitbox := HitboxComponent.new()
+	hitbox.health_component = health
+	add_child_autofree(hitbox)
+
+	var replicator := EnemyReplicator.new()
+	add_child_autofree(replicator)
+
+	replicator.report_hit(hitbox, 30.0, Vector3.ZERO)
+	assert_eq(health.current_health, 70.0, "damage lands with no session open")
+
+
 # ------------------------------------------------------- who is still standing
 
 ## alive() decides two things that must not disagree: who the spectator camera

@@ -1,14 +1,19 @@
 extends SceneTree
-## Manual harness: joins the match opened by tools/net_smoke_wave_host.gd and
-## traces what it sees. Both harnesses stand still, so the enemies eventually
-## kill them - which is exactly what makes this the spectator test too.
+## Manual harness: joins the match opened by tools/net_smoke_wave_host.gd,
+## traces what it sees, and at t=14 shoots one enemy dead.
 ##
-## What to look for: the client's own body flips downed=true, spectating turns
-## on with a target name, and it keeps watching until nobody is left standing.
+## The kill is the point. It drives the exact path a client's bullet takes -
+## report_hit() -> rpc to the host -> the host's own enemy takes the damage -
+## and what proves it landed is both sides dropping from 6 enemies to 5. A
+## client that killed only its own copy would show 5 here and 6 on the host.
+##
+## Both harnesses stand still otherwise, so the enemies eventually kill them,
+## which is what also makes this the spectator test.
 
 var _elapsed: float = 0.0
 var _phase: int = 0
 var _next_trace: float = 0.0
+var _shot_at: int = 0
 
 
 func _process(delta: float) -> bool:
@@ -25,6 +30,8 @@ func _process(delta: float) -> bool:
 				print("CLIENT: join_failed -> ", reason))
 			print("CLIENT: join_session -> ", net.join_session("127.0.0.1", "ElAmigo"))
 		1:
+			if _elapsed > 14.0 and _shot_at == 0:
+				_shoot_one()
 			if _elapsed > _next_trace:
 				_next_trace = _elapsed + 4.0
 				_trace(net)
@@ -33,11 +40,34 @@ func _process(delta: float) -> bool:
 	return false
 
 
+## Fires the client's damage path at one puppet, hard enough to kill it.
+func _shoot_one() -> void:
+	var scene: Node = current_scene
+	if scene == null:
+		return
+	var replicator: Node = scene.get_node_or_null("EnemyReplicator")
+	if replicator == null:
+		print("CLIENT: no EnemyReplicator in the scene")
+		return
+	for node: Node in get_nodes_in_group(&"enemy"):
+		if not node.get(&"is_active") or not node.get(&"is_remote"):
+			continue
+		_shot_at = node.get(&"net_id")
+		var hitbox: Node = node.get(&"body_hitbox")
+		print("CLIENT: shooting net_id=", _shot_at)
+		for _i: int in 4:
+			replicator.report_hit(hitbox, 200.0, node.global_position)
+		return
+
+
 func _trace(net: Node) -> void:
 	var puppets: int = 0
+	var still_there: bool = false
 	for node: Node in get_nodes_in_group(&"enemy"):
 		if node.get(&"is_active") and node.get(&"is_remote"):
 			puppets += 1
+			if _shot_at != 0 and node.get(&"net_id") == _shot_at:
+				still_there = true
 
 	var alive: int = 0
 	var mine_downed: Variant = "<none>"
@@ -51,8 +81,6 @@ func _trace(net: Node) -> void:
 	if current_scene != null:
 		spectator = current_scene.get_node_or_null("SpectatorView")
 	var watching: Variant = spectator.get(&"_is_spectating") if spectator != null else "<no node>"
-	var target: Node = spectator.get(&"_target") if spectator != null else null
 
-	print("CLIENT t=%.0f puppets=%d players_alive=%d mine_downed=%s spectating=%s target=%s" % [
-		_elapsed, puppets, alive, mine_downed, watching,
-		target.name if target != null else "-"])
+	print("CLIENT t=%.0f puppets=%d shot(%d)_alive=%s players_alive=%d downed=%s spectating=%s" % [
+		_elapsed, puppets, _shot_at, still_there, alive, mine_downed, watching])
