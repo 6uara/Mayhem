@@ -29,19 +29,30 @@ var _spawned: Dictionary = {}  # peer_id -> Player
 
 
 func _ready() -> void:
-	NetworkManager.player_joined.connect(_on_player_joined)
 	NetworkManager.player_left.connect(_on_player_left)
-	if not NetworkManager.is_host():
+	if NetworkManager.is_host():
+		# Our own body only. Everyone else's waits for them to say they are
+		# standing in the arena - see _announce_ready().
+		_spawn_for(NetworkManager.local_id())
 		return
-	for peer_id: int in NetworkManager.get_peer_ids():
-		_spawn_for(peer_id)
+	_announce_ready.rpc_id(NetworkManager.SERVER_ID)
 
 
 # Private
 
-func _on_player_joined(peer_id: int, _info: Dictionary) -> void:
-	if NetworkManager.is_host():
-		_spawn_for(peer_id)
+## Client -> host: "my arena is loaded, spawn me".
+##
+## The host cannot simply spawn every peer the moment the match starts. Peers
+## change scene at their own pace, and a MultiplayerSpawner only reaches nodes
+## that already exist on the receiving end - a body spawned before the client's
+## scene was up would be dropped on the floor, leaving that player with no
+## character and no error explaining why. Waiting for the peer to speak first
+## makes the ordering explicit instead of a race we would lose intermittently.
+@rpc("any_peer", "call_remote", "reliable")
+func _announce_ready() -> void:
+	if not multiplayer.is_server():
+		return
+	_spawn_for(multiplayer.get_remote_sender_id())
 
 
 func _on_player_left(peer_id: int) -> void:

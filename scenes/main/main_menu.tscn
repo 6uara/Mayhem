@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 [ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
 [ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="3_theme"]
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4_settings"]
 [ext_resource type="PackedScene" path="res://scenes/ui/leaderboard_panel.tscn" id="5_lb"]
+[ext_resource type="PackedScene" path="res://scenes/ui/coop_panel.tscn" id="6_coop"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
 script = ExtResource("2_chamfer")
@@ -41,9 +42,9 @@ anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 110.0
-offset_top = -230.0
+offset_top = -262.0
 offset_right = 530.0
-offset_bottom = 230.0
+offset_bottom = 262.0
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
 [node name="Margin" type="MarginContainer" parent="Root/Panel"]
@@ -84,6 +85,10 @@ custom_minimum_size = Vector2(0, 12)
 custom_minimum_size = Vector2(0, 48)
 text = "Play"
 
+[node name="CoopButton" type="Button" parent="Root/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 48)
+text = "Coop"
+
 [node name="LeaderboardButton" type="Button" parent="Root/Panel/Margin/Layout"]
 custom_minimum_size = Vector2(0, 48)
 text = "Best runs"
@@ -99,3 +104,5 @@ text = "Quit"
 [node name="Settings" parent="." instance=ExtResource("4_settings")]
 
 [node name="Leaderboard" parent="." instance=ExtResource("5_lb")]
+
+[node name="Coop" parent="." instance=ExtResource("6_coop")]
