@@ -77,8 +77,12 @@ func test_a_control_is_built_for_every_row() -> void:
 			rows += 1
 	var built: int = _settings.get_node("Panel/Margin/Layout/Scroll/Rows").get_child_count()
 	# Sections add their own headers, so built rows are the schema rows plus those.
-	assert_eq(built, SettingsScreen.SCHEMA.size(),
-		"every schema entry should produce exactly one node (%d rows + headers)" % rows)
+	# _build_host_presenter_row() also appends a "HOST" section + its own row,
+	# outside SCHEMA on purpose (the presenter list is data-driven - see its
+	# docstring) - +2, as long as the presenter catalog isn't empty.
+	var host_row_nodes: int = 2 if not NarratorManager.get_presenters().is_empty() else 0
+	assert_eq(built, SettingsScreen.SCHEMA.size() + host_row_nodes,
+		"every schema entry should produce exactly one node (%d rows + headers), plus the host presenter row" % rows)
 
 
 # ------------------------------------------------------------------ behaviour

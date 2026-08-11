@@ -16,6 +16,11 @@ enum Priority { FLAVOR = 0, FEEDBACK = 1, STATE = 2, CRITICAL = 3 }
 enum Tier { STANDARD = 1, WARNING = 2, PUNCHLINE = 3 }
 
 const CATALOG_PATH: String = "res://data/host/host_catalog.tres"
+const PRESENTER_CATALOG_PATH: String = "res://data/host/presenters.tres"
+## <presenter_id>/<line_id>.ogg - adding a presenter is copying files into a
+## folder named after its id, never touching this format string.
+const VOICE_PATH_FORMAT: String = "res://assets/audio/voice/%s/%s.ogg"
+const DEFAULT_PRESENTER_ID: StringName = &"subtitles_only"
 
 const DEFAULT_CATEGORY_COOLDOWN: float = 8.0
 ## He addresses the crowd, not the player, and he does it sparingly - a Host who
@@ -26,8 +31,14 @@ const PLACEHOLDER_DURATION: float = 2.5
 
 var is_speaking: bool = false
 var catalog: HostCatalog
+var presenter_catalog: HostPresenterCatalog
+var current_presenter_id: StringName = DEFAULT_PRESENTER_ID
 
 var _queue: Array[Dictionary] = []
+## line_id -> resolved AudioStream (or null if none exists for the current
+## presenter), so repeated lines don't hit ResourceLoader.exists() every time.
+## Cleared whenever the presenter changes.
+var _voice_cache: Dictionary = {}
 ## category -> index last spoken, so a set never repeats itself back to back.
 var _last_spoken: Dictionary = {}
 ## category -> cooldown a line set asked for instead of the default.
@@ -47,6 +58,10 @@ func _ready() -> void:
 	_rng.randomize()
 	if ResourceLoader.exists(CATALOG_PATH):
 		catalog = load(CATALOG_PATH)
+	if ResourceLoader.exists(PRESENTER_CATALOG_PATH):
+		presenter_catalog = load(PRESENTER_CATALOG_PATH)
+	current_presenter_id = StringName(
+		SettingsManager.get_value("audio/host_presenter", DEFAULT_PRESENTER_ID))
 	EventBus.wave_started.connect(_on_wave_started.unbind(2))
 
 
@@ -108,9 +123,11 @@ func say(occasion: StringName, format_args: Array = []) -> void:
 		text = text % format_args
 	# The id identifies the sentence, the category identifies the occasion. Passing
 	# the occasion as both would collapse the two cooldowns into one and throw away
-	# the variety the line set exists to provide.
-	request_line(StringName("%s_%d" % [occasion, index]), occasion, text,
-		line_set.priority, null, line_set.tier)
+	# the variety the line set exists to provide. Also the recording filename
+	# tools/export_host_script.gd hands to whoever is voicing this presenter.
+	var line_id := StringName("%s_%02d" % [occasion, index + 1])
+	request_line(line_id, occasion, text, line_set.priority,
+		resolve_stream(line_id), line_set.tier)
 	if line_set.category_cooldown > 0.0:
 		_category_overrides[occasion] = line_set.category_cooldown
 
@@ -130,6 +147,24 @@ func _pick_index(occasion: StringName, count: int) -> int:
 
 func clear_queue() -> void:
 	_queue.clear()
+
+
+## Switches which presenter's recordings `say()` resolves. Clears the cache -
+## the old presenter's resolved streams (or lack of them) are meaningless
+## for a different one.
+func set_presenter(id: StringName) -> void:
+	if current_presenter_id == id:
+		return
+	current_presenter_id = id
+	_voice_cache.clear()
+
+
+func get_presenters() -> Array[HostPresenter]:
+	return presenter_catalog.presenters.duplicate() if presenter_catalog != null else []
+
+
+func find_presenter(id: StringName) -> HostPresenter:
+	return presenter_catalog.find(id) if presenter_catalog != null else null
 
 
 # Private
@@ -171,6 +206,24 @@ func _stop_current() -> void:
 	_current_priority = -1
 	AudioPool.pop_duck()
 	subtitle_hidden.emit()
+
+
+## The current presenter's recording for `line_id`, or null if it hasn't been
+## recorded (or the presenter is "Subtitles Only") - request_line()/_play()
+## already fall back to a placeholder-duration subtitle when stream is null,
+## so a missing recording is the expected, silent-failure-free steady state
+## during production, not an error.
+func resolve_stream(line_id: StringName) -> AudioStream:
+	if _voice_cache.has(line_id):
+		return _voice_cache[line_id]
+	var path: String = _voice_path(current_presenter_id, line_id)
+	var stream: AudioStream = load(path) if ResourceLoader.exists(path) else null
+	_voice_cache[line_id] = stream
+	return stream
+
+
+func _voice_path(presenter_id: StringName, line_id: StringName) -> String:
+	return VOICE_PATH_FORMAT % [String(presenter_id), String(line_id)]
 
 
 func _on_wave_started() -> void:

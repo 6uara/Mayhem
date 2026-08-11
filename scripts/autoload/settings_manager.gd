@@ -16,6 +16,9 @@ const DEFAULTS: Dictionary = {
 	"audio/sfx_volume": 1.0,
 	"audio/music_volume": 0.7,
 	"audio/vo_volume": 1.0,
+	## String, not StringName - ConfigFile round-trips String cleanly; NarratorManager
+	## wraps it back into a StringName on read. See NarratorManager.current_presenter_id.
+	"audio/host_presenter": "subtitles_only",
 	"accessibility/screenshake_enabled": true,
 	"accessibility/motion_blur_enabled": false,
 	## View bob is the most common motion-sickness trigger in a first-person game,

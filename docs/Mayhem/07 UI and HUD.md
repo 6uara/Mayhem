@@ -108,6 +108,17 @@ outside the schema — it isn't a setting, it calls
 [[02 Autoloads#TutorialHintManager]]). Exists for playtest sessions: reset the
 build between testers so everyone sees the first-time hints fresh.
 
+A "HOST" section (`_build_host_presenter_row()`) also sits outside the schema,
+appended after it in `_build()`: an `OptionButton` listing every
+`HostPresenter` in `NarratorManager`'s catalog, plus a "Listen" button that
+resolves and plays that presenter's `preview_line_id` (see
+[[02 Autoloads#NarratorManager]]). Schema's `"option"` type can't cover this —
+its `choices` are a literal list in the `const SCHEMA` array, and the
+presenter list is data (a `.tres` catalog), not something a const can name at
+parse time. Selecting a presenter calls `NarratorManager.set_presenter()`
+immediately (consistent with every other row applying live) and persists via
+`SettingsManager.set_value("audio/host_presenter", ...)`.
+
 ## Match overlay
 
 `scripts/ui/match_overlay.gd` + `scenes/ui/match_overlay.tscn`. Wave banners,

@@ -73,6 +73,9 @@ const ROW_CONTROL_WIDTH: int = 260
 
 ## key -> the control showing it, so a reset can refresh every row in place.
 var _controls: Dictionary = {}
+## Built dynamically in _build_host_presenter_row() (data-driven, not SCHEMA),
+## so it's a plain field rather than @onready - there is no fixed .tscn node.
+var _listen_button: Button
 
 
 func _ready() -> void:
@@ -118,6 +121,61 @@ func _build() -> void:
 			_rows.add_child(_make_section(String(entry["section"])))
 			continue
 		_rows.add_child(_make_row(entry))
+	_build_host_presenter_row()
+
+
+## Outside SCHEMA on purpose: the presenter list is data-driven
+## (HostPresenterCatalog), not a fixed set of choices a const Array can name at
+## parse time the way every other row's "option" type can.
+func _build_host_presenter_row() -> void:
+	var presenters: Array[HostPresenter] = NarratorManager.get_presenters()
+	if presenters.is_empty():
+		return
+	_rows.add_child(_make_section("HOST"))
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 16)
+
+	var label := Label.new()
+	label.text = "Presenter"
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(label)
+
+	var controls := HBoxContainer.new()
+	controls.add_theme_constant_override(&"separation", 8)
+	controls.custom_minimum_size = Vector2(ROW_CONTROL_WIDTH, 0)
+
+	var option := OptionButton.new()
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var selected_index: int = 0
+	for i: int in presenters.size():
+		var presenter: HostPresenter = presenters[i]
+		option.add_item(presenter.display_name, i)
+		if presenter.id == NarratorManager.current_presenter_id:
+			selected_index = i
+	option.select(selected_index)
+	option.item_selected.connect(func(index: int) -> void:
+		NarratorManager.set_presenter(presenters[index].id)
+		SettingsManager.set_value("audio/host_presenter", String(presenters[index].id))
+		_listen_button.disabled = presenters[index].preview_line_id == &"")
+	controls.add_child(option)
+
+	_listen_button = Button.new()
+	_listen_button.text = "Listen"
+	_listen_button.disabled = presenters[selected_index].preview_line_id == &""
+	_listen_button.pressed.connect(func() -> void:
+		var presenter: HostPresenter = NarratorManager.find_presenter(
+			NarratorManager.current_presenter_id)
+		if presenter == null or presenter.preview_line_id == &"":
+			return
+		var stream: AudioStream = NarratorManager.resolve_stream(presenter.preview_line_id)
+		if stream != null:
+			AudioPool.play_2d(stream, AudioPool.BUS_VO))
+	controls.add_child(_listen_button)
+
+	row.add_child(controls)
+	_rows.add_child(row)
 
 
 func _make_section(title: String) -> Control:

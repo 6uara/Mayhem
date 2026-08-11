@@ -220,12 +220,19 @@ func test_shop_offers_a_previously_equipped_weapon_again() -> void:
 
 
 func test_weapon_offers_warn_that_they_replace_the_current_weapon() -> void:
-	for i: int in 12:
+	# Same reasoning as test_shop_offers_a_previously_equipped_weapon_again: a
+	# weapon offer fills the random remainder of a visit, not a guaranteed
+	# slot, so unseeded rolls could occasionally never surface one.
+	_shop._rng.seed = 1
+	var saw_a_weapon_offer: bool = false
+	for i: int in 40:
 		_shop.roll_offers()
 		for offer: Dictionary in _shop.offers:
 			if int(offer["kind"]) == Shop.Kind.WEAPON:
+				saw_a_weapon_offer = true
 				assert_true(String(offer["description"]).contains("Replaces"),
 					"a weapon offer must say it replaces the current weapon")
+	assert_true(saw_a_weapon_offer, "precondition: at least one weapon offer must appear")
 
 
 func test_shop_never_offers_a_maxed_upgrade() -> void:

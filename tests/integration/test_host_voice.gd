@@ -23,8 +23,26 @@ func before_all() -> void:
 	_catalog = load(CATALOG_PATH)
 
 
+func before_each() -> void:
+	# NarratorManager is a real singleton, not recreated per test - its pacing
+	# state (line/category cooldowns, the "don't speak too often" timer) would
+	# otherwise leak between tests and make whichever one runs second flaky
+	# depending on run order and how recently something else in the suite
+	# called say().
+	NarratorManager._since_last_line = NarratorManager.LINE_COOLDOWN
+	NarratorManager._line_cooldowns.clear()
+	NarratorManager._category_cooldowns.clear()
+	NarratorManager._category_overrides.clear()
+	# A previous test's line may still be "playing" (is_speaking) if that test
+	# didn't await its full duration before returning - request_line() would
+	# otherwise queue behind it instead of playing immediately.
+	NarratorManager.is_speaking = false
+	NarratorManager._current_priority = -1
+
+
 func after_each() -> void:
 	NarratorManager.clear_queue()
+	NarratorManager.set_presenter(&"subtitles_only")
 
 
 func test_the_catalogue_loads() -> void:
@@ -100,3 +118,54 @@ func test_a_set_does_not_repeat_itself_back_to_back() -> void:
 		seen.push_back(NarratorManager._pick_index(&"death", line_set.lines.size()))
 	for i: int in range(1, seen.size()):
 		assert_ne(seen[i], seen[i - 1], "picked the same line twice running")
+
+
+# ------------------------------------------------------------- voice packs
+
+## No presenter ships with recordings yet (see assets/audio/voice/ - empty by
+## design, the shop this content belongs to is external recording), so this is
+## also the default steady state, not a corner case.
+func test_a_missing_recording_still_shows_the_subtitle() -> void:
+	watch_signals(NarratorManager)
+	NarratorManager.say(&"death")
+	await wait_frames(3)
+	var params: Array = get_signal_parameters(NarratorManager, "subtitle_shown", 0)
+	assert_true(params[0] != "", "the subtitle still carries the line's text")
+
+
+func test_switching_presenter_switches_the_audio_path() -> void:
+	var subtitles_only: String = NarratorManager._voice_path(&"subtitles_only", &"death_01")
+	var other: String = NarratorManager._voice_path(&"friend_a", &"death_01")
+	assert_ne(subtitles_only, other)
+	assert_eq(other, "res://assets/audio/voice/friend_a/death_01.ogg")
+
+
+## Adding a presenter is authoring a HostPresenter resource, not editing
+## NarratorManager - proven here by mutating the catalog NarratorManager
+## already loaded rather than touching any of its code.
+func test_adding_a_presenter_needs_no_code_change() -> void:
+	var fake := HostPresenter.new()
+	fake.id = &"test_new_presenter"
+	fake.display_name = "Test Presenter"
+	NarratorManager.presenter_catalog.presenters.push_back(fake)
+
+	assert_true(NarratorManager.get_presenters().any(
+		func(p: HostPresenter) -> bool: return p.id == &"test_new_presenter"))
+	assert_eq(NarratorManager.find_presenter(&"test_new_presenter"), fake)
+
+	NarratorManager.presenter_catalog.presenters.erase(fake)
+
+
+func test_set_presenter_clears_the_voice_cache() -> void:
+	NarratorManager._voice_cache[&"death_01"] = null
+	NarratorManager.set_presenter(&"some_other_presenter")
+	assert_false(NarratorManager._voice_cache.has(&"death_01"),
+		"a stale cache entry from the old presenter must not survive the switch")
+
+
+func test_setting_the_same_presenter_again_is_a_no_op() -> void:
+	NarratorManager.set_presenter(&"subtitles_only")
+	NarratorManager._voice_cache[&"death_01"] = null
+	NarratorManager.set_presenter(&"subtitles_only")
+	assert_true(NarratorManager._voice_cache.has(&"death_01"),
+		"re-selecting the current presenter must not blow away the cache")

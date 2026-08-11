@@ -202,6 +202,26 @@ category cooldown prevents the same *kind* of line spamming even if the specific
 line differs; the line cooldown prevents the exact line repeating too soon.
 Emits `subtitle_shown` / `subtitle_hidden`, consumed by the HUD's subtitle box.
 
+**Voice packs**: `say(occasion, format_args)` builds `line_id` as
+`"<occasion>_<01-based index, zero-padded>"` — the same convention
+`tools/export_host_script.gd` uses for recording filenames, so the id a line
+gets tested under is the id it ships under — then resolves it against the
+current presenter via `resolve_stream(line_id)`. `HostPresenter`
+(`scripts/resources/host_presenter.gd`, catalogued by `HostPresenterCatalog`
+at `data/host/presenters.tres`) is just `id` / `display_name` / `icon` /
+`preview_line_id` — adding a presenter is authoring one of these and dropping
+recordings under `res://assets/audio/voice/<id>/<line_id>.ogg`
+(`VOICE_PATH_FORMAT`), no code change. A missing recording resolves to `null`
+silently — `_play()` already falls back to `PLACEHOLDER_DURATION` and a
+subtitle-only line when `stream` is null, so "nobody has recorded this yet" is
+the expected steady state during production, not an error path.
+`set_presenter(id)` clears `_voice_cache` (keyed by `line_id`, so repeated
+lines don't hit `ResourceLoader.exists()` every time) — a no-op if the id is
+already current. Selected in Settings (see
+[[07 UI and HUD#Options screen]]), persisted as
+`SettingsManager`'s `"audio/host_presenter"`. Ships with exactly one
+presenter, `&"subtitles_only"` — no recordings exist yet.
+
 ## TutorialHintManager
 
 `scripts/autoload/tutorial_hint_manager.gd`. Shows a one-line HUD overlay the
