@@ -8,16 +8,31 @@ State as of this writing. Update this note as items get resolved — it's meant
 to stay current, not be a historical log (that's what `docs/PHASE_*.md` and git
 history are for).
 
+## Needs a human at the editor, not more unattended passes
+
+- **Arena dressing/geometry pass** (backlog tanda D1) — un-started on purpose.
+  Turning greybox into a dressed level is a visual-judgment task (does this
+  read as a space, does the new geometry kill sightlines/flow) that has no
+  meaningful unattended version; the safe thing to automate would just be
+  guessing. See [[08 VFX and Shaders#Arena glow]] for what *did* ship
+  unattended this pass (glow) and why that one was safe to guess at (it
+  completes an already-decided, documented convention rather than choosing
+  new geometry or color).
+- **Lighting pass beyond glow** (tanda D2) — same reasoning. Glow shipped
+  because it's mechanical completion of shader uniforms that already existed
+  for this purpose; key/fill lighting, shadow baking decisions, and a
+  per-zone "can I actually see the enemy here" check all need a person
+  looking at the rendered arena.
 ## No test coverage
 
-- **`GrappleComponent`** — zero test files. One of the core mobility pillars
-  (see [[03 Player and Movement#Grapple]]), entirely unverified.
 - **`StatsComponent`** — zero test files, despite being the read path *every*
   purchased upgrade in the game flows through (`get_stat_from()`, chained into
   from `WeaponComponent`, `MovementComponent`, `Player`). If this breaks, the
   shop silently stops mattering — no test would catch it.
-- **`GameManager`**, **`AudioPool`**, **`BouncePad`** — also uncovered, lower
-  risk (simpler, less state).
+- **`GameManager`**, **`AudioPool`** — also uncovered, lower risk (simpler,
+  less state).
+- ~~`GrappleComponent`, `BouncePad`~~ — this note was stale; both have covered
+  (`tests/unit/test_grapple_component.gd`, `test_bounce_pad.gd`).
 
 ## Missing UI
 

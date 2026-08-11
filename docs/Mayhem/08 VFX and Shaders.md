@@ -162,3 +162,29 @@ from screenshake, so it doesn't ride along with that toggle.
 (not derived live from the token at runtime — a known minor gap, see
 [[12 Known Issues and Gaps]]). See [[09 Design Tokens and Color Law]] for what
 those tokens mean and why they can't be reused for anything else.
+
+## Arena glow
+
+`greybox_arena.tscn`'s `WorldEnvironment` (`Env_arena`) turns on `glow_enabled`
+(`glow_intensity = 0.9`, `glow_hdr_threshold = 1.05`, `glow_bloom = 0.0`). The
+wall/mid/high panel shaders and the lava/portal shaders already write real
+`EMISSION` scaled by their own `emission_energy` / `glow_energy` uniforms — that
+convention exists specifically so glow has something to catch — but nothing
+ever turned glow on, so the Art Bible's "dark base, high-saturation emissive
+accents" language wasn't actually landing on screen. The threshold sits just
+above 1.0 so only genuinely emissive (HDR) surfaces bloom; flat albedo
+materials (the floor, unlit props) never do.
+
+**Not yet done** (needs a human at the editor to judge, not something to guess
+blind — see [[12 Known Issues and Gaps]]): the rest of a real lighting pass
+(key/fill beyond the single `DirectionalLight3D`, baked vs. dynamic shadow
+decisions, per-zone legibility check against the enemy silhouettes) and the
+arena dressing/geometry pass that's supposed to precede it. Both are visual
+judgment calls this repo's tooling can't make unattended.
+
+**A `.tscn`/`.tres` resource body does not support `#` comments** — unlike
+`.gdshader` (which rejects `##` specifically but allows `//`), a text resource
+file silently mis-parses anything after a `#` inside a `[sub_resource]` block,
+which broke `glow_enabled`'s assignment the first time this was authored
+(it parsed as unset). Keep rationale in docs or the consuming script, not
+inline in `.tscn`/`.tres`.
