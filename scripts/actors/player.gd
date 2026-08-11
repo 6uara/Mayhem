@@ -27,6 +27,11 @@ var weapon: WeaponComponent:
 	get:
 		return weapon_holder.current if weapon_holder != null else null
 
+## Out of the fight. Set on every peer at once by _report_downed(), so a body
+## that is down is down on all of them - teammates never see a corpse still
+## running around, and the host never keeps aiming enemies at it.
+var is_downed: bool = false
+
 var _look_yaw: float = 0.0
 var _look_pitch: float = 0.0
 var _base_fov: float = 95.0
@@ -41,6 +46,14 @@ func _enter_tree() -> void:
 	var owner_id: int = name.to_int()
 	if owner_id > 0:
 		set_multiplayer_authority(owner_id)
+		# ...but not over our own health. set_multiplayer_authority() is
+		# recursive, so it just handed the owning client the right to declare
+		# its own hit points, and the enemies that do the damage are simulated
+		# on the host. Handing this one node back is what keeps damage a thing
+		# that happens *to* a player rather than something they report.
+		var health_sync := get_node_or_null("HealthSync")
+		if health_sync != null:
+			health_sync.set_multiplayer_authority(NetworkManager.SERVER_ID)
 
 
 func _ready() -> void:
@@ -97,8 +110,9 @@ func _apply_local_only_nodes() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Input drives only our own body. Without this every peer's keyboard would
-	# move every player on their screen at once.
-	if not is_local():
+	# move every player on their screen at once. A downed player keeps its mouse
+	# free for the spectator camera, which reads input on its own.
+	if not is_local() or is_downed:
 		return
 	var motion := event as InputEventMouseMotion
 	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -141,7 +155,7 @@ func _process(delta: float) -> void:
 	# A remote player's yaw and head pitch arrive over the network. Running the
 	# look code on them would immediately overwrite what was replicated with our
 	# own (never-updated) angles, pinning every other player to a fixed stare.
-	if not is_local():
+	if not is_local() or is_downed:
 		return
 	_apply_look()
 	_apply_fov(delta)
@@ -230,4 +244,59 @@ func _on_damaged(amount: float, remaining: float) -> void:
 
 
 func _on_died() -> void:
-	EventBus.player_died.emit()
+	# Solo: nothing to coordinate. The run ends the moment you fall.
+	if not NetworkManager.is_online():
+		EventBus.player_died.emit()
+		return
+	# Only the host's simulation gets to decide anyone is dead. A client's own
+	# copy of its body never takes damage - the enemies that could deal it are
+	# puppets there, with no brain and no attacks - so in practice this fires on
+	# the authoritative machine and the broadcast carries the news outward.
+	if NetworkManager.is_host():
+		_report_downed.rpc()
+
+
+## Broadcast: this player is out of the fight.
+##
+## Marked any_peer and checked by hand rather than declared "authority", which
+## would be the obvious choice and is wrong here. This node's authority is the
+## client that drives it - that is what makes its movement responsive - so an
+## "authority" rpc on it is one the *host* is not allowed to send, and the host
+## is the only machine that simulates the enemies doing the killing. Declaring
+## it that way silently dropped every client death: the host's own body died and
+## announced it, a client's died on the host and nobody downstream ever heard.
+##
+## call_local so the host walks the same path as everyone else - a downed player
+## that behaves differently depending on whose machine it is standing on is a
+## bug that only shows up in the one configuration nobody tests.
+@rpc("any_peer", "call_local", "reliable")
+func _report_downed() -> void:
+	# 0 is a local call (the host announcing on its own machine); anything else
+	# has to be the host. A client cannot declare itself - or anyone else - dead.
+	var sender: int = multiplayer.get_remote_sender_id()
+	if sender != 0 and sender != NetworkManager.SERVER_ID:
+		return
+	if is_downed:
+		return
+	is_downed = true
+	_apply_downed_state()
+	EventBus.player_downed.emit(get_peer_id())
+
+
+## The peer that owns this body. Carried by the node name, which is how
+## authority was resolved in the first place.
+func get_peer_id() -> int:
+	return name.to_int()
+
+
+## A downed body stops being part of the fight everywhere at once: it takes no
+## more hits, blocks nothing, and stops steering. It is left in the world rather
+## than removed so teammates can see where you fell.
+func _apply_downed_state() -> void:
+	collision_layer = 0
+	collision_mask = 0
+	if movement != null:
+		movement.set_physics_process(false)
+	if health != null:
+		health.is_invulnerable = true
+	velocity = Vector3.ZERO

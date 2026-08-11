@@ -82,6 +82,45 @@ func test_all_sees_every_player_but_local_is_only_ours() -> void:
 	assert_null(Players.local(), "no local body until one claims the group")
 
 
+# ------------------------------------------------------- who is still standing
+
+## alive() decides two things that must not disagree: who the spectator camera
+## may watch, and whether the run is over. A body that reads as alive when it is
+## down keeps a wiped team playing against enemies nobody can hurt.
+func test_a_downed_player_is_not_alive() -> void:
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "1"
+	add_child_autofree(body)
+	await wait_frames(1)
+
+	assert_true(Players.is_alive(body), "a fresh player is in the fight")
+	body.is_downed = true
+	assert_false(Players.is_alive(body), "a downed player is out of it")
+	assert_true(Players.alive().is_empty(), "and out of the living list")
+
+
+## is_downed is the networked answer, health.is_dead the local one. A client's
+## own body never takes damage locally, so on that machine only is_downed is
+## ever set - reading health alone would call that player alive forever.
+func test_downed_is_read_independently_of_local_health() -> void:
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "1"
+	add_child_autofree(body)
+	await wait_frames(1)
+
+	body.is_downed = true
+	assert_false(body.health.is_dead, "local health never took the hit")
+	assert_false(Players.is_alive(body), "still counted as down")
+
+
+func test_a_player_reports_the_peer_that_owns_it() -> void:
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "7"
+	add_child_autofree(body)
+	await wait_frames(1)
+	assert_eq(body.get_peer_id(), 7, "peer id comes from the node name")
+
+
 func test_a_player_with_no_health_component_still_counts_as_alive() -> void:
 	# Enemy targeting calls this every time it re-acquires; a null health on a
 	# test double or a stripped-down body must not read as a corpse.

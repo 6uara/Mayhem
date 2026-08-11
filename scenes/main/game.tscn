@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/arena/greybox_arena.tscn" id="1_range"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/systems/damage_number_spawner.gd" id="13_dmg_numbers"]
 [ext_resource type="Script" path="res://scripts/systems/player_spawn_controller.gd" id="17_spawn_ctrl"]
 [ext_resource type="Script" path="res://scripts/systems/enemy_replicator.gd" id="18_enemy_repl"]
+[ext_resource type="PackedScene" path="res://scenes/ui/spectator_view.tscn" id="19_spectator"]
 [ext_resource type="PackedScene" path="res://scenes/vfx/damage_number.tscn" id="14_dmg_number_scene"]
 [ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
 [ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
@@ -75,6 +76,8 @@ multimesh = SubResource("MM_points")
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("7_enemy")
 prewarm_count = 32
+
+[node name="SpectatorView" parent="." instance=ExtResource("19_spectator")]
 
 [node name="EnemyReplicator" type="Node" parent="."]
 script = ExtResource("18_enemy_repl")

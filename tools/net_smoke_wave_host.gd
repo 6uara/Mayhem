@@ -34,9 +34,9 @@ func _process(delta: float) -> bool:
 				game.start_coop_run()
 		2:
 			if _elapsed > _next_trace:
-				_next_trace = _elapsed + 3.0
+				_next_trace = _elapsed + 4.0
 				_trace()
-			if _elapsed > 32.0:
+			if _elapsed > 64.0:
 				return true
 	return false
 

@@ -29,6 +29,7 @@ var _generation: int = 0
 func _ready() -> void:
 	EventBus.wave_completed.connect(_on_wave_completed)
 	EventBus.player_died.connect(_on_player_died)
+	EventBus.player_downed.connect(_on_player_downed)
 	start_match.call_deferred()
 
 
@@ -116,6 +117,23 @@ func _finish_match() -> void:
 	GameManager.state = GameManager.State.GAME_OVER
 	EventBus.match_completed.emit(score, total_time)
 	match_state_changed.emit(false)
+
+
+## In coop, one death does not end the run. The others fight on and whoever fell
+## watches from a teammate's camera; the match is over only once nobody is left
+## standing. The host alone gets to call that, so every peer ends on the same
+## wave with the same score rather than each deciding for itself.
+func _on_player_downed(_peer_id: int) -> void:
+	if not is_running or not NetworkManager.is_online() or not NetworkManager.is_host():
+		return
+	if not Players.alive().is_empty():
+		return
+	_declare_wipe.rpc()
+
+
+@rpc("authority", "call_local", "reliable")
+func _declare_wipe() -> void:
+	EventBus.player_died.emit()
 
 
 func _on_player_died() -> void:

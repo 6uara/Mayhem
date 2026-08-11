@@ -61,6 +61,22 @@ static func is_alive(body: Node3D) -> bool:
 	if body == null or not is_instance_valid(body):
 		return false
 	var player := body as Player
-	if player == null or player.health == null:
+	if player == null:
 		return true
-	return not player.health.is_dead
+	# is_downed is the networked answer and health.is_dead the local one. A
+	# client's own body never takes damage locally, so on that machine only
+	# is_downed is ever true; on the host both are. Checking either way round
+	# alone would call a corpse alive on one of the two.
+	if player.is_downed:
+		return false
+	return player.health == null or not player.health.is_dead
+
+
+## Players still in the fight. The match ends when this hits zero, and the
+## spectator camera picks its target from it.
+static func alive() -> Array[Node3D]:
+	var living: Array[Node3D] = []
+	for body: Node3D in all():
+		if is_alive(body):
+			living.append(body)
+	return living

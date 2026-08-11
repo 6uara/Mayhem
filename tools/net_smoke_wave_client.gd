@@ -1,7 +1,10 @@
 extends SceneTree
 ## Manual harness: joins the match opened by tools/net_smoke_wave_host.gd and
-## traces the enemies it was handed. Every one of them should be a puppet, and
-## the wave line should track the host's rather than being computed here.
+## traces what it sees. Both harnesses stand still, so the enemies eventually
+## kill them - which is exactly what makes this the spectator test too.
+##
+## What to look for: the client's own body flips downed=true, spectating turns
+## on with a target name, and it keeps watching until nobody is left standing.
 
 var _elapsed: float = 0.0
 var _phase: int = 0
@@ -23,26 +26,33 @@ func _process(delta: float) -> bool:
 			print("CLIENT: join_session -> ", net.join_session("127.0.0.1", "ElAmigo"))
 		1:
 			if _elapsed > _next_trace:
-				_next_trace = _elapsed + 3.0
+				_next_trace = _elapsed + 4.0
 				_trace(net)
-			if _elapsed > 26.0:
+			if _elapsed > 60.0:
 				return true
 	return false
 
 
 func _trace(net: Node) -> void:
-	var owned: int = 0
 	var puppets: int = 0
 	for node: Node in get_nodes_in_group(&"enemy"):
-		if not node.get(&"is_active"):
-			continue
-		if node.get(&"is_remote"):
+		if node.get(&"is_active") and node.get(&"is_remote"):
 			puppets += 1
-		else:
-			owned += 1
-	var waves: Node = root.get_node_or_null("/root/WaveManager")
-	print("CLIENT t=%.0f host=%s scene=%s wave=%d active=%s remaining=%d sim=%d puppets=%d" % [
-		_elapsed, net.is_host(),
-		current_scene.name if current_scene != null else "<none>",
-		waves.current_index, waves.is_wave_active, waves.get_remaining_count(),
-		owned, puppets])
+
+	var alive: int = 0
+	var mine_downed: Variant = "<none>"
+	for node: Node in get_nodes_in_group(&"player"):
+		if not node.get(&"is_downed"):
+			alive += 1
+		if node.name.to_int() == net.local_id():
+			mine_downed = node.get(&"is_downed")
+
+	var spectator: Node = null
+	if current_scene != null:
+		spectator = current_scene.get_node_or_null("SpectatorView")
+	var watching: Variant = spectator.get(&"_is_spectating") if spectator != null else "<no node>"
+	var target: Node = spectator.get(&"_target") if spectator != null else null
+
+	print("CLIENT t=%.0f puppets=%d players_alive=%d mine_downed=%s spectating=%s target=%s" % [
+		_elapsed, puppets, alive, mine_downed, watching,
+		target.name if target != null else "-"])

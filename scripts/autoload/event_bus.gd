@@ -46,6 +46,17 @@ signal game_paused(is_paused: bool)
 ## spawned by PlayerSpawnController now, and on a client the local body arrives
 ## over the network several frames after the scene is up.
 signal local_player_spawned(player: Node3D)
+## One player went down. In solo this is immediately followed by player_died -
+## there is no one left to carry the run. In coop it is not the end of anything
+## on its own: the match continues, and whoever fell watches it from a teammate's
+## shoulder until the wave is over.
+##
+## Kept separate from player_died precisely because those two meant the same
+## thing while there was only ever one player, and coop is where they part.
+signal player_downed(peer_id: int)
+## A downed player started or stopped spectating. The HUD hides itself while
+## this is true - it shows *your* ammo and health, and you have neither.
+signal spectating_changed(is_spectating: bool, target_name: String)
 
 # Settings
 signal settings_applied()

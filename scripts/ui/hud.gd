@@ -87,6 +87,7 @@ func _ready() -> void:
 	_critical_tag.visible = false
 	_reload_prompt.visible = false
 	_on_currency_changed(EconomyManager.currency)
+	EventBus.spectating_changed.connect(_on_spectating_changed)
 	_bind_player.call_deferred()
 
 
@@ -98,6 +99,12 @@ func _process(delta: float) -> void:
 
 	if _player == null:
 		return
+	# On a client, health arrives as a replicated value rather than as a
+	# damaged() signal: the hit landed on the host, against the host's copy of
+	# this body. Nothing fires locally to refresh the bar, so it is read every
+	# frame instead. Solo runs keep the signal path and skip this entirely.
+	if NetworkManager.is_online():
+		_refresh_health()
 	_tick_weapon()
 	_tick_movement()
 	_tick_wave()
@@ -133,6 +140,13 @@ func _bind_player() -> void:
 func _on_local_player_spawned(_player_node: Node3D) -> void:
 	EventBus.local_player_spawned.disconnect(_on_local_player_spawned)
 	_bind_player()
+
+
+## This HUD reads one player's health, ammo and dash charges - and a spectator
+## has none of those. Leaving it up would show a frozen readout of the corpse
+## the camera just left behind.
+func _on_spectating_changed(is_spectating: bool, _target_name: String) -> void:
+	visible = not is_spectating
 
 
 ## Three utility slots plus the grapple, separated by a divider.
