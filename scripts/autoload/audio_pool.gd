@@ -133,14 +133,18 @@ func _resolve_bus(bus: StringName) -> StringName:
 	return bus
 
 
+## Ducks SFX and Music together - one ref-counted mechanism, not two, so a VO
+## line ducking music and a second one ducking SFX can never fall out of sync.
 func _apply_duck(offset_db: float) -> void:
-	var index: int = AudioServer.get_bus_index(String(BUS_SFX))
-	if index < 0:
-		return
-	var target_db: float = float(_base_db.get(BUS_SFX, 0.0)) + offset_db
 	if _duck_tween != null and _duck_tween.is_valid():
 		_duck_tween.kill()
 	_duck_tween = create_tween()
-	_duck_tween.tween_method(
-		func(value: float) -> void: AudioServer.set_bus_volume_db(index, value),
-		AudioServer.get_bus_volume_db(index), target_db, DUCK_FADE_TIME)
+	_duck_tween.set_parallel(true)
+	for bus: StringName in [BUS_SFX, BUS_MUSIC]:
+		var index: int = AudioServer.get_bus_index(String(bus))
+		if index < 0:
+			continue
+		var target_db: float = float(_base_db.get(bus, 0.0)) + offset_db
+		_duck_tween.tween_method(
+			func(value: float) -> void: AudioServer.set_bus_volume_db(index, value),
+			AudioServer.get_bus_volume_db(index), target_db, DUCK_FADE_TIME)

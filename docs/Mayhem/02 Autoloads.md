@@ -15,6 +15,7 @@ globals):
 | `GameManager` | `game_manager.gd` | Match state machine, pause |
 | `ObjectPool` | `object_pool.gd` | Pooled instantiation |
 | `AudioPool` | `audio_pool.gd` | 3D/2D voice pool, buses, ducking |
+| `MusicManager` | `music_manager.gd` | Crossfaded music bed, follows match state |
 | `SettingsManager` | `settings_manager.gd` | User settings: load/save/apply |
 | `SaveManager` | `save_manager.gd` | Local leaderboard |
 | `EconomyManager` | `economy_manager.gd` | Currency, purchases |
@@ -106,7 +107,27 @@ pools (`POOL_SIZE_3D = 48`, `POOL_SIZE_2D = 16`) rather than unbounded
 `AudioStreamPlayer` instantiation. `play_3d()` / `play_2d()` are the entry
 points; `push_duck()` / `pop_duck()` implement VO ducking
 (`DUCK_AMOUNT_DB = -8.0`) as a stack, so overlapping duck requests resolve
-correctly on release.
+correctly on release. `_apply_duck()` moves both `BUS_SFX` and `BUS_MUSIC`
+together — one ref-counted mechanism, not two, so `MusicManager` gets VO
+ducking for free the moment `NarratorManager` calls `push_duck()`/`pop_duck()`
+around a line; it never needed its own.
+
+## MusicManager
+
+`scripts/autoload/music_manager.gd`. Crossfades a looping music bed to match
+`GameManager.state` (`EventBus.game_state_changed`) — `TRACK_PATHS` maps each
+`GameManager.State` to a track under `assets/audio/music/`. Two
+`AudioStreamPlayer`s on `AudioPool.BUS_MUSIC`, held directly rather than pulled
+from `AudioPool`'s one-shot pool — a loop needs one stable, addressable player
+to fade in/out over `CROSSFADE_TIME = 1.5s`, which "whichever pooled player
+happens to be free" can't promise. `stream.loop_mode` is set to
+`LOOP_FORWARD` in code on load rather than trusted to the asset's own import
+settings, since the placeholder tracks are raw synthesized `.wav` output with
+no guaranteed loop config baked in yet.
+
+Tracks are placeholders (`tools/generate_placeholder_music.py`, same
+synthesized-stand-in approach as `generate_placeholder_sfx.py` — see
+`assets/audio/music/CREDITS.md`), not licensed/composed music.
 
 ## SettingsManager
 

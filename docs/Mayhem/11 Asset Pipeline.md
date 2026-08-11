@@ -13,6 +13,9 @@ tags: [mayhem, assets, tooling]
   to a checklist for external VO recording. See below.
 - `generate_placeholder_sfx.py` — synthesizes every placeholder sound
   (stdlib-only Python, fixed RNG seed, deterministic re-runs). See below.
+- `generate_placeholder_music.py` — same approach, three looping music beds
+  (`assets/audio/music/menu.wav` / `combat.wav` / `shop.wav`) for
+  `MusicManager` (see [[02 Autoloads#MusicManager]]).
 
 ## Weapon/enemy model import
 
