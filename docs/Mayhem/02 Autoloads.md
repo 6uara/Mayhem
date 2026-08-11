@@ -102,7 +102,11 @@ Pre-warmable via `prewarm(scene, count)`. Pooled objects go into
 ## AudioPool
 
 Bus constants: `BUS_MASTER`, `BUS_SFX`, `BUS_WEAPONS`, `BUS_IMPACTS`,
-`BUS_ENEMIES`, `BUS_WORLD`, `BUS_MUSIC`, `BUS_VO`, `BUS_UI`. Fixed-size voice
+`BUS_ENEMIES`, `BUS_WORLD`, `BUS_MUSIC`, `BUS_VO`, `BUS_UI`. Per-bus default
+gain and a Master `AudioEffectLimiter` (ceiling -1 dB, threshold -6 dB, so a
+worst-case elite wave can't clip) live in `default_bus_layout.tres`, generated
+by `tools/configure_audio_mix.gd` — see [[12 Known Issues and Gaps]] for what
+that pass is and is not (a gain-staging default, not a real mix). Fixed-size voice
 pools (`POOL_SIZE_3D = 48`, `POOL_SIZE_2D = 16`) rather than unbounded
 `AudioStreamPlayer` instantiation. `play_3d()` / `play_2d()` are the entry
 points; `push_duck()` / `pop_duck()` implement VO ducking

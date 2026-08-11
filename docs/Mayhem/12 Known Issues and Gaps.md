@@ -23,6 +23,16 @@ history are for).
   for this purpose; key/fill lighting, shadow baking decisions, and a
   per-zone "can I actually see the enemy here" check all need a person
   looking at the rendered arena.
+- **Real audio mix** (tanda E3) — `tools/configure_audio_mix.gd` set a
+  first-pass gain hierarchy (VO/Weapons highest priority down to UI lowest,
+  see the tool's own docstring for the exact table) plus a Master limiter so
+  a worst-case elite wave can't clip. That's mechanical - applying an
+  already-decided priority order as relative dB offsets, and a safety net.
+  What it explicitly is NOT: a real mix. Perceptual loudness balance, EQ,
+  reverb sends, and the "does this actually sound right, on headphones AND
+  speakers" listening pass all need a person with ears at a review, same
+  reasoning as the arena/lighting items above.
+
 ## No test coverage
 
 - **`StatsComponent`** — zero test files, despite being the read path *every*

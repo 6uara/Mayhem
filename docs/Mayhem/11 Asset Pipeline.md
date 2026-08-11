@@ -16,6 +16,9 @@ tags: [mayhem, assets, tooling]
 - `generate_placeholder_music.py` — same approach, three looping music beds
   (`assets/audio/music/menu.wav` / `combat.wav` / `shop.wav`) for
   `MusicManager` (see [[02 Autoloads#MusicManager]]).
+- `configure_audio_mix.gd` — writes `default_bus_layout.tres`: a first-pass
+  per-bus gain hierarchy plus a Master limiter. Not a real mix — see
+  [[12 Known Issues and Gaps]].
 
 ## Weapon/enemy model import
 
