@@ -81,16 +81,14 @@ pass.
 
 ## Missing UI
 
-- **No leaderboard screen.** `SaveManager` persists scores to
-  `user://leaderboard.json` and `MatchDirector` writes to it, but nothing reads
-  it back for display. The "run for time" loop the economy/scoring is built
-  around has no visible payoff screen.
-- **Main menu is an explicit placeholder.** `scripts/ui/main_menu.gd`'s own
-  top-of-file comment: *"Placeholder menu so GameManager's scene transitions
-  have somewhere to land. The real menu is built in Phase 5."* It was not
-  rebuilt during the visual-identity pass — still plain `Control`/`Button`
-  nodes, no theme, no `ChamferStyleBox`. Everything else in [[07 UI and HUD]]
-  uses the shared theme system; this doesn't yet.
+~~No leaderboard screen; main menu an unstyled placeholder.~~ Both stale —
+this note wasn't updated when they were built. `LeaderboardPanel`
+(`scripts/ui/leaderboard_panel.gd` + `scenes/ui/leaderboard_panel.tscn`) is
+themed, reads `SaveManager.get_entries()`, opens from the main menu's
+`LeaderboardButton`, and shows the player's best score on the front page
+(`BestRow/Value`) — all covered by
+`tests/integration/test_main_menu_and_leaderboard.gd`, which was already
+passing before this doc got corrected (backlog tanda G6).
 
 ## Minor drift
 
