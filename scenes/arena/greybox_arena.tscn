@@ -9,7 +9,6 @@
 [ext_resource type="PackedScene" uid="uid://nhxdwxrtbidm" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
 [ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
 [ext_resource type="PackedScene" path="res://scenes/arena/moving_platform.tscn" id="9_moving"]
-[ext_resource type="PackedScene" path="res://scenes/arena/zip_line.tscn" id="10_zip"]
 [ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="11_anchor"]
 [ext_resource type="PackedScene" uid="uid://d1dv5iepsbyci" path="res://scenes/arena/jump_link.tscn" id="12_link"]
 [ext_resource type="ArrayMesh" path="res://assets/models/meshes/scifi_container.res" id="13_container"]
@@ -324,15 +323,6 @@ speed = 3.2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 2, -4)
 travel = Vector3(0, 4.5, 18)
 speed = 2.6
-
-[node name="ZipLines" type="Node3D" parent="." unique_id=1271715829]
-
-[node name="ZipHighToFloor" parent="ZipLines" unique_id=1504885512 instance=ExtResource("10_zip")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.2, -28)
-speed = 18.0
-
-[node name="ZipEastToWest" parent="ZipLines" unique_id=1744568083 instance=ExtResource("10_zip")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 4.4, 10)
 
 [node name="JumpLinks" type="Node3D" parent="." unique_id=1606545173]
 

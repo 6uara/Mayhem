@@ -266,7 +266,7 @@ func _tick_grappling(delta: float) -> void:
 		state = _fallback_state()
 		return
 	body.velocity = grapple.get_pull_velocity(body.velocity, delta)
-	if Input.is_action_just_pressed("grapple") or Input.is_action_just_pressed("jump"):
+	if Input.is_action_just_released("grapple") or Input.is_action_just_pressed("jump"):
 		grapple.release()
 		state = _fallback_state()
 
