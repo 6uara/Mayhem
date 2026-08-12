@@ -1,12 +1,11 @@
-[gd_resource type="Resource" script_class="UpgradeData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="UpgradeData" format=3 uid="uid://csnlj41dkl7vq"]
 
-[ext_resource type="Script" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
-[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
 
 [sub_resource type="Resource" id="Mod_0"]
 script = ExtResource("2_mod")
 stat_key = &"dash_charges"
-operation = 0
 value = 1.0
 
 [resource]
@@ -16,7 +15,5 @@ display_name = "Extra Dash"
 description = "+1 dash charge."
 cost = 320
 category = 0
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 max_stacks = 2
-is_temporary = false
-duration = 0.0
-stat_modifiers = Array[Resource]([SubResource("Mod_0")])

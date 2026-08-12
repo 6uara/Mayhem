@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="EnemyData" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="EnemyData" format=3 uid="uid://bk401winjlkty"]
 
-[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bjtsflnvsj88u" path="res://scripts/resources/enemy_data.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_summoner.tscn" id="2_tree"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/summoner_spawn.wav" id="3_spawn"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/summoner_windup.wav" id="4_windup"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/summoner_attack.wav" id="5_attack"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/summoner_death.wav" id="6_death"]
+[ext_resource type="AudioStream" uid="uid://b1mjktvy6b4w0" path="res://assets/audio/sfx/enemies/summoner_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" uid="uid://bii72u7uy6426" path="res://assets/audio/sfx/enemies/summoner_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" uid="uid://c3qnk5s6tq1yw" path="res://assets/audio/sfx/enemies/summoner_attack.wav" id="5_attack"]
+[ext_resource type="AudioStream" uid="uid://dabk8tlghujpe" path="res://assets/audio/sfx/enemies/summoner_death.wav" id="6_death"]
 [ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="7_summon"]
 
 [sub_resource type="CylinderMesh" id="Mesh_summoner"]
@@ -16,10 +16,10 @@ radial_segments = 6
 
 [resource]
 script = ExtResource("1_script")
-mesh = SubResource("Mesh_summoner")
-archetype = 4
 id = &"summoner"
 display_name = "Summoner"
+archetype = 4
+behavior_tree = ExtResource("2_tree")
 max_health = 140.0
 move_speed = 4.0
 damage = 0.0
@@ -30,16 +30,14 @@ stagger_resistance = 0.3
 attack_windup = 1.0
 preferred_distance = 16.0
 summon_data = ExtResource("7_summon")
-summon_count = 2
+mesh = SubResource("Mesh_summoner")
 body_color = Color(1, 0.231, 0.757, 1)
-body_scale = 1.00
-collision_height = 2.20
+collision_height = 2.2
 collision_radius = 0.55
 head_offset = 1.95
-head_radius = 0.30
-reward_currency = 25
-behavior_tree = ExtResource("2_tree")
+head_radius = 0.3
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
+reward_currency = 25
