@@ -186,11 +186,15 @@ func _build_pool() -> Array[Dictionary]:
 			and holder.current.data != null else &"")
 
 	for upgrade: UpgradeData in catalog.upgrades:
+		# Null check comes first: reading `category` below to compute the scope would
+		# crash on a null catalogue entry, and this runs on every shop open and reroll.
+		if upgrade == null:
+			continue
 		# A WEAPON upgrade is scoped to whatever is equipped right now - it is
 		# offered/maxed-out per weapon, not once for the whole run.
 		var scope: StringName = equipped_id if upgrade.category == UpgradeData.Category.WEAPON \
 			else &""
-		if upgrade == null or not UpgradeManager.can_add(upgrade, scope):
+		if not UpgradeManager.can_add(upgrade, scope):
 			continue  # Maxed out for this scope: never offered.
 		pool.push_back({
 			"kind": Kind.UPGRADE, "id": upgrade.id, "name": upgrade.display_name,

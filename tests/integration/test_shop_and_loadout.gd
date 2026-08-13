@@ -184,6 +184,23 @@ func test_shop_offers_are_rolled_and_bounded() -> void:
 	assert_true(_shop.offers.size() <= _shop.catalog.offers_per_visit)
 
 
+## A null entry in the catalogue must be skipped, not dereferenced. Rolling reads
+## each upgrade's `category` to scope it per weapon, and doing that before the null
+## check crashed every shop open and reroll rather than passing over the hole.
+func test_a_null_catalogue_entry_is_skipped_rather_than_crashing() -> void:
+	# duplicate() on a Resource is shallow, so the array is duplicated separately -
+	# otherwise the null would be pushed into the shared, cached catalogue resource
+	# and leak into every other test in the suite.
+	var catalog: ShopCatalog = _shop.catalog.duplicate()
+	catalog.upgrades = catalog.upgrades.duplicate()
+	catalog.upgrades.insert(0, null)
+	_shop.catalog = catalog
+
+	# Reaching the assert at all is the point: the bug was a hard crash in here.
+	_shop.roll_offers()
+	assert_gt(_shop.offers.size(), 0, "the rest of the catalogue still rolls")
+
+
 func test_shop_never_offers_the_weapon_currently_equipped() -> void:
 	# Weapon offers fill the random remainder of the visit, not a guaranteed
 	# slot - with offers_per_visit down to 4, 12 unseeded rolls could

@@ -129,9 +129,12 @@ func _fire(id: StringName) -> void:
 	var hint: TutorialHint = _hints_by_id.get(id)
 	if hint == null:
 		return
-	SaveManager.mark_hint_seen(id)
+	# Only a hint that actually made it onto the queue counts as seen. Marking
+	# before this guard burned the "seen" flag on a hint that was then dropped -
+	# and since the flag persists across runs, that hint was gone for good.
 	if _queue.size() >= MAX_QUEUED:
 		return
+	SaveManager.mark_hint_seen(id)
 	_queue.push_back(hint)
 
 
