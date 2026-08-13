@@ -188,5 +188,6 @@ already has the damped-spring pattern from `_tick_landing()` to copy):
 
 Run `gut` after each step. The two regression tests from the previous session
 (`test_a_null_catalogue_entry_is_skipped_rather_than_crashing`,
-`test_a_hint_dropped_by_a_full_queue_is_not_marked_seen`) were also written
-without being run and still need a first green.
+`test_a_hint_dropped_by_a_full_queue_is_not_marked_seen`) got their first
+green on 2026-08-13 (`Godot_v4.7.1-stable_win64_console.exe --headless`,
+364/364 passing, 0 asserts failed) - both fixes are confirmed.
