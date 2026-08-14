@@ -109,6 +109,16 @@ func get_all() -> Array[WeaponComponent]:
 	return _weapons.duplicate()
 
 
+## Whether a pickup would do anything, without taking it.
+##
+## Coop needs the question separated from the act: a client has to know it can
+## use the ammo *before* it asks the host to hand the pickup over, or a player
+## standing on one with full pouches would keep claiming it away from the
+## teammate who actually needs it.
+func has_reserve_room() -> bool:
+	return current != null and current.get_reserve_max() > current.get_reserve()
+
+
 ## Tops up the currently equipped weapon - what an ammo pickup grants. Only one
 ## weapon is ever equipped, so there is nothing left to distribute across.
 func add_reserve_ammo_fraction(fraction: float) -> int:

@@ -146,6 +146,49 @@ func test_the_windup_is_state_an_enemy_carries() -> void:
 	assert_eq(enemy.windup_progress, 0.0, "and it ends when the attack does")
 
 
+# ----------------------------------------------------------------- los pickups
+
+## The pickup has to keep working with nobody connected, which is the case that
+## would break silently: the coop path routes through the host, and solo is a
+## host of one, so a wrong branch here empties the ammo boxes in the mode that
+## ships.
+func test_a_solo_player_still_takes_the_ammo() -> void:
+	var pickup: AmmoPickup = load("res://scenes/arena/ammo_pickup.tscn").instantiate()
+	add_child_autofree(pickup)
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "1"
+	add_child_autofree(body)
+	await wait_physics_frames(2)
+
+	var weapon: WeaponComponent = body.weapon_holder.current
+	# Reaching into _reserve rather than firing the gun dry: there is no public
+	# way to spend reserve ammo (it only leaves through a reload), and what this
+	# test is about is the pickup, not the path the ammo took to run out.
+	weapon._reserve = 0
+	var before: int = weapon.get_reserve()
+
+	pickup._on_body_entered(body)
+	assert_gt(weapon.get_reserve(), before, "the ammo lands in the gun")
+	assert_false(pickup.is_available, "and the box is gone")
+
+
+## Full pouches must not consume the box - the teammate behind you needs it.
+func test_a_full_player_leaves_the_box_alone() -> void:
+	var pickup: AmmoPickup = load("res://scenes/arena/ammo_pickup.tscn").instantiate()
+	add_child_autofree(pickup)
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "1"
+	add_child_autofree(body)
+	await wait_physics_frames(2)
+
+	var weapon: WeaponComponent = body.weapon_holder.current
+	weapon.add_reserve_ammo(weapon.get_reserve_max())
+	assert_false(body.weapon_holder.has_reserve_room(), "topped up")
+
+	pickup._on_body_entered(body)
+	assert_true(pickup.is_available, "the box is still there for someone else")
+
+
 func test_nothing_is_broadcast_in_a_solo_run() -> void:
 	var replicator := EnemyReplicator.new()
 	add_child_autofree(replicator)
