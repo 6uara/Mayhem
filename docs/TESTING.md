@@ -47,20 +47,43 @@ hacelo con el editor cerrado.
 código de salida). CI corre el comando headless en cada PR — ver
 `.github/workflows/tests.yml`.
 
+## Cuando la suite se pone roja sola
+
+Síntoma: quince o veinte tests en rojo de golpe, todos de `test_audio_pool` y
+`test_wave_content`, con el log lleno de `invalid UID: uid://...` y de índices de bus
+de audio en `-1`. El código no tiene nada que ver: es la caché de import de **tu**
+copia, `.godot/`, que quedó viciada (típicamente después de un merge que trae
+`.uid`/`.import` nuevos).
+
+Borrar `.godot/imported` y `.godot/uid_cache.bin` **no alcanza** — hay estado viejo
+en `.godot/editor` también. Hay que borrar la carpeta entera:
+
+```powershell
+# Godot cerrado. Guardá esto si exportás firmado: .godot/export_credentials.cfg
+Remove-Item D:\Git\Mayhem\.godot -Recurse -Force
+pwsh tools/run_tests.ps1 -Import
+```
+
+Se regenera sola (está gitignoreada). Cuesta un reimport completo, unos minutos.
+
+Para separar "roto por mi rama" de "roto en mi máquina", corré la misma orden sobre
+un worktree limpio:
+
+```powershell
+git worktree add ..\baseline develop
+pwsh tools/run_tests.ps1   # con $env:GODOT apuntando al mismo binario
+```
+
+Un worktree nunca trae `.godot`, así que arranca con caché fresca por definición.
+
 ## Estado actual de la suite
 
-Última corrida local con Godot 4.7 (`feat/coop-p2p`): **379 tests, 358 en verde**.
-Los rojos que quedan no son del código de juego:
+Godot 4.7, corridas locales del 14/08/2026:
 
-- `test_audio_pool` (6) y `test_host_voice` (1) — headless levanta un solo bus de
-  audio, así que `default_bus_layout.tres` no está y los índices de bus dan -1.
-- `test_wave_content` (9) — los `.tres` de oleadas resuelven sus `ext_resource` por
-  ruta porque el UID no coincide con el importado. Se arregla reimportando el
-  proyecto (`-Import`); si persiste, es que los `.uid` versionados no coinciden con
-  los de esta máquina.
-
-Antes de dar por buena una corrida, compará contra `develop`: `git worktree add` de
-`develop` y la misma orden ahí separa lo tuyo de lo que ya venía en rojo.
+| Rama | Resultado |
+| --- | --- |
+| `develop` @ `c76d772` | 364 tests, **364 en verde** |
+| `feat/coop-p2p` @ `de77658` | 380 tests, **380 en verde** |
 
 ## What to test
 

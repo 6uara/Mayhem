@@ -18,7 +18,11 @@ param(
     [switch]$Import
 )
 
-$ErrorActionPreference = "Stop"
+# Deliberately not "Stop". Under Windows PowerShell 5.1 a native program writing
+# to stderr surfaces as a NativeCommandError, and "Stop" turns that into a
+# terminating error - so Godot's harmless import chatter killed this script
+# before it ever ran a test. Exit codes are checked by hand instead.
+$ErrorActionPreference = "Continue"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 
 function Find-Godot {
@@ -59,8 +63,15 @@ terminal; la otra abre su propia ventana y no vas a ver nada aca.
 Write-Host "godot: $godot" -ForegroundColor DarkGray
 
 if ($Import) {
+    # Reimports every asset. Do this when the suite fails on "invalid UID" or on
+    # audio buses that are suddenly missing: those are a stale .godot/ cache
+    # rather than broken code, and this is the cheap half of the fix (the other
+    # half is deleting .godot/imported and .godot/uid_cache.bin first).
+    #
+    # stderr is left alone on purpose - piping it through PowerShell is what
+    # made this step blow up before.
     Write-Host "importando el proyecto..." -ForegroundColor DarkGray
-    & $godot --headless --path $projectRoot --import --quit-after 400 2>&1 | Out-Null
+    & $godot --headless --path $projectRoot --import --quit-after 400 | Out-Null
 }
 
 # -gexit is what makes the run return to the shell; without it Godot sits on the
