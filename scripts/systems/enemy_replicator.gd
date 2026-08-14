@@ -26,6 +26,8 @@ const SEND_RATE: float = 20.0
 ## keep up with a charging rusher, low enough to smooth packet jitter.
 const INTERP_SPEED: float = 14.0
 const CATALOG_DIR: String = "res://data/enemies/"
+## Ints per enemy in a snapshot: net_id, type index, wind-up percent.
+const FIELDS_PER_ENEMY: int = 3
 
 ## A client may not claim more than this in one hit. Not anti-cheat - the
 ## movement is client-authoritative anyway, and this is a game for friends - just
@@ -162,6 +164,67 @@ func credit_kill(peer_id: int, enemy_type: StringName, position: Vector3,
 ## flashes a kill marker and the announcer reacts to what this player did, and
 ## kill_credited so it gets paid. WaveManager ignores the first one off-host -
 ## the wave count belongs to the snapshot.
+# Attacks
+#
+# What a wave does to you is not in the snapshot. Snapshots say where everything
+# is standing; the attacks are the moments in between, and on a client none of
+# them happened - the puppets have no brain, so nothing fired, nothing swung and
+# nothing lit up. That left a client watching its health drop with an empty
+# screen in front of it, which reads as the game cheating rather than as an enemy
+# getting a hit in.
+#
+# Each attack is broadcast as the event it is. The damage stays where it was
+# resolved, on the host; what travels is what a player has to see to react.
+
+## Host: an enemy fired. Clients fly their own harmless copy of the shot.
+func broadcast_projectile(enemy: Enemy, origin: Vector3, direction: Vector3) -> void:
+	if not _can_broadcast(enemy):
+		return
+	_receive_projectile.rpc(enemy.net_id, origin, direction)
+
+
+## Unreliable: a shot that arrives late is worse than one that never arrives.
+## The projectile is a warning to move, and a warning delivered after the round
+## has already landed on the host is just a confusing sprite.
+@rpc("authority", "call_remote", "unreliable")
+func _receive_projectile(net_id: int, origin: Vector3, direction: Vector3) -> void:
+	var puppet: Enemy = _puppets.get(net_id)
+	if puppet == null or not is_instance_valid(puppet) or puppet.data == null:
+		return
+	var scene: PackedScene = puppet.data.projectile_scene
+	if scene == null:
+		return
+	var shot := ObjectPool.acquire(scene) as EnemyProjectile
+	if shot == null:
+		return
+	shot.launch_cosmetic(origin, direction, puppet.data.projectile_speed, puppet)
+	AudioPool.play_3d(puppet.data.attack_sound, origin, AudioPool.BUS_ENEMIES)
+
+
+## Host: an enemy connected with a melee swing.
+func broadcast_melee(enemy: Enemy) -> void:
+	if not _can_broadcast(enemy):
+		return
+	_receive_melee.rpc(enemy.net_id)
+
+
+@rpc("authority", "call_remote", "unreliable")
+func _receive_melee(net_id: int) -> void:
+	var puppet: Enemy = _puppets.get(net_id)
+	if puppet == null or not is_instance_valid(puppet) or puppet.data == null:
+		return
+	AudioPool.play_3d(puppet.data.attack_sound, puppet.global_position,
+		AudioPool.BUS_ENEMIES)
+
+
+## Solo runs broadcast nothing - there is nobody to tell, and rpc() with no peer
+## is an error. An enemy with no net_id has never been in a snapshot either, so
+## no client has a puppet to hang the event on.
+func _can_broadcast(enemy: Enemy) -> bool:
+	return NetworkManager.is_online() and NetworkManager.is_host() \
+		and enemy != null and enemy.net_id != 0
+
+
 @rpc("authority", "call_remote", "reliable")
 func _receive_kill_credit(enemy_type: StringName, position: Vector3,
 		reward: int) -> void:
@@ -198,6 +261,9 @@ func _broadcast() -> void:
 			_next_net_id += 1
 		ids.push_back(enemy.net_id)
 		ids.push_back(int(_index_of[enemy.data.id]))
+		# Quantised to a percent: it drives an emission multiplier, and nobody
+		# can see the difference between 0.61 and 0.62 of a glow.
+		ids.push_back(int(round(enemy.windup_progress * 100.0)))
 		transforms.push_back(enemy.global_position.x)
 		transforms.push_back(enemy.global_position.y)
 		transforms.push_back(enemy.global_position.z)
@@ -218,10 +284,14 @@ func _receive(ids: PackedInt32Array, transforms: PackedFloat32Array,
 	WaveManager.apply_remote_state(wave_index, wave_active, remaining, duration)
 
 	var seen: Dictionary = {}
-	var count: int = mini(ids.size() / 2, transforms.size() / 4)
+	# Three ints and four floats per enemy. Both arrays are read against the same
+	# count so a truncated packet drops whole enemies rather than reading one of
+	# them out of the middle of another's numbers.
+	var count: int = mini(ids.size() / FIELDS_PER_ENEMY, transforms.size() / 4)
 	for i: int in count:
-		var net_id: int = ids[i * 2]
-		var type_index: int = ids[i * 2 + 1]
+		var net_id: int = ids[i * FIELDS_PER_ENEMY]
+		var type_index: int = ids[i * FIELDS_PER_ENEMY + 1]
+		var windup: float = float(ids[i * FIELDS_PER_ENEMY + 2]) / 100.0
 		var position := Vector3(transforms[i * 4], transforms[i * 4 + 1],
 			transforms[i * 4 + 2])
 		var yaw: float = transforms[i * 4 + 3]
@@ -232,6 +302,7 @@ func _receive(ids: PackedInt32Array, transforms: PackedFloat32Array,
 			puppet = _make_puppet(net_id, type_index, position)
 			if puppet == null:
 				continue
+		puppet.windup_progress = windup
 		_targets[net_id] = Vector4(position.x, position.y, position.z, yaw)
 
 	_retire_unseen(seen)

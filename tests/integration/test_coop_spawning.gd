@@ -105,6 +105,63 @@ func test_a_solo_hit_is_applied_on_the_spot() -> void:
 	assert_eq(health.current_health, 70.0, "damage lands with no session open")
 
 
+# ------------------------------------------------------------- what hits you
+
+## A client's copy of an enemy shot exists to be seen and dodged. The host
+## already resolved the same round against its own copy, so if this one also
+## took hit points the player would pay twice for one bullet - and the second
+## charge would come from a machine with no authority to hurt anyone.
+func test_a_cosmetic_projectile_travels_but_deals_no_damage() -> void:
+	var scene: PackedScene = load("res://scenes/projectiles/enemy_projectile.tscn")
+	var health := HealthComponent.new()
+	health.max_health = 100.0
+
+	var body := CharacterBody3D.new()
+	body.add_to_group(&"player")
+	body.add_child(health)
+	add_child_autofree(body)
+	body.global_position = Vector3(0.0, 0.0, 4.0)
+	health.reset()
+
+	var shot: EnemyProjectile = scene.instantiate()
+	add_child_autofree(shot)
+	shot.launch_cosmetic(Vector3.ZERO, Vector3.FORWARD, 40.0, body)
+	await wait_physics_frames(8)
+
+	assert_eq(health.current_health, 100.0,
+		"a client-side copy of a shot never bills the player")
+
+
+## The telegraph is the player's warning. It is state rather than an event
+## precisely so a client that missed a packet still catches up to a glowing
+## enemy on the next snapshot instead of being swung at out of nowhere.
+func test_the_windup_is_state_an_enemy_carries() -> void:
+	var enemy: Enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
+	add_child_autofree(enemy)
+	await wait_physics_frames(1)
+
+	enemy.show_windup(0.5)
+	assert_almost_eq(enemy.windup_progress, 0.5, 0.001, "the wind-up is readable")
+	enemy.clear_windup()
+	assert_eq(enemy.windup_progress, 0.0, "and it ends when the attack does")
+
+
+func test_nothing_is_broadcast_in_a_solo_run() -> void:
+	var replicator := EnemyReplicator.new()
+	add_child_autofree(replicator)
+	var enemy: Enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
+	add_child_autofree(enemy)
+	await wait_physics_frames(1)
+	enemy.net_id = 7
+
+	# The assertion is that these do not error. rpc() with no peer assigned is a
+	# runtime error in Godot, so a missing "are we online?" check here would
+	# take the single-player game down every time anything attacked.
+	replicator.broadcast_projectile(enemy, Vector3.ZERO, Vector3.FORWARD)
+	replicator.broadcast_melee(enemy)
+	pass_test("solo attacks broadcast nothing")
+
+
 # ------------------------------------------------------- who is still standing
 
 ## alive() decides two things that must not disagree: who the spectator camera

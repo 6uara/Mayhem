@@ -32,6 +32,7 @@ obvio— es tocar ese archivo y nada más.
 | Enemigos | `scripts/systems/enemy_replicator.gd` | El host los simula; los clientes reciben snapshots a 20/s e interpolan |
 | Disparo del cliente | `EnemyReplicator.report_hit()` | El cliente raycastea local y **pide** el impacto; el host lo resuelve |
 | Plata | `EventBus.kill_credited` | La recompensa sigue al que disparó, no a quien simula |
+| Ataques enemigos | `EnemyReplicator.broadcast_projectile()` / `broadcast_melee()` | El cliente ve el disparo, oye el golpe y ve el telegrafiado |
 | Caídas | `Player._report_downed()` | Morir te pasa a la cámara de un compañero, no a game over |
 | Revivir | `Player.revive_from_host()` | El corte entre oleadas levanta a los caídos |
 | Tienda | `MatchDirector._open_break()` | Todos compran a la vez y la oleada arranca cuando el último está listo |
@@ -74,8 +75,7 @@ Lo que hay que leer en las trazas:
 ## Lo que falta
 
 - **Pickups y utilidades tiradas** no están replicados: cada peer ve las suyas.
-- **Los proyectiles enemigos** se simulan en el host y el cliente ve el daño
-  como un número que baja, no como un proyectil que llega.
+  Es el siguiente en la fila — dos jugadores pueden levantar la misma munición.
 - **Sin reconexión.** Si se cae el host, la partida termina.
 - **Las voces del narrador** las dispara cada máquina por su cuenta, así que
   cuatro personas pueden escuchar comentarios distintos.

@@ -54,6 +54,12 @@ var is_remote: bool = false
 ## enemy, and in a horde shooter where the same rusher is being shot by three
 ## people the last hit is the one that reads as the kill anyway.
 var last_damager: int = 0
+## How far into a wind-up this enemy is, 0 when it is not telegraphing anything.
+##
+## Kept as state rather than left inside the material because it has to travel:
+## the telegraph is the player's warning, and a client whose enemies never glow
+## is being asked to dodge something it cannot see coming.
+var windup_progress: float = 0.0
 
 var _player: Node3D
 var _material: StandardMaterial3D
@@ -118,6 +124,11 @@ func _physics_process(delta: float) -> void:
 		if halo != null and halo.visible:
 			halo.rotate_y(delta * 0.8)
 		_update_tether()
+		# Re-applied every frame because the block above wipes the emission the
+		# moment the hit flash ends, and on a puppet nothing else would put the
+		# telegraph back. The value itself arrives in the snapshot.
+		if windup_progress > 0.0 and _material != null and _flash_timer <= 0.0:
+			_material.emission_energy_multiplier = windup_progress * 2.5
 		return
 
 	if not is_on_floor():
@@ -164,8 +175,10 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	velocity = Vector3.ZERO
 	is_moving = false
 	move_target = spawn_position
-	# Pooled: an enemy carries the previous occupant's bounty claim otherwise.
+	# Pooled: an enemy carries the previous occupant's bounty claim - and its
+	# half-finished telegraph - otherwise.
 	last_damager = 0
+	windup_progress = 0.0
 	_stagger_timer = 0.0
 	_flash_timer = 0.0
 	_attack_cooldown_left = 0.0
@@ -331,6 +344,11 @@ func deal_melee_damage() -> void:
 	if player_health != null:
 		player_health.apply_damage(data.damage)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+	# Broadcast from here rather than from the tree action, so a swing that
+	# whiffed - the player left the wind-up, or a wall got in the way - stays
+	# silent on every machine instead of only on this one.
+	if EnemyReplicator.instance != null:
+		EnemyReplicator.instance.broadcast_melee(self)
 
 
 ## Clear line from this enemy's head to the target's chest.
@@ -355,8 +373,15 @@ func fire_projectile() -> void:
 	if typed == null:
 		push_error("Enemy: %s projectile_scene is not an EnemyProjectile" % data.id)
 		return
-	typed.launch(origin, (target - origin).normalized(), data.damage, data.projectile_speed, self)
+	var direction: Vector3 = (target - origin).normalized()
+	typed.launch(origin, direction, data.damage, data.projectile_speed, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+	# The shot itself is not in the snapshot - snapshots carry who is standing
+	# where, and a projectile that is only sampled 20 times a second reads as a
+	# row of blinks. What travels is the launch, and each client flies its own
+	# copy from there.
+	if EnemyReplicator.instance != null:
+		EnemyReplicator.instance.broadcast_projectile(self, origin, direction)
 
 
 ## Heals every other living enemy inside `heal_radius`. Returns how many it helped,
@@ -382,12 +407,14 @@ func heal_nearby_allies() -> int:
 
 ## Plays the visual half of a wind-up telegraph.
 func show_windup(progress: float) -> void:
+	windup_progress = clampf(progress, 0.0, 1.0)
 	if _material == null:
 		return
 	_material.emission_energy_multiplier = progress * 2.5
 
 
 func clear_windup() -> void:
+	windup_progress = 0.0
 	if _material != null and _flash_timer <= 0.0:
 		_material.emission_energy_multiplier = 0.0
 
