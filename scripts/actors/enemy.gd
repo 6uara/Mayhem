@@ -47,6 +47,13 @@ var net_id: int = 0
 ## it does arrives from the host, and simulating any of it here would fight the
 ## incoming snapshot rather than smooth it.
 var is_remote: bool = false
+## Peer whose shot last landed on this enemy, and therefore who gets paid when it
+## dies. Zero means the host's own player, which is also the single-player answer.
+##
+## Last hit rather than most damage: it costs one integer instead of a table per
+## enemy, and in a horde shooter where the same rusher is being shot by three
+## people the last hit is the one that reads as the kill anyway.
+var last_damager: int = 0
 
 var _player: Node3D
 var _material: StandardMaterial3D
@@ -157,6 +164,8 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	velocity = Vector3.ZERO
 	is_moving = false
 	move_target = spawn_position
+	# Pooled: an enemy carries the previous occupant's bounty claim otherwise.
+	last_damager = 0
 	_stagger_timer = 0.0
 	_flash_timer = 0.0
 	_attack_cooldown_left = 0.0
@@ -808,6 +817,15 @@ func _on_died() -> void:
 	_clear_behavior_tree()
 	AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
+	# The bounty goes to whoever was shooting, which is not always the machine
+	# resolving the death. EnemyReplicator sends it on when that is a client;
+	# with no session, or with the host's own player on the trigger, it is paid
+	# here and the single-player path is unchanged.
+	if EnemyReplicator.instance != null and EnemyReplicator.instance.credit_kill(
+			last_damager, data.id, global_position, data.reward_currency):
+		ObjectPool.release(self)
+		return
+	EventBus.kill_credited.emit(data.reward_currency)
 	ObjectPool.release(self)
 
 

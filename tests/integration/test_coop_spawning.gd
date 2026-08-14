@@ -144,6 +144,67 @@ func test_a_player_reports_the_peer_that_owns_it() -> void:
 	assert_eq(body.get_peer_id(), 7, "peer id comes from the node name")
 
 
+# ------------------------------------------------------------------- the revive
+
+## Going down costs a wave, not the run: the wave break stands everyone back up.
+## Without this a coop session degrades into one person playing while three
+## watch, which is the failure mode the spectator camera was only ever a
+## stopgap for.
+func test_the_host_can_stand_a_downed_player_back_up() -> void:
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "1"
+	add_child_autofree(body)
+	await wait_frames(1)
+
+	var layer: int = body.collision_layer
+	body.is_downed = true
+	body.collision_layer = 0
+	body.health.is_invulnerable = true
+	body.health.current_health = 0.0
+	body.health.is_dead = true
+
+	body.revive_from_host()
+	assert_false(body.is_downed, "back in the fight")
+	assert_eq(body.collision_layer, layer, "collides with the world again")
+	assert_false(body.health.is_invulnerable, "and can be hurt again")
+	assert_eq(body.health.current_health, body.health.max_health, "at full health")
+
+
+func test_reviving_a_player_who_never_fell_changes_nothing() -> void:
+	var body: Player = load("res://scenes/player/player.tscn").instantiate()
+	body.name = "1"
+	add_child_autofree(body)
+	await wait_frames(1)
+
+	watch_signals(EventBus)
+	body.revive_from_host()
+	assert_signal_not_emitted(EventBus, "player_revived",
+		"nobody is told about a revive that did not happen")
+
+
+# ------------------------------------------------------------------ kill credit
+
+## The bounty follows the trigger, not the simulation. Solo, the two are the
+## same machine and the money must still arrive - this is the path that pays for
+## every purchase in the single-player game.
+func test_a_solo_kill_pays_the_local_wallet() -> void:
+	var replicator := EnemyReplicator.new()
+	add_child_autofree(replicator)
+	assert_false(replicator.credit_kill(0, &"grunt", Vector3.ZERO, 25),
+		"with no session open the caller pays itself")
+
+
+func test_a_kill_credited_over_the_wire_is_what_moves_the_money() -> void:
+	EconomyManager.reset()
+	var before: int = EconomyManager.currency
+	EventBus.enemy_killed.emit(&"grunt", Vector3.ZERO, 25)
+	assert_eq(EconomyManager.currency, before,
+		"an enemy dying somewhere is not by itself income")
+	EventBus.kill_credited.emit(25)
+	assert_gt(EconomyManager.currency, before, "being credited for it is")
+	EconomyManager.reset()
+
+
 func test_a_player_with_no_health_component_still_counts_as_alive() -> void:
 	# Enemy targeting calls this every time it re-acquires; a null health on a
 	# test double or a stripped-down body must not read as a corpse.

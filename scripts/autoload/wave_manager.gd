@@ -97,6 +97,16 @@ func get_remaining_count() -> int:
 ## same numbers rather than being left to guess them from the enemies it can see
 ## (which would miss anything still queued to spawn).
 func apply_remote_state(index: int, active: bool, remaining: int, duration: float) -> void:
+	# A wave starting is the client's cue to reset what it tracks for itself:
+	# what it earned this wave and what it took. Those are per-player numbers -
+	# they feed this machine's own end-of-wave payout - so they cannot arrive in
+	# the snapshot, and without this they accumulated across the whole run and
+	# every wave after the first read as "took damage".
+	if active and (index != current_index or not is_wave_active):
+		_damage_taken_this_wave = 0.0
+		EconomyManager.begin_wave()
+		var wave: WaveData = waves[index] if index >= 0 and index < waves.size() else null
+		EventBus.wave_started.emit(index, wave)
 	current_index = index
 	is_wave_active = active
 	# Folded into one counter: get_remaining_count() is the sum of the two, and
@@ -107,6 +117,22 @@ func apply_remote_state(index: int, active: bool, remaining: int, duration: floa
 	# Clocks are not shared between machines, so the host's start timestamp
 	# means nothing here. The elapsed time is the part that transfers.
 	_wave_start_time = _now() - duration
+
+
+## Client-side end-of-wave payout.
+##
+## A client never detects a wave clear - it is told about it - so it never walks
+## through _check_wave_cleared(), where the host banks its bonuses. The host
+## cannot bank them on its behalf either: the speed bonus is the run's, but the
+## kill income and the no-damage bonus are this player's, and only this machine
+## knows what it earned and what hit it.
+func award_local_wave_bonuses(duration: float) -> void:
+	var wave: WaveData = get_current_wave()
+	if wave == null:
+		_last_breakdown = {}
+		return
+	_last_breakdown = EconomyManager.award_wave_bonuses(
+		wave, duration, _damage_taken_this_wave > 0.0)
 
 
 func is_last_wave() -> bool:
@@ -181,6 +207,13 @@ func _spawn_at(enemy_data: EnemyData, position: Vector3) -> Node:
 
 func _on_enemy_killed(_type: StringName, _position: Vector3, _reward: int) -> void:
 	if not is_wave_active:
+		return
+	# The host counts the wave down; a client's copy of the count arrives in the
+	# snapshot. A client does see this signal - it is emitted locally for the
+	# kills it is credited with, so its HUD and announcer react on the frame it
+	# earns them - but letting it decrement here would race the snapshot and, at
+	# the end of a wave, declare the wave clear a second time on its own.
+	if not NetworkManager.is_host():
 		return
 	_alive_enemies = maxi(_alive_enemies - 1, 0)
 	_check_wave_cleared()

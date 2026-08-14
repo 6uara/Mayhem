@@ -36,7 +36,10 @@ func _process(delta: float) -> bool:
 			if _elapsed > _next_trace:
 				_next_trace = _elapsed + 4.0
 				_trace()
-			if _elapsed > 64.0:
+			# Long enough to clear a wave and sit through the whole break: the
+			# shop opens on both peers, the 30s timer readies them, and the next
+			# wave starts for everyone at once.
+			if _elapsed > 110.0:
 				return true
 	return false
 
@@ -53,8 +56,25 @@ func _trace() -> void:
 			owned += 1
 	var waves: Node = root.get_node_or_null("/root/WaveManager")
 	var state: Node = root.get_node_or_null("/root/GameManager")
-	print("HOST t=%.0f scene=%s state=%d wave=%d active=%s remaining=%d sim=%d puppets=%d" % [
+	var economy: Node = root.get_node_or_null("/root/EconomyManager")
+	print(("HOST t=%.0f scene=%s state=%d wave=%d active=%s remaining=%d sim=%d "
+		+ "puppets=%d money=%d shop=%s") % [
 		_elapsed,
 		current_scene.name if current_scene != null else "<none>",
 		int(state.state), waves.current_index, waves.is_wave_active,
-		waves.get_remaining_count(), owned, puppets])
+		waves.get_remaining_count(), owned, puppets,
+		int(economy.currency), _shop_state()])
+
+
+## The wave break is the half of this that the enemy count cannot show: both
+## traces should sit in shop=open together and leave it on the same tick, with
+## each side's money moving by what it personally earned.
+func _shop_state() -> String:
+	if current_scene == null:
+		return "<no scene>"
+	var shop: Node = current_scene.get_node_or_null("ShopScreen")
+	if shop == null:
+		return "<no node>"
+	if not bool(shop.get(&"is_open")):
+		return "closed"
+	return "waiting" if bool(shop.get(&"_is_waiting")) else "open"

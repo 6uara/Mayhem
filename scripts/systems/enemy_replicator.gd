@@ -91,6 +91,11 @@ func report_hit(hitbox: HitboxComponent, damage: float, hit_position: Vector3) -
 	if hitbox == null:
 		return
 	if not NetworkManager.is_online() or NetworkManager.is_host():
+		# Ours. Claim the bounty before the hit lands, since the hit is what may
+		# kill it - claiming afterwards would credit nobody for the killing blow.
+		var mine := hitbox.owner as Enemy
+		if mine != null:
+			mine.last_damager = 0
 		hitbox.take_hit(damage, hit_position)
 		return
 
@@ -100,6 +105,7 @@ func report_hit(hitbox: HitboxComponent, damage: float, hit_position: Vector3) -
 	if target == null or target.net_id == 0:
 		hitbox.take_hit(damage, hit_position)
 		return
+
 
 	_receive_hit.rpc_id(NetworkManager.SERVER_ID, target.net_id, damage,
 		hitbox.is_headshot_zone, hit_position)
@@ -125,7 +131,43 @@ func _receive_hit(net_id: int, damage: float, is_headshot: bool,
 		hitbox = target.body_hitbox
 	if hitbox == null:
 		return
+	target.last_damager = multiplayer.get_remote_sender_id()
 	hitbox.take_hit(clampf(damage, 0.0, MAX_REPORTED_DAMAGE), hit_position)
+
+
+# Kill credit
+#
+# Kills are resolved on the host and paid on whichever machine earned them. The
+# arithmetic stays local everywhere: what crosses the wire is the bare fact that
+# a peer killed something worth this much, and that peer's own EconomyManager
+# scales and banks it exactly as it would in a solo run.
+
+## Hands the bounty for a kill to `peer_id`. Returns true when the money left
+## this machine, so the caller knows not to pay itself as well.
+func credit_kill(peer_id: int, enemy_type: StringName, position: Vector3,
+		reward: int) -> bool:
+	if not NetworkManager.is_online() or not NetworkManager.is_host():
+		return false
+	if peer_id == 0 or peer_id == NetworkManager.SERVER_ID:
+		return false
+	# A peer that left mid-wave still has enemies it last hit. Nobody is there to
+	# be paid, and rpc_id to a dead peer is an error, so the money is dropped.
+	if not NetworkManager.players.has(peer_id):
+		return true
+	_receive_kill_credit.rpc_id(peer_id, enemy_type, position, reward)
+	return true
+
+
+## The kill lands on the client as both events: enemy_killed so the reticle
+## flashes a kill marker and the announcer reacts to what this player did, and
+## kill_credited so it gets paid. WaveManager ignores the first one off-host -
+## the wave count belongs to the snapshot.
+@rpc("authority", "call_remote", "reliable")
+func _receive_kill_credit(enemy_type: StringName, position: Vector3,
+		reward: int) -> void:
+	var paid: int = maxi(reward, 0)
+	EventBus.enemy_killed.emit(enemy_type, position, paid)
+	EventBus.kill_credited.emit(paid)
 
 
 func _find_owned(net_id: int) -> Enemy:

@@ -8,7 +8,13 @@ extends SceneTree
 ## client that killed only its own copy would show 5 here and 6 on the host.
 ##
 ## Both harnesses stand still otherwise, so the enemies eventually kill them,
-## which is what also makes this the spectator test.
+## which is what also makes this the spectator test - and, now that the wave
+## break stands the fallen back up, the revive test: `downed` has to go back to
+## false on both peers the moment the shop opens.
+##
+## The other two things to read in the trace are money and shop. The kill above
+## must move this client's money and not the host's, and both peers must sit in
+## the break together and leave it on the same tick.
 
 var _elapsed: float = 0.0
 var _phase: int = 0
@@ -35,7 +41,7 @@ func _process(delta: float) -> bool:
 			if _elapsed > _next_trace:
 				_next_trace = _elapsed + 4.0
 				_trace(net)
-			if _elapsed > 60.0:
+			if _elapsed > 106.0:
 				return true
 	return false
 
@@ -82,5 +88,19 @@ func _trace(net: Node) -> void:
 		spectator = current_scene.get_node_or_null("SpectatorView")
 	var watching: Variant = spectator.get(&"_is_spectating") if spectator != null else "<no node>"
 
-	print("CLIENT t=%.0f puppets=%d shot(%d)_alive=%s players_alive=%d downed=%s spectating=%s" % [
-		_elapsed, puppets, _shot_at, still_there, alive, mine_downed, watching])
+	var shop: Node = null
+	if current_scene != null:
+		shop = current_scene.get_node_or_null("ShopScreen")
+	var shop_state: Variant = "<no node>"
+	if shop != null:
+		shop_state = "closed" if not bool(shop.get(&"is_open")) \
+			else ("waiting" if bool(shop.get(&"_is_waiting")) else "open")
+	var economy: Node = root.get_node_or_null("/root/EconomyManager")
+
+	# money is the client-side half of the kill credit: it must move when this
+	# harness shoots something dead, and not when the host kills its own.
+	# downed going back to false across the break is the revive.
+	print(("CLIENT t=%.0f puppets=%d shot(%d)_alive=%s players_alive=%d downed=%s "
+		+ "spectating=%s money=%d shop=%s") % [
+		_elapsed, puppets, _shot_at, still_there, alive, mine_downed, watching,
+		int(economy.currency) if economy != null else -1, shop_state])

@@ -32,6 +32,13 @@ var weapon: WeaponComponent:
 ## running around, and the host never keeps aiming enemies at it.
 var is_downed: bool = false
 
+## Collision as authored, kept so a revive can put back exactly what going down
+## took away rather than guessing at the layer names from here.
+## Last health value seen on a client's own body - see _watch_replicated_health().
+var _last_seen_health: float = 0.0
+var _base_collision_layer: int = 0
+var _base_collision_mask: int = 0
+
 var _look_yaw: float = 0.0
 var _look_pitch: float = 0.0
 var _base_fov: float = 95.0
@@ -58,6 +65,8 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	add_to_group(&"player")
+	_base_collision_layer = collision_layer
+	_base_collision_mask = collision_mask
 	# One player per session answers true here. Everything that used to mean
 	# "the player" - HUD binding, the reticle, mouse capture - means this one,
 	# and remote bodies are just other actors in the world.
@@ -152,6 +161,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_watch_replicated_health()
 	# A remote player's yaw and head pitch arrive over the network. Running the
 	# look code on them would immediately overwrite what was replicated with our
 	# own (never-updated) angles, pinning every other player to a fixed stare.
@@ -159,6 +169,23 @@ func _process(delta: float) -> void:
 		return
 	_apply_look()
 	_apply_fov(delta)
+
+
+## On a client, our own body is hurt on the host: the hit is resolved there and
+## what comes back is a number on HealthSync. health.damaged never fires here,
+## so everything downstream of it - the damage flash, the indicators, and the
+## no-damage bonus this player did or did not earn - simply never happened.
+## Watching the replicated value is what turns it back into an event.
+func _watch_replicated_health() -> void:
+	if health == null or not is_local() or not NetworkManager.is_online() \
+			or NetworkManager.is_host():
+		_last_seen_health = health.current_health if health != null else 0.0
+		return
+	var now: float = health.current_health
+	var lost: float = _last_seen_health - now
+	_last_seen_health = now
+	if lost > 0.0:
+		EventBus.player_damaged.emit(lost, now)
 
 
 # Public API
@@ -287,6 +314,59 @@ func _report_downed() -> void:
 ## authority was resolved in the first place.
 func get_peer_id() -> int:
 	return name.to_int()
+
+
+## Host: put this player back in the fight. Called at the wave break, so going
+## down costs you the rest of a wave instead of the rest of the run - which is
+## what keeps a four-player session from turning into three people playing while
+## the fourth watches for twenty minutes.
+func revive_from_host() -> void:
+	if not is_downed:
+		return
+	if not NetworkManager.is_online():
+		_apply_revived_state()
+		return
+	_report_revived.rpc()
+
+
+## Same reasoning as _report_downed: any_peer with a hand-rolled check, because
+## this node's authority is the client that drives it and the host is the one
+## with the right to say a player is standing again.
+@rpc("any_peer", "call_local", "reliable")
+func _report_revived() -> void:
+	var sender: int = multiplayer.get_remote_sender_id()
+	if sender != 0 and sender != NetworkManager.SERVER_ID:
+		return
+	if not is_downed:
+		return
+	_apply_revived_state()
+
+
+func _apply_revived_state() -> void:
+	is_downed = false
+	collision_layer = _base_collision_layer
+	collision_mask = _base_collision_mask
+	if movement != null:
+		movement.set_physics_process(true)
+	if health != null:
+		health.is_invulnerable = false
+		# A full bar rather than a sliver: the wave break is where everyone is
+		# topped up anyway, and being revived into one hit of health would just
+		# put you straight back on the spectator camera.
+		health.reset()
+	velocity = Vector3.ZERO
+	# Takes the view back off the spectator camera: making ours current is what
+	# demotes whichever one was. Only the camera - the mouse belongs to the shop
+	# screen that is open over all this, and the revive can land either side of
+	# it opening.
+	if is_local() and camera != null:
+		camera.current = true
+	# Left where they fell rather than sent back to a spawn point. The revive
+	# only ever happens between waves, when the arena is empty, so the spot that
+	# killed you is not dangerous any more - and a teleport would have to agree
+	# on a destination across four machines that each sync this body's position
+	# from a different one of them.
+	EventBus.player_revived.emit(get_peer_id())
 
 
 ## A downed body stops being part of the fight everywhere at once: it takes no

@@ -7,6 +7,16 @@ signal damage_dealt(target: Node, amount: float, is_headshot: bool)
 signal enemy_killed(enemy_type: StringName, position: Vector3, reward: int)
 signal player_damaged(amount: float, remaining: float)
 signal player_died()
+## A kill this machine's player is being paid for.
+##
+## Split off from enemy_killed because the two answer different questions once
+## there is more than one player. enemy_killed means "an enemy died" and drives
+## everything that reacts to that - the wave count, the announcer, kill feel.
+## This one means "and you get the money", which is true on exactly one machine
+## per kill: the host resolves every death, but the bounty follows whoever was
+## shooting. Paying off enemy_killed instead handed the host the whole arena's
+## income and left the clients broke in front of the shop.
+signal kill_credited(reward: int)
 
 # Weapons
 signal weapon_fired(weapon_id: StringName)
@@ -57,6 +67,14 @@ signal player_downed(peer_id: int)
 ## A downed player started or stopped spectating. The HUD hides itself while
 ## this is true - it shows *your* ammo and health, and you have neither.
 signal spectating_changed(is_spectating: bool, target_name: String)
+## A downed player is back on their feet. Emitted on every peer, because the
+## body has to stand up everywhere at once - the shop phase revives whoever fell
+## during the wave, so going down costs you the rest of a wave rather than the
+## rest of the run.
+signal player_revived(peer_id: int)
+## The wave break started or ended on this machine. Carries how many players
+## have finished shopping so the screen can say who it is waiting for.
+signal shop_ready_changed(ready_count: int, total: int)
 
 # Settings
 signal settings_applied()

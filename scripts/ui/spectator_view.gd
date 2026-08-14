@@ -39,6 +39,7 @@ func _ready() -> void:
 	_overlay.visible = false
 	_camera.current = false
 	EventBus.player_downed.connect(_on_player_downed)
+	EventBus.player_revived.connect(_on_player_revived)
 	# The run ending takes the screen back - the game over panel is the last
 	# word, and a chase camera behind it would just be scenery.
 	EventBus.player_died.connect(_stop)
@@ -82,6 +83,14 @@ func _on_player_downed(peer_id: int) -> void:
 		# on its way.
 		return
 	_start()
+
+
+## The wave break stood us back up: the stands are for people who are dead, and
+## we are not any more.
+func _on_player_revived(peer_id: int) -> void:
+	if peer_id != NetworkManager.local_id():
+		return
+	_stop()
 
 
 func _start() -> void:
