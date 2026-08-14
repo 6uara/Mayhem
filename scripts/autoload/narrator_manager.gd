@@ -116,8 +116,51 @@ func say(occasion: StringName, format_args: Array = []) -> void:
 	var line_set: HostLineSet = catalog.find(occasion)
 	if line_set == null or not line_set.has_lines():
 		return
+	_speak(occasion, _pick_index(occasion, line_set.lines.size()), format_args)
 
-	var index: int = _pick_index(occasion, line_set.lines.size())
+
+## The same line, in every headset in the session.
+##
+## The Host is one broadcast, not four commentators. Left to say() on each
+## machine the occasion would be decided locally - and even where every peer
+## agreed something was worth a line, each would roll its own variant out of the
+## set, so four people watching the same wave clear would hear four different
+## sentences about it. The host names the moment and picks the sentence; the
+## others are told which one it was.
+##
+## Solo takes the local path: a session of one, talking to itself.
+func say_shared(occasion: StringName, format_args: Array = []) -> void:
+	if not NetworkManager.is_online():
+		say(occasion, format_args)
+		return
+	if not NetworkManager.is_host():
+		return  # It is coming over the wire. Speaking here too would double it.
+	if catalog == null:
+		return
+	var line_set: HostLineSet = catalog.find(occasion)
+	if line_set == null or not line_set.has_lines():
+		return
+	_receive_line.rpc(occasion, _pick_index(occasion, line_set.lines.size()),
+		format_args)
+
+
+## call_local so the host reads its own broadcast the way everyone else does -
+## same line, same pacing rules, no private shortcut into the queue.
+@rpc("authority", "call_local", "reliable")
+func _receive_line(occasion: StringName, index: int, format_args: Array) -> void:
+	_speak(occasion, index, format_args)
+
+
+## Speaks a line that has already been chosen. Pacing still applies per machine:
+## a peer whose Host is mid-sentence, or who just heard this category, drops it
+## rather than talking over itself.
+func _speak(occasion: StringName, index: int, format_args: Array) -> void:
+	if catalog == null:
+		return
+	var line_set: HostLineSet = catalog.find(occasion)
+	if line_set == null or not line_set.has_lines():
+		return
+	index = clampi(index, 0, line_set.lines.size() - 1)
 	var text: String = line_set.lines[index]
 	if not format_args.is_empty():
 		text = text % format_args

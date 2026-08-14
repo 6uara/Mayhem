@@ -146,6 +146,21 @@ func test_the_windup_is_state_an_enemy_carries() -> void:
 	assert_eq(enemy.windup_progress, 0.0, "and it ends when the attack does")
 
 
+# --------------------------------------------------------------- el narrador
+
+## The Host is one broadcast, not four commentators. With nobody connected the
+## shared path has to collapse back into the ordinary one, or the single-player
+## game goes quiet - and it would go quiet without erroring, which is the kind
+## of regression nobody notices until someone asks why the Host stopped talking.
+func test_a_shared_line_is_spoken_locally_in_a_solo_run() -> void:
+	watch_signals(NarratorManager)
+	NarratorManager.clear_queue()
+	NarratorManager.say_shared(&"death")
+	await wait_physics_frames(2)
+	assert_signal_emitted(NarratorManager, "subtitle_shown",
+		"solo still hears the Host")
+
+
 # -------------------------------------------------------------- las utilidades
 
 ## A client flies its own copy of the grenade it threw so the arc leaves its

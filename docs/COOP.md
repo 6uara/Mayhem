@@ -39,6 +39,7 @@ obvio— es tocar ese archivo y nada más.
 | Revivir | `Player.revive_from_host()` | El corte entre oleadas levanta a los caídos |
 | Tienda | `MatchDirector._open_break()` | Todos compran a la vez y la oleada arranca cuando el último está listo |
 | Victoria | `MatchDirector._declare_victory()` | La declara el host; cada peer puntúa su propia billetera |
+| El Host (la voz) | `NarratorManager.say_shared()` | Una transmisión para los cuatro, misma línea y mismo momento |
 
 ### El corte entre oleadas
 
@@ -80,8 +81,9 @@ Lo que hay que leer en las trazas:
   su cuenta, así que puede quedar unos centímetros corrida entre peers. Dura
   segundos y nadie lo nota, pero es una divergencia real.
 - **Sin reconexión.** Si se cae el host, la partida termina.
-- **Las voces del narrador** las dispara cada máquina por su cuenta, así que
-  cuatro personas pueden escuchar comentarios distintos.
+- **Dos líneas del Host siguen siendo personales a propósito**: el aviso de vida
+  baja (habla de *tu* vida) y el comentario de compra (en el corte compran los
+  cuatro a la vez; difundirlo serían cuatro voces encimadas).
 - **Sin anti-cheat**, y a propósito: el movimiento es autoritativo del cliente y
   esto es un juego para amigos. El único límite es `MAX_REPORTED_DAMAGE`, que
   existe para que un valor corrupto no borre una oleada entera.
