@@ -20,6 +20,7 @@ var _elapsed: float = 0.0
 var _phase: int = 0
 var _next_trace: float = 0.0
 var _shot_at: int = 0
+var _next_shot: float = 0.0
 
 
 func _process(delta: float) -> bool:
@@ -38,6 +39,12 @@ func _process(delta: float) -> bool:
 		1:
 			if _elapsed > 14.0 and _shot_at == 0:
 				_shoot_one()
+			# One puppet a second after the first kill, so this peer keeps
+			# earning while the host clears its side. Two wallets moving
+			# independently is what the money column is there to show.
+			if _elapsed > 20.0 and _elapsed > _next_shot:
+				_next_shot = _elapsed + 1.0
+				_keep_shooting()
 			if _elapsed > _next_trace:
 				_next_trace = _elapsed + 4.0
 				_trace(net)
@@ -63,6 +70,23 @@ func _shoot_one() -> void:
 		print("CLIENT: shooting net_id=", _shot_at)
 		for _i: int in 4:
 			replicator.report_hit(hitbox, 200.0, node.global_position)
+		return
+
+
+## The same client damage path as _shoot_one(), on a loop and without the
+## bookkeeping - by this point what is being watched is the wallet, not one
+## particular enemy.
+func _keep_shooting() -> void:
+	var scene: Node = current_scene
+	if scene == null:
+		return
+	var replicator: Node = scene.get_node_or_null("EnemyReplicator")
+	if replicator == null:
+		return
+	for node: Node in get_nodes_in_group(&"enemy"):
+		if not node.get(&"is_active") or not node.get(&"is_remote"):
+			continue
+		replicator.report_hit(node.get(&"body_hitbox"), 500.0, node.global_position)
 		return
 
 

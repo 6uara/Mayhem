@@ -66,6 +66,10 @@ sleep 2
 godot --headless --path . -s res://tools/net_smoke_wave_client.gd
 ```
 
+Los dos se hacen invulnerables y disparan solos, así que la oleada se limpia y
+la corrida llega al corte entre oleadas. Antes se quedaban quietos, morían en la
+primera oleada y todo el flujo de tienda/revivir quedaba sin probar.
+
 Lo que hay que leer en las trazas:
 
 - `sim` y `puppets`: los dos lados coinciden en cuántos enemigos hay y difieren
