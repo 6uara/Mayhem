@@ -4,16 +4,63 @@ GUT 9.7.1, vendored at `addons/gut/`. Tests live in `tests/` and mirror `scripts
 
 ## Running
 
-**In the editor:** the GUT panel at the bottom of the editor, once the plugin is enabled.
+**Windows, todo de una:**
 
-**Headless (what CI runs):**
+```powershell
+pwsh tools/run_tests.ps1
+```
+
+El script busca el Godot instalado (`$env:GODOT` lo pisa), corre la suite headless y
+devuelve el código de salida de GUT. Un script suelto o un test suelto:
+
+```powershell
+pwsh tools/run_tests.ps1 -Script res://tests/unit/test_economy_manager.gd
+pwsh tools/run_tests.ps1 -Test test_kills_pay_into_the_wave_total
+pwsh tools/run_tests.ps1 -Import   # después de traer assets nuevos
+```
+
+**Headless a mano (lo mismo que corre CI):**
 
 ```sh
 godot --headless -s addons/gut/gut_cmdln.gd -gexit
 ```
 
-Configuration lives in `.gutconfig.json` (test dirs, `test_` prefix, exit code on failure).
-CI runs the same command on every PR - see `.github/workflows/tests.yml`.
+En Windows usá el ejecutable `_console.exe`: el otro abre su propia ventana y la
+terminal no ve la salida.
+
+**En el editor:** el panel GUT abajo, con el plugin habilitado. El botón **Run All**
+recorre los directorios configurados **en el panel**, no los de `.gutconfig.json`.
+
+Esa distinción es la que suele dejar el Run All vacío. GUT guarda la config del panel
+en `user://gut_temp_directory/gut_editor_config.json` — en Windows,
+`%APPDATA%\Godot\app_userdata\Mayhem\gut_temp_directory\` — que es por usuario y por
+eso no está versionada. Si el panel arranca sin nada:
+
+1. Abrilo, tocá el engranaje (*Settings*).
+2. En **Directories** agregá `res://tests/unit` y `res://tests/integration`.
+3. Marcá **Include Subdirs**, dejá el prefijo `test_` y el sufijo `.gd`.
+
+El panel guarda solo al cerrar Godot, así que si querés escribir el archivo a mano,
+hacelo con el editor cerrado.
+
+`.gutconfig.json` es la config de la línea de comandos (directorios, prefijo `test_`,
+código de salida). CI corre el comando headless en cada PR — ver
+`.github/workflows/tests.yml`.
+
+## Estado actual de la suite
+
+Última corrida local con Godot 4.7 (`feat/coop-p2p`): **379 tests, 358 en verde**.
+Los rojos que quedan no son del código de juego:
+
+- `test_audio_pool` (6) y `test_host_voice` (1) — headless levanta un solo bus de
+  audio, así que `default_bus_layout.tres` no está y los índices de bus dan -1.
+- `test_wave_content` (9) — los `.tres` de oleadas resuelven sus `ext_resource` por
+  ruta porque el UID no coincide con el importado. Se arregla reimportando el
+  proyecto (`-Import`); si persiste, es que los `.uid` versionados no coinciden con
+  los de esta máquina.
+
+Antes de dar por buena una corrida, compará contra `develop`: `git worktree add` de
+`develop` y la misma orden ahí separa lo tuyo de lo que ya venía en rojo.
 
 ## What to test
 
