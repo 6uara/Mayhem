@@ -34,6 +34,7 @@ obvio— es tocar ese archivo y nada más.
 | Plata | `EventBus.kill_credited` | La recompensa sigue al que disparó, no a quien simula |
 | Ataques enemigos | `EnemyReplicator.broadcast_projectile()` / `broadcast_melee()` | El cliente ve el disparo, oye el golpe y ve el telegrafiado |
 | Munición | `scripts/systems/ammo_pickup.gd` | La caja es del host: la pide el que la pisa, y desaparece para todos |
+| Utilidades | `UtilityComponent._request_throw()` | El arco sale de tu mano al instante; el host vuela la copia que aturde |
 | Caídas | `Player._report_downed()` | Morir te pasa a la cámara de un compañero, no a game over |
 | Revivir | `Player.revive_from_host()` | El corte entre oleadas levanta a los caídos |
 | Tienda | `MatchDirector._open_break()` | Todos compran a la vez y la oleada arranca cuando el último está listo |
@@ -75,9 +76,9 @@ Lo que hay que leer en las trazas:
 
 ## Lo que falta
 
-- **Las utilidades tiradas** (granadas, campos) las simula cada peer por su
-  cuenta: la que tirás la ven solo tus ojos. Las cajas de munición sí están
-  replicadas; esto es lo que queda de esa familia.
+- **La pared temporal** existe en todas las máquinas pero cada una la posa por
+  su cuenta, así que puede quedar unos centímetros corrida entre peers. Dura
+  segundos y nadie lo nota, pero es una divergencia real.
 - **Sin reconexión.** Si se cae el host, la partida termina.
 - **Las voces del narrador** las dispara cada máquina por su cuenta, así que
   cuatro personas pueden escuchar comentarios distintos.

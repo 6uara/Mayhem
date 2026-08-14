@@ -146,6 +146,30 @@ func test_the_windup_is_state_an_enemy_carries() -> void:
 	assert_eq(enemy.windup_progress, 0.0, "and it ends when the attack does")
 
 
+# -------------------------------------------------------------- las utilidades
+
+## A client flies its own copy of the grenade it threw so the arc leaves its
+## hand on the frame it pressed the key. That copy must not touch the enemies in
+## front of it - they are puppets, the real ones are on the host, and the host is
+## flying the throw that counts. One flag on the base class covers all three
+## utilities, which is why it is enforced in _enemies_in_radius rather than in
+## each subclass.
+func test_a_cosmetic_utility_finds_nothing_to_affect() -> void:
+	var grenade: StunGrenade = load("res://scenes/utilities/stun_grenade.tscn").instantiate()
+	add_child_autofree(grenade)
+	var enemy: Enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
+	add_child_autofree(enemy)
+	await wait_physics_frames(1)
+	enemy.is_active = true
+	enemy.global_position = grenade.global_position
+
+	assert_eq(grenade._enemies_in_radius(10.0).size(), 1,
+		"a real throw sees the enemy standing on it")
+	grenade.is_cosmetic = true
+	assert_true(grenade._enemies_in_radius(10.0).is_empty(),
+		"a copy sees nobody, so every effect built on it is harmless")
+
+
 # ----------------------------------------------------------------- los pickups
 
 ## The pickup has to keep working with nobody connected, which is the case that
