@@ -60,7 +60,7 @@ en `.godot/editor` también. Hay que borrar la carpeta entera:
 
 ```powershell
 # Godot cerrado. Guardá esto si exportás firmado: .godot/export_credentials.cfg
-Remove-Item D:\Git\Mayhem\.godot -Recurse -Force
+Remove-Item .godot -Recurse -Force
 pwsh tools/run_tests.ps1 -Import
 ```
 
@@ -70,7 +70,7 @@ Para separar "roto por mi rama" de "roto en mi máquina", corré la misma orden 
 un worktree limpio:
 
 ```powershell
-git worktree add ..\baseline develop
+git worktree add ..\baseline develop   # o la rama base que corresponda
 pwsh tools/run_tests.ps1   # con $env:GODOT apuntando al mismo binario
 ```
 
