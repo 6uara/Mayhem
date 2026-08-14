@@ -62,6 +62,13 @@ var _announce_timer: float = 0.0
 var _utility_slots: Array[Control] = []
 var _grapple_slot: Control
 
+## What _tick_wave() last wrote into the timer cluster. It runs every frame, but
+## the values it derives change on transitions - a new wave, crossing par, taking
+## the first hit - so these let it push only what actually moved.
+var _wave_shown: WaveData
+var _over_par_shown: bool = false
+var _intact_shown: bool = true
+
 
 func _ready() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -272,26 +279,44 @@ func _tick_wave() -> void:
 	var wave: WaveData = WaveManager.get_current_wave()
 	if wave == null or not WaveManager.is_wave_active:
 		return
-	_enemies_left.text = "%d" % WaveManager.get_remaining_count()
-
 	var elapsed: float = WaveManager.get_wave_duration()
+	var over_par: bool = elapsed > wave.par_time
+	var intact: bool = WaveManager.get_damage_taken_this_wave() <= 0.0
+	# A wave's par_time is authored and never moves while it is running, so the
+	# PAR label is formatted once when the wave changes rather than rebuilt 60
+	# times a second.
+	var is_new_wave: bool = wave != _wave_shown
+	if is_new_wave:
+		_wave_shown = wave
+		_par.text = "/ PAR %s" % _format_time(wave.par_time)
+
+	_enemies_left.text = "%d" % WaveManager.get_remaining_count()
 	_elapsed.text = _format_time(elapsed)
-	_par.text = "/ PAR %s" % _format_time(wave.par_time)
+
+	var ratio: float = clampf(elapsed / maxf(wave.par_time, 0.01), 0.0, 1.0)
+	_par_bar.filled = int(round(ratio * float(_par_bar.count)))
 
 	# Past par the whole bar flips to ENEMY: the speed bonus is gone, and the HUD
 	# says so the moment it happens rather than at the breakdown screen.
-	var over_par: bool = elapsed > wave.par_time
-	var ratio: float = clampf(elapsed / maxf(wave.par_time, 0.01), 0.0, 1.0)
-	_par_bar.filled = int(round(ratio * float(_par_bar.count)))
-	_par_bar.filled_color = Tokens.ENEMY if over_par else Tokens.PLAYER
-	_elapsed.add_theme_color_override("font_color",
-		Tokens.ENEMY if over_par else Tokens.TEXT)
+	#
+	# Both blocks below fire on transitions only. add_theme_color_override()
+	# invalidates the control and re-notifies its subtree on every call, whether
+	# or not the colour actually differs, so calling it unconditionally from a
+	# per-frame tick pays that cost 60 times a second to cross the same boundary
+	# once. The state each one wrote is mirrored here so a re-entry after a wave
+	# change still repaints.
+	if is_new_wave or over_par != _over_par_shown:
+		_over_par_shown = over_par
+		_par_bar.filled_color = Tokens.ENEMY if over_par else Tokens.PLAYER
+		_elapsed.add_theme_color_override("font_color",
+			Tokens.ENEMY if over_par else Tokens.TEXT)
 
-	var intact: bool = WaveManager.get_damage_taken_this_wave() <= 0.0
-	_no_damage_mark.color = Tokens.PLAYER if intact else Tokens.LINE
-	_no_damage_label.text = "NO DAMAGE - INTACT" if intact else "NO DAMAGE - LOST"
-	_no_damage_label.add_theme_color_override("font_color",
-		Tokens.MUTED if intact else Tokens.DIM)
+	if is_new_wave or intact != _intact_shown:
+		_intact_shown = intact
+		_no_damage_mark.color = Tokens.PLAYER if intact else Tokens.LINE
+		_no_damage_label.text = "NO DAMAGE - INTACT" if intact else "NO DAMAGE - LOST"
+		_no_damage_label.add_theme_color_override("font_color",
+			Tokens.MUTED if intact else Tokens.DIM)
 
 
 # Signal handlers

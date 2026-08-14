@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="EnemyData" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="EnemyData" format=3 uid="uid://cv2huca3ahk3j"]
 
-[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bjtsflnvsj88u" path="res://scripts/resources/enemy_data.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_ranger.tscn" id="2_tree"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/ranger_spawn.wav" id="3_spawn"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/ranger_windup.wav" id="4_windup"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/ranger_attack.wav" id="5_attack"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/ranger_death.wav" id="6_death"]
+[ext_resource type="AudioStream" uid="uid://df0wpc31qvaqf" path="res://assets/audio/sfx/enemies/ranger_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" uid="uid://bi3sydb1h562u" path="res://assets/audio/sfx/enemies/ranger_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" uid="uid://cfs0l6ydduu6s" path="res://assets/audio/sfx/enemies/ranger_attack.wav" id="5_attack"]
+[ext_resource type="AudioStream" uid="uid://1y37qtodsxpq" path="res://assets/audio/sfx/enemies/ranger_death.wav" id="6_death"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="7_projectile"]
 
 [sub_resource type="PrismMesh" id="Mesh_ranger"]
@@ -13,30 +13,27 @@ size = Vector3(0.75, 1.9, 0.6)
 
 [resource]
 script = ExtResource("1_script")
-mesh = SubResource("Mesh_ranger")
-archetype = 1
 id = &"ranger"
 display_name = "Ranger"
+archetype = 1
+behavior_tree = ExtResource("2_tree")
 max_health = 60.0
 move_speed = 4.4
-damage = 10.0
 attack_range = 22.0
 attack_cooldown = 2.2
-mass = 1.0
 stagger_resistance = 0.1
 attack_windup = 0.7
 projectile_scene = ExtResource("7_projectile")
 projectile_speed = 26.0
 preferred_distance = 14.0
+mesh = SubResource("Mesh_ranger")
 body_color = Color(1, 0.478, 0.122, 1)
-body_scale = 1.00
-collision_height = 1.90
+collision_height = 1.9
 collision_radius = 0.34
-head_offset = 1.70
+head_offset = 1.7
 head_radius = 0.24
-reward_currency = 14
-behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
+reward_currency = 14

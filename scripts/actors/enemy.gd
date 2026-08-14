@@ -67,6 +67,18 @@ var _is_traversing_link: bool = false
 ## and never change during a run, so paying for a group query every frame - which
 ## allocates a fresh array each call - buys nothing.
 var _links: Array[JumpLink] = []
+## Latched answer to _has_navmesh(). NavigationServer3D.map_get_regions()
+## allocates a fresh Array[RID] on every call, and _steer() asks the question
+## every physics frame for every walking enemy - the same per-frame throwaway
+## allocation already removed from _find_link_ahead(). The arena's regions are
+## baked offline and committed (see ArenaNavigation), so once the answer is yes
+## it stays yes for this spawn.
+##
+## Only `true` is cached, and the latch is cleared in setup(): a pooled enemy
+## outlives the arena it was built in, so caching a `false` from a map that has
+## not resolved yet - or from a previous, navmesh-less arena - would leave it
+## straight-line steering for its whole life.
+var _navmesh_latched: bool = false
 
 
 func _ready() -> void:
@@ -154,6 +166,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_last_position = spawn_position
 	_is_traversing_link = false
 	_link_target = spawn_position
+	_navmesh_latched = false
 	_cache_links()
 
 	_apply_presentation()
@@ -630,8 +643,13 @@ func _try_jump_obstacle() -> bool:
 ## True when there is baked navigation to follow. False means straight-line
 ## steering is the right answer, not a fallback for a broken path.
 func _has_navmesh() -> bool:
+	if _navmesh_latched:
+		return true
 	var map: RID = agent.get_navigation_map()
-	return map.is_valid() and not NavigationServer3D.map_get_regions(map).is_empty()
+	if not map.is_valid() or NavigationServer3D.map_get_regions(map).is_empty():
+		return false
+	_navmesh_latched = true
+	return true
 
 
 func _stop_horizontal(delta: float) -> void:

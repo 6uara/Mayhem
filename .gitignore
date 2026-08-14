@@ -8,6 +8,13 @@ export_presets.cfg
 # Build output
 builds/
 LatestBuild/
+## The export dialog defaults to the project root rather than builds/, so the
+## binaries land here unless someone remembers to redirect them. Mayhem.exe is
+## 214MB - past what GitHub accepts for a single file - and it is regenerated
+## from source every time, so it is never worth versioning.
+/Mayhem.exe
+/Mayhem.console.exe
+/*.pck
 
 # OS / editor noise
 *.tmp
@@ -15,3 +22,6 @@ LatestBuild/
 Thumbs.db
 ## Obsidian's per-user workspace state, created when the docs vault is opened.
 .obsidian/
+## godotTools.editorPath is an absolute path to whichever Godot build that
+## particular machine has installed, so this is per-user by nature.
+.vscode/

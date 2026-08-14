@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="WaveData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WaveData" format=3 uid="uid://1604bshnlakw"]
 
-[ext_resource type="Script" path="res://scripts/resources/wave_data.gd" id="1_wave"]
-[ext_resource type="Script" path="res://scripts/resources/spawn_group.gd" id="2_group"]
+[ext_resource type="Script" uid="uid://bjqajg2b4inv3" path="res://scripts/resources/wave_data.gd" id="1_wave"]
+[ext_resource type="Script" uid="uid://bau4pganyp7m" path="res://scripts/resources/spawn_group.gd" id="2_group"]
 [ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="3_rusher"]
 
 [sub_resource type="Resource" id="Group_0"]
@@ -9,13 +9,10 @@ script = ExtResource("2_group")
 enemy_data = ExtResource("3_rusher")
 count = 6
 spawn_door_ids = Array[StringName]([&"door_01", &"door_02"])
-delay = 0.0
 interval = 0.8
 
 [resource]
 script = ExtResource("1_wave")
-wave_index = 0
-spawn_groups = Array[Resource]([SubResource("Group_0")])
+spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0")])
 par_time = 40.0
 completion_bonus = 60
-is_elite_wave = false
