@@ -15,7 +15,10 @@ param(
     # A single test function by name. Works with or without -Script.
     [string]$Test = "",
     # Import the project first. Needed after pulling new assets, slow otherwise.
-    [switch]$Import
+    [switch]$Import,
+    # Deja en el arbol lo que Godot haya reescrito, en vez de revertirlo. Solo
+    # util cuando lo que queres ver es justamente que reescribio.
+    [switch]$KeepIncidentalChanges
 )
 
 # Deliberately not "Stop". Under Windows PowerShell 5.1 a native program writing
@@ -24,6 +27,7 @@ param(
 # before it ever ran a test. Exit codes are checked by hand instead.
 $ErrorActionPreference = "Continue"
 $projectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "git_guard.ps1")
 
 function Find-Godot {
     if ($env:GODOT -and (Test-Path $env:GODOT)) { return $env:GODOT }
@@ -62,6 +66,14 @@ terminal; la otra abre su propia ventana y no vas a ver nada aca.
 }
 Write-Host "godot: $godot" -ForegroundColor DarkGray
 
+# Fotografia del arbol antes de que Godot toque nada. Correr los tests no
+# deberia cambiar un solo archivo del proyecto - hoy no lo hace, y esto es lo
+# que lo mantiene asi cuando manana Godot decida re-serializar algo.
+$treeBefore = $null
+if (-not $KeepIncidentalChanges) {
+    $treeBefore = Get-DirtyPaths -RepoRoot $projectRoot
+}
+
 if ($Import) {
     # Reimports every asset. Do this when the suite fails on "invalid UID" or on
     # audio buses that are suddenly missing: those are a stale .godot/ cache
@@ -82,6 +94,8 @@ if ($Test) { $gutArgs += @("-gunit_test_name=$Test") }
 
 & $godot @gutArgs
 $code = $LASTEXITCODE
+
+Restore-IncidentalChanges -RepoRoot $projectRoot -Before $treeBefore
 
 # GUT exits non-zero on a failing test, which is the signal worth surfacing -
 # but the engine also exits non-zero on unrelated shutdown noise, so the line

@@ -78,6 +78,30 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 @export var has_tether: bool = false
 ## Silhouette must be readable at a glance (CLAUDE.md 5.3).
 @export var mesh: Mesh
+## A rigged model, shown instead of `mesh` when one is set.
+##
+## The primitive silhouette stays the fallback rather than being replaced
+## outright: grey-boxing an archetype has to keep working with nothing but a
+## capsule and a colour, and archetypes get their models one at a time.
+##
+## Gameplay reads none of this. The capsule, the hitboxes and the head are
+## authored below and stay where they are, so dropping a model in cannot quietly
+## change what a shot hits or where an enemy fits.
+@export var model_scene: PackedScene
+## Models arrive in whatever units they were authored in - the spider bot is
+## about six units across - so the scale that makes it the right size on screen
+## belongs next to the model, not baked into the .fbx import.
+@export var model_scale: float = 1.0
+## Where the model sits relative to the body's origin, which is on the floor.
+## Mostly a vertical nudge to plant the feet.
+@export var model_offset: Vector3 = Vector3.ZERO
+## Yaw correction, in degrees.
+##
+## Godot drives a body along its -Z, and a model is only ever pointing that way
+## by luck - the spider bot was authored facing +Z, so it walked backwards until
+## this was turned around. Belongs to the archetype rather than to the .fbx
+## import so it is visible next to the rest of the placement.
+@export_range(-180.0, 180.0, 1.0) var model_yaw_degrees: float = 0.0
 @export var body_color: Color = Color(0.6, 0.62, 0.66)
 @export var body_scale: float = 1.0
 ## Capsule collision, kept in sync with the mesh by hand while grey-boxing.
