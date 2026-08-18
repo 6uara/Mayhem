@@ -50,6 +50,9 @@ var _model_source: PackedScene
 ## them to light the whole bot up at once.
 var _model_meshes: Array[MeshInstance3D] = []
 var _glow_material: StandardMaterial3D
+## Walks the model's legs when it has any. Null for an archetype still wearing
+## its grey-box capsule, which has nothing to walk with.
+var _gait: LeggedGait
 var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
@@ -659,6 +662,7 @@ func _apply_model() -> void:
 	_prune_authoring_nodes(_model)
 	_collect_model_meshes(_model)
 	_place_model()
+	_attach_gait()
 
 
 ## Throws away what the modelling program packed alongside the model.
@@ -674,6 +678,23 @@ func _prune_authoring_nodes(node: Node) -> void:
 			child.queue_free()
 			continue
 		_prune_authoring_nodes(child)
+
+
+## Gives the model a walk, if it has legs to walk with. Dropped again when it
+## has none rather than left in place doing nothing every frame - the pool runs
+## a lot of these at once.
+func _attach_gait() -> void:
+	if _gait != null:
+		_gait.queue_free()
+		_gait = null
+	if _model == null:
+		return
+	var gait := LeggedGait.new()
+	add_child(gait)
+	if gait.setup(_model, self):
+		_gait = gait
+		return
+	gait.queue_free()
 
 
 func _place_model() -> void:

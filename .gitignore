@@ -25,6 +25,3 @@ Thumbs.db
 ## godotTools.editorPath is an absolute path to whichever Godot build that
 ## particular machine has installed, so this is per-user by nature.
 .vscode/
-
-## Salida de tools/preview_enemy_model.gd, se regenera a pedido.
-enemy_preview.png

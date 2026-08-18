@@ -2,24 +2,39 @@ extends SceneTree
 ## Renderiza un arquetipo a PNG para revisar escala, apoyo y orientacion.
 ##
 ##   godot --path . -s res://tools/preview_enemy_model.gd -- rusher
+##   godot --path . -s res://tools/preview_enemy_model.gd -- rusher walk
 ##
-## Sale a res://enemy_preview.png. Camara puesta donde estaria el jugador al que
+## Sale a user://enemy_preview.png (la ruta absoluta se imprime). Camara puesta donde estaria el jugador al que
 ## el enemigo esta encarando (un cuerpo avanza hacia -Z en Godot), asi que si en
 ## la imagen no le ves la cara, le falta model_yaw_degrees.
+##
+## Con "walk" pone cuatro copias en fila, cada una un cuarto de ciclo mas
+## adelante que la anterior: la tira se lee como los cuadros de una caminata.
 ##
 ## La regla roja mide un metro exacto: es la referencia para model_scale.
 ## El enemigo queda con la fisica apagada porque el piso de esta escena no tiene
 ## colision - sin eso se cae del mundo antes de que se saque la foto.
 
-const OUTPUT: String = "res://enemy_preview.png"
+## Fuera del proyecto a proposito: un PNG dentro de res:// se lo importa Godot y
+## te deja un .import al lado, y esto es una foto de trabajo, no un asset.
+const OUTPUT: String = "user://enemy_preview.png"
 
 var _frames: int = 0
-var _enemy: Node3D
+var _enemies: Array[Node3D] = []
 var _archetype: String = "rusher"
+var _walking: bool = false
+## Mirar la caminata de frente, que es como la ve el jugador cuando lo cargan.
+var _from_front: bool = false
 
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
+		if argument == "walk":
+			_walking = true
+			continue
+		if argument == "front":
+			_from_front = true
+			continue
 		_archetype = argument
 
 	var world := Node3D.new()
@@ -44,12 +59,22 @@ func _initialize() -> void:
 	world.add_child(_slab(Vector3(0.05, 1.0, 0.05), Vector3(1.2, 0.5, 0.0),
 		Color(0.9, 0.2, 0.2)))
 
-	_enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
-	world.add_child(_enemy)
+	var count: int = 4 if _walking else 1
+	for i: int in count:
+		var enemy: Node3D = load("res://scenes/enemies/enemy.tscn").instantiate()
+		world.add_child(enemy)
+		enemy.position = Vector3(float(i) * 1.5 - (float(count) - 1.0) * 0.75, 0.0, 0.0)
+		if _walking and not _from_front:
+			# De perfil: el swing va hacia el -Z del cuerpo, y de frente eso pasa
+			# por encima de la camara. Girados, la pata que adelanta se lee.
+			enemy.rotation.y = PI * 0.5
+		_enemies.append(enemy)
 
 	var camera := Camera3D.new()
-	var eye := Vector3(0.0, 0.9, -2.6)
-	camera.look_at_from_position(eye, Vector3(0.0, 0.55, 0.0), Vector3.UP)
+	# Los cuatro cuadros se miran de costado: la pata que adelanta es lo que hay
+	# que leer, y de frente no se ve.
+	var eye := Vector3(0.0, 1.0, -4.2) if _walking else Vector3(0.0, 0.9, -2.6)
+	camera.look_at_from_position(eye, Vector3(0.0, 0.5, 0.0), Vector3.UP)
 	world.add_child(camera)
 	camera.current = true
 
@@ -64,14 +89,46 @@ func _process(_delta: float) -> bool:
 		if data == null:
 			print("no existe ", path)
 			return true
-		_enemy.setup(data, Vector3.ZERO)
-		_enemy.set_physics_process(false)
+		for enemy: Node3D in _enemies:
+			enemy.setup(data, enemy.position)
+			enemy.set_physics_process(false)
 		return false
-	if _frames < 12:
+	# Posar y sacar la foto no pueden pasar en el mismo frame: los
+	# BoneAttachment3D copian la pose del hueso recien en el proceso del
+	# esqueleto, asi que una captura inmediata muestra el modelo en reposo.
+	if _frames == 4 and _walking:
+		_pose_the_walk()
+		return false
+	if _frames < 14:
 		return false
 	get_root().get_texture().get_image().save_png(OUTPUT)
-	print("guardado ", OUTPUT, " (", _archetype, ")")
+	print("guardado ", ProjectSettings.globalize_path(OUTPUT), " (", _archetype, ")")
 	return true
+
+
+## Cada copia queda un cuarto de ciclo mas adelante. Se le miente la velocidad al
+## componente y se lo hace correr a mano: la fisica esta apagada, asi que nadie
+## se mueve de su lugar y las cuatro poses quedan quietas para la foto.
+func _pose_the_walk() -> void:
+	for i: int in _enemies.size():
+		var enemy: Node3D = _enemies[i]
+		var gait: LeggedGait = null
+		for child: Node in enemy.get_children():
+			var found := child as LeggedGait
+			if found != null:
+				gait = found
+		if gait == null:
+			print("sin gait: el modelo no tiene patas que caminen")
+			return
+		if i == 0:
+			print("huesos tomados: ", gait._amplitude.size(),
+				"  rodillas: ", gait._is_knee.values().count(true),
+				"  amp_rodilla=", gait.knee_degrees)
+		enemy.velocity = Vector3(0.0, 0.0, -7.2)
+		# 1/60 por paso, las veces que haga falta para llegar a esta fase.
+		var steps: int = 12 + i * 9
+		for _step: int in steps:
+			gait._physics_process(1.0 / 60.0)
 
 
 func _slab(size: Vector3, position: Vector3, color: Color) -> MeshInstance3D:
