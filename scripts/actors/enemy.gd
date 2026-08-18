@@ -14,6 +14,51 @@ const STUCK_TIME: float = 0.3
 ## Metres per second of real progress below which it is not actually moving.
 const STUCK_SPEED: float = 0.9
 const JUMP_COOLDOWN: float = 0.9
+## A jump that ends this close to where it started got the enemy nowhere.
+##
+## The bug this measures: an enemy wedged against a lip or a railing hops, lands
+## on the same spot, waits out the cooldown and hops again - forever, in place,
+## in front of the player. Nothing in the old code ever asked whether a jump had
+## worked, so the same one was worth retrying every second of the wave.
+const FAILED_JUMP_DISTANCE: float = 0.9
+## How long an enemy stops trying to jump after one gets it nowhere. Long enough
+## that walking around is what it does next, rather than hopping again.
+const FAILED_JUMP_COOLDOWN: float = 3.0
+## How long it commits to going sideways after a failed jump.
+const DETOUR_TIME: float = 1.1
+## How far off its heading it steps while detouring. Not a full right angle: the
+## point is to slide off whatever it is caught on, not to walk away from the fight.
+const DETOUR_DEGREES: float = 62.0
+## A link that just refused to be crossed is left alone for this long, so the
+## enemy stops relaunching into the same railing.
+const LINK_BLOCK_TIME: float = 4.0
+## Cerca de la salida de un link como para contar el cruce por bueno.
+const LINK_ARRIVAL: float = 1.5
+
+# Separacion (la unica regla de boids que este juego quiere)
+#
+# De las tres reglas clasicas, separacion es la que resuelve un problema real
+# aca. Cohesion hace exactamente lo contrario de lo que se pidio: junta al grupo,
+# que es el amontonamiento del que veniamos escapando. Y alineacion -copiar el
+# rumbo del vecino- pelea con el navmesh, que ya decidio por donde va cada uno;
+# en una horda que converge al mismo jugador los rumbos ya son casi paralelos,
+# asi que no agrega nada que se note.
+#
+# Lo que queda es empujarse entre vecinos, y eso si se ve: la horda deja de
+# apilarse en un punto y ocupa un frente.
+## Hasta donde se sienten los vecinos.
+const SEPARATION_RADIUS: float = 2.0
+## Cuanto pesa el empujon contra la direccion en la que queria ir. Bajo a
+## proposito: esto corrige el rumbo, no lo reemplaza, o los enemigos orbitan al
+## jugador en vez de llegarle.
+const SEPARATION_WEIGHT: float = 0.85
+## Cada cuanto se recalculan los vecinos. A 20 por segundo nadie ve la diferencia
+## y una oleada elite entera deja de recorrerse en cada frame de cada enemigo.
+const SEPARATION_INTERVAL: float = 0.05
+## How wide the fan is, in metres either side of the direct line.
+const APPROACH_SPREAD: float = 2.4
+## Distance over which the lane closes to nothing as the enemy arrives.
+const APPROACH_FADE: float = 4.0
 
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
@@ -66,6 +111,33 @@ var _last_position: Vector3
 ## Set while crossing a NavigationLink3D under our own ballistic arc.
 var _link_target: Vector3 = Vector3.ZERO
 var _is_traversing_link: bool = false
+## Where the enemy left the ground, so the landing can be judged against it.
+var _jump_origin: Vector3 = Vector3.ZERO
+## True between a jump starting and its landing being judged.
+var _jump_pending: bool = false
+## Was the enemy on the floor last frame? The landing is the transition.
+var _was_on_floor: bool = true
+## Seconds left of walking sideways to get out of whatever the jump could not
+## clear, and which way. The side alternates so a failed detour tries the other.
+var _detour_time: float = 0.0
+var _detour_sign: float = 1.0
+## The link that just failed, and how long it stays off the table.
+var _blocked_link: JumpLink
+var _blocked_link_time: float = 0.0
+## The link this jump was launched at, kept until the landing is judged.
+var _last_link: JumpLink
+## This enemy's lane, -1 to 1: which side of the direct line it approaches on,
+## and how far out. Rolled per spawn, so a pooled body gets a new one each wave
+## and the pack never forms up the same way twice.
+var _approach_lane: float = 0.0
+## Los enemigos vivos, para que la separacion recorra una lista propia en vez de
+## pedirle el grupo al arbol en cada frame de cada enemigo - que era mil arrays
+## descartables por segundo en una oleada llena, y es el mismo motivo por el que
+## los links estan cacheados.
+static var _flock: Array[Enemy] = []
+## Empujon acumulado de los vecinos, recalculado a intervalos.
+var _separation: Vector3 = Vector3.ZERO
+var _separation_timer: float = 0.0
 ## The arena's jump links, resolved once per spawn. They are placed at author time
 ## and never change during a run, so paying for a group query every frame - which
 ## allocates a fresh array each call - buys nothing.
@@ -105,6 +177,11 @@ func _physics_process(delta: float) -> void:
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
+	_detour_time = maxf(_detour_time - delta, 0.0)
+	_separation_timer = maxf(_separation_timer - delta, 0.0)
+	_blocked_link_time = maxf(_blocked_link_time - delta, 0.0)
+	if _blocked_link_time <= 0.0:
+		_blocked_link = null
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -138,6 +215,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 	move_and_slide()
+	_judge_landing()
 	_check_obstruction(delta)
 
 
@@ -159,6 +237,18 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_last_position = spawn_position
 	_is_traversing_link = false
 	_link_target = spawn_position
+	_jump_pending = false
+	_was_on_floor = true
+	_approach_lane = randf_range(-1.0, 1.0)
+	_separation = Vector3.ZERO
+	# Desfasado a proposito. Con todos arrancando en cero, los veintisiete
+	# enemigos de una oleada elite recalculaban vecinos en el mismo frame y
+	# despues descansaban juntos: el promedio no lo nota, el peor frame si.
+	_separation_timer = randf() * SEPARATION_INTERVAL
+	_detour_time = 0.0
+	_blocked_link = null
+	_blocked_link_time = 0.0
+	_last_link = null
 	_navmesh_latched = false
 	_cache_links()
 
@@ -175,6 +265,8 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_rebuild_behavior_tree()
 
 	is_active = true
+	if not _flock.has(self):
+		_flock.append(self)
 	AudioPool.play_3d(data.spawn_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -185,6 +277,9 @@ func _on_acquired() -> void:
 func _on_released() -> void:
 	is_active = false
 	is_moving = false
+	# Un cuerpo que volvio al pool vive debajo del piso. Si siguiera en la lista,
+	# empujaria a los vivos desde ahi abajo.
+	_flock.erase(self)
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
 
@@ -200,6 +295,53 @@ func get_player() -> Node3D:
 func get_player_position() -> Vector3:
 	var player: Node3D = get_player()
 	return player.global_position if player != null else global_position
+
+
+## Where this enemy walks while it is closing in - a point beside the player
+## rather than the player.
+##
+## A dozen enemies all pathing to one set of feet arrive as a queue: the same
+## line, single file, each one shoving the one in front. Every archetype in the
+## game is melee-adjacent enough for that to be the shape of most fights, and it
+## reads as a conga line rather than as being surrounded.
+##
+## Each enemy carries its own lane, a fixed sideways offset from whatever
+## direction it happens to be approaching from. Sideways rather than a fixed
+## point on a circle, so nobody walks the long way around the player to reach an
+## angle it was assigned; they fan out across the front they are already coming
+## from.
+##
+## The lane closes as it arrives. Past the commit distance the offset fades to
+## nothing and the enemy goes for the player itself, because an attack aimed at a
+## point beside someone is an attack that misses.
+func get_approach_position() -> Vector3:
+	var player: Node3D = get_player()
+	if player == null:
+		return global_position
+	var target: Vector3 = player.global_position
+	if is_zero_approx(_approach_lane):
+		return target
+
+	var to_player: Vector3 = target - global_position
+	to_player.y = 0.0
+	var distance: float = to_player.length()
+	var commit: float = _approach_commit_distance()
+	if distance <= commit or distance < 0.01:
+		return target
+
+	# Full lane far out, none of it once inside the commit distance, and a smooth
+	# ramp between - a hard switch would make the whole pack snap inward at the
+	# same radius, which is the queue again with extra steps.
+	var blend: float = clampf((distance - commit) / APPROACH_FADE, 0.0, 1.0)
+	var lateral: Vector3 = to_player.normalized().cross(Vector3.UP)
+	return target + lateral * _approach_lane * APPROACH_SPREAD * blend
+
+
+## Inside this, the enemy stops flanking and comes straight in. Scaled off its
+## own reach so a long-armed elite commits sooner than a rusher.
+func _approach_commit_distance() -> float:
+	var reach: float = data.attack_range if data != null else 2.0
+	return maxf(reach * 1.8, 2.5)
 
 
 func get_distance_to_player() -> float:
@@ -379,9 +521,116 @@ func _steer(delta: float) -> void:
 		_stop_horizontal(delta)
 		return
 	direction = direction.normalized()
+	# Fresh off a jump that got nowhere: lean sideways for a moment. Walking at
+	# the same corner again would only produce the same failed jump, and sliding
+	# along the obstacle is what a player watching expects to see anyway.
+	if _detour_time > 0.0:
+		direction = direction.rotated(Vector3.UP,
+			deg_to_rad(DETOUR_DEGREES) * _detour_sign).normalized()
+
+	if _separation_timer <= 0.0:
+		_separation_timer = SEPARATION_INTERVAL
+		_separation = _compute_separation()
+	if _separation != Vector3.ZERO:
+		direction = (direction + _separation * SEPARATION_WEIGHT).normalized()
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+## Decides whether the jump that just ended was worth taking.
+##
+## Every way out of being stuck ends in a landing, and until now nothing looked
+## at where that landing was. An enemy that hops a lip it cannot clear, or
+## launches at a link and bounces off the railing beside it, comes down on the
+## spot it left - and the only thing standing between it and doing that again is
+## a one second cooldown. That is the enemy the player sees pogoing on the edge
+## of a platform for the rest of the wave.
+##
+## Landing where it started is the signal. What follows is not another jump: the
+## jump is put away for a few seconds, the link that refused it is left alone,
+## and the enemy walks sideways instead - which is what gets it off the corner it
+## is caught on.
+func _judge_landing() -> void:
+	var grounded: bool = is_on_floor()
+	var just_landed: bool = grounded and not _was_on_floor
+	_was_on_floor = grounded
+	if not just_landed or not _jump_pending:
+		return
+	_jump_pending = false
+	# Un cruce de link se juzga por haber llegado, no por cuanto se movio: un
+	# link a plomo -una caida recta desde una plataforma- avanza cero en
+	# horizontal y seria un cruce perfecto marcado como fallido.
+	var arrived: bool = false
+	if _last_link != null:
+		arrived = global_position.distance_to(_link_target) <= LINK_ARRIVAL
+	_note_jump_result(Vector2(global_position.x - _jump_origin.x,
+		global_position.z - _jump_origin.z).length(), arrived)
+
+
+## Lo que se decide con el resultado del salto, separado de detectar el aterrizaje.
+##
+## Aparte porque son dos cosas distintas: una necesita un piso abajo y un cuerpo
+## cayendo, la otra es una regla. Partido asi, la regla se puede ejercitar sin
+## montar una arena, y lo que queda arriba es solo "esto fue un aterrizaje".
+func _note_jump_result(travelled: float, reached_target: bool = false) -> void:
+	if reached_target or travelled >= FAILED_JUMP_DISTANCE:
+		return
+
+	_jump_cooldown_left = FAILED_JUMP_COOLDOWN
+	_stuck_time = 0.0
+	# Alternate sides: if going left did not free it, the next attempt goes right
+	# rather than grinding into the same corner from the same angle.
+	_detour_sign = -_detour_sign
+	_detour_time = DETOUR_TIME
+	if _is_traversing_link:
+		_is_traversing_link = false
+	if _last_link != null:
+		_blocked_link = _last_link
+		_blocked_link_time = LINK_BLOCK_TIME
+		_last_link = null
+
+
+## Records a jump so its landing can be judged. Every launch goes through here.
+func _begin_jump(link: JumpLink = null) -> void:
+	_jump_origin = global_position
+	_jump_pending = true
+	_was_on_floor = true
+	_last_link = link
+
+
+## Empujon que reciben unos de otros los enemigos que estan demasiado juntos.
+##
+## Es la regla de separacion de un boid, y nada mas que esa. Cada vecino dentro
+## del radio empuja en direccion contraria, con fuerza que crece cuanto mas
+## encimado esta - dos enemigos pisandose se separan fuerte, dos a dos metros
+## casi no se sienten.
+##
+## Horizontal a proposito: la componente vertical la maneja la gravedad, y un
+## empujon hacia arriba entre dos enemigos apilados los haria flotar.
+##
+## No lo hace el NavigationAgent3D, aunque la escena diga avoidance_enabled: eso
+## requiere pasarle la velocidad al agente y esperar su callback, y nadie lo
+## hacia nunca. El agente calculaba evitacion todos los frames para que el
+## resultado se tirara a la basura.
+func _compute_separation() -> Vector3:
+	var push := Vector3.ZERO
+	for other: Enemy in _flock:
+		if other == self or not is_instance_valid(other) or not other.is_active:
+			continue
+		var offset: Vector3 = global_position - other.global_position
+		offset.y = 0.0
+		var distance: float = offset.length()
+		if distance >= SEPARATION_RADIUS:
+			continue
+		if distance < 0.01:
+			# Exactamente encimados: no hay direccion que sacar del vector, asi
+			# que se desempata con algo estable pero distinto por enemigo.
+			var angle: float = float(get_instance_id() % 360) * TAU / 360.0
+			push += Vector3(cos(angle), 0.0, sin(angle))
+			continue
+		push += offset / distance * (1.0 - distance / SEPARATION_RADIUS)
+	return push
 
 
 ## Watches for the enemy being told to move while covering no ground, and hops the
@@ -455,6 +704,7 @@ func _try_traverse_link() -> bool:
 	_link_target = exit
 	_is_traversing_link = true
 	_jump_cooldown_left = JUMP_COOLDOWN
+	_begin_jump(link)
 	return true
 
 
@@ -481,6 +731,11 @@ func _find_link_ahead() -> JumpLink:
 	var best_distance: float = INF
 	for link: JumpLink in _links:
 		if not is_instance_valid(link) or not link.enabled:
+			continue
+		# The one that just bounced this enemy off a railing is off the table for
+		# a few seconds. Without this the pathfinder keeps offering the same
+		# crossing and the enemy keeps taking it, which is the pogo.
+		if link == _blocked_link:
 			continue
 		var distance: float = global_position.distance_to(_nearest_end(link))
 		if distance > data.collision_radius + 1.6 or distance >= best_distance:
@@ -601,6 +856,7 @@ func _try_jump_obstacle() -> bool:
 
 	velocity.y = data.jump_velocity
 	_jump_cooldown_left = JUMP_COOLDOWN
+	_begin_jump()
 	return true
 
 
