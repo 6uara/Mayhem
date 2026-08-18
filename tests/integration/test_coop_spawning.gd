@@ -185,6 +185,36 @@ func test_a_cosmetic_utility_finds_nothing_to_affect() -> void:
 		"a copy sees nobody, so every effect built on it is harmless")
 
 
+## The wall is the one utility whose exact position changes what a player can
+## do - it is solid, and everyone has to be stopped by it in the same place. Each
+## machine flies its own copy, and the arc is raycast against enemies, which sit
+## a few centimetres apart between peers. The host says where its copy stopped
+## and the others move onto that spot.
+func test_a_wall_moves_onto_the_landing_the_host_reports() -> void:
+	var wall: TempWall = load("res://scenes/utilities/temp_wall.tscn").instantiate()
+	add_child_autofree(wall)
+	await wait_physics_frames(1)
+	wall.global_position = Vector3(1.0, 0.0, 1.0)
+
+	wall.snap_to_landing(Vector3(4.0, 0.5, -2.0), 1.5)
+	assert_almost_eq(wall.global_position, Vector3(4.0, 0.5, -2.0), Vector3.ONE * 0.001,
+		"the copy stands where the host's did")
+	assert_almost_eq(wall.rotation.y, 1.5, 0.001, "facing the same way")
+	assert_almost_eq(wall.rotation.x, 0.0, 0.001, "and still upright")
+
+
+## Every other utility ignores the correction: a grenade has already gone off,
+## and where its flash was drawn is nobody's business but that machine's.
+func test_other_utilities_ignore_a_landing_correction() -> void:
+	var grenade: StunGrenade = load("res://scenes/utilities/stun_grenade.tscn").instantiate()
+	add_child_autofree(grenade)
+	await wait_physics_frames(1)
+	grenade.global_position = Vector3(1.0, 0.0, 1.0)
+	grenade.snap_to_landing(Vector3(9.0, 9.0, 9.0), 2.0)
+	assert_almost_eq(grenade.global_position, Vector3(1.0, 0.0, 1.0), Vector3.ONE * 0.001,
+		"nothing to correct")
+
+
 # ----------------------------------------------------------------- los pickups
 
 ## The pickup has to keep working with nobody connected, which is the case that

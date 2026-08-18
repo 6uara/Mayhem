@@ -46,6 +46,9 @@ func _ready() -> void:
 	# A peer leaving during the break is one fewer to wait for - and if it was
 	# the last one anybody was waiting on, the wave has to start.
 	NetworkManager.roster_changed.connect(_on_roster_changed)
+	# The run cannot continue without the machine that owns it: the waves, the
+	# enemies and the breaks all live there.
+	NetworkManager.host_disconnected.connect(_on_host_disconnected)
 	if shop_screen != null and shop_screen.has_signal(&"shop_closed"):
 		shop_screen.connect(&"shop_closed", _on_local_shop_closed)
 	start_match.call_deferred()
@@ -244,6 +247,21 @@ func _revive_the_fallen() -> void:
 		var player := body as Player
 		if player != null and player.is_downed:
 			player.revive_from_host()
+
+
+## The host is gone, so nothing is going to advance this run again. The match
+## is stopped here rather than left running: MatchOverlay puts the ending on
+## screen, and a client still sequencing waves behind that panel would be
+## counting down to a wave nobody can spawn.
+func _on_host_disconnected() -> void:
+	if not is_running:
+		return
+	is_running = false
+	_generation += 1
+	# Takes the shop off the screen and unpauses the tree if the break was open
+	# when the connection dropped.
+	_resume_from_break()
+	match_state_changed.emit(false)
 
 
 func _on_roster_changed() -> void:

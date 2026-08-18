@@ -35,11 +35,13 @@ obvio— es tocar ese archivo y nada más.
 | Ataques enemigos | `EnemyReplicator.broadcast_projectile()` / `broadcast_melee()` | El cliente ve el disparo, oye el golpe y ve el telegrafiado |
 | Munición | `scripts/systems/ammo_pickup.gd` | La caja es del host: la pide el que la pisa, y desaparece para todos |
 | Utilidades | `UtilityComponent._request_throw()` | El arco sale de tu mano al instante; el host vuela la copia que aturde |
+| Paredes | `UtilityComponent.broadcast_landing()` | La pared queda parada en el mismo lugar en las cuatro máquinas |
 | Caídas | `Player._report_downed()` | Morir te pasa a la cámara de un compañero, no a game over |
 | Revivir | `Player.revive_from_host()` | El corte entre oleadas levanta a los caídos |
 | Tienda | `MatchDirector._open_break()` | Todos compran a la vez y la oleada arranca cuando el último está listo |
 | Victoria | `MatchDirector._declare_victory()` | La declara el host; cada peer puntúa su propia billetera |
 | El Host (la voz) | `NarratorManager.say_shared()` | Una transmisión para los cuatro, misma línea y mismo momento |
+| Caída del host | `MatchOverlay._on_host_disconnected()` | La corrida se frena y el cliente ve por qué, en vez de una arena congelada |
 
 ### El corte entre oleadas
 
@@ -81,10 +83,11 @@ Lo que hay que leer en las trazas:
 
 ## Lo que falta
 
-- **La pared temporal** existe en todas las máquinas pero cada una la posa por
-  su cuenta, así que puede quedar unos centímetros corrida entre peers. Dura
-  segundos y nadie lo nota, pero es una divergencia real.
-- **Sin reconexión.** Si se cae el host, la partida termina.
+- **Sin reconexión ni migración de host.** Si se cae el host, la partida
+  termina: el cliente ve un panel de fin de sesión y vuelve al menú o arranca
+  una corrida solo. Que otro peer tome la posta significa mover la simulación
+  entera de máquina a mitad de oleada, y eso es un proyecto aparte, no un
+  pendiente.
 - **Dos líneas del Host siguen siendo personales a propósito**: el aviso de vida
   baja (habla de *tu* vida) y el comentario de compra (en el corte compran los
   cuatro a la vez; difundirlo serían cuatro voces encimadas).

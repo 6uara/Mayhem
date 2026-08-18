@@ -31,6 +31,12 @@ var _thrower: Node = null
 ## coming. Utilities are the answer to being surrounded, so "does nothing" is
 ## the difference between a teammate and a spectator.
 var is_cosmetic: bool = false
+## Names this throw. Every machine's copy of the same throw carries the same
+## number, which is how a landing correction from the host finds the right one.
+var throw_id: int = 0
+## The component that threw this, and the node the correction travels on. Only
+## the utilities that need to agree on where they stopped ever use it.
+var thrower_utility: Node = null
 
 
 func _physics_process(delta: float) -> void:
@@ -90,8 +96,17 @@ func _on_released() -> void:
 	_is_active = false
 	_velocity = Vector3.ZERO
 	_thrower = null
+	thrower_utility = null
 	# Pooled: the next throw out of this slot is somebody's real one.
 	is_cosmetic = false
+	throw_id = 0
+
+
+## Moves a copy onto the spot the host's own throw came to rest on. Base class
+## does nothing with it: a utility only needs this if standing in a slightly
+## different place would change the game, which is the wall and nothing else.
+func snap_to_landing(_position: Vector3, _yaw: float) -> void:
+	pass
 
 
 # Overridden by subclasses
