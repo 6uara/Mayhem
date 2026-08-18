@@ -99,6 +99,60 @@ func test_a_real_hop_in_place_is_caught_when_it_lands() -> void:
 		"y quedo penalizado sin que el test toque la regla a mano")
 
 
+# --------------------------------------------------- separacion (boids, la util)
+
+## Dos enemigos encimados se empujan en direcciones opuestas. Es la unica regla
+## de boids que este juego quiere: cohesion los volveria a amontonar.
+func test_two_crowded_enemies_push_apart() -> void:
+	var one: Enemy = await _make_enemy()
+	var two: Enemy = await _make_enemy()
+	one.global_position = Vector3.ZERO
+	two.global_position = Vector3(0.4, 0.0, 0.0)
+
+	var push_one: Vector3 = one._compute_separation()
+	var push_two: Vector3 = two._compute_separation()
+
+	assert_gt(push_one.length(), 0.0, "se sienten")
+	assert_lt(push_one.dot(push_two), 0.0, "y se empujan para lados opuestos")
+	assert_almost_eq(push_one.y, 0.0, 0.001,
+		"el empujon es horizontal: para arriba los haria flotar")
+
+
+## Cuanto mas encimados, mas fuerte. Un vecino al borde del radio casi no pesa.
+func test_the_push_grows_as_they_close_in() -> void:
+	var one: Enemy = await _make_enemy()
+	var two: Enemy = await _make_enemy()
+	one.global_position = Vector3.ZERO
+
+	two.global_position = Vector3(1.9, 0.0, 0.0)
+	var far_push: float = one._compute_separation().length()
+	two.global_position = Vector3(0.3, 0.0, 0.0)
+	var near_push: float = one._compute_separation().length()
+
+	assert_gt(near_push, far_push, "pisarse empuja mas que rozarse")
+
+
+func test_a_neighbour_out_of_range_is_not_felt() -> void:
+	var one: Enemy = await _make_enemy()
+	var two: Enemy = await _make_enemy()
+	one.global_position = Vector3.ZERO
+	two.global_position = Vector3(0.0, 0.0, Enemy.SEPARATION_RADIUS + 1.0)
+	assert_eq(one._compute_separation(), Vector3.ZERO, "lejos no molesta")
+
+
+## Un cuerpo devuelto al pool vive debajo del piso. Si siguiera contando como
+## vecino, empujaria a los vivos desde ahi abajo toda la partida.
+func test_a_body_back_in_the_pool_stops_pushing() -> void:
+	var one: Enemy = await _make_enemy()
+	var two: Enemy = await _make_enemy()
+	one.global_position = Vector3.ZERO
+	two.global_position = Vector3(0.5, 0.0, 0.0)
+	assert_gt(one._compute_separation().length(), 0.0, "vivo, empuja")
+
+	two._on_released()
+	assert_eq(one._compute_separation(), Vector3.ZERO, "en el pool, no")
+
+
 # ------------------------------------------------------------- la fila india
 
 ## Lejos, cada enemigo camina a su propio carril al costado de la linea directa.

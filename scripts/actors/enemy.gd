@@ -34,6 +34,27 @@ const DETOUR_DEGREES: float = 62.0
 const LINK_BLOCK_TIME: float = 4.0
 ## Cerca de la salida de un link como para contar el cruce por bueno.
 const LINK_ARRIVAL: float = 1.5
+
+# Separacion (la unica regla de boids que este juego quiere)
+#
+# De las tres reglas clasicas, separacion es la que resuelve un problema real
+# aca. Cohesion hace exactamente lo contrario de lo que se pidio: junta al grupo,
+# que es el amontonamiento del que veniamos escapando. Y alineacion -copiar el
+# rumbo del vecino- pelea con el navmesh, que ya decidio por donde va cada uno;
+# en una horda que converge al mismo jugador los rumbos ya son casi paralelos,
+# asi que no agrega nada que se note.
+#
+# Lo que queda es empujarse entre vecinos, y eso si se ve: la horda deja de
+# apilarse en un punto y ocupa un frente.
+## Hasta donde se sienten los vecinos.
+const SEPARATION_RADIUS: float = 2.0
+## Cuanto pesa el empujon contra la direccion en la que queria ir. Bajo a
+## proposito: esto corrige el rumbo, no lo reemplaza, o los enemigos orbitan al
+## jugador en vez de llegarle.
+const SEPARATION_WEIGHT: float = 0.85
+## Cada cuanto se recalculan los vecinos. A 20 por segundo nadie ve la diferencia
+## y una oleada elite entera deja de recorrerse en cada frame de cada enemigo.
+const SEPARATION_INTERVAL: float = 0.05
 ## How wide the fan is, in metres either side of the direct line.
 const APPROACH_SPREAD: float = 2.4
 ## Distance over which the lane closes to nothing as the enemy arrives.
@@ -96,6 +117,14 @@ var _last_link: JumpLink
 ## and how far out. Rolled per spawn, so a pooled body gets a new one each wave
 ## and the pack never forms up the same way twice.
 var _approach_lane: float = 0.0
+## Los enemigos vivos, para que la separacion recorra una lista propia en vez de
+## pedirle el grupo al arbol en cada frame de cada enemigo - que era mil arrays
+## descartables por segundo en una oleada llena, y es el mismo motivo por el que
+## los links estan cacheados.
+static var _flock: Array[Enemy] = []
+## Empujon acumulado de los vecinos, recalculado a intervalos.
+var _separation: Vector3 = Vector3.ZERO
+var _separation_timer: float = 0.0
 ## The arena's jump links, resolved once per spawn. They are placed at author time
 ## and never change during a run, so paying for a group query every frame - which
 ## allocates a fresh array each call - buys nothing.
@@ -136,6 +165,7 @@ func _physics_process(delta: float) -> void:
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
 	_detour_time = maxf(_detour_time - delta, 0.0)
+	_separation_timer = maxf(_separation_timer - delta, 0.0)
 	_blocked_link_time = maxf(_blocked_link_time - delta, 0.0)
 	if _blocked_link_time <= 0.0:
 		_blocked_link = null
@@ -197,6 +227,11 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_jump_pending = false
 	_was_on_floor = true
 	_approach_lane = randf_range(-1.0, 1.0)
+	_separation = Vector3.ZERO
+	# Desfasado a proposito. Con todos arrancando en cero, los veintisiete
+	# enemigos de una oleada elite recalculaban vecinos en el mismo frame y
+	# despues descansaban juntos: el promedio no lo nota, el peor frame si.
+	_separation_timer = randf() * SEPARATION_INTERVAL
 	_detour_time = 0.0
 	_blocked_link = null
 	_blocked_link_time = 0.0
@@ -217,6 +252,8 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_rebuild_behavior_tree()
 
 	is_active = true
+	if not _flock.has(self):
+		_flock.append(self)
 	AudioPool.play_3d(data.spawn_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -227,6 +264,9 @@ func _on_acquired() -> void:
 func _on_released() -> void:
 	is_active = false
 	is_moving = false
+	# Un cuerpo que volvio al pool vive debajo del piso. Si siguiera en la lista,
+	# empujaria a los vivos desde ahi abajo.
+	_flock.erase(self)
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
 
@@ -476,6 +516,12 @@ func _steer(delta: float) -> void:
 	if _detour_time > 0.0:
 		direction = direction.rotated(Vector3.UP,
 			deg_to_rad(DETOUR_DEGREES) * _detour_sign).normalized()
+
+	if _separation_timer <= 0.0:
+		_separation_timer = SEPARATION_INTERVAL
+		_separation = _compute_separation()
+	if _separation != Vector3.ZERO:
+		direction = (direction + _separation * SEPARATION_WEIGHT).normalized()
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
@@ -540,6 +586,40 @@ func _begin_jump(link: JumpLink = null) -> void:
 	_jump_pending = true
 	_was_on_floor = true
 	_last_link = link
+
+
+## Empujon que reciben unos de otros los enemigos que estan demasiado juntos.
+##
+## Es la regla de separacion de un boid, y nada mas que esa. Cada vecino dentro
+## del radio empuja en direccion contraria, con fuerza que crece cuanto mas
+## encimado esta - dos enemigos pisandose se separan fuerte, dos a dos metros
+## casi no se sienten.
+##
+## Horizontal a proposito: la componente vertical la maneja la gravedad, y un
+## empujon hacia arriba entre dos enemigos apilados los haria flotar.
+##
+## No lo hace el NavigationAgent3D, aunque la escena diga avoidance_enabled: eso
+## requiere pasarle la velocidad al agente y esperar su callback, y nadie lo
+## hacia nunca. El agente calculaba evitacion todos los frames para que el
+## resultado se tirara a la basura.
+func _compute_separation() -> Vector3:
+	var push := Vector3.ZERO
+	for other: Enemy in _flock:
+		if other == self or not is_instance_valid(other) or not other.is_active:
+			continue
+		var offset: Vector3 = global_position - other.global_position
+		offset.y = 0.0
+		var distance: float = offset.length()
+		if distance >= SEPARATION_RADIUS:
+			continue
+		if distance < 0.01:
+			# Exactamente encimados: no hay direccion que sacar del vector, asi
+			# que se desempata con algo estable pero distinto por enemigo.
+			var angle: float = float(get_instance_id() % 360) * TAU / 360.0
+			push += Vector3(cos(angle), 0.0, sin(angle))
+			continue
+		push += offset / distance * (1.0 - distance / SEPARATION_RADIUS)
+	return push
 
 
 ## Watches for the enemy being told to move while covering no ground, and hops the
