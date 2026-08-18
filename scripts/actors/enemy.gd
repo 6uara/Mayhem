@@ -40,6 +40,16 @@ var is_moving: bool = false
 
 var _player: Node3D
 var _material: StandardMaterial3D
+## The rigged model currently attached, and the scene it came from. Kept between
+## spawns: this node is pooled, and re-instantiating a model every time one left
+## the pool would pay exactly the cost the pool exists to avoid. Only a change of
+## archetype rebuilds it.
+var _model: Node3D
+var _model_source: PackedScene
+## Every MeshInstance3D inside the model, and the one material laid over all of
+## them to light the whole bot up at once.
+var _model_meshes: Array[MeshInstance3D] = []
+var _glow_material: StandardMaterial3D
 var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
@@ -87,8 +97,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_flash_timer = maxf(_flash_timer - delta, 0.0)
-	if _flash_timer <= 0.0 and _material != null and _material.emission_energy_multiplier > 0.0:
-		_material.emission_energy_multiplier = 0.0
+	if _flash_timer <= 0.0 and _glow_level() > 0.0:
+		_set_glow(0.0)
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
@@ -326,14 +336,12 @@ func heal_nearby_allies() -> int:
 
 ## Plays the visual half of a wind-up telegraph.
 func show_windup(progress: float) -> void:
-	if _material == null:
-		return
-	_material.emission_energy_multiplier = progress * 2.5
+	_set_glow(progress)
 
 
 func clear_windup() -> void:
-	if _material != null and _flash_timer <= 0.0:
-		_material.emission_energy_multiplier = 0.0
+	if _flash_timer <= 0.0:
+		_set_glow(0.0)
 
 
 # Private
@@ -611,8 +619,13 @@ func _stop_horizontal(delta: float) -> void:
 
 
 func _apply_presentation() -> void:
+	_apply_model()
 	if mesh_instance == null:
 		return
+	# The primitive is the fallback silhouette. With a model attached it is still
+	# here - the archetype may be swapped for one without a model on the next
+	# trip out of the pool - it is simply not drawn.
+	mesh_instance.visible = _model == null
 	if data.mesh != null:
 		mesh_instance.mesh = data.mesh
 	mesh_instance.scale = Vector3.ONE * data.body_scale
@@ -623,6 +636,90 @@ func _apply_presentation() -> void:
 	_material.emission_enabled = true
 	_material.emission = flash_color
 	_material.emission_energy_multiplier = 0.0
+
+
+## Attaches the archetype's model, or takes down the one from the archetype this
+## pooled body used to be.
+func _apply_model() -> void:
+	if data.model_scene == _model_source:
+		_place_model()
+		return
+	if _model != null:
+		_model.queue_free()
+	_model = null
+	_model_meshes.clear()
+	_model_source = data.model_scene
+	if _model_source == null:
+		return
+	_model = _model_source.instantiate() as Node3D
+	if _model == null:
+		push_error("Enemy: %s model_scene is not a Node3D" % data.id)
+		return
+	add_child(_model)
+	_prune_authoring_nodes(_model)
+	_collect_model_meshes(_model)
+	_place_model()
+
+
+## Throws away what the modelling program packed alongside the model.
+##
+## A .fbx exported straight out of Blender keeps that file's camera and lights.
+## Instanced once per enemy that is a light per enemy, and a Camera3D that makes
+## itself current takes over the screen - the horde would be filming itself.
+## Stripped here rather than in the import settings so it holds for any model
+## anyone drops in later, whatever state its export was in.
+func _prune_authoring_nodes(node: Node) -> void:
+	for child: Node in node.get_children():
+		if child is Camera3D or child is Light3D:
+			child.queue_free()
+			continue
+		_prune_authoring_nodes(child)
+
+
+func _place_model() -> void:
+	if _model == null:
+		return
+	_model.position = data.model_offset
+	_model.scale = Vector3.ONE * data.model_scale
+	_model.rotation = Vector3(0.0, deg_to_rad(data.model_yaw_degrees), 0.0)
+
+
+## An imported model brings its own materials, so the hit flash cannot be an
+## albedo swap the way it is on a grey-box capsule. It is laid over the top
+## instead: one unshaded material on every part, transparent until something
+## lights it up.
+func _collect_model_meshes(node: Node) -> void:
+	var mesh_node := node as MeshInstance3D
+	if mesh_node != null:
+		if _glow_material == null:
+			_glow_material = StandardMaterial3D.new()
+			_glow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_glow_material.albedo_color = Color(flash_color, 0.0)
+		mesh_node.material_overlay = _glow_material
+		_model_meshes.append(mesh_node)
+	for child: Node in node.get_children():
+		_collect_model_meshes(child)
+
+
+## One knob for "this enemy is lit up", whichever way it is being drawn: the
+## emission on a capsule, the overlay on a model. Hit flashes and attack
+## wind-ups both go through here, so neither has to know which it is looking at.
+func _set_glow(amount: float) -> void:
+	# Ceiling of 1.2 rather than 1.0: the hit flash deliberately overshoots the
+	# brightest wind-up, and 1.2 * 2.5 is the 3.0 the capsule flash has always
+	# used. The overlay cannot go past opaque, so it clamps a step earlier.
+	var level: float = clampf(amount, 0.0, 1.2)
+	if _glow_material != null:
+		_glow_material.albedo_color = Color(flash_color, minf(level, 1.0) * 0.8)
+	if _material != null:
+		_material.emission_energy_multiplier = level * 2.5
+
+
+func _glow_level() -> float:
+	if _glow_material != null:
+		return _glow_material.albedo_color.a
+	return _material.emission_energy_multiplier if _material != null else 0.0
 
 
 ## Shapes are resized per archetype, so each pooled instance needs its own copy -
@@ -734,8 +831,9 @@ func _set_hitboxes_enabled(enabled: bool) -> void:
 func _on_hit_taken(_amount: float, _is_headshot: bool, hit_position: Vector3) -> void:
 	# Visible reaction to every hit is a gunplay-feel requirement (CLAUDE.md 5.3).
 	_flash_timer = FLASH_TIME
-	if _material != null:
-		_material.emission_energy_multiplier = 3.0
+	# Over the top of the wind-up glow on purpose: a hit landing has to read even
+	# on an enemy that is already lit up.
+	_set_glow(1.2)
 	var resistance: float = clampf(data.stagger_resistance if data != null else 0.0, 0.0, 1.0)
 	if resistance >= 1.0:
 		return
