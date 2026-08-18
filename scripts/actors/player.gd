@@ -34,6 +34,8 @@ var is_downed: bool = false
 
 ## Collision as authored, kept so a revive can put back exactly what going down
 ## took away rather than guessing at the layer names from here.
+## Whether this machine drives this body. See is_local().
+var _is_local: bool = true
 ## Last health value seen on a client's own body - see _watch_replicated_health().
 var _last_seen_health: float = 0.0
 var _base_collision_layer: int = 0
@@ -65,6 +67,8 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	add_to_group(&"player")
+	# Read while the session is still up, and never asked again - see is_local().
+	_is_local = is_multiplayer_authority()
 	_base_collision_layer = collision_layer
 	_base_collision_mask = collision_mask
 	# One player per session answers true here. Everything that used to mean
@@ -93,8 +97,16 @@ func _ready() -> void:
 
 ## True for the body this machine drives. In single player there is no peer, so
 ## the default authority of 1 makes the only player local - no branch needed.
+##
+## Answered from a value read once rather than by asking the MultiplayerAPI
+## every time, for two reasons. It is called every frame by several systems, and
+## - the one that actually bit - is_multiplayer_authority() has to fetch this
+## peer's unique id, which errors once there is no peer: when the host quits,
+## every body still standing in the arena started logging that error on every
+## frame of its _process. Whose body this is cannot change while it exists
+## anyway; the local_player group has always been that same snapshot.
 func is_local() -> bool:
-	return is_multiplayer_authority()
+	return _is_local
 
 
 ## A remote player is scenery: it must not steal the viewport or paint its
