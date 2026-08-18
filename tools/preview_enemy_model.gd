@@ -11,6 +11,12 @@ extends SceneTree
 ## Con "walk" pone cuatro copias en fila, cada una un cuarto de ciclo mas
 ## adelante que la anterior: la tira se lee como los cuadros de una caminata.
 ##
+## OJO: esto corre con ventana (sin --headless, hace falta para renderizar), y en
+## esa pasada Godot reescanea el proyecto y puede re-serializar .tscn/.tres -
+## agregando uid= y, peor, borrando toda propiedad que sea igual a su default.
+## Ya se llevo puesto un prewarm_count del EnemySpawner una vez. Mira git status
+## despues de usar esto y revert lo que no hayas tocado vos.
+##
 ## La regla roja mide un metro exacto: es la referencia para model_scale.
 ## El enemigo queda con la fisica apagada porque el piso de esta escena no tiene
 ## colision - sin eso se cae del mundo antes de que se saque la foto.
@@ -25,6 +31,8 @@ var _archetype: String = "rusher"
 var _walking: bool = false
 ## Mirar la caminata de frente, que es como la ve el jugador cuando lo cargan.
 var _from_front: bool = false
+## Imprimir la altura real del punto mas bajo del modelo en vez de sacar la foto.
+var _measuring: bool = false
 
 
 func _initialize() -> void:
@@ -34,6 +42,9 @@ func _initialize() -> void:
 			continue
 		if argument == "front":
 			_from_front = true
+			continue
+		if argument == "measure":
+			_measuring = true
 			continue
 		_archetype = argument
 
@@ -101,6 +112,9 @@ func _process(_delta: float) -> bool:
 		return false
 	if _frames < 14:
 		return false
+	if _measuring:
+		_measure_ground_clearance()
+		return true
 	get_root().get_texture().get_image().save_png(OUTPUT)
 	print("guardado ", ProjectSettings.globalize_path(OUTPUT), " (", _archetype, ")")
 	return true
@@ -129,6 +143,36 @@ func _pose_the_walk() -> void:
 		var steps: int = 12 + i * 9
 		for _step: int in steps:
 			gait._physics_process(1.0 / 60.0)
+
+
+## Vertice mas bajo del modelo, no la esquina de su caja: un AABB es una caja
+## alrededor de la pieza y su piso puede quedar muy por debajo del pie real, que
+## es como el bot termino flotando la primera vez.
+func _measure_ground_clearance() -> void:
+	var lowest: float = INF
+	var owner_name: String = ""
+	for mesh: MeshInstance3D in _model_meshes(_enemies[0]):
+		if mesh.mesh == null or not mesh.is_visible_in_tree():
+			continue
+		var to_world: Transform3D = mesh.global_transform
+		for vertex: Vector3 in mesh.mesh.get_faces():
+			var y: float = (to_world * vertex).y
+			if y < lowest:
+				lowest = y
+				owner_name = mesh.name
+	print("punto mas bajo: y=", snappedf(lowest, 0.001), "  en ", owner_name)
+	print("corregir model_offset.y en ", snappedf(-lowest, 0.001))
+
+
+func _model_meshes(node: Node) -> Array[MeshInstance3D]:
+	var found: Array[MeshInstance3D] = []
+	var mesh := node as MeshInstance3D
+	# La capsula gris esta oculta pero sigue en el arbol; no cuenta como apoyo.
+	if mesh != null and mesh.name != "Mesh" and mesh.name != "Halo" and mesh.name != "Tether":
+		found.append(mesh)
+	for child: Node in node.get_children():
+		found.append_array(_model_meshes(child))
+	return found
 
 
 func _slab(size: Vector3, position: Vector3, color: Color) -> MeshInstance3D:

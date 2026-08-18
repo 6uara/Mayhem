@@ -30,7 +30,11 @@ extends Node
 ## Steps per metre travelled. Tuned against the rusher's stride: too low and it
 ## moonwalks, too high and it scurries in place.
 @export var steps_per_meter: float = 0.85
-## How far the body dips on each step, in metres of model scale.
+## How far the body rides up on each step.
+##
+## Up rather than down: the rest pose is where the feet touch the floor, so a
+## dip would push them through it. Riding up keeps the contact pose as the
+## lowest the model ever sits.
 @export var bob_height: float = 0.03
 ## Speed below which the gait settles back to its rest pose.
 @export var idle_speed_threshold: float = 0.35
@@ -96,7 +100,7 @@ func _physics_process(delta: float) -> void:
 	if _model != null:
 		# Twice the leg frequency: the body dips once per footfall, and there are
 		# two of those per cycle.
-		_model.position.y = _model_rest_y - absf(sin(_phase)) * bob_height * _weight
+		_model.position.y = _model_rest_y + absf(sin(_phase)) * bob_height * _weight
 
 
 # Private
