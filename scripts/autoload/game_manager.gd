@@ -8,6 +8,22 @@ const MENU_SCENE_PATH: String = "res://scenes/main/main_menu.tscn"
 ## Tope para esperar el cambio de escena. Ver _await_scene_swap.
 const SCENE_SWAP_TIMEOUT: float = 3.0
 const TRANSITION_SCENE: PackedScene = preload("res://scenes/ui/scene_transition.tscn")
+const LOADING_SCENE: PackedScene = preload("res://scenes/ui/loading_screen.tscn")
+
+## How long a load may take before the player is shown a loading screen.
+##
+## Almost every scene change in a session is warm: the game scene is already in
+## the resource cache, the load returns in a frame or two, and putting a progress
+## bar up for that long would be a flash of furniture rather than information -
+## and it would cost two extra fades out of restart_run's two-second budget.
+##
+## A cold load is the other case entirely. Measured at over ten seconds the first
+## time the game scene is read off disk, and that is what this is for.
+const LOADING_SCREEN_GRACE: float = 0.35
+## Ceiling on one scene load. A threaded load that never reports finished must not
+## strand the player on a progress bar forever - same reasoning as
+## SceneTransition.safety_timeout, and the same shape of answer.
+const LOAD_TIMEOUT: float = 60.0
 
 var state: State = State.MENU:
 	set(value):
@@ -23,6 +39,9 @@ var _run_start_time: float = 0.0
 ## survives every change_scene_to_file() call untouched. See
 ## scripts/ui/scene_transition.gd.
 var _transition: SceneTransition
+## Also GameManager's own child, and for the same reason: it has to outlive the
+## scene it is covering for.
+var _loading: LoadingScreen
 
 
 func _ready() -> void:
@@ -30,6 +49,8 @@ func _ready() -> void:
 	EventBus.player_died.connect(_on_player_died)
 	_transition = TRANSITION_SCENE.instantiate()
 	add_child(_transition)
+	_loading = LOADING_SCENE.instantiate()
+	add_child(_loading)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -52,36 +73,38 @@ func start_run() -> void:
 ## (SceneTransition.duration, each way) eats a fraction of that budget on
 ## purpose, short enough to leave the rest of it intact.
 func restart_run() -> void:
-	await _transition.fade_out()
+	var scene: PackedScene = await _prepare_scene(GAME_SCENE_PATH)
 	get_tree().paused = false
+	if scene == null:
+		await _reveal()
+		return
 	var previous: Node = get_tree().current_scene
-	var error: int = get_tree().change_scene_to_file(GAME_SCENE_PATH)
+	var error: int = get_tree().change_scene_to_packed(scene)
 	if error != OK:
-		push_error("GameManager: failed to load game scene (%d)" % error)
-		await _transition.fade_in()
+		push_error("GameManager: failed to enter game scene (%d)" % error)
+		await _reveal()
 		return
 	await _await_scene_swap(previous)
 	start_run()
-	await _transition.fade_in()
+	await _reveal()
 
 
 func return_to_menu() -> void:
-	await _transition.fade_out()
+	var scene: PackedScene = await _prepare_scene(MENU_SCENE_PATH)
 	get_tree().paused = false
 	is_paused = false
 	state = State.MENU
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var previous: Node = get_tree().current_scene
-	var error: int = get_tree().change_scene_to_file(MENU_SCENE_PATH)
-	if error != OK:
-		push_error("GameManager: failed to load menu scene (%d)" % error)
+	if scene != null and get_tree().change_scene_to_packed(scene) != OK:
+		push_error("GameManager: failed to enter menu scene")
 	await _await_scene_swap(previous)
-	await _transition.fade_in()
+	await _reveal()
 
 
 ## Espera a que la escena nueva este realmente puesta.
 ##
-## change_scene_to_file() no cambia nada en el momento: encola el reemplazo y lo
+## change_scene_to_packed() no cambia nada en el momento: encola el reemplazo y lo
 ## aplica al final del frame. Fadear de vuelta ahi mismo revela la escena vieja
 ## un rato - apretabas Play, la pantalla se abria de nuevo sobre el menu, y
 ## recien despues aparecia la partida. Se veian dos transiciones donde tenia que
@@ -120,6 +143,78 @@ func get_run_time() -> float:
 
 
 # Private
+
+## Covers the screen and loads `path` off the main thread, returning the scene
+## ready to be swapped in - or null if it could not be loaded.
+##
+## The threaded load is the whole point. change_scene_to_file() reads the scene
+## synchronously, so the process stops answering for as long as that takes; cold,
+## the game scene measured over ten seconds of a frozen window behind a fade that
+## had already finished playing.
+##
+## The loading screen is not put up immediately. Warm - which is every scene
+## change after the first - this returns in a frame or two, and a progress bar
+## that appears and vanishes inside 300ms is worse than none: it also costs the
+## two extra fades needed to show and hide it, out of restart_run's two-second
+## budget. Past LOADING_SCREEN_GRACE the load is slow enough to be worth
+## explaining, and by then those fades cost nothing next to the wait.
+func _prepare_scene(path: String) -> PackedScene:
+	await _transition.fade_out()
+
+	var error: int = ResourceLoader.load_threaded_request(path, "PackedScene")
+	if error != OK:
+		push_error("GameManager: could not start loading %s (%d)" % [path, error])
+		return null
+
+	var elapsed: float = 0.0
+	var progress: Array = []
+	while true:
+		var status: int = ResourceLoader.load_threaded_get_status(path, progress)
+		if status != ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			if status != ResourceLoader.THREAD_LOAD_LOADED:
+				push_error("GameManager: loading %s failed (status %d)" % [path, status])
+				_hide_loading()
+				return null
+			break
+
+		if elapsed >= LOAD_TIMEOUT:
+			push_error("GameManager: loading %s timed out after %.0fs" % [path, LOAD_TIMEOUT])
+			_hide_loading()
+			return null
+
+		if _loading != null:
+			if not _loading.visible and elapsed >= LOADING_SCREEN_GRACE:
+				_loading.begin()
+				# Revealed rather than snapped in: the screen is currently under
+				# the transition's cover, and uncovering anything is a fade.
+				await _transition.fade_in()
+			if not progress.is_empty():
+				_loading.set_progress(float(progress[0]))
+
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+
+	# Only meaningful if the screen was ever shown; harmless otherwise.
+	if _loading != null and _loading.visible:
+		_loading.set_progress(1.0)
+		await _transition.fade_out()
+
+	var scene := ResourceLoader.load_threaded_get(path) as PackedScene
+	if scene == null:
+		push_error("GameManager: %s is not a PackedScene" % path)
+	return scene
+
+
+## Takes the cover - and the loading screen under it - back off.
+func _reveal() -> void:
+	_hide_loading()
+	await _transition.fade_in()
+
+
+func _hide_loading() -> void:
+	if _loading != null:
+		_loading.finish()
+
 
 func _on_player_died() -> void:
 	if state == State.GAME_OVER:

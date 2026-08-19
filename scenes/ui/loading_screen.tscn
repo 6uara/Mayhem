@@ -1,0 +1,60 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/loading_screen.gd" id="1_loading"]
+[ext_resource type="Script" path="res://scripts/ui/segment_strip.gd" id="2_strip"]
+
+[node name="LoadingScreen" type="CanvasLayer"]
+layer = 9
+script = ExtResource("1_loading")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Background" type="ColorRect" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.027, 0.031, 0.043, 1)
+
+[node name="Column" type="VBoxContainer" parent="Root"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -60.0
+offset_right = 280.0
+offset_bottom = 60.0
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Column"]
+mouse_filter = 2
+text = "LOADING"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.541, 0.565, 0.639, 1)
+
+[node name="Percent" type="Label" parent="Root/Column"]
+mouse_filter = 2
+text = "0%"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(0.902, 0.910, 0.937, 1)
+
+[node name="Bar" type="Control" parent="Root/Column"]
+custom_minimum_size = Vector2(560, 6)
+mouse_filter = 2
+script = ExtResource("2_strip")
+count = 20
+filled = 0
+segment_size = Vector2(25, 6)
+gap = 3.0
+filled_color = Color(0.208, 0.878, 0.831, 1)
+empty_color = Color(0.118, 0.129, 0.169, 1)
