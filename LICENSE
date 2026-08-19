@@ -1,0 +1,28 @@
+Copyright (c) 2026 Juan Guaragnini. All rights reserved.
+
+MAYHEM — the game, its source code, its scenes, its design documents and its
+original art, audio and text assets — is proprietary. It is not open source and
+carries no permissive licence.
+
+You may:
+
+  - Download, install and play the published builds for personal, non-commercial
+    enjoyment.
+  - Record, stream and monetise video of your own play sessions ("Let's Plays",
+    reviews, speedruns), on any platform, without asking. Attribution is
+    appreciated but not required.
+
+You may not, without prior written permission:
+
+  - Redistribute, re-upload, mirror, bundle or sell the game or any build of it,
+    in whole or in part, on any storefront, site or service.
+  - Copy, decompile, reverse engineer, extract or reuse the source code, scenes,
+    models, textures, shaders, audio or design documents in any other project,
+    commercial or otherwise.
+  - Create or distribute modified versions of the game.
+  - Train machine learning models on the source code or assets.
+
+Third-party components bundled with the game keep their own licences and are NOT
+covered by this notice. See THIRD_PARTY.md.
+
+Permission requests: juanguaragnini@gmail.com
