@@ -137,3 +137,28 @@ passing before this doc got corrected (backlog tanda G6).
   `git diff` a scene file before committing if any Godot editor process ran
   during the session, even one only invoked headlessly for `--import` or
   `--quit-after`.
+
+## Planeado, sin empezar (ramas nice-to-have)
+
+Trabajo deliberadamente fuera del alcance de la entrega, con rama y plan ya
+armados para que arrancar no cueste una sesión de arqueología:
+
+- **`feat/coop-p2p`** — cooperativo P2P.
+- **`feat/new-enemy-types`** — Bomber, Ranged Flyer, Environmental y
+  Gladiadores (una tercera facción que pelea contra el jugador *y* contra la
+  horda). El plan está en
+  [PLAN_NEW_ENEMY_TYPES.md](../PLAN_NEW_ENEMY_TYPES.md).
+
+  De ese plan vale la pena traer acá los tres bloqueos que encontró, porque son
+  limitaciones del código actual y no del trabajo futuro:
+
+  1. **El objetivo está cableado al jugador.** `Enemy` no tiene noción de "mi
+     objetivo", tiene `get_player()` (grupo `&"player"`), y de ahí cuelgan el
+     melee, el salto, el disparo y todos los leaves de Beehave. Cualquier
+     enemigo que pelee contra otro enemigo necesita esa abstracción primero.
+  2. **Un proyectil enemigo no puede tocar a un enemigo.** `EnemyProjectile`
+     enmascara `WORLD | PLAYER` *y además* verifica `is_in_group(&"player")`
+     antes de aplicar daño — son dos filtros, no uno. No existe daño entre NPCs.
+  3. **No hay vuelo.** `Enemy._steer()` hace `direction.y = 0.0`; la altura sale
+     sólo de la gravedad y de saltos balísticos que siempre aterrizan. Un
+     enemigo volador necesita un modo de movimiento nuevo, no un número distinto.
