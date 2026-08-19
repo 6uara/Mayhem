@@ -70,12 +70,19 @@ pass.
 
 ## No test coverage
 
-- **`StatsComponent`** — zero test files, despite being the read path *every*
-  purchased upgrade in the game flows through (`get_stat_from()`, chained into
-  from `WeaponComponent`, `MovementComponent`, `Player`). If this breaks, the
-  shop silently stops mattering — no test would catch it.
-- **`GameManager`**, **`AudioPool`** — also uncovered, lower risk (simpler,
-  less state).
+- ~~**`StatsComponent`**, **`GameManager`**, **`AudioPool`**~~ — all three are
+  covered now (`tests/unit/test_stats_component.gd` 13 tests,
+  `test_game_manager.gd` 12, `test_audio_pool.gd` 14).
+
+  Worth keeping the original warning on record, because it came true almost
+  word for word: *"if this breaks, the shop silently stops mattering — no test
+  would catch it."* When hitscan moved damage resolution to the trigger, the new
+  path read `data.damage` instead of `get_damage()`, and every purchased damage
+  upgrade stopped applying to all four player weapons. The full suite passed.
+  Unit-testing `StatsComponent` was not enough on its own — what was missing was
+  a test crossing *"bought an upgrade"* with *"fired a shot"*, which is now
+  `test_a_damage_upgrade_reaches_a_hitscan_shot`. Coverage of a component does
+  not cover the seam between components.
 - ~~`GrappleComponent`, `BouncePad`~~ — this note was stale; both have covered
   (`tests/unit/test_grapple_component.gd`, `test_bounce_pad.gd`).
 
