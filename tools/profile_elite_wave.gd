@@ -9,7 +9,12 @@ extends SceneTree
 ## missing the GPU-bound half of the question (glow, particles, decals, the
 ## panel shaders).
 ##
-##     godot --path . -s tools/profile_elite_wave.gd -- [seconds]
+##     godot --path . -s tools/profile_elite_wave.gd -- [seconds] [fire]
+##
+## Con `fire` el jugador dispara sin parar durante la medicion. Es la unica forma
+## de que el costo de los proyectiles aparezca en el numero: quieto, el arma no
+## tira nada y la pregunta "cuanto cuestan los proyectiles" no se puede
+## contestar con este perfil.
 ##
 ## `seconds` (default 20) is how long to sample after the wave is fully spawned.
 ## Prints min/avg/max FPS and a percentage of frames under 60, then quits.
@@ -30,6 +35,9 @@ const SETTLE_FRAMES: int = 30
 const MAX_SPAWN_WAIT_SECONDS: float = 90.0
 
 var _sample_seconds: float = 20.0
+## Con el gatillo apretado durante la medicion.
+var _firing: bool = false
+var _holder: Node
 var _frame: int = 0
 var _sampling: bool = false
 var _sample_time: float = 0.0
@@ -52,6 +60,9 @@ var _wave_manager: Node
 
 func _initialize() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for argument: String in args:
+		if argument == "fire":
+			_firing = true
 	if not args.is_empty():
 		_sample_seconds = args[0].to_float()
 	var packed: PackedScene = load(GAME_SCENE_PATH)
@@ -63,6 +74,8 @@ func _initialize() -> void:
 
 func _process(delta: float) -> bool:
 	_frame += 1
+	if _firing:
+		_hold_the_trigger()
 
 	if _frame == SETTLE_FRAMES:
 		_wave_manager = root.get_node("/root/WaveManager")
@@ -73,6 +86,7 @@ func _process(delta: float) -> bool:
 		Engine.max_fps = 0
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		_make_player_invincible()
+		_bind_weapon()
 		_force_wave_10()
 		_waiting_for_spawn = true
 		return false
@@ -123,6 +137,44 @@ func _process(delta: float) -> bool:
 ## damage by it before subtracting, so this is a real "cannot die", not a
 ## race against a heal-every-frame patch that a single lucky big hit could
 ## still beat.
+## Deja el gatillo apretado y la municion llena.
+##
+## Recargar cortaria la cadencia a la mitad y el perfil terminaria midiendo
+## pausas de recarga en vez de disparos. La municion se rellena a mano por eso, y
+## porque lo que se quiere medir es el costo sostenido, no el realista.
+## El arma se relee cada frame en vez de guardarse: cambiar de arma es un swap de
+## 0.35s, asi que una referencia tomada antes apunta a la anterior - que despues
+## del swap deja de procesar, y apretarle el gatillo no dispara nada. Esa version
+## de esto midio una corrida entera creyendo que estaba disparando.
+func _hold_the_trigger() -> void:
+	if _holder == null or not is_instance_valid(_holder):
+		return
+	var weapon: Node = _holder.get("current")
+	if weapon == null:
+		return
+	weapon.set("_ammo", 999)
+	weapon.call("set_trigger", true)
+
+
+func _bind_weapon() -> void:
+	if not _firing:
+		return
+	var player: Node = _game.get_node_or_null("Player")
+	if player == null:
+		return
+	var holder: Node = player.get("weapon_holder")
+	if holder == null:
+		return
+	# La SMG, no la pistola con la que arranca el jugador: 15 disparos por segundo
+	# contra 5. Lo que se quiere medir es el techo de proyectiles en vuelo, y con
+	# el arma inicial el numero sale tres veces mas bajo de lo que el juego llega
+	# a pedir.
+	holder.call("acquire", &"smg")
+	_holder = holder
+	if holder.get("current") == null:
+		push_warning("profile_elite_wave: no hay arma equipada, se mide sin disparar")
+
+
 func _make_player_invincible() -> void:
 	var player: Node = _game.get_node_or_null("Player")
 	if player == null:

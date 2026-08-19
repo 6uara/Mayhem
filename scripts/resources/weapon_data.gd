@@ -23,6 +23,26 @@ extends Resource
 @export var fire_rate: float = 8.0
 ## Projectiles emitted per trigger pull (shotgun > 1).
 @export var projectiles_per_shot: int = 1
+## El disparo se resuelve al apretar el gatillo y la bala que se ve es adorno.
+##
+## Las armas del jugador van a 140-180 m/s: a treinta metros la bala tarda menos
+## de dos decimas, o sea que nadie la esta liderando a proposito. Lo que si se
+## paga es un raycast por bala por frame mientras vuela, y medido sobre una
+## oleada elite eso era dos tercios del costo de disparar.
+##
+## Apagalo para un arma cuyo tiempo de vuelo sea parte del diseno - un
+## lanzagranadas, algo con arco. Los proyectiles enemigos son otra cosa y no
+## pasan por aca: ahi el vuelo es la mecanica (se esquivan) y siguen siendo
+## proyectiles de verdad.
+@export var is_hitscan: bool = true
+## Una trazadora cada cuantas balas. 1 las dibuja todas.
+##
+## Ver WeaponComponent._wants_tracer: lo caro de disparar es el nodo por bala, no
+## la cuenta que hace. Esto es la perilla que lo baja sin cambiar como se lee el
+## disparo.
+@export_range(1, 10, 1) var tracer_every_n_shots: int = 1
+## Velocidad de la bala. Con is_hitscan sigue usandose: es a la que viaja la
+## trazadora, que es lo unico que queda volando.
 @export var projectile_speed: float = 120.0
 @export var projectile_gravity: float = 0.0
 
