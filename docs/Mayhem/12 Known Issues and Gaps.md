@@ -149,7 +149,7 @@ armados para que arrancar no cueste una sesión de arqueología:
   horda). El plan está en
   [PLAN_NEW_ENEMY_TYPES.md](../PLAN_NEW_ENEMY_TYPES.md).
 
-  De ese plan vale la pena traer acá los tres bloqueos que encontró, porque son
+  De ese plan vale la pena traer acá los cuatro bloqueos que encontró, porque son
   limitaciones del código actual y no del trabajo futuro:
 
   1. **El objetivo está cableado al jugador.** `Enemy` no tiene noción de "mi
@@ -162,3 +162,10 @@ armados para que arrancar no cueste una sesión de arqueología:
   3. **No hay vuelo.** `Enemy._steer()` hace `direction.y = 0.0`; la altura sale
      sólo de la gravedad y de saltos balísticos que siempre aterrizan. Un
      enemigo volador necesita un modo de movimiento nuevo, no un número distinto.
+  4. **No existe atribución de muertes.** `Enemy` emite
+     `EventBus.enemy_killed(id, position, reward)` al morir (`enemy.gd:1138`) y
+     `EconomyManager._on_enemy_killed()` suma la moneda sin preguntar quién
+     mató (`economy_manager.gd:97`). No hay concepto de "asesino" en ningún
+     lado. Cualquier regla del tipo "sólo cobrás lo que rematás vos" es un
+     sistema nuevo, no un ajuste de balance — y es útil por sí sola, aunque los
+     Gladiadores nunca se construyan.
