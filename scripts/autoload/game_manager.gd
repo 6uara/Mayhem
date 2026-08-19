@@ -5,6 +5,8 @@ enum State { MENU, PLAYING, SHOPPING, GAME_OVER }
 
 const GAME_SCENE_PATH: String = "res://scenes/main/game.tscn"
 const MENU_SCENE_PATH: String = "res://scenes/main/main_menu.tscn"
+## Tope para esperar el cambio de escena. Ver _await_scene_swap.
+const SCENE_SWAP_TIMEOUT: float = 3.0
 const TRANSITION_SCENE: PackedScene = preload("res://scenes/ui/scene_transition.tscn")
 
 var state: State = State.MENU:
@@ -52,11 +54,13 @@ func start_run() -> void:
 func restart_run() -> void:
 	await _transition.fade_out()
 	get_tree().paused = false
+	var previous: Node = get_tree().current_scene
 	var error: int = get_tree().change_scene_to_file(GAME_SCENE_PATH)
 	if error != OK:
 		push_error("GameManager: failed to load game scene (%d)" % error)
 		await _transition.fade_in()
 		return
+	await _await_scene_swap(previous)
 	start_run()
 	await _transition.fade_in()
 
@@ -67,10 +71,33 @@ func return_to_menu() -> void:
 	is_paused = false
 	state = State.MENU
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var previous: Node = get_tree().current_scene
 	var error: int = get_tree().change_scene_to_file(MENU_SCENE_PATH)
 	if error != OK:
 		push_error("GameManager: failed to load menu scene (%d)" % error)
+	await _await_scene_swap(previous)
 	await _transition.fade_in()
+
+
+## Espera a que la escena nueva este realmente puesta.
+##
+## change_scene_to_file() no cambia nada en el momento: encola el reemplazo y lo
+## aplica al final del frame. Fadear de vuelta ahi mismo revela la escena vieja
+## un rato - apretabas Play, la pantalla se abria de nuevo sobre el menu, y
+## recien despues aparecia la partida. Se veian dos transiciones donde tenia que
+## haber una.
+##
+## Con tope de tiempo: si la escena nueva nunca aparece, es preferible mostrar lo
+## que haya a dejar al jugador mirando una pantalla negra para siempre.
+func _await_scene_swap(previous: Node, timeout: float = SCENE_SWAP_TIMEOUT) -> void:
+	var elapsed: float = 0.0
+	while elapsed < timeout:
+		var current: Node = get_tree().current_scene
+		if current != null and current != previous:
+			return
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+	push_warning("GameManager: la escena no se cambio en %.1fs, se muestra igual" % timeout)
 
 
 func toggle_pause() -> void:
