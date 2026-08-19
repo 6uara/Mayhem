@@ -40,6 +40,18 @@ extends Resource
 ## Ver WeaponComponent._wants_tracer: lo caro de disparar es el nodo por bala, no
 ## la cuenta que hace. Esto es la perilla que lo baja sin cambiar como se lee el
 ## disparo.
+##
+## Lo que lo hace gratis es que el ojo rellena el hueco a lo largo del tiempo: a
+## quince disparos por segundo, una de cada tres se sigue leyendo como una linea
+## de fuego continua. Por eso es una perilla para cadencia alta y no para
+## projectiles_per_shot alto - la escopeta manda sus nueve perdigones de una sola
+## vez, ahi el patron de dispersion es el visual entero y no hay balas siguientes
+## que lo completen. Ralearla se ve como una escopeta mas floja, y encima ahorra
+## poco: tira 1.4 veces por segundo. Va en 1 a proposito.
+##
+## Una bala que no se dibuja tampoco deja impacto ni calcomania: el impacto lo
+## genera la trazadora al llegar. El feedback de pegarle a un enemigo no depende
+## de esto - sale de take_hit por EventBus.damage_dealt, siempre.
 @export_range(1, 10, 1) var tracer_every_n_shots: int = 1
 ## Velocidad de la bala. Con is_hitscan sigue usandose: es a la que viaja la
 ## trazadora, que es lo unico que queda volando.

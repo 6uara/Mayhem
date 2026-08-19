@@ -22,7 +22,6 @@ falloff_end = 22.0
 falloff_min_multiplier = 0.25
 fire_rate = 1.4
 projectiles_per_shot = 9
-tracer_every_n_shots = 3
 projectile_speed = 140.0
 projectile_gravity = 0.0
 magazine_size = 6
