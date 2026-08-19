@@ -133,3 +133,76 @@ func test_ability_bar_holds_three_utilities_a_divider_and_the_grapple() -> void:
 	var bar: HBoxContainer = _node("Root/AbilityBar")
 	assert_eq(bar.get_child_count(), UtilityComponent.SLOT_COUNT + 2,
 		"three utility slots, a divider and the grapple")
+
+
+# ------------------------------------------- los contadores que ya no se reescriben
+
+## El HUD dejo de reescribir los dos contadores de oleada en cada frame y ahora
+## recuerda el valor que mostro. Eso es rendimiento, pero introduce un riesgo
+## peor que el que resuelve: una cache desincronizada no se ve lenta, se ve
+## mintiendo. Estos tests son sobre lo segundo.
+##
+## Se espera con wait_process_frames y no con frames de fisica: _tick_wave corre
+## en _process, y esperar el tick equivocado lee el label antes de que se pinte.
+##
+## Los contadores se fijan a mano en vez de dejar que la oleada los mueva: con un
+## spawner nulo el agendado resuelve los spawns en frames impredecibles, y el
+## test terminaba midiendo eso en vez de la cache. Lo que se quiere clavar es
+## "cuando el numero cambia, el label cambia", y para eso el numero tiene que ser
+## una decision del test.
+func _open_wave(alive: int, par: float = 60.0) -> void:
+	var wave := WaveData.new()
+	wave.par_time = par
+	# Sin start_next_wave(): esa agenda spawns en corrutinas que siguen tocando
+	# los contadores en frames impredecibles, y el test terminaba midiendo el
+	# agendador en vez de la cache del HUD. Aca se pone el estado que el HUD lee
+	# y nada mas se mueve.
+	WaveManager.waves = [wave]
+	WaveManager.current_index = 0
+	WaveManager.is_wave_active = true
+	WaveManager._pending_spawns = 0
+	WaveManager._alive_enemies = alive
+	WaveManager._wave_start_time = float(Time.get_ticks_msec()) / 1000.0
+
+
+func test_the_enemy_counter_follows_the_wave() -> void:
+	_open_wave(5)
+	await wait_process_frames(3)
+	var label: Label = _node("Root/WaveCluster/EnemiesRow/Count")
+	assert_eq(label.text, "5", "lo que muestra es lo que queda")
+
+	WaveManager._alive_enemies = 3
+	await wait_process_frames(3)
+	assert_eq(label.text, "3", "y sigue al numero cuando cambia")
+	WaveManager.reset()
+
+
+## El caso que la cache podia arruinar y que no da error: una oleada nueva que
+## abre con el mismo numero con el que cerro la anterior. Si el HUD recuerda "ya
+## mostre 3" de la oleada pasada, no vuelve a escribir el 3 - y el label se queda
+## con lo que hubiera quedado de antes.
+func test_a_new_wave_that_opens_on_the_same_numbers_still_paints_them() -> void:
+	_open_wave(3)
+	await wait_process_frames(3)
+	var label: Label = _node("Root/WaveCluster/EnemiesRow/Count")
+	assert_eq(label.text, "3", "primera oleada pintada")
+
+	label.text = "basura"
+	_open_wave(3)
+	await wait_process_frames(3)
+	assert_eq(label.text, "3", "oleada nueva con el mismo numero: se repinta igual")
+	WaveManager.reset()
+
+
+## El PAR se formatea una sola vez por oleada porque no se mueve mientras corre.
+## Que no se mueva no significa que no tenga que aparecer al cambiar de oleada.
+func test_the_par_label_follows_a_change_of_wave() -> void:
+	_open_wave(2, 30.0)
+	await wait_process_frames(3)
+	var par: Label = _node("Root/TimerCluster/TimeRow/Par")
+	var first: String = par.text
+
+	_open_wave(2, 90.0)
+	await wait_process_frames(3)
+	assert_ne(par.text, first, "otra par_time, otro texto")
+	WaveManager.reset()
