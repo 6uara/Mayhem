@@ -17,6 +17,7 @@ rail_side = 3
 tick_length = 28.0
 tick_color = Color(0.208, 0.878, 0.831, 1)
 [node name="Settings" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

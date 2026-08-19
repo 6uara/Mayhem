@@ -111,6 +111,36 @@ exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/ph
 export_path="builds/release/mayhem.x86_64"
 ```
 
+## `layout_mode` en escenas de UI con raiz Control
+
+**Toda escena cuya raiz sea un `Control` y que se instancie como hija de otra escena necesita
+`layout_mode = 3` en esa raiz.** Sin eso anda en el editor y se rompe solo en el build
+exportado: el panel entero aparece pegado a la esquina superior izquierda, cortado.
+
+Por que. Los `.tscn` de este proyecto estan escritos a mano, y el editor de Godot siempre
+escribe `layout_mode` en un Control - nosotros nunca lo pusimos. Al empaquetar la escena que
+instancia, Godot calcula los overrides de la instancia comparandola con la escena base, y sin
+`layout_mode` sintetiza `anchors_preset = 0`, que es `PRESET_TOP_LEFT`. Ese override pisa los
+anchors de la base, la raiz instanciada queda en size `(0, 0)`, y un hijo anclado al 50% con
+offsets `-260/-250` cae fuera de la esquina. Con `layout_mode = 3` el override sintetizado pasa
+a ser `layout_mode = 1` (anchors) y los anchors sobreviven.
+
+Afecta solo a raices `Control`. `hud.tscn`, `pause_menu.tscn`, `shop_screen.tscn`,
+`match_overlay.tscn`, `loading_screen.tscn` y `scene_transition.tscn` tienen raiz `CanvasLayer`,
+y `spectator_view.tscn` `Node3D`: sus hijos Control cuelgan del viewport y nunca dependieron de
+esto. Las tres que si tenian raiz `Control` -`coop_panel`, `settings_screen`,
+`leaderboard_panel`- son exactamente las tres que se rompian.
+
+Medido en un build exportado real, fullscreen a 2560x1440: antes las tres raices reportaban
+`size=(0,0)` con anchors `0.0/0.0`; despues, `size=(1920,1080)` con anchors `1.0/1.0` y los
+paneles centrados.
+
+> **`.godot/exported/` cachea las escenas ya convertidas a binario, y el cache se queda viejo.**
+> Dos exports seguidos devolvieron el `.tscn` anterior aunque el archivo en disco ya estaba
+> cambiado, lo que hace parecer que un arreglo no funciona. Al diagnosticar cualquier cosa que
+> se vea distinta entre el editor y el build, borrar `.godot/exported/` antes de exportar y no
+> sacar conclusiones de un export que no arranco de un cache limpio.
+
 ## Feature tags
 
 `dev` and `release` are set per preset under *Feature Tags* in the export dialog. Guard all
@@ -136,3 +166,6 @@ in-editor if you check `OS.has_feature("dev") or OS.has_feature("editor")` — s
    alone.
 4. Launch the release build and confirm no Debug Draw geometry is visible.
 5. Confirm 60 FPS with a full elite wave on screen (section 10 of `CLAUDE.md`).
+6. **En el build, no en el editor**: abrir Options, Best runs y Coop desde el menu, y Options
+   desde la pausa. Los cuatro paneles tienen que quedar centrados. Es el unico sintoma de la
+   trampa de `layout_mode` de mas arriba, y no se ve corriendo desde el editor.
