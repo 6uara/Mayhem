@@ -306,7 +306,11 @@ func _resolve_hitscan(origin: Vector3, target: Vector3, hit: Dictionary) -> void
 		var hitbox := collider as HitboxComponent
 		if hitbox != null:
 			var distance: float = origin.distance_to(target)
-			var damage: float = data.damage * _falloff_at(distance)
+			# get_damage() y no data.damage: ahi es donde entran las mejoras de
+			# daño compradas. El proyectil las recibia por damage_override, y al
+			# resolver el disparo aca hay que volver a pedirlas o la tienda deja
+			# de tener efecto sobre las cuatro armas del jugador.
+			var damage: float = get_damage() * _falloff_at(distance)
 			if hitbox.is_headshot_zone:
 				damage *= data.headshot_multiplier
 			hitbox.take_hit(damage, target)

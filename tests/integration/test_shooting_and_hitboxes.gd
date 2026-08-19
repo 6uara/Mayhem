@@ -307,3 +307,64 @@ func test_the_tracer_interval_thins_the_bullets_drawn() -> void:
 		if weapon._wants_tracer():
 			drawn_thinned += 1
 	assert_eq(drawn_thinned, 3, "en 3, una de cada tres")
+
+	# WeaponData es el .tres compartido y no se duplica por instancia: dejarlo
+	# tocado se filtra al resto de la corrida.
+	weapon.data.tracer_every_n_shots = 1
+
+
+## Las mejoras de daño compradas tienen que llegar al disparo hitscan.
+##
+## El proyectil las recibia por `damage_override`; al resolver el impacto en el
+## gatillo hay que volver a pedirlas con get_damage(). Leer `data.damage` crudo
+## compila, pasa todos los demas tests y deja la tienda sin efecto sobre las
+## cuatro armas del jugador, que es justo lo que este test cierra.
+func test_a_damage_upgrade_reaches_a_hitscan_shot() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(2)
+	var weapon: WeaponComponent = player.weapon
+	weapon.data.is_hitscan = true
+
+	var base: float = weapon.data.damage
+	assert_almost_eq(weapon.get_damage(), base, 0.01,
+		"sin mejoras el arma pega su daño base")
+
+	var upgrade: UpgradeData = load("res://data/upgrades/damage.tres")
+	assert_true(UpgradeManager.add_upgrade(upgrade, weapon.data.id),
+		"la mejora de daño se aplica al arma equipada")
+	await wait_physics_frames(2)
+
+	var upgraded: float = weapon.get_damage()
+	assert_gt(upgraded, base, "la mejora sube el daño del arma")
+
+	# Y el disparo tiene que cobrar ese numero, no el base.
+	var health := HealthComponent.new()
+	health.max_health = 1000.0
+	var hitbox := HitboxComponent.new()
+	hitbox.health_component = health
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(4.0, 4.0, 0.5)
+	shape.shape = box
+	hitbox.add_child(shape)
+	hitbox.add_child(health)
+	hitbox.collision_layer = PhysicsLayers.HITBOX
+	hitbox.monitorable = true
+	add_child_autofree(hitbox)
+	health.reset()
+
+	var aim_origin: Vector3 = weapon.aim_node.global_position
+	var direction: Vector3 = -weapon.aim_node.global_transform.basis.z
+	hitbox.global_position = aim_origin + direction * 6.0
+	await wait_physics_frames(3)
+
+	var hit: Dictionary = weapon._aim_hit(aim_origin, direction)
+	if hit.is_empty() or hit["collider"] != hitbox:
+		pass_test("la arena tapa el rayo en esta posicion")
+		return
+	var target: Vector3 = weapon._hit_point(aim_origin, direction, hit)
+	weapon._resolve_hitscan(aim_origin, target, hit)
+
+	var dealt: float = 1000.0 - health.current_health
+	assert_almost_eq(dealt, upgraded, 0.01,
+		"el disparo cobra el daño mejorado, no data.damage")
