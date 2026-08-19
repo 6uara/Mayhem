@@ -19,6 +19,19 @@ pwsh tools/run_tests.ps1 -Test test_kills_pay_into_the_wave_total
 pwsh tools/run_tests.ps1 -Import   # después de traer assets nuevos
 ```
 
+El runner deja el árbol como lo encontró. Correr Godot sobre el proyecto puede
+re-serializar `.tscn` y `.tres` por su cuenta —agrega `uid=` y borra toda
+propiedad igual a su default—, y así `game.tscn` perdió dos veces el
+`prewarm_count` del `EnemySpawner`. Lo que estaba limpio antes de la corrida y
+quedó sucio después se revierte y se avisa; lo que ya estaba modificado es tuyo
+y no se toca; los archivos nuevos se reportan pero nunca se borran. Con
+`-KeepIncidentalChanges` se desactiva, que es lo que querés si justamente estás
+tratando de ver qué reescribió.
+
+Medido: hoy la corrida headless no cambia **ninguno** de los 1950 archivos
+versionados. El guard está para que siga siendo cierto sin depender de que
+alguien lo mire.
+
 **Headless a mano (lo mismo que corre CI):**
 
 ```sh
@@ -27,6 +40,14 @@ godot --headless -s addons/gut/gut_cmdln.gd -gexit
 
 En Windows usá el ejecutable `_console.exe`: el otro abre su propia ventana y la
 terminal no ve la salida.
+
+El que sí reescribe es el preview de modelos, porque necesita ventana para
+renderizar y en esa pasada Godot reescanea el proyecto. Va envuelto en el mismo
+guard:
+
+```powershell
+pwsh tools/run_preview.ps1 rusher walk
+```
 
 **En el editor:** el panel GUT abajo, con el plugin habilitado. El botón **Run All**
 recorre los directorios configurados **en el panel**, no los de `.gutconfig.json`.
@@ -78,12 +99,13 @@ Un worktree nunca trae `.godot`, así que arranca con caché fresca por definici
 
 ## Estado actual de la suite
 
-Godot 4.7, corridas locales del 14/08/2026:
+Godot 4.7, corridas locales:
 
-| Rama | Resultado |
-| --- | --- |
-| `develop` @ `c76d772` | 364 tests, **364 en verde** |
-| `feat/coop-p2p` @ `de77658` | 380 tests, **380 en verde** |
+| Rama | Fecha | Resultado |
+| --- | --- | --- |
+| `develop` @ `c76d772` | 14/08/2026 | 364 tests, **364 en verde** |
+| `feat/coop-p2p` @ `de77658` | 14/08/2026 | 380 tests, **380 en verde** |
+| `feat/coop-p2p` @ merge de `develop` | 19/08/2026 | 442 tests, **442 en verde** |
 
 ## What to test
 

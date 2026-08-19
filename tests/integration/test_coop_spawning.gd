@@ -175,8 +175,11 @@ func test_a_cosmetic_utility_finds_nothing_to_affect() -> void:
 	var enemy: Enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
 	add_child_autofree(enemy)
 	await wait_physics_frames(1)
-	enemy.is_active = true
-	enemy.global_position = grenade.global_position
+	# setup() y no is_active a mano: desde que _enemies_in_radius lee la lista de
+	# vivos de Enemy en vez de get_nodes_in_group(), un enemigo solo cuenta si
+	# paso por el alta que hace setup(). Ponerle el flag y nada mas lo dejaba
+	# fuera de la lista, que es como el juego lo veria.
+	enemy.setup(load("res://data/enemies/rusher.tres"), grenade.global_position)
 
 	assert_eq(grenade._enemies_in_radius(10.0).size(), 1,
 		"a real throw sees the enemy standing on it")

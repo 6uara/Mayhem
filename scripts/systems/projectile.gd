@@ -18,6 +18,17 @@ var _origin: Vector3 = Vector3.ZERO
 var _shooter: Node = null
 var _lifetime: float = 0.0
 var _is_active: bool = false
+## Trazadora: la bala ya pego, esto es lo que se ve viajar hasta ahi.
+##
+## No raycastea nada. El disparo se resolvio al apretar el gatillo, asi que
+## preguntarle de nuevo a la fisica en cada frame es preguntar algo que ya esta
+## contestado - y era el grueso del costo de disparar.
+var _is_tracer: bool = false
+var _tracer_target: Vector3 = Vector3.ZERO
+var _tracer_normal: Vector3 = Vector3.UP
+var _tracer_surface: SurfaceMaterialData
+## Si la trazadora tiene que reventar algo al llegar, o solo desaparecer.
+var _tracer_impacts: bool = false
 
 @onready var _mesh: Node3D = $Mesh
 
@@ -44,6 +55,9 @@ func launch(from: Vector3, direction: Vector3, data: WeaponData, shooter: Node,
 
 func _physics_process(delta: float) -> void:
 	if not _is_active:
+		return
+	if _is_tracer:
+		_advance_tracer(delta)
 		return
 
 	_lifetime += delta
@@ -76,6 +90,49 @@ func _on_released() -> void:
 	_is_active = false
 	_velocity = Vector3.ZERO
 	_shooter = null
+	# Pooleado: la proxima salida de esta bala puede ser una de verdad.
+	_is_tracer = false
+	_tracer_impacts = false
+	_tracer_surface = null
+
+
+## Lanza la parte visible de un disparo ya resuelto.
+##
+## `to` es donde pego de verdad, calculado en el momento del disparo. La
+## trazadora solo tiene que llegar hasta ahi y reventar - el daño ya se aplico.
+func launch_tracer(from: Vector3, to: Vector3, speed: float, normal: Vector3,
+		surface: SurfaceMaterialData, spawn_impact: bool) -> void:
+	global_position = from
+	_origin = from
+	_tracer_target = to
+	_tracer_normal = normal
+	_tracer_surface = surface
+	_tracer_impacts = spawn_impact
+	var offset: Vector3 = to - from
+	_velocity = Vector3.ZERO
+	if offset.length_squared() > 0.0001:
+		_velocity = offset.normalized() * maxf(speed, 1.0)
+	_gravity = 0.0
+	_lifetime = 0.0
+	_is_active = true
+	_is_tracer = true
+	if _mesh != null:
+		_mesh.visible = true
+	_face_travel()
+
+
+## Un paso de trazadora: avanzar y mirar si ya llego. Sin consulta a la fisica.
+func _advance_tracer(delta: float) -> void:
+	_lifetime += delta
+	var step: Vector3 = _velocity * delta
+	var remaining: float = global_position.distance_to(_tracer_target)
+	if _lifetime >= MAX_LIFETIME or remaining <= step.length() or remaining < 0.05:
+		global_position = _tracer_target
+		if _tracer_impacts:
+			_spawn_impact(_tracer_target, _tracer_normal, null, _tracer_surface)
+		_expire()
+		return
+	global_position += step
 
 
 # Private
@@ -126,14 +183,21 @@ func _get_falloff(distance: float) -> float:
 	return lerpf(1.0, _falloff_min, (distance - _falloff_start) / (_falloff_end - _falloff_start))
 
 
-func _spawn_impact(hit_position: Vector3, normal: Vector3, collider: Object) -> void:
+## `surface` viene ya resuelta cuando el que llama la sabe - la trazadora la
+## recibe del disparo original, porque para cuando llega ya no tiene contra que
+## preguntarla.
+func _spawn_impact(hit_position: Vector3, normal: Vector3, collider: Object,
+		surface: SurfaceMaterialData = null) -> void:
 	if impact_scene == null:
 		return
 	var impact: Node = ObjectPool.acquire(impact_scene)
 	if impact == null:
 		return
 	if impact.has_method(&"play_at"):
-		impact.call(&"play_at", hit_position, normal, SurfaceMaterials.resolve(collider))
+		var material: SurfaceMaterialData = surface
+		if material == null:
+			material = SurfaceMaterials.resolve(collider)
+		impact.call(&"play_at", hit_position, normal, material)
 
 
 func _face_travel() -> void:

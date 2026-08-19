@@ -9,7 +9,8 @@ tags: [mayhem, weapons, combat]
 `scripts/resources/weapon_data.gd`. Pure balance schema — no mesh field
 originally (see [[#Viewmodel]] for why one exists now). Groups: Damage
 (`damage`, `headshot_multiplier`, falloff start/end/min), Firing (`fire_rate`,
-`projectiles_per_shot` — shotgun > 1, `projectile_speed`), Ammo (`magazine_size`,
+`projectiles_per_shot` — shotgun > 1, `projectile_speed`, plus `is_hitscan` and
+`tracer_every_n_shots` — see [[#Hitscan and tracers]]), Ammo (`magazine_size`,
 `reserve_ammo_max`, `reload_time`), Recoil and spread (`recoil_pattern`,
 `spread_hipfire`/`spread_ads`, moving/airborne multipliers), ADS
 (`ads_fov`, `ads_transition_time`, `ads_move_speed_multiplier`).
@@ -101,9 +102,53 @@ No weapon-switch input remains — `handle_input()` is a no-op kept only because
 actions stay defined in the input map (remap screens list every action) but
 nothing consumes them.
 
+## Hitscan and tracers
+
+The player's weapons resolve their shot **at the trigger**, not in flight. The
+raycast that was already fired every shot to aim the muzzle (`_aim_hit()`, see
+[[#WeaponComponent]]) now returns the whole hit, because that is precisely the
+question the bullet used to fly off and repeat. What still flies is a *tracer*: the same pooled
+`Projectile` node with `_is_tracer` set, which travels at `projectile_speed` to
+the already-known impact point and never queries physics again.
+
+Measured on the elite wave with sustained SMG fire: 2.89 → 2.48 ms/frame average
+(−14%), worst frame 5.56 → 3.29 ms (−41%). The saving is in **drawing fewer
+bullets, not computing less** — a tracer that never raycasts costs nearly what the
+whole projectile cost, because the expense is the node (its `_physics_process`,
+transform and pool traffic), not the arithmetic inside it. Converting to hitscan
+while still drawing one bullet per shot measured slightly *worse* than the
+original projectiles.
+
+Two `WeaponData` fields drive it:
+
+- `is_hitscan` (default `true`) — turn it off for a weapon whose flight time is
+  part of the design. **Enemy projectiles never go through this path**: they use
+  `EnemyProjectile`, where flying *is* the mechanic because it is what makes them
+  dodgeable.
+- `tracer_every_n_shots` — draw one bullet in N. This is a knob for **high rate of
+  fire**, not for high `projectiles_per_shot`: it works because the eye fills the
+  gap over time, so at 15 rounds/sec one in three still reads as a continuous line
+  of fire. Rifle and SMG use 3. The shotgun deliberately uses 1 — its nine pellets
+  leave at once, so the spread pattern is the entire visual with no following
+  bullets to complete it, and at 1.4 shots/sec there was nothing to save.
+
+A bullet that is not drawn also leaves no impact or decal, since the tracer is
+what spawns them on arrival. Feedback for *hitting an enemy* does not depend on
+this — hitmarker and damage numbers come from `take_hit` via
+`EventBus.damage_dealt`, always.
+
+Damage is read through `get_damage()`, not `data.damage`. This matters more than
+it looks: the projectile path received the upgraded number via `damage_override`,
+and reading the raw field when the shot moved to the trigger silently disabled
+every purchased damage upgrade on all four player weapons. The whole suite passed
+with that bug in place, because nothing crossed "bought an upgrade" with "fired a
+shot" — `test_a_damage_upgrade_reaches_a_hitscan_shot` now does.
+
 ## Projectile / hitbox / health
 
-- `scripts/systems/projectile.gd` — pooled, `launch(origin, direction, data, shooter, damage)`.
+- `scripts/systems/projectile.gd` — pooled, `launch(origin, direction, data, shooter, damage)`
+  for a real projectile, `launch_tracer(from, to, speed, normal, surface, spawn_impact)`
+  for the cosmetic half of an already-resolved hitscan shot.
 - `HitboxComponent` (`scripts/components/hitbox_component.gd`) — per-zone
   (`is_headshot_zone`), applies `damage_multiplier`, forwards to a
   `HealthComponent`.
@@ -116,5 +161,6 @@ nothing consumes them.
 `scripts/components/stats_component.gd`. The single indirection every
 upgrade-aware read goes through: `get_stat_from(stat_key, base_value)` asks
 `UpgradeManager` for modifiers matching `stat_key` and folds them into the base
-value. **Zero test coverage** despite being the path every purchased upgrade in
-the game flows through — see [[12 Known Issues and Gaps]].
+value. Covered by `tests/unit/test_stats_component.gd` (13 tests), and end to end
+by `test_a_damage_upgrade_reaches_a_hitscan_shot`, which is the one that proves a
+purchased upgrade survives all the way to a fired shot.

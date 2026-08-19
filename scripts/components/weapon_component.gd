@@ -64,6 +64,9 @@ var ads_progress: float = 0.0
 var _ammo: int = 0
 var _reserve: int = 0
 var _shot_index: int = 0
+## Cuenta balas para el intervalo de trazadora. Por bala y no por disparo: una
+## escopeta manda nueve de una, y son justo las que mas conviene ralear.
+var _tracer_counter: int = 0
 var _time_since_shot: float = 999.0
 var _cooldown: float = 0.0
 var _is_trigger_held: bool = false
@@ -234,8 +237,12 @@ func _try_fire() -> void:
 	var spread: float = get_current_spread()
 	for _i: int in maxi(data.projectiles_per_shot, 1):
 		var direction: Vector3 = _apply_spread(aim, spread)
-		var target: Vector3 = _converge_target(aim_origin, direction)
+		var hit: Dictionary = _aim_hit(aim_origin, direction)
+		var target: Vector3 = _hit_point(aim_origin, direction, hit)
 		var origin: Vector3 = _shot_origin(aim_origin, target)
+		if data.is_hitscan:
+			_resolve_hitscan(origin, target, hit)
+			continue
 		var travel: Vector3 = target - origin
 		_spawn_projectile(origin,
 			travel.normalized() if travel.length_squared() > 0.0001 else direction)
@@ -263,15 +270,99 @@ func _try_fire() -> void:
 ## never meet, so every shot would sit beside the crosshair by the muzzle's offset,
 ## at every range. Aiming the muzzle at the point the crosshair reaches is what
 ## makes both true at once.
-func _converge_target(aim_origin: Vector3, direction: Vector3) -> Vector3:
+## Este rayo ya existia: se tiraba en cada disparo solo para saber a donde
+## apuntar el caño. Ahora devuelve el impacto entero, porque es exactamente la
+## pregunta que la bala volaba a repetir - contra que pego y donde.
+func _aim_hit(aim_origin: Vector3, direction: Vector3) -> Dictionary:
 	var far_point: Vector3 = aim_origin + direction * CONVERGE_DISTANCE
 	var query := PhysicsRayQueryParameters3D.create(aim_origin, far_point,
 		PhysicsLayers.WORLD | PhysicsLayers.HITBOX)
 	query.collide_with_areas = true
 	if body != null:
 		query.exclude = [body.get_rid()]
-	var hit: Dictionary = aim_node.get_world_3d().direct_space_state.intersect_ray(query)
-	return hit["position"] if not hit.is_empty() else far_point
+	return aim_node.get_world_3d().direct_space_state.intersect_ray(query)
+
+
+func _hit_point(aim_origin: Vector3, direction: Vector3, hit: Dictionary) -> Vector3:
+	if hit.is_empty():
+		return aim_origin + direction * CONVERGE_DISTANCE
+	return hit["position"]
+
+
+## Aplica el disparo ahora y manda la trazadora a mostrarlo.
+##
+## El orden importa y es a proposito: el daño entra al apretar el gatillo, la
+## trazadora tarda lo suyo en llegar. A 160 m/s son menos de dos decimas a veinte
+## metros - nadie ve morir al enemigo antes que la bala. Al reves si se notaria:
+## una bala que ya llego y todavia no hizo nada.
+func _resolve_hitscan(origin: Vector3, target: Vector3, hit: Dictionary) -> void:
+	var normal := Vector3.UP
+	var surface: SurfaceMaterialData = null
+	var landed: bool = not hit.is_empty()
+	if landed:
+		normal = hit["normal"]
+		var collider: Object = hit["collider"]
+		surface = SurfaceMaterials.resolve(collider)
+		var hitbox := collider as HitboxComponent
+		if hitbox != null:
+			var distance: float = origin.distance_to(target)
+			# get_damage() y no data.damage: ahi es donde entran las mejoras de
+			# daño compradas. El proyectil las recibia por damage_override, y al
+			# resolver el disparo aca hay que volver a pedirlas o la tienda deja
+			# de tener efecto sobre las cuatro armas del jugador.
+			var damage: float = get_damage() * _falloff_at(distance)
+			if hitbox.is_headshot_zone:
+				damage *= data.headshot_multiplier
+			# Mismo desvio que hace Projectile, y por el mismo motivo: en coop la
+			# salud de cada enemigo la posee el host, asi que este impacto es un
+			# pedido y no un resultado. Resolver el disparo en el gatillo hizo
+			# mas corto el camino desde apretar hasta aplicar daño, pero no
+			# cambio quien tiene derecho a aplicarlo - un cliente que llamara a
+			# take_hit() aca mataria su propia copia del enemigo y veria al de
+			# verdad seguir caminando. En solo el replicator resuelve en el acto.
+			if EnemyReplicator.instance != null:
+				EnemyReplicator.instance.report_hit(hitbox, damage, target)
+			else:
+				hitbox.take_hit(damage, target)
+
+	if not _wants_tracer() or data.projectile_scene == null:
+		return
+	var tracer := ObjectPool.acquire(data.projectile_scene) as Projectile
+	if tracer == null:
+		return
+	tracer.launch_tracer(origin, target, data.projectile_speed, normal, surface, landed)
+
+
+## Si esta bala se dibuja o no.
+##
+## Medido: el gasto de disparar no esta en resolver el impacto, esta en tener un
+## nodo por bala volando. Una trazadora sin raycast cuesta casi lo mismo que
+## costaba el proyectil completo, porque lo caro es el nodo -su _physics_process,
+## su transform, el pool- y no la cuenta que hace adentro.
+##
+## Asi que se dibujan menos. Es lo que hacen los shooters desde siempre: la
+## munición trazadora real viene una cada varias, y a quince disparos por segundo
+## el ojo lee una linea de fuego igual. Con el intervalo en 1 se dibujan todas.
+func _wants_tracer() -> bool:
+	var interval: int = maxi(data.tracer_every_n_shots, 1)
+	if interval == 1:
+		return true
+	_tracer_counter += 1
+	if _tracer_counter < interval:
+		return false
+	_tracer_counter = 0
+	return true
+
+
+## La misma curva que aplicaba la bala. Vive aca ahora porque el disparo se
+## resuelve aca, y la bala dejo de tener nada que decidir.
+func _falloff_at(distance: float) -> float:
+	if distance <= data.falloff_start or data.falloff_end <= data.falloff_start:
+		return 1.0
+	if distance >= data.falloff_end:
+		return data.falloff_min_multiplier
+	return lerpf(1.0, data.falloff_min_multiplier,
+		(distance - data.falloff_start) / (data.falloff_end - data.falloff_start))
 
 
 ## Point blank, the muzzle is already past whatever is being shot at - firing from

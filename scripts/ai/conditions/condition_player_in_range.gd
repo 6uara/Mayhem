@@ -8,6 +8,14 @@ extends ConditionLeaf
 @export var range_multiplier: float = 1.0
 ## Set to use an absolute distance instead of the archetype's attack range.
 @export var absolute_range: float = 0.0
+## Mide contra EnemyData.leap_range en vez de attack_range.
+##
+## Un arquetipo que salta se compromete desde mucho mas lejos de lo que llega su
+## golpe - el Rusher pega a 2.2m y salta desde 7m. Sin esto la rama del salto
+## habria que abrirla con un multiplicador calculado a mano contra el alcance de
+## golpe, que se desincroniza en silencio en cuanto alguien toca cualquiera de
+## los dos numeros.
+@export var use_leap_range: bool = false
 @export var invert: bool = false
 
 
@@ -15,8 +23,10 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	var enemy := actor as Enemy
 	if enemy == null or enemy.data == null:
 		return FAILURE
+	var base_range: float = enemy.data.leap_range if use_leap_range \
+		else enemy.data.attack_range
 	var limit: float = absolute_range if absolute_range > 0.0 \
-		else enemy.data.attack_range * range_multiplier
+		else base_range * range_multiplier
 	var in_range: bool = enemy.get_distance_to_player() <= limit
 	if invert:
 		in_range = not in_range

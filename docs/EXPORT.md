@@ -14,6 +14,12 @@ Windows Dev, 0 for Windows Release), not assumed. Linux Release is configured id
 **unverified** — no Linux export templates are installed in this environment; verify it once
 they are.
 
+**The widened exclude filter is verified too.** `Windows Release` was re-exported with it
+(`--export-release`, Godot 4.7-stable, exit 0) and the export log checked per excluded tree:
+`tests/`, `docs/`, `tools/`, `script_templates/`, `addons/gut/`, `addons/phantom_camera/`,
+`addons/debug_draw/`, `builds/` and `LatestBuild/` each stored **0** files, while
+`addons/beehave/` stored 119 — the AI trees still ship. Build size went 214 MB to 210 MB.
+
 "Debug" vs "Release" is not a field stored on the preset itself — it's which export command you
 run against it (`--export-debug` vs `--export-release`, or the corresponding buttons in the
 Export dialog). Windows Dev is meant to always be exported with `--export-debug`; Windows
@@ -36,14 +42,39 @@ Release and Linux Release with `--export-release`.
 - **Custom feature tag: `release`**
 - Export with: `--export-release`
 - Binary format: embed PCK
-- Resources: export all resources except `res://tests/*` (exclude filter: `tests/*`)
+- Resources: export all resources except the dev-only trees — see *Exclude filter* below.
 
 ### 3. `Linux Release` (nice-to-have, unverified — see above)
 - Platform: Linux, x86_64
 - Export path: `builds/release/mayhem.x86_64`
 - Custom feature tag: `release`
 - Export with: `--export-release`
-- Same exclude filters as the Windows release preset.
+- Same exclude filter as the Windows release preset.
+
+## Exclude filter
+
+Both release presets share one exclude filter. Every entry is a tree that exists only to
+develop the game — none of it is reachable from a scene, an autoload, or a script at runtime,
+which was checked by grepping `scripts/`, `scenes/`, `ui/`, `assets/` and `data/` for each path
+before it was added here. Shipping it would hand a player the test suite, the design docs and
+~5 MB of unused editor addons for nothing.
+
+| Entry | Why it is not in a shipping build |
+| --- | --- |
+| `tests/*` | GUT test suite. |
+| `docs/*` | Design docs, phase plans, the Obsidian vault. |
+| `tools/*` | The Python asset generators (placeholder SFX and music). |
+| `script_templates/*` | Editor-only new-script templates. |
+| `addons/gut/*` | Test framework, editor-only (~2.9 MB). |
+| `addons/phantom_camera/*` | Installed but unused — the only mention is a comment in `camera_recoil_component.gd` (~1.9 MB). |
+| `addons/debug_draw/*` | Installed but unused; no call site anywhere (~235 KB). |
+| `builds/*`, `LatestBuild/*` | Previous exports living inside the project directory. Belt and braces — `all_resources` should not pick up a `.exe` — but a build that packs an older build of itself is not a failure worth risking. |
+
+`addons/beehave/*` is **not** excluded: five enemy AI trees under `scenes/enemies/ai/` depend on
+it, and two of its scripts are autoloads (`BeehaveGlobalMetrics`, `BeehaveGlobalDebugger`).
+
+If you install a new addon, decide which side of this list it lands on at install time and add a
+row here — an addon nobody classified defaults to shipping.
 
 ## `export_presets.cfg`
 
@@ -68,7 +99,7 @@ name="Windows Release"
 platform="Windows Desktop"
 custom_features="release"
 export_filter="all_resources"
-exclude_filter="tests/*"
+exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*"
 export_path="builds/release/mayhem.exe"
 
 [preset.2]
@@ -76,7 +107,7 @@ name="Linux Release"
 platform="Linux"
 custom_features="release"
 export_filter="all_resources"
-exclude_filter="tests/*"
+exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*"
 export_path="builds/release/mayhem.x86_64"
 ```
 
@@ -98,8 +129,10 @@ in-editor if you check `OS.has_feature("dev") or OS.has_feature("editor")` — s
 
 1. `godot --headless -s addons/gut/gut_cmdln.gd -gexit` passes.
 2. Export templates match the editor version exactly (4.7-stable).
-3. Export both Windows presets and confirm the log actually excludes `res://tests/*` for
-   Release (`grep -c "Storing File: res://tests/"` on the export log — must be 0 for Release,
-   nonzero for Dev; do not trust a visual skim of the preset config alone).
+3. Export both Windows presets and confirm the log actually honours the exclude filter for
+   Release. Capture the export stdout and check every excluded tree, not just `tests/`:
+   `grep -cE "Storing File: res://(tests|docs|tools|script_templates|addons/(gut|phantom_camera|debug_draw))/"`
+   — must be 0 for Release and nonzero for Dev. Do not trust a visual skim of the preset config
+   alone.
 4. Launch the release build and confirm no Debug Draw geometry is visible.
 5. Confirm 60 FPS with a full elite wave on screen (section 10 of `CLAUDE.md`).

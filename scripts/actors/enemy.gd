@@ -14,10 +14,64 @@ const STUCK_TIME: float = 0.3
 ## Metres per second of real progress below which it is not actually moving.
 const STUCK_SPEED: float = 0.9
 const JUMP_COOLDOWN: float = 0.9
+## A jump that ends this close to where it started got the enemy nowhere.
+##
+## The bug this measures: an enemy wedged against a lip or a railing hops, lands
+## on the same spot, waits out the cooldown and hops again - forever, in place,
+## in front of the player. Nothing in the old code ever asked whether a jump had
+## worked, so the same one was worth retrying every second of the wave.
+const FAILED_JUMP_DISTANCE: float = 0.9
+## How long an enemy stops trying to jump after one gets it nowhere. Long enough
+## that walking around is what it does next, rather than hopping again.
+const FAILED_JUMP_COOLDOWN: float = 3.0
+## How long it commits to going sideways after a failed jump.
+const DETOUR_TIME: float = 1.1
+## How far off its heading it steps while detouring. Not a full right angle: the
+## point is to slide off whatever it is caught on, not to walk away from the fight.
+const DETOUR_DEGREES: float = 62.0
+## A link that just refused to be crossed is left alone for this long, so the
+## enemy stops relaunching into the same railing.
+const LINK_BLOCK_TIME: float = 4.0
+## Cerca de la salida de un link como para contar el cruce por bueno.
+const LINK_ARRIVAL: float = 1.5
+
+# Separacion (la unica regla de boids que este juego quiere)
+#
+# De las tres reglas clasicas, separacion es la que resuelve un problema real
+# aca. Cohesion hace exactamente lo contrario de lo que se pidio: junta al grupo,
+# que es el amontonamiento del que veniamos escapando. Y alineacion -copiar el
+# rumbo del vecino- pelea con el navmesh, que ya decidio por donde va cada uno;
+# en una horda que converge al mismo jugador los rumbos ya son casi paralelos,
+# asi que no agrega nada que se note.
+#
+# Lo que queda es empujarse entre vecinos, y eso si se ve: la horda deja de
+# apilarse en un punto y ocupa un frente.
+## Hasta donde se sienten los vecinos.
+const SEPARATION_RADIUS: float = 2.0
+## Cuanto pesa el empujon contra la direccion en la que queria ir. Bajo a
+## proposito: esto corrige el rumbo, no lo reemplaza, o los enemigos orbitan al
+## jugador en vez de llegarle.
+const SEPARATION_WEIGHT: float = 0.85
+## Cada cuanto se recalculan los vecinos. A 20 por segundo nadie ve la diferencia
+## y una oleada elite entera deja de recorrerse en cada frame de cada enemigo.
+const SEPARATION_INTERVAL: float = 0.05
+## How wide the fan is, in metres either side of the direct line.
+const APPROACH_SPREAD: float = 2.4
+## Distance over which the lane closes to nothing as the enemy arrives.
+const APPROACH_FADE: float = 4.0
 
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
 const GRAVITY: float = 24.0
+
+## Cuanto se le suma al radio del enemigo para decidir que un salto toco al
+## jugador. Es el medio cuerpo del jugador: el salto pega por contacto, no por
+## alcance, asi que este numero es el ancho de los dos sumado.
+const LEAP_CONTACT_RADIUS: float = 0.5
+## Diferencia de altura maxima para que el contacto cuente. Generoso a proposito:
+## el enemigo cruza el arco entero y puede tocar al jugador a la altura del pecho
+## o pasandole por arriba, y las dos son el mismo golpe.
+const LEAP_CONTACT_HEIGHT: float = 2.0
 
 @export var health: HealthComponent
 @export var agent: NavigationAgent3D
@@ -63,9 +117,31 @@ var windup_progress: float = 0.0
 
 var _player: Node3D
 var _material: StandardMaterial3D
+## The rigged model currently attached, and the scene it came from. Kept between
+## spawns: this node is pooled, and re-instantiating a model every time one left
+## the pool would pay exactly the cost the pool exists to avoid. Only a change of
+## archetype rebuilds it.
+var _model: Node3D
+var _model_source: PackedScene
+## Every MeshInstance3D inside the model, and the one material laid over all of
+## them to light the whole bot up at once.
+var _model_meshes: Array[MeshInstance3D] = []
+var _glow_material: StandardMaterial3D
+## Walks the model's legs when it has any. Null for an archetype still wearing
+## its grey-box capsule, which has nothing to walk with.
+var _gait: LeggedGait
 var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
+## En el aire por un salto de ataque - no por cruzar un link, que es otra cosa.
+var _is_leaping: bool = false
+## Adonde apunto el salto. Se fija al despegar y no se corrige: esquivar el salto
+## es moverse de ahi mientras el enemigo vuela.
+var _leap_target: Vector3 = Vector3.ZERO
+## Un salto pega una sola vez, por mas que roce al jugador varios frames.
+var _leap_hit_landed: bool = false
+## Quieto despues de aterrizar. Es la ventana que premia el esquive.
+var _leap_recovery_left: float = 0.0
 var _behavior_tree: Node
 var _slow_multiplier: float = 1.0
 ## Whoever the healer is currently helping, for the tether beam.
@@ -76,6 +152,39 @@ var _last_position: Vector3
 ## Set while crossing a NavigationLink3D under our own ballistic arc.
 var _link_target: Vector3 = Vector3.ZERO
 var _is_traversing_link: bool = false
+## Where the enemy left the ground, so the landing can be judged against it.
+var _jump_origin: Vector3 = Vector3.ZERO
+## True between a jump starting and its landing being judged.
+var _jump_pending: bool = false
+## Was the enemy on the floor last frame? The landing is the transition.
+var _was_on_floor: bool = true
+## Seconds left of walking sideways to get out of whatever the jump could not
+## clear, and which way. The side alternates so a failed detour tries the other.
+var _detour_time: float = 0.0
+var _detour_sign: float = 1.0
+## The link that just failed, and how long it stays off the table.
+var _blocked_link: JumpLink
+var _blocked_link_time: float = 0.0
+## The link this jump was launched at, kept until the landing is judged.
+var _last_link: JumpLink
+## This enemy's lane, -1 to 1: which side of the direct line it approaches on,
+## and how far out. Rolled per spawn, so a pooled body gets a new one each wave
+## and the pack never forms up the same way twice.
+var _approach_lane: float = 0.0
+## Los enemigos vivos, para que la separacion recorra una lista propia en vez de
+## pedirle el grupo al arbol en cada frame de cada enemigo - que era mil arrays
+## descartables por segundo en una oleada llena, y es el mismo motivo por el que
+## los links estan cacheados.
+##
+## Es static, asi que sobrevive a la escena que la lleno: un enemigo que se va
+## sin pasar por el pool -queue_free, cambio de arena, ObjectPool.clear()- tiene
+## que sacarse solo, o la lista arrastra entradas muertas de run en run y cada
+## recalculo de separacion, para cada enemigo vivo, las vuelve a filtrar. De eso
+## se ocupa _exit_tree().
+static var _flock: Array[Enemy] = []
+## Empujon acumulado de los vecinos, recalculado a intervalos.
+var _separation: Vector3 = Vector3.ZERO
+var _separation_timer: float = 0.0
 ## The arena's jump links, resolved once per spawn. They are placed at author time
 ## and never change during a run, so paying for a group query every frame - which
 ## allocates a fresh array each call - buys nothing.
@@ -105,16 +214,28 @@ func _ready() -> void:
 		head_hitbox.hit_taken.connect(_on_hit_taken)
 
 
+## Deja la lista de vivos: el que se va del arbol no vuelve por el pool, y una
+## lista static no se vacia sola entre escenas. Ver `_flock`.
+func _exit_tree() -> void:
+	_flock.erase(self)
+
+
 func _physics_process(delta: float) -> void:
 	if not is_active:
 		return
 
 	_flash_timer = maxf(_flash_timer - delta, 0.0)
-	if _flash_timer <= 0.0 and _material != null and _material.emission_energy_multiplier > 0.0:
-		_material.emission_energy_multiplier = 0.0
+	if _flash_timer <= 0.0 and _glow_level() > 0.0:
+		_set_glow(0.0)
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
+	_detour_time = maxf(_detour_time - delta, 0.0)
+	_separation_timer = maxf(_separation_timer - delta, 0.0)
+	_leap_recovery_left = maxf(_leap_recovery_left - delta, 0.0)
+	_blocked_link_time = maxf(_blocked_link_time - delta, 0.0)
+	if _blocked_link_time <= 0.0:
+		_blocked_link = null
 
 	if is_remote:
 		# Keep the cosmetics that are purely local - the halo spin and the
@@ -127,8 +248,14 @@ func _physics_process(delta: float) -> void:
 		# Re-applied every frame because the block above wipes the emission the
 		# moment the hit flash ends, and on a puppet nothing else would put the
 		# telegraph back. The value itself arrives in the snapshot.
-		if windup_progress > 0.0 and _material != null and _flash_timer <= 0.0:
-			_material.emission_energy_multiplier = windup_progress * 2.5
+		#
+		# Via _set_glow y no escribiendo _material a mano: desde que los enemigos
+		# traen modelo, el brillo son dos materiales -el de la capsula y el
+		# overlay sobre las mallas del modelo-. Pintar solo el primero dejaba al
+		# spider bot sin telegrafo en el cliente, que es justo el enemigo que mas
+		# se ve.
+		if windup_progress > 0.0 and _flash_timer <= 0.0:
+			_set_glow(windup_progress)
 		return
 
 	if not is_on_floor():
@@ -145,7 +272,15 @@ func _physics_process(delta: float) -> void:
 		halo.rotate_y(delta * 0.8)
 	_update_tether()
 
-	if _is_traversing_link:
+	if _is_leaping:
+		# En el aire y comprometido. No se dirige y no se frena: que el salto sea
+		# esquivable depende de que no corrija a mitad de vuelo.
+		_tick_leap()
+	elif _leap_recovery_left > 0.0:
+		# Aterrizo y esta juntando las patas. Quieto a proposito.
+		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
+	elif _is_traversing_link:
 		# Mid-arc: steering would fight the ballistic solution and land it short.
 		_tick_link_traversal()
 	elif _stagger_timer > 0.0:
@@ -163,6 +298,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 	move_and_slide()
+	_judge_landing()
 	_check_obstruction(delta)
 
 
@@ -181,13 +317,33 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	windup_progress = 0.0
 	_stagger_timer = 0.0
 	_flash_timer = 0.0
-	_attack_cooldown_left = 0.0
+	# Desfase inicial, misma idea que el de separacion de abajo: una oleada
+	# aparece de golpe, y si todos arrancan con el cooldown en cero el primer
+	# ataque de cada arquetipo sale clavado en el mismo frame. El jitter de
+	# start_attack_cooldown() los separa recien despues del primer ataque; esto
+	# hace que ya el primero llegue escalonado.
+	_attack_cooldown_left = randf() * enemy_data.attack_cooldown if enemy_data != null else 0.0
 	_slow_multiplier = 1.0
+	_is_leaping = false
+	_leap_hit_landed = false
+	_leap_recovery_left = 0.0
 	_stuck_time = 0.0
 	_jump_cooldown_left = 0.0
 	_last_position = spawn_position
 	_is_traversing_link = false
 	_link_target = spawn_position
+	_jump_pending = false
+	_was_on_floor = true
+	_approach_lane = randf_range(-1.0, 1.0)
+	_separation = Vector3.ZERO
+	# Desfasado a proposito. Con todos arrancando en cero, los veintisiete
+	# enemigos de una oleada elite recalculaban vecinos en el mismo frame y
+	# despues descansaban juntos: el promedio no lo nota, el peor frame si.
+	_separation_timer = randf() * SEPARATION_INTERVAL
+	_detour_time = 0.0
+	_blocked_link = null
+	_blocked_link_time = 0.0
+	_last_link = null
 	_navmesh_latched = false
 	_cache_links()
 
@@ -208,6 +364,8 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 		_rebuild_behavior_tree()
 
 	is_active = true
+	if not _flock.has(self):
+		_flock.append(self)
 	AudioPool.play_3d(data.spawn_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -236,8 +394,21 @@ func _on_acquired() -> void:
 func _on_released() -> void:
 	is_active = false
 	is_moving = false
+	# Un cuerpo que volvio al pool vive debajo del piso. Si siguiera en la lista,
+	# empujaria a los vivos desde ahi abajo.
+	_flock.erase(self)
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
+
+
+## Los enemigos en juego, sin pasar por el arbol.
+##
+## Es la lista que la separacion ya recorria; publica porque quien quiera
+## preguntar "quien esta cerca" tiene el mismo problema que tenia ella, y
+## get_nodes_in_group() arma un Array nuevo en cada llamada. Solo para leer: el
+## alta y la baja son de setup() y _on_released().
+static func get_active_enemies() -> Array[Enemy]:
+	return _flock
 
 
 # Public API - used by the AI leaves
@@ -256,6 +427,53 @@ func get_player() -> Node3D:
 func get_player_position() -> Vector3:
 	var player: Node3D = get_player()
 	return player.global_position if player != null else global_position
+
+
+## Where this enemy walks while it is closing in - a point beside the player
+## rather than the player.
+##
+## A dozen enemies all pathing to one set of feet arrive as a queue: the same
+## line, single file, each one shoving the one in front. Every archetype in the
+## game is melee-adjacent enough for that to be the shape of most fights, and it
+## reads as a conga line rather than as being surrounded.
+##
+## Each enemy carries its own lane, a fixed sideways offset from whatever
+## direction it happens to be approaching from. Sideways rather than a fixed
+## point on a circle, so nobody walks the long way around the player to reach an
+## angle it was assigned; they fan out across the front they are already coming
+## from.
+##
+## The lane closes as it arrives. Past the commit distance the offset fades to
+## nothing and the enemy goes for the player itself, because an attack aimed at a
+## point beside someone is an attack that misses.
+func get_approach_position() -> Vector3:
+	var player: Node3D = get_player()
+	if player == null:
+		return global_position
+	var target: Vector3 = player.global_position
+	if is_zero_approx(_approach_lane):
+		return target
+
+	var to_player: Vector3 = target - global_position
+	to_player.y = 0.0
+	var distance: float = to_player.length()
+	var commit: float = _approach_commit_distance()
+	if distance <= commit or distance < 0.01:
+		return target
+
+	# Full lane far out, none of it once inside the commit distance, and a smooth
+	# ramp between - a hard switch would make the whole pack snap inward at the
+	# same radius, which is the queue again with extra steps.
+	var blend: float = clampf((distance - commit) / APPROACH_FADE, 0.0, 1.0)
+	var lateral: Vector3 = to_player.normalized().cross(Vector3.UP)
+	return target + lateral * _approach_lane * APPROACH_SPREAD * blend
+
+
+## Inside this, the enemy stops flanking and comes straight in. Scaled off its
+## own reach so a long-armed elite commits sooner than a rusher.
+func _approach_commit_distance() -> float:
+	var reach: float = data.attack_range if data != null else 2.0
+	return maxf(reach * 1.8, 2.5)
 
 
 func get_distance_to_player() -> float:
@@ -290,8 +508,18 @@ func is_attack_ready() -> bool:
 	return _attack_cooldown_left <= 0.0
 
 
+## Cada espera sale un poco distinta, para que dos enemigos del mismo arquetipo no
+## queden atacando al unisono el resto de la ola.
+##
+## El jitter va centrado en el valor base, asi que a la larga el arquetipo ataca
+## igual de seguido que antes - lo unico que cambia es que las fases se separan
+## solas. Ver EnemyData.attack_cooldown_jitter.
 func start_attack_cooldown() -> void:
-	_attack_cooldown_left = data.attack_cooldown if data != null else 1.0
+	if data == null:
+		_attack_cooldown_left = 1.0
+		return
+	var jitter: float = clampf(data.attack_cooldown_jitter, 0.0, 0.9)
+	_attack_cooldown_left = data.attack_cooldown * randf_range(1.0 - jitter, 1.0 + jitter)
 
 
 func is_staggered() -> bool:
@@ -351,6 +579,90 @@ func deal_melee_damage() -> void:
 		EnemyReplicator.instance.broadcast_melee(self)
 
 
+## Se tira encima del jugador. Devuelve false si desde aca no se puede.
+##
+## El arco se resuelve para caer donde esta el jugador AHORA y no se toca mas: el
+## enemigo se compromete al despegar. Eso es lo que hace que el salto se pueda
+## esquivar moviendose, y es la diferencia con el golpe de melee de antes, que
+## simplemente aparecia cuando el enemigo te habia alcanzado.
+func start_leap() -> bool:
+	if data == null or not data.can_leap or _is_leaping or not is_on_floor():
+		return false
+	var player: Node3D = get_player()
+	if player == null:
+		return false
+	var target: Vector3 = player.global_position
+	if global_position.distance_to(target) > data.leap_range:
+		return false
+	# Sin linea de vision no hay salto: si no, se estrella contra la pared que hay
+	# en el medio y el jugador ve al bicho tirarse a la nada.
+	if not _can_see(player):
+		return false
+
+	_leap_target = target
+	_is_leaping = true
+	_leap_hit_landed = false
+	is_moving = false
+	var time: float = maxf(data.leap_flight_time, 0.1)
+	var offset: Vector3 = target - global_position
+	velocity = Vector3(offset.x, 0.0, offset.z) / time
+	velocity.y = offset.y / time + 0.5 * GRAVITY * time
+	_begin_jump()
+	return true
+
+
+func is_leaping() -> bool:
+	return _is_leaping
+
+
+## True mientras esta tirado despues de un salto: ni ataca ni se mueve.
+func is_recovering() -> bool:
+	return _leap_recovery_left > 0.0
+
+
+## Un paso de salto: mirar si toco al jugador, y si ya aterrizo.
+func _tick_leap() -> void:
+	if not _leap_hit_landed:
+		_check_leap_contact()
+	# is_on_floor() con velocidad hacia abajo es el aterrizaje. La condicion de
+	# velocidad importa porque en el primer frame el enemigo todavia toca el piso
+	# del que acaba de despegar.
+	if is_on_floor() and velocity.y <= 0.0:
+		_end_leap()
+		return
+	# Se cayo del mapa o algo interrumpio el arco.
+	if global_position.y < _leap_target.y - 12.0:
+		_end_leap()
+
+
+## El daño del salto. Es contacto real, no alcance: si el jugador se corrio, el
+## enemigo pasa de largo y no pasa nada.
+func _check_leap_contact() -> void:
+	var player: Node3D = get_player()
+	if player == null:
+		return
+	var offset: Vector3 = player.global_position - global_position
+	# Horizontal: el jugador mide casi dos metros y el enemigo le pasa por
+	# encima o por el pecho segun el momento del arco, y las dos cosas son el
+	# mismo impacto. Comparar en 3D haria que rozarle la cabeza no cuente.
+	var horizontal: float = Vector2(offset.x, offset.z).length()
+	var reach: float = data.collision_radius + LEAP_CONTACT_RADIUS
+	if horizontal > reach or absf(offset.y) > LEAP_CONTACT_HEIGHT:
+		return
+	_leap_hit_landed = true
+	var player_health: HealthComponent = _find_health(player)
+	if player_health != null:
+		player_health.apply_damage(data.damage)
+	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+
+
+func _end_leap() -> void:
+	_is_leaping = false
+	velocity.x = 0.0
+	velocity.z = 0.0
+	_leap_recovery_left = maxf(data.leap_recovery, 0.0) if data != null else 0.0
+
+
 ## Clear line from this enemy's head to the target's chest.
 ##
 ## Note this is NOT perception - enemies still always know where the player is
@@ -407,16 +719,18 @@ func heal_nearby_allies() -> int:
 
 ## Plays the visual half of a wind-up telegraph.
 func show_windup(progress: float) -> void:
+	# windup_progress se sigue guardando aunque _set_glow ya no lo necesite:
+	# EnemyReplicator lo serializa para que el cliente vea el telegrafo del
+	# enemigo que el host esta cargando. Es estado replicado, no una variable
+	# de dibujo.
 	windup_progress = clampf(progress, 0.0, 1.0)
-	if _material == null:
-		return
-	_material.emission_energy_multiplier = progress * 2.5
+	_set_glow(windup_progress)
 
 
 func clear_windup() -> void:
 	windup_progress = 0.0
-	if _material != null and _flash_timer <= 0.0:
-		_material.emission_energy_multiplier = 0.0
+	if _flash_timer <= 0.0:
+		_set_glow(0.0)
 
 
 # Private
@@ -451,9 +765,116 @@ func _steer(delta: float) -> void:
 		_stop_horizontal(delta)
 		return
 	direction = direction.normalized()
+	# Fresh off a jump that got nowhere: lean sideways for a moment. Walking at
+	# the same corner again would only produce the same failed jump, and sliding
+	# along the obstacle is what a player watching expects to see anyway.
+	if _detour_time > 0.0:
+		direction = direction.rotated(Vector3.UP,
+			deg_to_rad(DETOUR_DEGREES) * _detour_sign).normalized()
+
+	if _separation_timer <= 0.0:
+		_separation_timer = SEPARATION_INTERVAL
+		_separation = _compute_separation()
+	if _separation != Vector3.ZERO:
+		direction = (direction + _separation * SEPARATION_WEIGHT).normalized()
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+## Decides whether the jump that just ended was worth taking.
+##
+## Every way out of being stuck ends in a landing, and until now nothing looked
+## at where that landing was. An enemy that hops a lip it cannot clear, or
+## launches at a link and bounces off the railing beside it, comes down on the
+## spot it left - and the only thing standing between it and doing that again is
+## a one second cooldown. That is the enemy the player sees pogoing on the edge
+## of a platform for the rest of the wave.
+##
+## Landing where it started is the signal. What follows is not another jump: the
+## jump is put away for a few seconds, the link that refused it is left alone,
+## and the enemy walks sideways instead - which is what gets it off the corner it
+## is caught on.
+func _judge_landing() -> void:
+	var grounded: bool = is_on_floor()
+	var just_landed: bool = grounded and not _was_on_floor
+	_was_on_floor = grounded
+	if not just_landed or not _jump_pending:
+		return
+	_jump_pending = false
+	# Un cruce de link se juzga por haber llegado, no por cuanto se movio: un
+	# link a plomo -una caida recta desde una plataforma- avanza cero en
+	# horizontal y seria un cruce perfecto marcado como fallido.
+	var arrived: bool = false
+	if _last_link != null:
+		arrived = global_position.distance_to(_link_target) <= LINK_ARRIVAL
+	_note_jump_result(Vector2(global_position.x - _jump_origin.x,
+		global_position.z - _jump_origin.z).length(), arrived)
+
+
+## Lo que se decide con el resultado del salto, separado de detectar el aterrizaje.
+##
+## Aparte porque son dos cosas distintas: una necesita un piso abajo y un cuerpo
+## cayendo, la otra es una regla. Partido asi, la regla se puede ejercitar sin
+## montar una arena, y lo que queda arriba es solo "esto fue un aterrizaje".
+func _note_jump_result(travelled: float, reached_target: bool = false) -> void:
+	if reached_target or travelled >= FAILED_JUMP_DISTANCE:
+		return
+
+	_jump_cooldown_left = FAILED_JUMP_COOLDOWN
+	_stuck_time = 0.0
+	# Alternate sides: if going left did not free it, the next attempt goes right
+	# rather than grinding into the same corner from the same angle.
+	_detour_sign = -_detour_sign
+	_detour_time = DETOUR_TIME
+	if _is_traversing_link:
+		_is_traversing_link = false
+	if _last_link != null:
+		_blocked_link = _last_link
+		_blocked_link_time = LINK_BLOCK_TIME
+		_last_link = null
+
+
+## Records a jump so its landing can be judged. Every launch goes through here.
+func _begin_jump(link: JumpLink = null) -> void:
+	_jump_origin = global_position
+	_jump_pending = true
+	_was_on_floor = true
+	_last_link = link
+
+
+## Empujon que reciben unos de otros los enemigos que estan demasiado juntos.
+##
+## Es la regla de separacion de un boid, y nada mas que esa. Cada vecino dentro
+## del radio empuja en direccion contraria, con fuerza que crece cuanto mas
+## encimado esta - dos enemigos pisandose se separan fuerte, dos a dos metros
+## casi no se sienten.
+##
+## Horizontal a proposito: la componente vertical la maneja la gravedad, y un
+## empujon hacia arriba entre dos enemigos apilados los haria flotar.
+##
+## No lo hace el NavigationAgent3D, aunque la escena diga avoidance_enabled: eso
+## requiere pasarle la velocidad al agente y esperar su callback, y nadie lo
+## hacia nunca. El agente calculaba evitacion todos los frames para que el
+## resultado se tirara a la basura.
+func _compute_separation() -> Vector3:
+	var push := Vector3.ZERO
+	for other: Enemy in _flock:
+		if other == self or not is_instance_valid(other) or not other.is_active:
+			continue
+		var offset: Vector3 = global_position - other.global_position
+		offset.y = 0.0
+		var distance: float = offset.length()
+		if distance >= SEPARATION_RADIUS:
+			continue
+		if distance < 0.01:
+			# Exactamente encimados: no hay direccion que sacar del vector, asi
+			# que se desempata con algo estable pero distinto por enemigo.
+			var angle: float = float(get_instance_id() % 360) * TAU / 360.0
+			push += Vector3(cos(angle), 0.0, sin(angle))
+			continue
+		push += offset / distance * (1.0 - distance / SEPARATION_RADIUS)
+	return push
 
 
 ## Watches for the enemy being told to move while covering no ground, and hops the
@@ -527,6 +948,7 @@ func _try_traverse_link() -> bool:
 	_link_target = exit
 	_is_traversing_link = true
 	_jump_cooldown_left = JUMP_COOLDOWN
+	_begin_jump(link)
 	return true
 
 
@@ -553,6 +975,11 @@ func _find_link_ahead() -> JumpLink:
 	var best_distance: float = INF
 	for link: JumpLink in _links:
 		if not is_instance_valid(link) or not link.enabled:
+			continue
+		# The one that just bounced this enemy off a railing is off the table for
+		# a few seconds. Without this the pathfinder keeps offering the same
+		# crossing and the enemy keeps taking it, which is the pogo.
+		if link == _blocked_link:
 			continue
 		var distance: float = global_position.distance_to(_nearest_end(link))
 		if distance > data.collision_radius + 1.6 or distance >= best_distance:
@@ -673,6 +1100,7 @@ func _try_jump_obstacle() -> bool:
 
 	velocity.y = data.jump_velocity
 	_jump_cooldown_left = JUMP_COOLDOWN
+	_begin_jump()
 	return true
 
 
@@ -694,8 +1122,13 @@ func _stop_horizontal(delta: float) -> void:
 
 
 func _apply_presentation() -> void:
+	_apply_model()
 	if mesh_instance == null:
 		return
+	# The primitive is the fallback silhouette. With a model attached it is still
+	# here - the archetype may be swapped for one without a model on the next
+	# trip out of the pool - it is simply not drawn.
+	mesh_instance.visible = _model == null
 	if data.mesh != null:
 		mesh_instance.mesh = data.mesh
 	mesh_instance.scale = Vector3.ONE * data.body_scale
@@ -706,6 +1139,108 @@ func _apply_presentation() -> void:
 	_material.emission_enabled = true
 	_material.emission = flash_color
 	_material.emission_energy_multiplier = 0.0
+
+
+## Attaches the archetype's model, or takes down the one from the archetype this
+## pooled body used to be.
+func _apply_model() -> void:
+	if data.model_scene == _model_source:
+		_place_model()
+		return
+	if _model != null:
+		_model.queue_free()
+	_model = null
+	_model_meshes.clear()
+	_model_source = data.model_scene
+	if _model_source == null:
+		return
+	_model = _model_source.instantiate() as Node3D
+	if _model == null:
+		push_error("Enemy: %s model_scene is not a Node3D" % data.id)
+		return
+	add_child(_model)
+	_prune_authoring_nodes(_model)
+	_collect_model_meshes(_model)
+	_place_model()
+	_attach_gait()
+
+
+## Throws away what the modelling program packed alongside the model.
+##
+## A .fbx exported straight out of Blender keeps that file's camera and lights.
+## Instanced once per enemy that is a light per enemy, and a Camera3D that makes
+## itself current takes over the screen - the horde would be filming itself.
+## Stripped here rather than in the import settings so it holds for any model
+## anyone drops in later, whatever state its export was in.
+func _prune_authoring_nodes(node: Node) -> void:
+	for child: Node in node.get_children():
+		if child is Camera3D or child is Light3D:
+			child.queue_free()
+			continue
+		_prune_authoring_nodes(child)
+
+
+## Gives the model a walk, if it has legs to walk with. Dropped again when it
+## has none rather than left in place doing nothing every frame - the pool runs
+## a lot of these at once.
+func _attach_gait() -> void:
+	if _gait != null:
+		_gait.queue_free()
+		_gait = null
+	if _model == null:
+		return
+	var gait := LeggedGait.new()
+	add_child(gait)
+	if gait.setup(_model, self):
+		_gait = gait
+		return
+	gait.queue_free()
+
+
+func _place_model() -> void:
+	if _model == null:
+		return
+	_model.position = data.model_offset
+	_model.scale = Vector3.ONE * data.model_scale
+	_model.rotation = Vector3(0.0, deg_to_rad(data.model_yaw_degrees), 0.0)
+
+
+## An imported model brings its own materials, so the hit flash cannot be an
+## albedo swap the way it is on a grey-box capsule. It is laid over the top
+## instead: one unshaded material on every part, transparent until something
+## lights it up.
+func _collect_model_meshes(node: Node) -> void:
+	var mesh_node := node as MeshInstance3D
+	if mesh_node != null:
+		if _glow_material == null:
+			_glow_material = StandardMaterial3D.new()
+			_glow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_glow_material.albedo_color = Color(flash_color, 0.0)
+		mesh_node.material_overlay = _glow_material
+		_model_meshes.append(mesh_node)
+	for child: Node in node.get_children():
+		_collect_model_meshes(child)
+
+
+## One knob for "this enemy is lit up", whichever way it is being drawn: the
+## emission on a capsule, the overlay on a model. Hit flashes and attack
+## wind-ups both go through here, so neither has to know which it is looking at.
+func _set_glow(amount: float) -> void:
+	# Ceiling of 1.2 rather than 1.0: the hit flash deliberately overshoots the
+	# brightest wind-up, and 1.2 * 2.5 is the 3.0 the capsule flash has always
+	# used. The overlay cannot go past opaque, so it clamps a step earlier.
+	var level: float = clampf(amount, 0.0, 1.2)
+	if _glow_material != null:
+		_glow_material.albedo_color = Color(flash_color, minf(level, 1.0) * 0.8)
+	if _material != null:
+		_material.emission_energy_multiplier = level * 2.5
+
+
+func _glow_level() -> float:
+	if _glow_material != null:
+		return _glow_material.albedo_color.a
+	return _material.emission_energy_multiplier if _material != null else 0.0
 
 
 ## Shapes are resized per archetype, so each pooled instance needs its own copy -
@@ -817,8 +1352,9 @@ func _set_hitboxes_enabled(enabled: bool) -> void:
 func _on_hit_taken(_amount: float, _is_headshot: bool, hit_position: Vector3) -> void:
 	# Visible reaction to every hit is a gunplay-feel requirement (CLAUDE.md 5.3).
 	_flash_timer = FLASH_TIME
-	if _material != null:
-		_material.emission_energy_multiplier = 3.0
+	# Over the top of the wind-up glow on purpose: a hit landing has to read even
+	# on an enemy that is already lit up.
+	_set_glow(1.2)
 	var resistance: float = clampf(data.stagger_resistance if data != null else 0.0, 0.0, 1.0)
 	if resistance >= 1.0:
 		return

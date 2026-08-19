@@ -30,7 +30,7 @@ obvio— es tocar ese archivo y nada más.
 | Lobby | `scripts/ui/coop_panel.gd` | Crear o unirse desde el menú |
 | Cuerpos | `scripts/systems/player_spawn_controller.gd` | Un cuerpo por peer; el cliente avisa cuando su arena cargó |
 | Enemigos | `scripts/systems/enemy_replicator.gd` | El host los simula; los clientes reciben snapshots a 20/s e interpolan |
-| Disparo del cliente | `EnemyReplicator.report_hit()` | El cliente raycastea local y **pide** el impacto; el host lo resuelve |
+| Disparo del cliente | `EnemyReplicator.report_hit()` | El cliente raycastea local y **pide** el impacto; el host lo resuelve. Dos entradas: `Projectile._on_hit()` para las armas con bala, y `WeaponComponent._resolve_hitscan()` para las que resuelven en el gatillo |
 | Plata | `EventBus.kill_credited` | La recompensa sigue al que disparó, no a quien simula |
 | Ataques enemigos | `EnemyReplicator.broadcast_projectile()` / `broadcast_melee()` | El cliente ve el disparo, oye el golpe y ve el telegrafiado |
 | Munición | `scripts/systems/ammo_pickup.gd` | La caja es del host: la pide el que la pisa, y desaparece para todos |
@@ -38,6 +38,13 @@ obvio— es tocar ese archivo y nada más.
 | Paredes | `UtilityComponent.broadcast_landing()` | La pared queda parada en el mismo lugar en las cuatro máquinas |
 | Caídas | `Player._report_downed()` | Morir te pasa a la cámara de un compañero, no a game over |
 | Revivir | `Player.revive_from_host()` | El corte entre oleadas levanta a los caídos |
+
+> **Una sola regla, dos caminos.** Nadie llama `HitboxComponent.take_hit()` derecho salvo el
+> propio `EnemyReplicator`. Cuando develop paso las armas a hitscan aparecio un segundo lugar
+> que aplicaba daño -`WeaponComponent._resolve_hitscan()`- y que no sabia nada de la red: un
+> cliente hubiera matado su propia copia del enemigo mientras el de verdad seguia caminando.
+> Va desviado por `report_hit()` igual que la bala. Si mañana aparece un arma nueva, la
+> pregunta a hacerse es la misma: ¿esta pidiendo el impacto, o aplicandolo?
 | Tienda | `MatchDirector._open_break()` | Todos compran a la vez y la oleada arranca cuando el último está listo |
 | Victoria | `MatchDirector._declare_victory()` | La declara el host; cada peer puntúa su propia billetera |
 | El Host (la voz) | `NarratorManager.say_shared()` | Una transmisión para los cuatro, misma línea y mismo momento |

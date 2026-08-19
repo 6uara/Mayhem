@@ -122,3 +122,158 @@ func test_enemy_settles_instead_of_grinding_at_an_unreachable_player() -> void:
 		"the enemy is pushing at %.1f m/s but covering %.2fm - that is grinding"
 			% [still_pushing, actually_moved])
 	assert_true(arena.is_inside_tree())
+
+
+# ------------------------------------------- cadencia desincronizada y salto
+
+## Da un jugador con vida propia, que es lo que el salto necesita para poder
+## cobrarle el golpe.
+func _player_with_health(at: Vector3) -> HealthComponent:
+	_player.global_position = at
+	var health := HealthComponent.new()
+	health.max_health = 500.0
+	_player.add_child(health)
+	health.reset()
+	return health
+
+
+## Piso bajo los pies del enemigo, y espera a que lo pise de verdad.
+##
+## Nadie salta desde el aire, asi que sin piso start_leap() se niega con razon y
+## el test mide el vacio en vez del salto. La espera no es decorativa: el enemigo
+## se crea en before_each() y el piso recien aca, asi que pasa unos frames
+## cayendo - dar por sentado que ya aterrizo hace el test intermitente.
+func _ground_the_enemy() -> void:
+	var body := StaticBody3D.new()
+	body.collision_layer = PhysicsLayers.WORLD
+	body.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(80, 1, 80)
+	shape.shape = box
+	body.add_child(shape)
+	add_child_autofree(body)
+	body.global_position = Vector3(0, -0.5, 0)
+
+	_enemy.global_position = Vector3(0, 0.6, 0)
+	for _i: int in 60:
+		await wait_physics_frames(1)
+		if _enemy.is_on_floor():
+			return
+	fail_test("el enemigo nunca llego a pisar el piso del test")
+
+
+## Tres enemigos iguales que aparecen juntos no pueden quedar atacando al
+## unisono: el jugador come tres proyectiles a la vez o ninguno, y ninguna de las
+## dos cosas se puede jugar.
+func test_enemies_of_one_archetype_do_not_share_an_attack_cadence() -> void:
+	var data: EnemyData = load("res://data/enemies/ranger.tres")
+	var cooldowns: Array[float] = []
+	for _i: int in 12:
+		_enemy.setup(data, Vector3.ZERO)
+		_enemy.start_attack_cooldown()
+		cooldowns.push_back(_enemy._attack_cooldown_left)
+
+	var unique: Dictionary = {}
+	for value: float in cooldowns:
+		unique[snappedf(value, 0.001)] = true
+	assert_gt(unique.size(), 8,
+		"doce esperas seguidas no pueden salir todas iguales")
+
+
+## Desincronizar no deberia costar dificultad: el jitter va centrado, asi que el
+## arquetipo ataca igual de seguido que antes. Un rango que solo suma (1-3s sobre
+## el cooldown) tambien separaria las fases, pero de paso le bajaria el daño por
+## segundo a la mitad.
+func test_the_cooldown_jitter_does_not_change_how_often_the_archetype_attacks() -> void:
+	var data: EnemyData = load("res://data/enemies/ranger.tres")
+	_enemy.setup(data, Vector3.ZERO)
+	var total: float = 0.0
+	var samples: int = 400
+	for _i: int in samples:
+		_enemy.start_attack_cooldown()
+		total += _enemy._attack_cooldown_left
+
+	var average: float = total / float(samples)
+	assert_almost_eq(average, data.attack_cooldown, data.attack_cooldown * 0.08,
+		"el promedio tiene que seguir siendo el attack_cooldown del arquetipo")
+
+
+## Y el primer ataque de la ola tambien llega escalonado: sin esto el jitter
+## recien los separa despues del primer disparo, que sale clavado a la vez.
+func test_a_freshly_spawned_wave_does_not_all_attack_on_the_same_frame() -> void:
+	var data: EnemyData = load("res://data/enemies/ranger.tres")
+	var first: Array[float] = []
+	for _i: int in 12:
+		_enemy.setup(data, Vector3.ZERO)
+		first.push_back(_enemy._attack_cooldown_left)
+
+	var unique: Dictionary = {}
+	for value: float in first:
+		unique[snappedf(value, 0.001)] = true
+	assert_gt(unique.size(), 8, "el desfase inicial tiene que ser por enemigo")
+	for value: float in first:
+		assert_lte(value, data.attack_cooldown,
+			"el desfase nunca puede pasar de un ciclo entero")
+
+
+## El Rusher se tira encima del jugador en vez de golpear parado. El arco se fija
+## al despegar: eso es lo que lo hace esquivable.
+func test_a_rusher_leaps_at_the_player() -> void:
+	await _ground_the_enemy()
+	_player_with_health(Vector3(0, 0, -5))
+	await wait_physics_frames(2)
+
+	assert_true(_enemy.data.can_leap, "el rusher salta")
+	assert_true(_enemy.start_leap(), "a 5m tiene que animarse")
+	assert_true(_enemy.is_leaping(), "queda en el aire")
+	assert_gt(_enemy.velocity.y, 0.0, "el salto sale para arriba")
+	assert_lt(_enemy.velocity.z, 0.0, "y hacia el jugador")
+
+
+## Desde lejos no salta: se acerca primero. La rama del arbol falla y cae a
+## perseguir, que es lo correcto.
+func test_a_leap_is_refused_from_beyond_its_range() -> void:
+	await _ground_the_enemy()
+	_player_with_health(Vector3(0, 0, -40))
+	await wait_physics_frames(2)
+	assert_false(_enemy.start_leap(), "40m esta muy lejos para saltar")
+	assert_false(_enemy.is_leaping())
+
+
+## Si alcanza al jugador, cobra - una sola vez, por mas que lo roce varios frames.
+func test_a_leap_that_connects_deals_its_damage_once() -> void:
+	await _ground_the_enemy()
+	var health: HealthComponent = _player_with_health(Vector3(0, 0, -5))
+	await wait_physics_frames(2)
+	assert_true(_enemy.start_leap())
+	# Que no salte de nuevo mientras se mide este: el arbol tiene su propia rama
+	# de ataque y un segundo salto ensuciaria el "una sola vez".
+	_enemy._attack_cooldown_left = 99.0
+
+	# El arco entero, de verdad: es lo unico que prueba que el contacto ocurre
+	# volando y no que la cuenta da bien si se la llama a mano.
+	await wait_seconds(_enemy.data.leap_flight_time + 0.3)
+
+	var expected: float = 500.0 - _enemy.data.damage
+	assert_almost_eq(health.current_health, expected, 0.01,
+		"el salto pega al llegar, y una sola vez")
+
+
+## Y si el jugador se corre, el salto no pega nada. Es contacto, no alcance.
+func test_a_dodged_leap_deals_no_damage_and_leaves_the_enemy_recovering() -> void:
+	await _ground_the_enemy()
+	var health: HealthComponent = _player_with_health(Vector3(0, 0, -5))
+	await wait_physics_frames(2)
+	assert_true(_enemy.start_leap())
+
+	# Se movio mientras el enemigo volaba.
+	_player.global_position = Vector3(20, 0, -5)
+	_enemy._check_leap_contact()
+	assert_almost_eq(health.current_health, 500.0, 0.01,
+		"esquivarlo tiene que salir gratis")
+
+	_enemy._end_leap()
+	assert_false(_enemy.is_leaping(), "aterrizo")
+	assert_true(_enemy.is_recovering(),
+		"y queda vulnerable un momento: ese es el premio por esquivar")

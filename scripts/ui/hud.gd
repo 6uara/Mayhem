@@ -68,6 +68,17 @@ var _grapple_slot: Control
 var _wave_shown: WaveData
 var _over_par_shown: bool = false
 var _intact_shown: bool = true
+## The two labels _tick_wave() writes every frame, held as the values they were
+## last built from rather than as the strings themselves. Both are counters that
+## step - one per second, one per kill - so 59 frames out of 60 were formatting a
+## String and re-laying out a Label to produce what was already on screen.
+var _elapsed_seconds_shown: int = -1
+var _remaining_shown: int = -1
+## Last state pushed into the grapple slot. Assigning `theme_type_variation`
+## invalidates the control and re-notifies its subtree whether or not the
+## variation differs, so this is the same transition-only rule the timer cluster
+## below already follows.
+var _grapple_state_shown: int = -1
 
 
 func _ready() -> void:
@@ -176,6 +187,8 @@ func _build_ability_bar() -> void:
 
 	_grapple_slot = _make_slot(MayhemIcon.Kind.GRAPPLE, "GRAPPLE")
 	_ability_bar.add_child(_grapple_slot)
+	# Fresh nodes, so whatever the old ones were showing says nothing about these.
+	_grapple_state_shown = -1
 
 
 func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
@@ -258,21 +271,23 @@ func _tick_movement() -> void:
 	if _grapple_slot == null or _player.grapple == null:
 		return
 	# Ready / attached / cooling, expressed by border and label, not colour alone.
+	# Three states, so the whole thing is one comparison: the slot is only touched
+	# on the frame it actually moves between them.
+	var state: int = 0
+	if _player.grapple.is_grappling:
+		state = 2
+	elif _player.grapple.is_anchor_in_range:
+		state = 1
+	if state == _grapple_state_shown:
+		return
+	_grapple_state_shown = state
+
 	var panel: PanelContainer = _grapple_slot.get_meta(&"panel")
 	var icon: MayhemIcon = _grapple_slot.get_meta(&"icon")
 	var key: Label = _grapple_slot.get_node("Keybind")
-	if _player.grapple.is_grappling:
-		panel.theme_type_variation = &"AbilitySlotReady"
-		icon.color = Tokens.PLAYER
-		key.text = "ATTACHED"
-	elif _player.grapple.is_anchor_in_range:
-		panel.theme_type_variation = &"AbilitySlotReady"
-		icon.color = Tokens.PLAYER
-		key.text = "GRAPPLE"
-	else:
-		panel.theme_type_variation = &"AbilitySlot"
-		icon.color = Tokens.DIM
-		key.text = "GRAPPLE"
+	panel.theme_type_variation = &"AbilitySlotReady" if state > 0 else &"AbilitySlot"
+	icon.color = Tokens.PLAYER if state > 0 else Tokens.DIM
+	key.text = "ATTACHED" if state == 2 else "GRAPPLE"
 
 
 func _tick_wave() -> void:
@@ -289,9 +304,22 @@ func _tick_wave() -> void:
 	if is_new_wave:
 		_wave_shown = wave
 		_par.text = "/ PAR %s" % _format_time(wave.par_time)
+		# A pooled HUD outlives the wave it was showing, and the new wave may open
+		# on the same numbers the old one closed on.
+		_elapsed_seconds_shown = -1
+		_remaining_shown = -1
 
-	_enemies_left.text = "%d" % WaveManager.get_remaining_count()
-	_elapsed.text = _format_time(elapsed)
+	# Same rule as the colour blocks below, for the same reason: these are counters
+	# that step, and the frames between steps have nothing to say.
+	var remaining: int = WaveManager.get_remaining_count()
+	if remaining != _remaining_shown:
+		_remaining_shown = remaining
+		_enemies_left.text = "%d" % remaining
+
+	var elapsed_seconds: int = int(elapsed)
+	if elapsed_seconds != _elapsed_seconds_shown:
+		_elapsed_seconds_shown = elapsed_seconds
+		_elapsed.text = _format_time(elapsed)
 
 	var ratio: float = clampf(elapsed / maxf(wave.par_time, 0.01), 0.0, 1.0)
 	_par_bar.filled = int(round(ratio * float(_par_bar.count)))

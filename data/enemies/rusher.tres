@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="EnemyData" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="EnemyData" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_rusher.tscn" id="2_tree"]
@@ -7,10 +7,15 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_death.wav" id="6_death"]
 [ext_resource type="ArrayMesh" path="res://assets/models/meshes/spiderbot.res" id="7_mesh"]
+[ext_resource type="PackedScene" path="res://assets/models/LowPoly_SpiderBot_Rzenn.fbx" id="8_model"]
 
 [resource]
 script = ExtResource("1_script")
 mesh = ExtResource("7_mesh")
+model_scene = ExtResource("8_model")
+model_scale = 0.25
+model_offset = Vector3(0, 0.721, 0)
+model_yaw_degrees = 180.0
 archetype = 0
 id = &"rusher"
 display_name = "Rusher"
@@ -22,6 +27,10 @@ attack_cooldown = 1.2
 mass = 0.8
 stagger_resistance = 0.0
 attack_windup = 0.45
+can_leap = true
+leap_range = 7.0
+leap_flight_time = 0.5
+leap_recovery = 0.5
 body_color = Color(1, 0.231, 0.329, 1)
 body_scale = 1.00
 collision_height = 1.20

@@ -101,6 +101,16 @@ text = "Options"
 custom_minimum_size = Vector2(0, 48)
 text = "Quit"
 
+[node name="FooterSpacer" type="Control" parent="Root/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 8)
+
+[node name="Footer" type="Label" parent="Root/Panel/Margin/Layout"]
+theme_type_variation = &"HUDLabel"
+theme_override_colors/font_color = Color(0.271, 0.298, 0.376, 1)
+horizontal_alignment = 1
+autowrap_mode = 2
+text = "v0.0.0"
+
 [node name="Settings" parent="." instance=ExtResource("4_settings")]
 
 [node name="Leaderboard" parent="." instance=ExtResource("5_lb")]
