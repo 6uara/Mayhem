@@ -110,3 +110,54 @@ func test_ads_sensitivity_scales_off_the_same_base() -> void:
 	var ads: float = SettingsManager.get_mouse_sensitivity(true)
 	assert_almost_eq(ads, hip * float(Tokens.ADS_MULT_DEFAULT), 0.0001)
 	assert_lt(ads, hip, "aiming slows the look, it never speeds it up")
+
+
+# ------------------------------------------------- la perilla de trazadoras
+
+## La perilla que ralea trazadoras es para cadencia alta, no para muchos
+## perdigones, y esa distincion se descubrio rompiendola: la escopeta quedo
+## dibujando tres de sus nueve perdigones.
+##
+## El motivo es que el ojo rellena el hueco *a lo largo del tiempo*. A quince
+## disparos por segundo, una bala de cada tres se sigue leyendo como una linea
+## continua porque vienen las siguientes. Los nueve perdigones salen todos en el
+## mismo instante: ahi el patron de dispersion es el visual entero y no hay nada
+## despues que lo complete. Ralearlo se ve como una escopeta mas floja.
+##
+## Es una regla sobre datos, no sobre codigo, asi que se rompe editando un .tres
+## y no falla nada. Por eso vive aca.
+func test_no_multi_pellet_weapon_thins_its_tracers() -> void:
+	for path: String in _weapon_paths():
+		# La carpeta tiene tambien los patrones de retroceso, que son otro recurso.
+		# Tipar la variable como WeaponData hace que asignarle uno sea un error de
+		# runtime, asi que se castea y se descarta lo que no sea un arma.
+		var data := load(path) as WeaponData
+		if data == null or data.projectiles_per_shot <= 1:
+			continue
+		assert_eq(data.tracer_every_n_shots, 1,
+			"%s tira %d perdigones de una: tienen que dibujarse todos" % [
+				data.id, data.projectiles_per_shot])
+
+
+## Una trazadora es un proyectil pooleado. Un arma hitscan sin escena de
+## proyectil resuelve el impacto y no dibuja absolutamente nada - el disparo
+## pega, pero en pantalla no salio ninguna bala.
+func test_every_hitscan_weapon_can_still_draw_a_bullet() -> void:
+	for path: String in _weapon_paths():
+		var data := load(path) as WeaponData
+		if data == null or not data.is_hitscan:
+			continue
+		assert_not_null(data.projectile_scene,
+			"%s es hitscan y sin projectile_scene no dibuja la trazadora" % data.id)
+
+
+func _weapon_paths() -> Array[String]:
+	var found: Array[String] = []
+	var dir := DirAccess.open("res://data/weapons/")
+	if dir == null:
+		return found
+	for file: String in dir.get_files():
+		var name: String = file.trim_suffix(".remap")
+		if name.ends_with(".tres"):
+			found.append("res://data/weapons/" + name)
+	return found
