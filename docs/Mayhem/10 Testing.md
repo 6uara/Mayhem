@@ -77,9 +77,24 @@ Verified stable across multiple consecutive full-suite runs (backlog tanda
 G6). If this ever flakes again it is a *new* bug, not a recurrence of this one
 — don't reach for "known flaky, rerun it" as the reflex.
 
+## Timing-sensitive tests under machine load
+
+Separate from the root-caused flake above, and *not* an excuse for it:
+`test_music_manager.gd::test_music_follows_the_match_state` and parts of
+`test_audio_pool.gd` assert on live playback state, and can fail when the
+machine is contended enough to starve the headless audio driver. The tell is
+wall-clock: a healthy full run is ~105s, and the failures were seen only in runs
+that took ~145s because another Godot instance was running alongside.
+
+Confirm before believing it — the way that was attributed was to run the same
+suite on a clean baseline commit, not to rerun until green. If these fail on an
+otherwise-normal-speed run, treat it as a real bug.
+
 ## What's explicitly *not* covered
 
-`GrappleComponent` and `StatsComponent` have zero test files despite being real
-gameplay surfaces (`StatsComponent` is the read path every purchased upgrade in
-the game flows through). See [[12 Known Issues and Gaps]] for the current
-priority list.
+The old entry here — `GrappleComponent` and `StatsComponent` with zero test
+files — is out of date; both are covered
+(`tests/unit/test_grapple_component.gd`, `test_stats_component.gd`). See
+[[12 Known Issues and Gaps]] for the current priority list, and for why covering
+`StatsComponent` still did not catch the upgrade bug that shipped with hitscan:
+the gap was the seam between components, not either component.
