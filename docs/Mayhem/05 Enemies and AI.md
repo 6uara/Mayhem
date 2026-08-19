@@ -6,8 +6,8 @@ tags: [mayhem, enemies, ai]
 
 ## One scene, five archetypes
 
-`scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~725 lines, the largest
-script in the codebase) is shared by every archetype. `EnemyData`
+`scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~1275 lines, the largest
+script in the codebase by a wide margin) is shared by every archetype. `EnemyData`
 (`scripts/resources/enemy_data.gd`) supplies everything that makes a Rusher a
 Rusher: silhouette, stats, behavior tree, audio. `Enemy` itself is architecture-
 agnostic — it reads `data.*` and never branches on archetype by name.
@@ -17,7 +17,9 @@ agnostic — it reads `data.*` and never branches on archetype by name.
 `EnemyData` field groups: **Stats** (health/speed/damage/range/cooldown/mass,
 `stagger_resistance` — 0 = staggered by every hit, 1 = immovable, elites sit
 high), **Movement** (see below), **Attack** (`attack_windup` — telegraphing is
-mandatory, `projectile_scene` for ranged archetypes, `preferred_distance`),
+mandatory, `attack_cooldown_jitter` and the `Leap` subgroup — see
+[[#Attack timing is deliberately desynchronised]] and [[#The leap]],
+`projectile_scene` for ranged archetypes, `preferred_distance`),
 **Support** (Healer's `heal_amount`/`heal_radius`, Summoner's `summon_data`/
 `summon_count`/`summon_interval`), **Presentation** (`mesh`, `body_color`,
 `has_halo`/`has_tether` — Healer-only, since Ranger and Healer share body
@@ -78,6 +80,56 @@ player standing on top through solid floor geometry. This does **not** change
 the "enemies always know player position" perception rule; it only gates whether
 a landed hit connects.
 
+## Attack timing is deliberately desynchronised
+
+Enemies of one archetype share a period, so a group that spawns together attacks
+in lockstep. Three rangers firing on the same frame means the player eats three
+projectiles or none — neither reads as combat, and neither can be played around.
+
+Two things break the alignment:
+
+- `EnemyData.attack_cooldown_jitter` (default `0.35`) — each cooldown lands
+  somewhere in a band around the archetype's value, so phases drift apart and
+  never re-converge.
+- `Enemy.setup()` seeds `_attack_cooldown_left` with a random fraction of one
+  cooldown, so even the **first** attack of a wave arrives staggered. Without it
+  the jitter only separates enemies after their first attack, which still goes
+  off in unison. (Same trick as the separation timer directly below it, and for
+  the same reason.)
+
+The jitter is **centred, not additive**. A `[1.0, 2.0]` band would separate the
+phases just as well and halve every archetype's damage per second on the way —
+desynchronising should not quietly cost difficulty.
+`test_the_cooldown_jitter_does_not_change_how_often_the_archetype_attacks` pins
+the average back to the archetype's `attack_cooldown`, which is the property that
+makes this a timing change rather than a balance change.
+
+## The leap
+
+The Rusher throws itself at the player instead of punching from where it stands
+(`Enemy.start_leap()`, `ActionLeapAttack`, `EnemyData.can_leap` and the `Leap`
+subgroup). The arc is solved at take-off — same ballistic solve as
+[[#Jump links]] — and **never corrected in flight**, which is the whole point:
+moving during the flight is what makes it miss. The melee hit it replaces simply
+appeared once the enemy had reached you, with nothing to do about it.
+
+- Damage is **contact, not reach** (`_check_leap_contact()`), and lands once no
+  matter how many frames the bodies overlap.
+- A miss costs the enemy `leap_recovery` seconds standing still and vulnerable.
+  That window is what pays the player for reading the wind-up; without it the
+  leap is free and the telegraph means nothing.
+- `start_leap()` refuses without floor under it, beyond `leap_range`, or without
+  line of sight — otherwise it launches into the wall in between.
+
+`ActionTelegraph` was already the wind-up and is unchanged; only the strike it
+leads into is new. The **Elite keeps its slam** — the acid pool is what makes it
+area denial rather than a large Rusher.
+
+`ConditionPlayerInRange` gained `use_leap_range` so the tree opens the branch at
+the archetype's leap range (7m) rather than its punch range (2.2m). Expressing
+that as a hand-computed multiplier over `attack_range` would go silently wrong
+the moment either number moved.
+
 ## Enemy meshes
 
 `EnemyData.mesh` is typed `Mesh` (not `PackedScene`) — an imported `.fbx` scene
@@ -98,9 +150,13 @@ Behavior trees live under `scenes/enemies/ai/`, built from leaves in
 `scripts/ai/actions/` and `scripts/ai/conditions/`:
 
 - **Actions**: `action_chase_player`, `action_keep_distance`, `action_melee_attack`,
-  `action_ranged_attack`, `action_telegraph`, `action_heal_allies`,
-  `action_summon_adds`, `action_elite_slam`.
-- **Conditions**: `condition_player_in_range`, `condition_attack_ready`,
+  `action_leap_attack`, `action_ranged_attack`, `action_telegraph`,
+  `action_heal_allies`, `action_summon_adds`, `action_elite_slam`.
+  `action_melee_attack` is still the standing hit, but no tree uses it since the
+  Rusher moved to `action_leap_attack` — it stays as the plain melee an archetype
+  without `can_leap` would use.
+- **Conditions**: `condition_player_in_range` (`range_multiplier`,
+  `absolute_range`, `use_leap_range`, `invert`), `condition_attack_ready`,
   `condition_not_staggered`.
 
 `BeehaveGlobalMetrics` / `BeehaveGlobalDebugger` are addon autoloads, registered

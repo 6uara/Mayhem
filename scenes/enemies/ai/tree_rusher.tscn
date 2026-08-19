@@ -7,7 +7,7 @@
 [ext_resource type="Script" path="res://scripts/ai/conditions/condition_attack_ready.gd" id="5_ready"]
 [ext_resource type="Script" path="res://scripts/ai/conditions/condition_not_staggered.gd" id="6_steady"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_telegraph.gd" id="7_telegraph"]
-[ext_resource type="Script" path="res://scripts/ai/actions/action_melee_attack.gd" id="8_melee"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_leap_attack.gd" id="8_melee"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_chase_player.gd" id="9_chase"]
 
 [node name="RusherTree" type="Node"]
@@ -22,6 +22,7 @@ script = ExtResource("3_sequence")
 [node name="InRange" type="Node" parent="Root/AttackBranch"]
 script = ExtResource("4_in_range")
 range_multiplier = 1.0
+use_leap_range = true
 
 [node name="AttackReady" type="Node" parent="Root/AttackBranch"]
 script = ExtResource("5_ready")
@@ -33,7 +34,7 @@ script = ExtResource("6_steady")
 script = ExtResource("7_telegraph")
 windup_multiplier = 1.0
 
-[node name="Melee" type="Node" parent="Root/AttackBranch"]
+[node name="Leap" type="Node" parent="Root/AttackBranch"]
 script = ExtResource("8_melee")
 
 [node name="Chase" type="Node" parent="Root"]
