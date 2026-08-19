@@ -152,6 +152,12 @@ var _approach_lane: float = 0.0
 ## pedirle el grupo al arbol en cada frame de cada enemigo - que era mil arrays
 ## descartables por segundo en una oleada llena, y es el mismo motivo por el que
 ## los links estan cacheados.
+##
+## Es static, asi que sobrevive a la escena que la lleno: un enemigo que se va
+## sin pasar por el pool -queue_free, cambio de arena, ObjectPool.clear()- tiene
+## que sacarse solo, o la lista arrastra entradas muertas de run en run y cada
+## recalculo de separacion, para cada enemigo vivo, las vuelve a filtrar. De eso
+## se ocupa _exit_tree().
 static var _flock: Array[Enemy] = []
 ## Empujon acumulado de los vecinos, recalculado a intervalos.
 var _separation: Vector3 = Vector3.ZERO
@@ -183,6 +189,12 @@ func _ready() -> void:
 		body_hitbox.hit_taken.connect(_on_hit_taken)
 	if head_hitbox != null:
 		head_hitbox.hit_taken.connect(_on_hit_taken)
+
+
+## Deja la lista de vivos: el que se va del arbol no vuelve por el pool, y una
+## lista static no se vacia sola entre escenas. Ver `_flock`.
+func _exit_tree() -> void:
+	_flock.erase(self)
 
 
 func _physics_process(delta: float) -> void:
@@ -317,6 +329,16 @@ func _on_released() -> void:
 	_flock.erase(self)
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
+
+
+## Los enemigos en juego, sin pasar por el arbol.
+##
+## Es la lista que la separacion ya recorria; publica porque quien quiera
+## preguntar "quien esta cerca" tiene el mismo problema que tenia ella, y
+## get_nodes_in_group() arma un Array nuevo en cada llamada. Solo para leer: el
+## alta y la baja son de setup() y _on_released().
+static func get_active_enemies() -> Array[Enemy]:
+	return _flock
 
 
 # Public API - used by the AI leaves
