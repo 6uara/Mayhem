@@ -3,11 +3,21 @@ extends Area3D
 ## Static momentum source: launches anything in the player group straight up while
 ## leaving horizontal velocity alone, so pads combo with dash and slide by design.
 
-## Apex under the player's gravity (24.0) is v^2/48. At the default that's 4.69m -
-## comfortable clearance over the mid platforms (3.4m), where 13.0 (3.52m apex)
-## used to leave only 0.12m of margin. Pads that specifically target the high
-## level (6.4m) should override this rather than relying on the default's margin.
-@export var bounce_velocity: float = 15.0
+## Every pad in the arena launches at this, and none of them override it.
+##
+## They used to. The one aimed at the high level carried its own 19.0 while the
+## rest sat at the default, and a playtester read that exactly as it looks from
+## inside the game: the pads are inconsistent, you cannot learn one and trust the
+## next. A pad is a traversal tool, and a tool that behaves differently depending
+## on which copy of it you stepped on is not one.
+##
+## So the default is the value that reaches the *highest* thing worth reaching,
+## and every pad gets it. Apex under the player's gravity (24.0) is v^2/48: at
+## 20.0 that is 8.33m against a 6.4m high level, a margin of nearly two metres.
+## Deliberately more than "just enough" - the tester asked that it *sobre*, and
+## an apex that only just clears reads as a pad that failed the moment a frame
+## drops or the platform is touched at an angle.
+@export var bounce_velocity: float = 20.0
 ## Pads never *reduce* an incoming upward velocity - a fast arrival stays fast.
 @export var preserve_higher_velocity: bool = true
 @export var bounce_sound: AudioStream

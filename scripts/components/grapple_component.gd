@@ -30,6 +30,17 @@ signal anchor_state_changed(is_available: bool)
 ## still ends a grapple instantly regardless of this window; only the velocity
 ## direction check waits for the pull to actually have a say.
 @export var min_flight_time: float = 0.15
+## Cuanto hay que quedarse en el piso para que un encadenado se cobre el cooldown.
+##
+## Soltar un grapple en el aire no arranca el cooldown: se puede reenganchar al
+## instante y encadenar tantos como el terreno aguante. La cuenta empieza recien
+## al tocar el piso, y solo si el jugador se queda ahi este tiempo seguido.
+## Rebotar en el suelo y volver a saltar antes de que termine no gasta nada, que
+## es lo que mantiene vivo un recorrido que pasa rozando una plataforma.
+##
+## Es el limite que el playtest pidio explicitamente: encadenar libre mientras
+## estas en movimiento, y el costo lo pagas cuando frenas.
+@export var ground_grace: float = 2.0
 
 @export_group("Audio")
 @export var fire_sound: AudioStream
@@ -42,10 +53,15 @@ var is_anchor_in_range: bool = false
 var _anchor: Vector3 = Vector3.ZERO
 var _cooldown_left: float = 0.0
 var _fired_at_msec: int = 0
+## Hay un grapple soltado en el aire cuyo cooldown todavia no se cobro.
+var _chain_pending: bool = false
+## Segundos seguidos con los pies en el piso desde que se debe ese cooldown.
+var _grounded_time: float = 0.0
 
 
 func _physics_process(delta: float) -> void:
 	_cooldown_left = maxf(_cooldown_left - delta, 0.0)
+	_tick_chain_debt(delta)
 	var available: bool = not is_grappling and _cooldown_left <= 0.0 \
 		and not _find_anchor().is_empty()
 	if available != is_anchor_in_range:
@@ -69,11 +85,24 @@ func try_fire() -> bool:
 	return true
 
 
+## Soltar en el aire no cobra el cooldown, solo lo deja anotado: el grapple
+## queda disponible para reengancharse en el mismo salto.
+##
+## El cooldown no desaparece, se difiere. Lo cobra _tick_chain_debt() cuando el
+## jugador se queda quieto en el piso, asi que el recurso sigue siendo limitado
+## para quien lo usa como escape y deja de serlo para quien lo usa para moverse.
+## Esa es la distincion que el cooldown plano no podia hacer: castigaba igual al
+## que encadenaba tres anclas cruzando el arena que al que se colgaba una vez
+## para salir de un apuro.
 func release() -> void:
 	if not is_grappling:
 		return
 	is_grappling = false
-	_cooldown_left = get_cooldown()
+	if _is_airborne():
+		_chain_pending = true
+		_grounded_time = 0.0
+	else:
+		_cooldown_left = get_cooldown()
 	body.velocity.y += release_up_boost
 	AudioPool.play_3d(release_sound, body.global_position, AudioPool.BUS_WORLD)
 	EventBus.grapple_ended.emit()
@@ -116,6 +145,34 @@ func get_max_range() -> float:
 
 
 # Private
+
+## Cobra el cooldown diferido despues de `ground_grace` segundos seguidos de
+## piso. El contador se reinicia al despegar, no se acumula: tocar el suelo tres
+## veces medio segundo cada una no suma un segundo y medio, porque quien hace eso
+## se sigue moviendo y es justo a quien el encadenado esta pensado para premiar.
+func _tick_chain_debt(delta: float) -> void:
+	if not _chain_pending:
+		return
+	if _is_airborne():
+		_grounded_time = 0.0
+		return
+	_grounded_time += delta
+	if _grounded_time < ground_grace:
+		return
+	_chain_pending = false
+	_grounded_time = 0.0
+	_cooldown_left = get_cooldown()
+
+
+## Un body sin `is_on_floor` (los stubs de los tests, o cualquier cosa que no sea
+## un CharacterBody3D) cuenta como si estuviera en el piso: es la respuesta
+## conservadora - cobra el cooldown - y nunca regala grapples infinitos por un
+## error de wiring.
+func _is_airborne() -> bool:
+	if body == null:
+		return false
+	return not body.is_on_floor()
+
 
 func _find_anchor() -> Dictionary:
 	if aim_node == null or body == null:
