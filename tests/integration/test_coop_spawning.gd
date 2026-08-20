@@ -382,3 +382,49 @@ func test_a_player_with_no_health_component_still_counts_as_alive() -> void:
 	# test double or a stripped-down body must not read as a corpse.
 	assert_true(Players.is_alive(_make_player(1)), "no health means alive")
 	assert_false(Players.is_alive(null), "null is not a target")
+
+
+# ------------------------------------------------- unirse a una sala
+
+## Un intento de conexion que no llega a ningun lado tiene que terminar, y tiene
+## que decir algo que se pueda probar. El reporte del playtest fue "da error de
+## El Host no contesto" y ahi se acabo: el mensaje era cierto y no servia para
+## nada.
+
+func test_a_join_attempt_arms_a_timeout() -> void:
+	NetworkManager.leave_session()
+	# 203.0.113.0/24 es el bloque reservado para documentacion: no hay nada ahi,
+	# que es exactamente lo que se quiere probar.
+	NetworkManager.join_session("203.0.113.1", "Test")
+	assert_gt(NetworkManager._join_timeout_left, 0.0,
+		"el intento tiene tope, no se queda conectando para siempre")
+	NetworkManager.leave_session()
+
+
+func test_leaving_disarms_the_timeout() -> void:
+	NetworkManager.join_session("203.0.113.1", "Test")
+	NetworkManager.leave_session()
+	assert_eq(NetworkManager._join_timeout_left, 0.0,
+		"irse cancela el intento en curso")
+
+
+func test_the_failure_message_names_what_to_check() -> void:
+	var message: String = NetworkManager._unreachable_message()
+	assert_true(message.contains("firewall"), "el firewall es la causa mas comun")
+	assert_true(message.contains("red local"), "y la segunda es no estar en la misma red")
+
+
+## Salir de una sala tiene que devolver el juego al estado en que arranca, no a
+## un limbo. Sin peer asignado is_multiplayer_authority() errorea en vez de
+## contestar, y de eso depende que cada maquina sepa que cuerpo maneja: la run
+## solo siguiente arrancaba sin local_player, sin camara y sin HUD.
+func test_leaving_a_session_leaves_a_playable_solo_state() -> void:
+	NetworkManager.host_session("Test")
+	NetworkManager.leave_session()
+
+	assert_false(NetworkManager.is_online(), "no hay sesion")
+	assert_eq(NetworkManager.local_id(), NetworkManager.SERVER_ID, "vuelve a ser uno solo")
+
+	var body: Node3D = add_child_autofree(Node3D.new())
+	assert_true(body.is_multiplayer_authority(),
+		"sin sesion, cada nodo vuelve a ser suyo - es de lo que depende el spawn solo")

@@ -22,6 +22,9 @@ const DEFAULT_ADDRESS: String = "127.0.0.1"
 @onready var _address_edit: LineEdit = $Panel/Margin/Layout/Setup/AddressRow/AddressEdit
 @onready var _host_button: Button = $Panel/Margin/Layout/Setup/Buttons/HostButton
 @onready var _join_button: Button = $Panel/Margin/Layout/Setup/Buttons/JoinButton
+@onready var _address_share: HBoxContainer = $Panel/Margin/Layout/Lobby/AddressShare
+@onready var _address_value: LineEdit = $Panel/Margin/Layout/Lobby/AddressShare/Value
+@onready var _copy_button: Button = $Panel/Margin/Layout/Lobby/AddressShare/CopyButton
 @onready var _roster: VBoxContainer = $Panel/Margin/Layout/Lobby/Roster
 @onready var _start_button: Button = $Panel/Margin/Layout/Lobby/StartButton
 @onready var _leave_button: Button = $Panel/Margin/Layout/Lobby/LeaveButton
@@ -36,6 +39,7 @@ func _ready() -> void:
 	_join_button.pressed.connect(_on_join_pressed)
 	_start_button.pressed.connect(_on_start_pressed)
 	_leave_button.pressed.connect(_on_leave_pressed)
+	_copy_button.pressed.connect(_on_copy_pressed)
 	_back_button.pressed.connect(close)
 
 	NetworkManager.roster_changed.connect(_refresh)
@@ -78,8 +82,13 @@ func _on_host_pressed() -> void:
 		_set_status("No se pudo abrir el puerto %d. Puede estar en uso."
 			% NetworkManager.DEFAULT_PORT, Tokens.ENEMY)
 		return
-	_set_status("Partida abierta. Pasales esta direccion: %s" % _local_address(),
-		Tokens.PLAYER)
+	# El firewall es la causa numero uno de que el host abra bien y el otro no
+	# llegue nunca: desde aca se ve una partida abierta y desde alla un timeout
+	# sin explicacion. Decirlo antes de que pase es mas barato que diagnosticarlo
+	# despues.
+	_set_status("Partida abierta en el puerto %d. Si tu amigo no puede entrar, "
+		% NetworkManager.DEFAULT_PORT
+		+ "dejale pasar Mayhem.exe en el firewall de Windows.", Tokens.PLAYER)
 	_refresh()
 
 
@@ -106,6 +115,21 @@ func _on_leave_pressed() -> void:
 	_refresh()
 
 
+## Copiar y pegar en vez de dictar numeros: una IP mal transcrita da exactamente
+## el mismo error que un firewall cerrado o una red equivocada, asi que sacarla
+## de la lista de sospechosos vale mas de lo que cuesta este boton.
+func _on_copy_pressed() -> void:
+	DisplayServer.clipboard_set(_address_value.text)
+	var original: String = _copy_button.text
+	_copy_button.text = "Copiado"
+	_copy_button.disabled = true
+	var tween: Tween = create_tween()
+	tween.tween_interval(1.2)
+	tween.tween_callback(func() -> void:
+		_copy_button.text = original
+		_copy_button.disabled = false)
+
+
 func _on_join_failed(reason: String) -> void:
 	_set_status(reason, Tokens.ENEMY)
 	_refresh()
@@ -125,6 +149,11 @@ func _refresh() -> void:
 	if online:
 		# Only the host can pull everyone into the arena; a client waits.
 		_start_button.visible = NetworkManager.is_host()
+		# La IP es del host y solo el host la tiene que pasar. A un cliente le
+		# mostraria la suya propia, que no sirve para nada y confunde.
+		_address_share.visible = NetworkManager.is_host()
+		if _address_share.visible:
+			_address_value.text = _local_address()
 		_rebuild_roster()
 
 
@@ -170,6 +199,11 @@ func _set_status(message: String, color: Color) -> void:
 
 ## The address a friend on the same network types in. Loopback is filtered out
 ## because "127.0.0.1" is exactly the one address that cannot work for them.
+##
+## Es la IP de la red local: sirve para alguien conectado al mismo router, y no
+## sirve para alguien en otra casa. Eso no es una limitacion de esta funcion sino
+## del transporte - ver la nota de NetworkManager sobre cambiarlo por uno con
+## relay.
 func _local_address() -> String:
 	for address: String in IP.get_local_addresses():
 		if address.begins_with("127.") or address.contains(":"):

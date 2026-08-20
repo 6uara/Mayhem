@@ -112,6 +112,25 @@ text = "Unirse"
 visible = false
 theme_override_constants/separation = 10
 
+[node name="AddressShare" type="HBoxContainer" parent="Panel/Margin/Layout/Lobby"]
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Panel/Margin/Layout/Lobby/AddressShare"]
+custom_minimum_size = Vector2(110, 0)
+theme_type_variation = &"HUDLabel"
+text = "TU IP"
+vertical_alignment = 1
+
+[node name="Value" type="LineEdit" parent="Panel/Margin/Layout/Lobby/AddressShare"]
+custom_minimum_size = Vector2(0, 40)
+size_flags_horizontal = 3
+editable = false
+text = "127.0.0.1"
+
+[node name="CopyButton" type="Button" parent="Panel/Margin/Layout/Lobby/AddressShare"]
+custom_minimum_size = Vector2(110, 40)
+text = "Copiar"
+
 [node name="RosterTitle" type="Label" parent="Panel/Margin/Layout/Lobby"]
 theme_type_variation = &"HUDLabel"
 text = "EN LA PARTIDA"

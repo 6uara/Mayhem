@@ -29,6 +29,13 @@ const DEFAULT_PORT: int = 27015
 ## for the host itself.
 const MAX_PLAYERS: int = 4
 const SERVER_ID: int = 1
+## Cuanto se espera a que el host conteste antes de darlo por perdido.
+##
+## ENet tiene su propio timeout, pero no siempre llega: un puerto que el firewall
+## descarta en silencio no rechaza nada, no contesta nada, y la conexion se queda
+## intentando. Sin este tope el panel se quedaba en "Conectando..." para siempre,
+## que es la peor version del error porque no se distingue de una conexion lenta.
+const JOIN_TIMEOUT: float = 8.0
 
 ## peer_id -> {name: String}. Always contains the local player once a session
 ## exists, including the host's own entry.
@@ -37,6 +44,8 @@ var players: Dictionary = {}
 var _peer: ENetMultiplayerPeer = null
 ## Kept so a client can name itself to the host on connect.
 var _local_name: String = ""
+## Segundos que le quedan al intento de conexion en curso, 0 si no hay ninguno.
+var _join_timeout_left: float = 0.0
 
 
 func _ready() -> void:
@@ -45,6 +54,18 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+
+## Solo corre mientras hay un intento de conexion vivo.
+func _process(delta: float) -> void:
+	if _join_timeout_left <= 0.0:
+		return
+	_join_timeout_left -= delta
+	if _join_timeout_left > 0.0:
+		return
+	_join_timeout_left = 0.0
+	leave_session()
+	join_failed.emit(_unreachable_message())
 
 
 # Public API
@@ -76,16 +97,31 @@ func join_session(address: String, player_name: String, port: int = DEFAULT_PORT
 		return error
 	_peer = peer
 	multiplayer.multiplayer_peer = peer
+	_join_timeout_left = JOIN_TIMEOUT
 	return OK
 
 
 ## Tears the session down and returns to the solo-equivalent state, so a player
 ## who leaves a coop game can start a normal run without restarting the app.
 func leave_session() -> void:
+	_join_timeout_left = 0.0
 	if _peer != null:
 		_peer.close()
 		_peer = null
-	multiplayer.multiplayer_peer = null
+	# OfflineMultiplayerPeer y no null, que es lo que habia antes.
+	#
+	# Sin ningun peer asignado, la MultiplayerAPI no tiene unique id y
+	# is_multiplayer_authority() deja de contestar: errorea. Eso es exactamente
+	# de lo que depende el juego para saber que cuerpo maneja cada maquina, asi
+	# que salir de una sala y arrancar una run solo dejaba al jugador sin
+	# reclamar - sin local_player, sin camara activa, sin HUD enganchado. Una
+	# pantalla negra, y en el log un error por frame en vez de una explicacion.
+	#
+	# El peer offline es el estado en que arranca Godot y el que hace que single
+	# player no sea un caso especial en ningun lado: unique id 1 y autoridad
+	# sobre todo. Salir de una sesion tiene que devolver ahi, no a un limbo que
+	# ninguna otra parte del codigo sabe leer.
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	players.clear()
 	roster_changed.emit()
 
@@ -168,12 +204,23 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
+	_join_timeout_left = 0.0
 	_register_self.rpc_id(SERVER_ID, _local_name)
 
 
 func _on_connection_failed() -> void:
 	leave_session()
-	join_failed.emit("El host no respondio")
+	join_failed.emit(_unreachable_message())
+
+
+## Un intento fallido de conexion no trae ninguna razon: ENet no distingue entre
+## "no hay nadie escuchando", "el firewall se lo comio" y "esa IP no es alcanzable
+## desde aca". El mensaje anterior -"El host no respondio"- era literalmente
+## cierto y completamente inutil: un playtest se quedo justo ahi, sin nada que
+## probar a continuacion. Como no se puede saber cual de las tres fue, se nombran
+## las tres en el orden en que conviene descartarlas.
+func _unreachable_message() -> String:
+	return "El host no respondio. Revisa que: la partida este abierta, "		+ "Mayhem.exe tenga permiso en el firewall del host, "		+ "y que los dos esten en la misma red local."
 
 
 func _on_server_disconnected() -> void:
