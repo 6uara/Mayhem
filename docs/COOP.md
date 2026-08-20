@@ -4,10 +4,12 @@ tags: [mayhem, coop, red]
 
 # Coop P2P
 
-**Vive solo en `feat/coop-p2p`.** No es parte del entregable: el juego que se
-entrega es el single player de `develop`. Esta rama sigue a `develop` con merges
-regulares para que la versión coop no se quede vieja en términos de juego, pero
-nada de lo que hay acá vuelve al entregable.
+**Mergeado a `develop`** (2026-08-20). Vivió en `feat/coop-p2p` hasta que el
+trabajo del playtest hizo que mantener dos ramas costara más que juntarlas: tres
+de los arreglos pedidos tocaban archivos que coop ya había reescrito.
+
+El single player sigue siendo el entregable, y sigue sin ser un caso especial en
+ningún lado — ver abajo.
 
 ## La idea que sostiene todo
 
@@ -87,6 +89,54 @@ Lo que hay que leer en las trazas:
   la atribución se rompió.
 - `shop`: ambos entran al corte juntos y salen en el mismo tick.
 - `downed`: vuelve a `false` al abrir la tienda. Eso es el revive.
+
+## Jugar desde casas distintas
+
+Lo que el juego abre es un socket ENet en el puerto 27015, y la IP que muestra el
+lobby es la de tu red local. Eso alcanza para dos personas en la misma casa y no
+alcanza para nada más: desde otra casa esa IP no es alcanzable, y el intento
+termina en "El host no respondió" sin decir por qué. Es exactamente lo que pasó
+en el playtest.
+
+La forma barata de arreglarlo **no toca el juego**: una VPN de malla hace que las
+dos máquinas se vean como si estuvieran en la misma red, y a partir de ahí todo
+lo de arriba funciona sin cambiar una línea.
+
+### Con Tailscale (gratis para uso personal)
+
+1. Los dos instalan Tailscale (`tailscale.com/download`) e inician sesión.
+2. Uno invita al otro a su tailnet (en la consola web, *Users → Invite*). Tienen
+   que estar en la misma tailnet o no se ven.
+3. El host abre la partida en el lobby de coop. La fila de IP va a decir
+   **TU IP (VPN)** y mostrar una dirección `100.x.x.x`: esa es la que funciona
+   desde otra casa. Si dice **TU IP (LAN)**, Tailscale no está corriendo.
+4. El otro pega esa IP en DIRECCION y entra.
+
+El firewall de Windows puede seguir molestando: si el cliente no entra, dejale
+pasar `Mayhem.exe`. ZeroTier funciona igual y reparte IPs del mismo rango, así
+que el juego también las reconoce.
+
+Latencia: Tailscale conecta directo entre las dos máquinas cuando puede, así que
+el ping es prácticamente el de la conexión entre ustedes. Cuando no puede, cae a
+un relay y suma bastante.
+
+### Por qué no está resuelto adentro del juego
+
+Se puede, y el código está listo para eso: `NetworkManager` es el único archivo
+que toca ENet, así que cambiar el transporte es tocar ese archivo y nada más. Las
+dos opciones reales:
+
+- **Steam P2P** (`SteamMultiplayerPeer`): sin configuración para el jugador,
+  relay incluido, invitaciones nativas. Cuesta los USD 100 de Steamworks y que el
+  juego salga en Steam. Es el candidato obvio si eso pasa.
+- **Hole punching con servidor de encuentro** (Noray/netfox): conserva ENet y no
+  depende de Steam, pero hay que mantener un VPS y no cubre NAT simétrico sin
+  sumarle un relay.
+
+Ninguna de las dos se hizo todavía a propósito: primero conviene jugar con ping
+real y ver qué hay que ajustar. Lo que casi seguro va a pedir tuning es
+`EnemyReplicator.SEND_RATE` (20/s) y `INTERP_SPEED`, elegidos sin latencia de por
+medio.
 
 ## Lo que falta
 

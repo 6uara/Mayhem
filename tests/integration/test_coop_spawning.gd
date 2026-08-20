@@ -428,3 +428,48 @@ func test_leaving_a_session_leaves_a_playable_solo_state() -> void:
 	var body: Node3D = add_child_autofree(Node3D.new())
 	assert_true(body.is_multiplayer_authority(),
 		"sin sesion, cada nodo vuelve a ser suyo - es de lo que depende el spawn solo")
+
+
+# ------------------------------------------------- que IP se le pasa a un amigo
+
+## La IP de la LAN y la de una VPN de malla (Tailscale/ZeroTier) se parecen y no
+## sirven para lo mismo: una funciona desde otra casa y la otra no. Pasarle la
+## equivocada a un amigo da el mismo "El host no respondio" que un firewall
+## cerrado, que es como se perdio una tarde en el playtest.
+
+func test_loopback_is_recognised_as_useless_to_a_friend() -> void:
+	assert_eq(NetworkManager.classify_address("127.0.0.1"),
+		NetworkManager.AddressKind.LOOPBACK)
+
+
+func test_a_home_router_address_is_lan() -> void:
+	assert_eq(NetworkManager.classify_address("192.168.0.14"),
+		NetworkManager.AddressKind.LAN)
+	assert_eq(NetworkManager.classify_address("10.0.0.5"),
+		NetworkManager.AddressKind.LAN)
+
+
+## 100.64.0.0/10 es el rango que reparte Tailscale.
+func test_a_mesh_vpn_address_is_recognised() -> void:
+	assert_eq(NetworkManager.classify_address("100.101.202.33"),
+		NetworkManager.AddressKind.OVERLAY)
+	assert_eq(NetworkManager.classify_address("100.64.0.1"),
+		NetworkManager.AddressKind.OVERLAY)
+	assert_eq(NetworkManager.classify_address("100.127.255.254"),
+		NetworkManager.AddressKind.OVERLAY)
+
+
+## El borde del rango: 100.128.x y 100.63.x son internet publico, no la VPN.
+func test_addresses_just_outside_the_mesh_range_are_not_overlay() -> void:
+	assert_eq(NetworkManager.classify_address("100.128.0.1"),
+		NetworkManager.AddressKind.LAN)
+	assert_eq(NetworkManager.classify_address("100.63.255.255"),
+		NetworkManager.AddressKind.LAN)
+
+
+func test_the_shared_address_is_never_loopback_when_anything_else_exists() -> void:
+	var share: Dictionary = NetworkManager.get_share_address()
+	assert_true(share.has("address") and share.has("kind"))
+	assert_false(String(share["address"]).contains(":"),
+		"IPv6 no sirve: ENet escucha en IPv4 y una IP que el juego no puede usar "
+		+ "es peor que ninguna")

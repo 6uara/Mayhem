@@ -16,7 +16,14 @@ extends SceneTree
 ## `off` apaga los numeros y mide la misma escena sin ellos: es la linea base
 ## contra la que el otro numero significa algo. `hits` es cuantos numeros por
 ## segundo se piden (default 60, que es aproximadamente una escopeta sostenida
-## sobre un grupo).
+## sobre un grupo). `hurt` mide la otra mitad del reporte -la viñeta de daño
+## recibido- en vez de los numeros.
+##
+## OJO: correr esto invoca a Godot directo, sin el guard de tools/git_guard.ps1,
+## y Godot re-serializa los .tscn que carga - les agrega unique_id y les borra
+## toda propiedad cuyo valor sea igual a su default. Asi es como game.tscn perdio
+## el prewarm_count del EnemySpawner despues de una tanda de mediciones. Revisar
+## `git status` al terminar y descartar lo que no hayas escrito vos.
 
 const GAME_SCENE_PATH: String = "res://scenes/main/game.tscn"
 const SETTLE_FRAMES: int = 40

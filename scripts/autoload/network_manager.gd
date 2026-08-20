@@ -37,6 +37,21 @@ const SERVER_ID: int = 1
 ## que es la peor version del error porque no se distingue de una conexion lenta.
 const JOIN_TIMEOUT: float = 8.0
 
+## De que tipo es una direccion, que decide cual conviene pasarle a un amigo.
+##
+## LOOPBACK solo sirve para dos copias en la misma maquina. LAN sirve para
+## alguien conectado al mismo router. OVERLAY es una red virtual tipo Tailscale
+## o ZeroTier: es la unica que funciona desde otra casa sin tocar el router, y
+## por eso gana cuando esta.
+enum AddressKind { LOOPBACK, LAN, OVERLAY }
+
+## Rango CGNAT (100.64.0.0/10) que usan Tailscale y compañia para sus IPs
+## virtuales. Un ISP tambien puede usarlo puertas adentro, pero una direccion
+## *propia* en ese rango en una maquina de escritorio es, en la practica, una
+## VPN de malla instalada.
+const OVERLAY_PREFIX_MIN: int = 64
+const OVERLAY_PREFIX_MAX: int = 127
+
 ## peer_id -> {name: String}. Always contains the local player once a session
 ## exists, including the host's own entry.
 var players: Dictionary = {}
@@ -158,6 +173,43 @@ func get_peer_ids() -> Array[int]:
 		ids.append(id)
 	ids.sort()
 	return ids
+
+
+## La direccion que conviene pasarle a un amigo, y de que tipo es.
+##
+## Prefiere la de una red virtual (Tailscale/ZeroTier) sobre la de la LAN,
+## porque es la unica de las dos que funciona desde otra casa - y cuando los dos
+## estan en la misma red, Tailscale rutea directo igual, asi que preferirla no
+## cuesta latencia. La de loopback queda afuera salvo que no haya nada mas:
+## "127.0.0.1" es exactamente la direccion que no le puede servir a nadie mas.
+##
+## Devuelve { "address": String, "kind": AddressKind }.
+func get_share_address() -> Dictionary:
+	var best: String = "127.0.0.1"
+	var best_kind: AddressKind = AddressKind.LOOPBACK
+	for address: String in IP.get_local_addresses():
+		# IPv6 afuera: ENet aca escucha en IPv4, y una direccion que el juego no
+		# puede usar es peor que ninguna porque parece que funciona.
+		if address.contains(":"):
+			continue
+		var kind: AddressKind = classify_address(address)
+		if kind > best_kind:
+			best = address
+			best_kind = kind
+		if best_kind == AddressKind.OVERLAY:
+			break
+	return {"address": best, "kind": best_kind}
+
+
+static func classify_address(address: String) -> AddressKind:
+	if address.begins_with("127."):
+		return AddressKind.LOOPBACK
+	var parts: PackedStringArray = address.split(".")
+	if parts.size() == 4 and parts[0] == "100":
+		var second: int = parts[1].to_int()
+		if second >= OVERLAY_PREFIX_MIN and second <= OVERLAY_PREFIX_MAX:
+			return AddressKind.OVERLAY
+	return AddressKind.LAN
 
 
 func get_player_name(peer_id: int) -> String:

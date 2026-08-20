@@ -23,6 +23,7 @@ const DEFAULT_ADDRESS: String = "127.0.0.1"
 @onready var _host_button: Button = $Panel/Margin/Layout/Setup/Buttons/HostButton
 @onready var _join_button: Button = $Panel/Margin/Layout/Setup/Buttons/JoinButton
 @onready var _address_share: HBoxContainer = $Panel/Margin/Layout/Lobby/AddressShare
+@onready var _address_label: Label = $Panel/Margin/Layout/Lobby/AddressShare/Label
 @onready var _address_value: LineEdit = $Panel/Margin/Layout/Lobby/AddressShare/Value
 @onready var _copy_button: Button = $Panel/Margin/Layout/Lobby/AddressShare/CopyButton
 @onready var _roster: VBoxContainer = $Panel/Margin/Layout/Lobby/Roster
@@ -82,14 +83,33 @@ func _on_host_pressed() -> void:
 		_set_status("No se pudo abrir el puerto %d. Puede estar en uso."
 			% NetworkManager.DEFAULT_PORT, Tokens.ENEMY)
 		return
-	# El firewall es la causa numero uno de que el host abra bien y el otro no
-	# llegue nunca: desde aca se ve una partida abierta y desde alla un timeout
-	# sin explicacion. Decirlo antes de que pase es mas barato que diagnosticarlo
-	# despues.
-	_set_status("Partida abierta en el puerto %d. Si tu amigo no puede entrar, "
-		% NetworkManager.DEFAULT_PORT
-		+ "dejale pasar Mayhem.exe en el firewall de Windows.", Tokens.PLAYER)
+	_set_status(_host_hint(), Tokens.PLAYER)
 	_refresh()
+
+
+## Que decirle al host segun por donde se lo va a poder alcanzar.
+##
+## Con una red virtual instalada el consejo es "pasa esta IP y listo". Sin ella,
+## la direccion es de la LAN y solo sirve dentro de la misma casa - decir eso de
+## entrada evita la tarde que ya se perdio una vez pasandole a un amigo remoto
+## una IP que no podia funcionar nunca, y leyendo "El host no respondio" sin
+## saber que el problema no era el juego.
+func _host_hint() -> String:
+	var share: Dictionary = NetworkManager.get_share_address()
+	if int(share["kind"]) == NetworkManager.AddressKind.OVERLAY:
+		return "Partida abierta. Pasale la IP de abajo a tu amigo."
+	return ("Partida abierta en el puerto %d. Esta IP sirve solo en tu red local; "
+		+ "para jugar desde otra casa, ver docs/COOP.md. Y dejale pasar "
+		+ "Mayhem.exe en el firewall de Windows.") % NetworkManager.DEFAULT_PORT
+
+
+## La fila dice de que IP se trata, no solo cual es. Son dos cosas distintas -
+## una anda desde otra casa y la otra no- y un numero suelto no las distingue.
+func _show_share_address() -> void:
+	var share: Dictionary = NetworkManager.get_share_address()
+	_address_value.text = String(share["address"])
+	var is_overlay: bool = int(share["kind"]) == NetworkManager.AddressKind.OVERLAY
+	_address_label.text = "TU IP (VPN)" if is_overlay else "TU IP (LAN)"
 
 
 func _on_join_pressed() -> void:
@@ -153,7 +173,7 @@ func _refresh() -> void:
 		# mostraria la suya propia, que no sirve para nada y confunde.
 		_address_share.visible = NetworkManager.is_host()
 		if _address_share.visible:
-			_address_value.text = _local_address()
+			_show_share_address()
 		_rebuild_roster()
 
 
@@ -197,16 +217,8 @@ func _set_status(message: String, color: Color) -> void:
 	_status.add_theme_color_override("font_color", color)
 
 
-## The address a friend on the same network types in. Loopback is filtered out
-## because "127.0.0.1" is exactly the one address that cannot work for them.
-##
-## Es la IP de la red local: sirve para alguien conectado al mismo router, y no
-## sirve para alguien en otra casa. Eso no es una limitacion de esta funcion sino
-## del transporte - ver la nota de NetworkManager sobre cambiarlo por uno con
-## relay.
+## La direccion que se le pasa a un amigo. La elige NetworkManager, que sabe
+## distinguir una IP de VPN de malla -la unica que funciona desde otra casa- de
+## una de LAN.
 func _local_address() -> String:
-	for address: String in IP.get_local_addresses():
-		if address.begins_with("127.") or address.contains(":"):
-			continue
-		return address
-	return DEFAULT_ADDRESS
+	return String(NetworkManager.get_share_address()["address"])
