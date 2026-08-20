@@ -75,6 +75,11 @@ text = "Reset tutorial hints"
 custom_minimum_size = Vector2(190, 44)
 text = "Reset to defaults"
 
+[node name="ApplyButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+custom_minimum_size = Vector2(170, 44)
+disabled = true
+text = "Apply changes"
+
 [node name="BackButton" type="Button" parent="Panel/Margin/Layout/Footer"]
 custom_minimum_size = Vector2(150, 44)
 text = "Back"

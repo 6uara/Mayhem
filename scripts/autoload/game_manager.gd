@@ -3,6 +3,10 @@ extends Node
 
 enum State { MENU, PLAYING, SHOPPING, GAME_OVER }
 
+## Motivos de congelamiento del arbol. Ver set_freeze().
+const FREEZE_PAUSE_MENU: StringName = &"pause_menu"
+const FREEZE_SHOP: StringName = &"shop"
+
 const GAME_SCENE_PATH: String = "res://scenes/main/game.tscn"
 const MENU_SCENE_PATH: String = "res://scenes/main/main_menu.tscn"
 ## Tope para esperar el cambio de escena. Ver _await_scene_swap.
@@ -34,6 +38,9 @@ var state: State = State.MENU:
 
 var is_paused: bool = false
 
+## Motivos por los que el arbol esta congelado ahora mismo. Ver set_freeze().
+var _freezes: Dictionary = {}
+
 var _run_start_time: float = 0.0
 ## GameManager's own child, not part of whatever scene is being replaced -
 ## survives every change_scene_to_file() call untouched. See
@@ -53,8 +60,18 @@ func _ready() -> void:
 	add_child(_loading)
 
 
+## Pausar vale en toda la run, no solo mientras se dispara.
+##
+## Antes esto pedia State.PLAYING, y una run pasa la mitad del tiempo en
+## SHOPPING: entre oleada y oleada la tecla no hacia absolutamente nada. Sin
+## aviso, sin panel, sin forma de llegar a las opciones o de volver al menu -
+## que desde adentro del juego se lee como "la pausa no anda", que es
+## exactamente lo que reporto el playtest.
+##
+## GAME_OVER queda afuera aparte de MENU: ahi ya hay una pantalla propia que
+## ofrece las salidas, y superponerle el panel de pausa taparia justo eso.
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause") and state == State.PLAYING:
+	if event.is_action_pressed("pause") 			and (state == State.PLAYING or state == State.SHOPPING):
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 
@@ -63,7 +80,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func start_run() -> void:
 	is_paused = false
-	get_tree().paused = false
+	clear_freezes()
 	_run_start_time = _now()
 	state = State.PLAYING
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -74,7 +91,7 @@ func start_run() -> void:
 ## purpose, short enough to leave the rest of it intact.
 func restart_run() -> void:
 	var scene: PackedScene = await _prepare_scene(GAME_SCENE_PATH)
-	get_tree().paused = false
+	clear_freezes()
 	if scene == null:
 		await _reveal()
 		return
@@ -113,7 +130,7 @@ func _begin_run() -> void:
 
 func return_to_menu() -> void:
 	var scene: PackedScene = await _prepare_scene(MENU_SCENE_PATH)
-	get_tree().paused = false
+	clear_freezes()
 	is_paused = false
 	state = State.MENU
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -153,9 +170,37 @@ func set_paused(paused: bool) -> void:
 	if is_paused == paused:
 		return
 	is_paused = paused
-	get_tree().paused = paused
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
+	set_freeze(FREEZE_PAUSE_MENU, paused)
 	EventBus.game_paused.emit(paused)
+
+
+## Congela el arbol por un motivo con nombre, y lo descongela cuando ya no queda
+## ninguno.
+##
+## Existe porque el arbol tenia dos dueños. El menu de pausa escribia
+## `get_tree().paused` por un lado y la tienda por el otro, sin saber uno del
+## otro, y el ultimo en escribir ganaba: abrir la pausa sobre la tienda y cerrarla
+## dejaba el juego corriendo abajo de una tienda todavia abierta, y `is_paused`
+## quedaba diciendo lo contrario de lo que el arbol hacia. Un booleano no puede
+## representar "congelado por dos cosas a la vez"; esto si.
+func set_freeze(reason: StringName, active: bool) -> void:
+	if active:
+		_freezes[reason] = true
+	else:
+		_freezes.erase(reason)
+	_apply_freezes()
+
+
+## Descongela todo de una. Para los cortes duros - empezar una run, volver al
+## menu - donde lo que habia congelado el arbol se fue con la escena anterior y
+## quedarse esperando que cada uno suelte lo suyo es como se cuelga un juego.
+func clear_freezes() -> void:
+	_freezes.clear()
+	_apply_freezes()
+
+
+func is_frozen_by(reason: StringName) -> bool:
+	return _freezes.has(reason)
 
 
 func get_run_time() -> float:
@@ -243,6 +288,18 @@ func _on_player_died() -> void:
 		return
 	state = State.GAME_OVER
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## El mouse se libera mientras haya algo congelado y se recaptura al soltarse lo
+## ultimo, salvo que la run ya haya terminado: ahi la pantalla de game over
+## necesita el cursor.
+func _apply_freezes() -> void:
+	var frozen: bool = not _freezes.is_empty()
+	get_tree().paused = frozen
+	if frozen or state == State.GAME_OVER or state == State.MENU:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _now() -> float:

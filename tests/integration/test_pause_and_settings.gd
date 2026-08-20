@@ -168,3 +168,59 @@ func test_reset_hints_button_clears_seen_tutorial_hints() -> void:
 	assert_false(SaveManager.has_seen_hint(&"dash"),
 		"the reset button must forget every hint the player has already seen")
 	SaveManager.clear_tutorial_hints()
+
+
+# ------------------------------------------------- apply changes
+
+## El pedido del playtest: que haya un boton que confirme, y que solo se habilite
+## cuando hay algo que confirmar.
+
+func _open_options() -> SettingsScreen:
+	_settings.open()
+	await wait_physics_frames(2)
+	return _settings
+
+
+func test_apply_starts_disabled_with_nothing_to_apply() -> void:
+	await _open_options()
+	assert_true(_settings._apply_button.disabled, "recien abierto no hay nada que aplicar")
+
+
+func test_changing_a_setting_enables_apply() -> void:
+	await _open_options()
+	_settings._commit("video/fov", 111.0)
+	await wait_physics_frames(2)
+	assert_false(_settings._apply_button.disabled, "un cambio habilita el boton")
+
+
+func test_applying_saves_and_disables_the_button_again() -> void:
+	await _open_options()
+	_settings._commit("video/fov", 112.0)
+	_settings._on_apply_pressed()
+	await wait_physics_frames(2)
+
+	assert_eq(SettingsManager.get_value("video/fov"), 112.0, "el valor quedo")
+	assert_true(_settings._is_dirty() == false, "ya no hay nada pendiente")
+
+
+## Back descarta: es lo que le da sentido al boton.
+func test_back_discards_what_was_never_applied() -> void:
+	await _open_options()
+	var before: float = float(SettingsManager.get_value("video/fov"))
+	_settings._commit("video/fov", 119.0)
+	_settings.close()
+	await wait_physics_frames(2)
+
+	assert_eq(float(SettingsManager.get_value("video/fov")), before,
+		"salir sin aplicar deja todo como estaba")
+
+
+func test_back_keeps_what_was_applied() -> void:
+	await _open_options()
+	_settings._commit("video/fov", 118.0)
+	_settings._on_apply_pressed()
+	_settings.close()
+	await wait_physics_frames(2)
+
+	assert_eq(float(SettingsManager.get_value("video/fov")), 118.0,
+		"lo aplicado sobrevive a Back")

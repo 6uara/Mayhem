@@ -85,8 +85,10 @@ func open(breakdown: Dictionary, wave_index: int, duration_seconds: float,
 	_on_currency_changed(EconomyManager.currency)
 	if shop != null:
 		shop.roll_offers()
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	get_tree().paused = true
+	# Por GameManager y no por get_tree() directo: el menu de pausa puede abrirse
+	# encima de la tienda, y con los dos escribiendo el mismo booleano el que
+	# cerraba ultimo descongelaba el juego abajo del otro.
+	GameManager.set_freeze(GameManager.FREEZE_SHOP, true)
 	EventBus.shop_opened.emit()
 
 
@@ -115,8 +117,7 @@ func force_close() -> void:
 	is_open = false
 	_is_waiting = false
 	_root.visible = false
-	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	GameManager.set_freeze(GameManager.FREEZE_SHOP, false)
 	EventBus.shop_closed.emit()
 	# Already announced when they locked their choices in; announcing again
 	# would report a second vote from the same player.
