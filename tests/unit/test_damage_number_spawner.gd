@@ -51,3 +51,50 @@ func test_a_target_with_no_3d_position_is_ignored_without_erroring() -> void:
 	add_child_autofree(flat_target)
 	EventBus.damage_dealt.emit(flat_target, 15.0, false)
 	assert_eq(ObjectPool.get_active_count(), 0)
+
+
+# ------------------------------------------------- presupuesto
+
+## Las dos reglas que sacaron el costo de los numeros de daño, medido con
+## tools/profile_damage_numbers.gd: sumar golpes al mismo objetivo, y topear
+## cuantos numeros hay en pantalla.
+
+func test_two_quick_hits_on_the_same_target_share_one_number() -> void:
+	EventBus.damage_dealt.emit(_target, 30.0, false)
+	EventBus.damage_dealt.emit(_target, 20.0, false)
+
+	assert_eq(ObjectPool.get_active_count(), 1,
+		"una escopeta son ocho impactos en el mismo frame, no ocho numeros")
+
+
+func test_the_merged_number_shows_the_total() -> void:
+	EventBus.damage_dealt.emit(_target, 30.0, false)
+	EventBus.damage_dealt.emit(_target, 20.0, false)
+	await wait_physics_frames(1)
+
+	var number: DamageNumber = _spawner._live[0]
+	assert_eq(number.get_node("Label3D").text, "50",
+		"un 50 dice mas que un 30 y un 20 superpuestos")
+
+
+func test_separate_targets_get_their_own_numbers() -> void:
+	var other: Node3D = add_child_autofree(Node3D.new())
+	other.global_position = Vector3(-8, 0, -8)
+	EventBus.damage_dealt.emit(_target, 30.0, false)
+	EventBus.damage_dealt.emit(other, 30.0, false)
+
+	assert_eq(ObjectPool.get_active_count(), 2, "cada enemigo tiene su numero")
+
+
+## El tope es lo unico que realmente movio la medicion. Doce numeros ya son mas
+## de los que alguien puede leer, asi que el trece no informa y si cuesta.
+func test_the_number_of_live_numbers_is_capped() -> void:
+	var targets: Array[Node3D] = []
+	for i: int in _spawner.max_live_numbers + 6:
+		var target: Node3D = add_child_autofree(Node3D.new())
+		target.global_position = Vector3(float(i) * 3.0, 0.0, 0.0)
+		targets.append(target)
+		EventBus.damage_dealt.emit(target, 10.0, false)
+
+	assert_eq(ObjectPool.get_active_count(), _spawner.max_live_numbers,
+		"pasado el tope el golpe sigue existiendo, solo no pinta un Label3D mas")

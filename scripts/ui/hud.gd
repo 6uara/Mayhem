@@ -60,6 +60,8 @@ var _player: Player
 var _weapon: WeaponComponent
 var _announce_timer: float = 0.0
 var _utility_slots: Array[Control] = []
+## El fundido de la viñeta de daño. Ver _flash_damage().
+var _damage_tween: Tween
 var _grapple_slot: Control
 
 ## What _tick_wave() last wrote into the timer cluster. It runs every frame, but
@@ -605,13 +607,22 @@ func _set_elite_stripe(is_elite: bool) -> void:
 		stripe.visible = is_elite
 
 
+## Un solo Tween reusado, no uno por golpe.
+##
+## Estar rodeado son varios golpes por segundo, y cada uno creaba su propio Tween
+## sobre la misma propiedad: se pisaban entre ellos - el mas viejo seguia bajando
+## el alpha que el nuevo acababa de subir - y ademas se acumulaban. Matar el
+## anterior arregla las dos cosas de una, y es la mitad barata del reporte de
+## performance del playtest.
 func _flash_damage() -> void:
 	var vignette: Control = _state_overlays.get_node_or_null("DamageVignette")
 	if vignette == null:
 		return
 	vignette.modulate.a = 1.0
-	var tween: Tween = create_tween()
-	tween.tween_property(vignette, "modulate:a", 0.0, Tokens.DAMAGE_PULSE)
+	if _damage_tween != null and _damage_tween.is_valid():
+		_damage_tween.kill()
+	_damage_tween = create_tween()
+	_damage_tween.tween_property(vignette, "modulate:a", 0.0, Tokens.DAMAGE_PULSE)
 
 
 func _apply_hud_scale() -> void:
