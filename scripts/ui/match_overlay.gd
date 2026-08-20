@@ -23,6 +23,11 @@ func _ready() -> void:
 	EventBus.wave_completed.connect(_on_wave_completed)
 	EventBus.match_completed.connect(_on_match_completed)
 	EventBus.player_died.connect(_on_player_died)
+	# The one ending that is not about the match. Without it a client whose host
+	# quit is left standing in an arena that has stopped: the enemies freeze
+	# where their last snapshot put them, no wave ever ends, and nothing on
+	# screen says why.
+	NetworkManager.host_disconnected.connect(_on_host_disconnected)
 	_restart_button.pressed.connect(_on_restart_pressed)
 	_menu_button.pressed.connect(_on_menu_pressed)
 
@@ -61,7 +66,19 @@ func _on_match_completed(score: int, total_time: float) -> void:
 
 
 func _on_player_died() -> void:
-	_show_end("GAME OVER", "Wave %d of %d\nNo revives. No second chances." % [
+	# Coop revives the fallen at every wave break, so the run only ends when the
+	# whole team is down at once - which is a different sentence.
+	var epitaph: String = "Nobody left standing." if NetworkManager.is_online() \
+		else "No revives. No second chances."
+	_show_end("GAME OVER", "Wave %d of %d\n%s" % [
+		WaveManager.current_index + 1, WaveManager.WAVE_COUNT, epitaph])
+
+
+## Restart is left enabled on purpose: the session is already torn down by the
+## time this fires, so restarting starts an ordinary solo run rather than trying
+## to rejoin something that is gone.
+func _on_host_disconnected() -> void:
+	_show_end("SESION TERMINADA", "El host cerro la partida.\nWave %d of %d" % [
 		WaveManager.current_index + 1, WaveManager.WAVE_COUNT])
 
 

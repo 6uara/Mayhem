@@ -25,7 +25,10 @@ func _ready() -> void:
 		# Degrade gracefully: a missing resource must never crash the run.
 		push_warning("EconomyManager: %s missing, using defaults" % CONFIG_PATH)
 		config = EconomyConfig.new()
-	EventBus.enemy_killed.connect(_on_enemy_killed)
+	# Deliberately not enemy_killed: in coop that fires on the host for every
+	# death in the arena, including the ones a client shot. kill_credited is the
+	# same event narrowed to "and this wallet gets it" - see EventBus.
+	EventBus.kill_credited.connect(_on_kill_credited)
 	EventBus.player_died.connect(reset)
 	reset()
 
@@ -94,7 +97,7 @@ func try_spend(item_id: StringName, cost: int) -> PurchaseResult:
 
 # Private
 
-func _on_enemy_killed(_enemy_type: StringName, _position: Vector3, reward: int) -> void:
+func _on_kill_credited(reward: int) -> void:
 	var scaled: int = _scale(reward)
 	_wave_kill_income += scaled
 	currency += scaled

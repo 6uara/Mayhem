@@ -65,9 +65,10 @@ func clear() -> void:
 func _bind_weapon() -> void:
 	if weapon != null:
 		return
-	var player := get_tree().get_first_node_in_group(&"player") as Player
+	var player := Players.local() as Player
 	if player == null:
-		push_warning("RecoilVisualizer: no player found")
+		# Not an error any more: this runs before the spawner has placed our
+		# body, and on a client before it has arrived at all. Retried next call.
 		return
 	weapon = player.weapon
 	aim_node = player.head

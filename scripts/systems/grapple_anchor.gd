@@ -38,7 +38,10 @@ func _is_in_player_range() -> bool:
 	return global_position.distance_to(player.global_position) <= player.grapple.get_max_range()
 
 
+## The anchor highlight is a local visual - it answers "can *I* grapple this
+## right now", so it tracks our own body rather than whichever teammate is
+## nearest. Two players looking at the same anchor each see their own range.
 func _get_player() -> Player:
 	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group(&"player") as Player
+		_player = Players.local() as Player
 	return _player

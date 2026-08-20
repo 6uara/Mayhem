@@ -25,6 +25,15 @@ const CARD_MIN_WIDTH: int = 250
 var is_open: bool = false
 
 var _time_left: float = 0.0
+## Coop: this visit ends when the host says so, not when we walk out.
+var _waits_for_peers: bool = false
+## Choices locked in, standing in the doorway waiting for the others.
+var _is_waiting: bool = false
+## Built here rather than authored in the scene: it is one line of text that
+## only ever appears in coop, and the scene is shared with the solo build.
+var _waiting_label: Label
+var _ready_count: int = 0
+var _ready_total: int = 1
 
 
 func _ready() -> void:
@@ -33,6 +42,7 @@ func _ready() -> void:
 	_skip_button.pressed.connect(close)
 	_reroll_button.pressed.connect(_on_reroll_pressed)
 	EventBus.currency_changed.connect(_on_currency_changed)
+	EventBus.shop_ready_changed.connect(_on_shop_ready_changed)
 	if shop != null:
 		shop.offers_changed.connect(_rebuild_cards)
 		shop.reroll_cost_changed.connect(_on_reroll_cost_changed)
@@ -41,6 +51,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not is_open:
+		return
+	# The clock stops once your choices are locked in: it exists to keep the
+	# break short, and there is nothing left for it to hurry you into.
+	if _is_waiting:
 		return
 	_time_left -= delta
 	_timer_label.text = "%0.0fs" % maxf(_time_left, 0.0)
@@ -51,12 +65,22 @@ func _process(delta: float) -> void:
 # Public API
 
 ## `breakdown` comes straight from EconomyManager.award_wave_bonuses().
-func open(breakdown: Dictionary, wave_index: int, duration_seconds: float) -> void:
+##
+## `wait_for_peers` is the coop shape of the same screen: leaving does not drop
+## you back into the arena on your own, it tells the host you are done and holds
+## here until everyone else is too. Four players walking into the next wave at
+## four different moments is the alternative, and the ones who took their time
+## shopping would arrive to a fight already in progress.
+func open(breakdown: Dictionary, wave_index: int, duration_seconds: float,
+		wait_for_peers: bool = false) -> void:
 	if is_open:
 		return
 	is_open = true
+	_waits_for_peers = wait_for_peers
+	_is_waiting = false
 	_time_left = duration
 	_root.visible = true
+	_set_waiting_visible(false)
 	_breakdown.text = _format_breakdown(breakdown, wave_index, duration_seconds)
 	_on_currency_changed(EconomyManager.currency)
 	if shop != null:
@@ -66,15 +90,38 @@ func open(breakdown: Dictionary, wave_index: int, duration_seconds: float) -> vo
 	EventBus.shop_opened.emit()
 
 
+## The player is done shopping. Solo, that closes the screen; in coop it locks
+## the choices in and waits - the host closes it for everyone through
+## force_close() once the last player is ready.
 func close() -> void:
 	if not is_open:
 		return
+	if _waits_for_peers:
+		if _is_waiting:
+			return
+		_is_waiting = true
+		_set_waiting_visible(true)
+		shop_closed.emit()
+		return
+	force_close()
+
+
+## Takes the screen down whatever state it is in: the local player skipping in
+## solo, the host calling everyone back in coop, or the run ending under it.
+func force_close() -> void:
+	if not is_open:
+		return
+	var was_waiting: bool = _is_waiting
 	is_open = false
+	_is_waiting = false
 	_root.visible = false
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	EventBus.shop_closed.emit()
-	shop_closed.emit()
+	# Already announced when they locked their choices in; announcing again
+	# would report a second vote from the same player.
+	if not was_waiting:
+		shop_closed.emit()
 
 
 # Private
@@ -91,6 +138,37 @@ func _format_breakdown(breakdown: Dictionary, wave_index: int, seconds: float) -
 		"No damage        %s" % ("%d" % no_damage if no_damage > 0 else "- (took damage)"),
 	]
 	return "\n".join(lines)
+
+
+## Swaps the shop for the "waiting for the others" line. The breakdown stays up:
+## it is what there is to read while you wait, and hiding it would leave the
+## screen empty except for one sentence.
+func _set_waiting_visible(waiting: bool) -> void:
+	if _waiting_label == null:
+		_waiting_label = Label.new()
+		_waiting_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_cards.get_parent().add_child(_waiting_label)
+	_waiting_label.visible = waiting
+	_cards.visible = not waiting
+	var reroll_row := _reroll_button.get_parent() as Control
+	if reroll_row != null:
+		reroll_row.visible = not waiting and shop != null and shop.catalog != null \
+			and shop.catalog.reroll_base_cost > 0
+	_skip_button.visible = not waiting
+	if waiting:
+		_timer_label.text = "LISTO"
+		_on_shop_ready_changed(_ready_count, _ready_total)
+
+
+## The host's tally of who has finished. Shown only once we are waiting - before
+## that the number would just be pressure to hurry.
+func _on_shop_ready_changed(ready_count: int, total: int) -> void:
+	_ready_count = ready_count
+	_ready_total = total
+	if _waiting_label == null or not _is_waiting:
+		return
+	_waiting_label.text = "Esperando a los demas...  %d/%d listos" % [
+		ready_count, maxi(total, 1)]
 
 
 func _on_currency_changed(total: int) -> void:

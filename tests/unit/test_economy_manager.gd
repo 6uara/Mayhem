@@ -86,12 +86,23 @@ func test_generic_spend_refuses_a_negative_cost() -> void:
 	assert_eq(EconomyManager.currency, 100, "a negative price must not print money")
 
 
+## Income arrives on kill_credited, not enemy_killed. The two were the same
+## event while there was one player; in coop the host resolves every death in
+## the arena and only some of them are its money - see EventBus.
 func test_kills_pay_into_the_wave_total() -> void:
 	EconomyManager.begin_wave()
-	EventBus.enemy_killed.emit(&"rusher", Vector3.ZERO, 10)
-	EventBus.enemy_killed.emit(&"rusher", Vector3.ZERO, 10)
+	EventBus.kill_credited.emit(10)
+	EventBus.kill_credited.emit(10)
 	assert_eq(EconomyManager.get_wave_kill_income(), 20)
 	assert_eq(EconomyManager.currency, 20)
+
+
+func test_an_enemy_dying_elsewhere_is_not_income() -> void:
+	EconomyManager.begin_wave()
+	EventBus.enemy_killed.emit(&"rusher", Vector3.ZERO, 10)
+	assert_eq(EconomyManager.get_wave_kill_income(), 0,
+		"a death this player was not credited with pays nothing")
+	assert_eq(EconomyManager.currency, 0)
 
 
 ## The breakdown is what the wave-complete screen shows; all three income sources
@@ -102,7 +113,7 @@ func test_wave_breakdown_itemises_every_income_source() -> void:
 	wave.completion_bonus = 100
 
 	EconomyManager.begin_wave()
-	EventBus.enemy_killed.emit(&"rusher", Vector3.ZERO, 30)
+	EventBus.kill_credited.emit(30)
 	var breakdown: Dictionary = EconomyManager.award_wave_bonuses(wave, 20.0, false)
 
 	assert_eq(int(breakdown["kills"]), 30)

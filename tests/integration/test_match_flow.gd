@@ -8,14 +8,23 @@ class StubShop:
 	signal shop_closed()
 
 	var open_count: int = 0
+	var close_count: int = 0
 	var last_breakdown: Dictionary = {}
+	var last_wait_for_peers: bool = false
 
-	func open(breakdown: Dictionary, _wave_index: int, _duration: float) -> void:
+	func open(breakdown: Dictionary, _wave_index: int, _duration: float,
+			wait_for_peers: bool = false) -> void:
 		open_count += 1
 		last_breakdown = breakdown
+		last_wait_for_peers = wait_for_peers
 
 	func close() -> void:
 		shop_closed.emit()
+
+	## The director takes the screen down itself once the break is over - solo,
+	## that is the same instant the player closed it.
+	func force_close() -> void:
+		close_count += 1
 
 
 var _director: MatchDirector
@@ -89,6 +98,21 @@ func test_the_final_wave_ends_the_match_instead_of_shopping() -> void:
 	assert_eq(_shop.open_count, 1, "no shop after the last wave")
 	assert_false(_director.is_running, "the match resolved")
 	assert_signal_emitted(EventBus, "match_completed")
+
+
+## The host leaving is not a game over, it is the run losing the machine that
+## owns it. A director that kept sequencing would sit behind the ending panel
+## counting down to a wave nobody can spawn.
+func test_the_host_leaving_stops_the_match() -> void:
+	assert_true(_director.is_running, "running before the host goes")
+	NetworkManager.host_disconnected.emit()
+	await wait_physics_frames(2)
+	assert_false(_director.is_running, "the run stops with the host")
+	# The break is open by this point (with no spawner registered the wave
+	# clears itself), which makes this the case worth pinning: the shop has to
+	# come down with the session, or the client is left staring at a menu it can
+	# never leave - closing it is also what unpauses the tree.
+	assert_gt(_shop.close_count, 0, "the shop comes down with the session")
 
 
 func test_player_death_stops_the_match() -> void:

@@ -1,0 +1,144 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/coop_panel.gd" id="1_coop"]
+[ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
+[ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="3_theme"]
+
+[sub_resource type="StyleBox" id="StyleBox_panel"]
+script = ExtResource("2_chamfer")
+fill_color = Color(0.078, 0.086, 0.106, 1)
+fill_alpha = 0.97
+border_color = Color(0.173, 0.192, 0.251, 1)
+border_width = 1.0
+chamfer = 20.0
+rail_width = 3.0
+rail_color = Color(0.208, 0.878, 0.831, 1)
+rail_side = 3
+tick_length = 28.0
+tick_color = Color(0.208, 0.878, 0.831, 1)
+
+[node name="CoopPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = ExtResource("3_theme")
+script = ExtResource("1_coop")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.027, 0.031, 0.043, 0.88)
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -250.0
+offset_right = 260.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 32
+
+[node name="Layout" type="VBoxContainer" parent="Panel/Margin"]
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Panel/Margin/Layout"]
+theme_type_variation = &"Announce"
+text = "COOP"
+
+[node name="Subtitle" type="Label" parent="Panel/Margin/Layout"]
+theme_type_variation = &"HUDLabel"
+text = "HASTA 4 JUGADORES EN LA MISMA ARENA"
+
+[node name="Setup" type="VBoxContainer" parent="Panel/Margin/Layout"]
+theme_override_constants/separation = 10
+
+[node name="NameRow" type="HBoxContainer" parent="Panel/Margin/Layout/Setup"]
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Panel/Margin/Layout/Setup/NameRow"]
+custom_minimum_size = Vector2(110, 0)
+theme_type_variation = &"HUDLabel"
+text = "NOMBRE"
+vertical_alignment = 1
+
+[node name="NameEdit" type="LineEdit" parent="Panel/Margin/Layout/Setup/NameRow"]
+custom_minimum_size = Vector2(0, 40)
+size_flags_horizontal = 3
+max_length = 16
+text = "Jugador"
+
+[node name="AddressRow" type="HBoxContainer" parent="Panel/Margin/Layout/Setup"]
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Panel/Margin/Layout/Setup/AddressRow"]
+custom_minimum_size = Vector2(110, 0)
+theme_type_variation = &"HUDLabel"
+text = "DIRECCION"
+vertical_alignment = 1
+
+[node name="AddressEdit" type="LineEdit" parent="Panel/Margin/Layout/Setup/AddressRow"]
+custom_minimum_size = Vector2(0, 40)
+size_flags_horizontal = 3
+placeholder_text = "127.0.0.1"
+text = "127.0.0.1"
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/Layout/Setup"]
+theme_override_constants/separation = 12
+
+[node name="HostButton" type="Button" parent="Panel/Margin/Layout/Setup/Buttons"]
+custom_minimum_size = Vector2(0, 48)
+size_flags_horizontal = 3
+text = "Hostear partida"
+
+[node name="JoinButton" type="Button" parent="Panel/Margin/Layout/Setup/Buttons"]
+custom_minimum_size = Vector2(0, 48)
+size_flags_horizontal = 3
+text = "Unirse"
+
+[node name="Lobby" type="VBoxContainer" parent="Panel/Margin/Layout"]
+visible = false
+theme_override_constants/separation = 10
+
+[node name="RosterTitle" type="Label" parent="Panel/Margin/Layout/Lobby"]
+theme_type_variation = &"HUDLabel"
+text = "EN LA PARTIDA"
+
+[node name="Roster" type="VBoxContainer" parent="Panel/Margin/Layout/Lobby"]
+custom_minimum_size = Vector2(0, 130)
+theme_override_constants/separation = 6
+
+[node name="StartButton" type="Button" parent="Panel/Margin/Layout/Lobby"]
+custom_minimum_size = Vector2(0, 48)
+text = "Empezar la run"
+
+[node name="LeaveButton" type="Button" parent="Panel/Margin/Layout/Lobby"]
+custom_minimum_size = Vector2(0, 40)
+text = "Salir de la partida"
+
+[node name="Spacer" type="Control" parent="Panel/Margin/Layout"]
+size_flags_vertical = 3
+
+[node name="Status" type="Label" parent="Panel/Margin/Layout"]
+theme_type_variation = &"HUDLabel"
+autowrap_mode = 2
+text = ""
+
+[node name="Footer" type="HBoxContainer" parent="Panel/Margin/Layout"]
+
+[node name="BackButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+text = "Volver"

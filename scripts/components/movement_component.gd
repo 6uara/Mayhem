@@ -119,6 +119,22 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if body == null:
 		return
+	# Movement is client-authoritative: each peer simulates only its own body and
+	# the result is replicated outward. For coop against AI this is the right
+	# trade - it keeps the momentum system (slides, bhops, grapple arcs) feeling
+	# exactly as tuned on the machine holding the keyboard, with no input delay
+	# to hide. It does mean a modified client could cheat its own position, which
+	# is a fair price for a game friends play together.
+	# Asked through the body rather than of the MultiplayerAPI: the answer is the
+	# same, and it survives the session ending under us. is_multiplayer_authority()
+	# needs a peer to ask for this machine's id, and a host that quits leaves
+	# every remaining body erroring once per physics frame.
+	var player := body as Player
+	if player != null:
+		if not player.is_local():
+			return
+	elif not body.is_multiplayer_authority():
+		return
 	dash_charges.tick(delta)
 
 	if Input.is_action_just_pressed("jump"):

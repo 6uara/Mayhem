@@ -25,6 +25,7 @@ buses/default_bus_layout="uid://dir0cw2qsj8wn"
 
 Tokens="*res://scripts/autoload/theme_tokens.gd"
 EventBus="*res://scripts/autoload/event_bus.gd"
+NetworkManager="*res://scripts/autoload/network_manager.gd"
 GameManager="*res://scripts/autoload/game_manager.gd"
 ObjectPool="*res://scripts/autoload/object_pool.gd"
 AudioPool="*res://scripts/autoload/audio_pool.gd"
