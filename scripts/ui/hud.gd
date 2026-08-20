@@ -152,6 +152,7 @@ func _bind_player() -> void:
 		_rebuild_weapon_list()
 	if _player.utility != null:
 		_player.utility.utility_changed.connect(_on_utility_changed.unbind(2))
+		_player.utility.armed_changed.connect(_on_utility_armed)
 	_build_ability_bar()
 
 
@@ -457,6 +458,15 @@ func _on_utility_changed() -> void:
 		count.text = "%d" % carried
 		# Nothing carried reads as unavailable, not merely as a zero.
 		icon.color = Tokens.TEXT if carried > 0 else Tokens.DIM
+
+
+## Un gadget en la mano tiene que verse. En modo equipar el jugador queda con
+## algo cargado esperando el disparo, y sin señal en pantalla es un estado
+## invisible: llegas al tiroteo creyendo que tenes el arma.
+func _on_utility_armed(slot: int) -> void:
+	for i: int in _utility_slots.size():
+		var panel: PanelContainer = _utility_slots[i].get_meta(&"panel")
+		panel.modulate = Tokens.REWARD if i == slot else Color.WHITE
 
 
 func _on_weapon_fired(_weapon_id: StringName) -> void:

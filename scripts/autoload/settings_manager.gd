@@ -8,6 +8,13 @@ const DEFAULTS: Dictionary = {
 	"input/mouse_sensitivity": 2.40,
 	"input/ads_sensitivity_multiplier": 0.72,
 	"input/invert_y": false,
+	## Quick cast: el gadget sale al apretar la tecla. Apagado, la tecla lo pone
+	## en la mano y el jugador elige cuando lanzarlo con el disparo.
+	##
+	## Por defecto en quick cast porque es el esquema con el que se diseñaron los
+	## cooldowns y el ritmo de las oleadas; el otro existe porque no todos leen
+	## una granada como algo que se tira sin mirar. Ver UtilityComponent.
+	"input/gadget_quick_cast": true,
 	"video/fov": 104.0,
 	"video/fullscreen": true,
 	"video/vsync": false,

@@ -130,3 +130,43 @@ func test_spread_is_wider_in_the_air_than_on_the_ground() -> void:
 	_data.spread_hipfire = 1.0
 	_data.spread_airborne_multiplier = 3.0
 	assert_eq(_weapon.get_current_spread(), 1.0, "no body means no movement penalty")
+
+
+# ------------------------------------------------- animacion de recarga
+
+## El playtest pidio señal visual de que estas recargando. La animacion se deriva
+## de esto, asi que si el progreso miente, el arma gira mal.
+
+func test_reload_progress_is_zero_when_not_reloading() -> void:
+	assert_eq(_weapon.get_reload_progress(), 0.0)
+
+
+func test_reload_progress_runs_from_zero_to_one() -> void:
+	_fire_once()
+	_weapon.try_reload()
+	assert_almost_eq(_weapon.get_reload_progress(), 0.0, 0.01, "arranca en cero")
+
+	_weapon._process(_data.reload_time * 0.5)
+	assert_almost_eq(_weapon.get_reload_progress(), 0.5, 0.05, "a mitad de camino")
+
+
+## La razon de que el giro sea una vuelta entera: termina donde empezo, y la pose
+## de reposo se recupera por aritmetica en vez de por alguien acordandose de
+## restaurarla.
+func test_a_finished_spin_lands_back_on_the_resting_pose() -> void:
+	assert_almost_eq(_weapon._reload_spin(1.0), -360.0, 0.01,
+		"una vuelta completa es la misma pose")
+	assert_eq(_weapon._reload_spin(0.0), 0.0, "sin recarga no hay giro")
+
+
+## Una recarga interrumpida -cambio de arma, muerte, fin de run- no puede dejar el
+## arma torcida para siempre.
+func test_an_interrupted_reload_leaves_no_residue() -> void:
+	_fire_once()
+	_weapon.try_reload()
+	_weapon._process(_data.reload_time * 0.4)
+	assert_gt(absf(_weapon._reload_spin(_weapon.get_reload_progress())), 0.0,
+		"a mitad de recarga el arma esta girada")
+
+	_weapon.reset()
+	assert_eq(_weapon.get_reload_progress(), 0.0, "cortar la recarga vuelve el giro a cero")

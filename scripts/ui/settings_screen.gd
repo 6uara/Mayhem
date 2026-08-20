@@ -25,6 +25,7 @@ const SCHEMA: Array = [
 	{"key": "input/ads_sensitivity_multiplier", "label": "ADS sensitivity",
 		"type": "slider", "min": 0.1, "max": 2.0, "step": 0.01},
 	{"key": "input/invert_y", "label": "Invert vertical look", "type": "toggle"},
+	{"key": "input/gadget_quick_cast", "label": "Gadget quick cast", "type": "toggle"},
 
 	{"section": "VIDEO"},
 	{"key": "video/fov", "label": "Field of view",
