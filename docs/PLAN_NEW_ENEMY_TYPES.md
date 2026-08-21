@@ -162,7 +162,24 @@ un test; el *feel* no.
 
 ## 4. Ranged Flyer y Environmental
 
-### 4.1 Ranged Flyer
+### 4.1 Ranged Flyer — **no construido**
+
+**Requisito de posicionamiento (decidido, pendiente de implementar):** el Flyer
+ataca **desde los costados**, y arranca **fuera del campo de visión del
+jugador**. No debe aparecer nunca de frente.
+
+La mitad barata ya está: el sistema de rumbos de §4.3 lo cubre con
+`approach_bearing_degrees = 90` y `approach_bearing_mirrors = true`. Con el FOV
+por defecto en 104° (o sea ±52°), un rumbo de 90° cae holgadamente fuera de
+cámara, así que "por el costado" y "fuera de vista" son el mismo número — pero
+son dos requisitos distintos y conviene no olvidarlo: si alguien sube el FOV a
+120°, siguen siendo ±60° y 90 sigue alcanzando; a FOV 170° ya no.
+
+La mitad cara sigue siendo §2.3, el vuelo. Y hay una interacción que todavía no
+está resuelta: el sistema de rumbos actual trabaja sobre el navmesh, y un Flyer
+no lo usa. `get_approach_position()` devuelve un punto en el plano; el Flyer va a
+necesitar el mismo punto **más una altura**, resuelta por raycast contra el
+terreno como dice §4.1 abajo.
 
 El más caro de los tres simples, por §2.3. Necesita un modo de movimiento que no
 dependa del navmesh: mantener altura objetivo sobre el terreno (raycast hacia
@@ -228,6 +245,45 @@ La zona respeta la ley de `HazardZone`: **el decal es la promesa**, el área que
 atrapa es exactamente la dibujada, y avisa antes de armarse.
 
 ---
+
+## 4.3 De dónde llega cada arquetipo — **construido**
+
+El problema no es cuántos enemigos hay, es **dónde**. Con todos llegando de
+frente, la ola se resuelve girando lo menos posible: no hay que chequear la
+espalda, no hay que reposicionarse, y dos arquetipos distintos se sienten iguales
+porque ocupan el mismo sector de la pantalla.
+
+`EnemyData` gana un rumbo preferido medido **desde la mirada del jugador**, no
+desde una dirección del arena: `approach_bearing_degrees` (0 de frente, 90 al
+costado, 180 por la espalda), `approach_bearing_weight` y
+`approach_bearing_mirrors`. `Enemy.get_approach_position()` lo mezcla con el
+carril lateral que ya existía.
+
+| Arquetipo | Rumbo | Peso |
+|---|---|---|
+| Bomber | 180° (espalda, sin espejo) | 0.85 |
+| Environmental | ±65° (flanco) | 0.6 |
+| Ranged Flyer | ±90° — **pendiente**, ver §4.1 | — |
+| Los cinco originales | 0° | **0.0** |
+
+El peso 0 es el default y deja el comportamiento **idéntico** al anterior, que es
+lo que permite meter esto sin tocar los cinco arquetipos existentes.
+`test_an_archetype_without_a_bearing_is_untouched` es la red.
+
+**Se desvanece de cerca, con la misma rampa que el carril lateral.** Un enemigo
+que insiste en la espalda mientras el jugador gira se queda orbitando y no ataca
+nunca. Flanquea de lejos y se compromete de cerca; sin eso, el Bomber es un
+carrusel que no explota.
+
+**El Environmental además se adelanta.** `ActionThrowFlask.lead_fraction` (0.65)
+tira a donde el jugador va a estar cuando el frasco llegue. Tirarle a donde está
+parado es tirarle a la espalda —para cuando aterriza ya se movió, y el charco
+niega terreno que acababa de dejar—, y adelantarse el 100% es igual de malo por
+el otro lado: se vuelve inesquivable corriendo derecho. En el medio el charco cae
+*en el camino*, y la pregunta pasa a ser "sigo por acá o me desvío".
+
+Sólo se adelanta la componente horizontal: un jugador saltando recibiría el
+charco por encima o por debajo del piso, y el charco vive en el suelo.
 
 ## 5. Gladiadores
 

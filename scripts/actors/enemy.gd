@@ -419,7 +419,8 @@ func get_approach_position() -> Vector3:
 	if player == null:
 		return global_position
 	var target: Vector3 = player.global_position
-	if is_zero_approx(_approach_lane):
+	var wants_bearing: bool = data != null and data.approach_bearing_weight > 0.0
+	if is_zero_approx(_approach_lane) and not wants_bearing:
 		return target
 
 	var to_player: Vector3 = target - global_position
@@ -434,7 +435,69 @@ func get_approach_position() -> Vector3:
 	# same radius, which is the queue again with extra steps.
 	var blend: float = clampf((distance - commit) / APPROACH_FADE, 0.0, 1.0)
 	var lateral: Vector3 = to_player.normalized().cross(Vector3.UP)
-	return target + lateral * _approach_lane * APPROACH_SPREAD * blend
+	var lane_offset: Vector3 = lateral * _approach_lane * APPROACH_SPREAD * blend
+	if not wants_bearing:
+		return target + lane_offset
+	return _bearing_position(target, distance, blend) + lane_offset * 0.5
+
+
+## El punto desde el que este arquetipo quiere llegar: un lugar alrededor del
+## jugador medido desde su propia direccion de mirada, no desde el norte del
+## arena.
+##
+## Se desvanece con la misma rampa que el carril lateral, y por el mismo motivo.
+## Un enemigo que insiste en la espalda mientras el jugador gira se queda
+## orbitando para siempre y no ataca nunca: flanquea de lejos y se compromete de
+## cerca. Que la insistencia baje a cero justo donde empieza el rango de ataque
+## es lo que evita el carrusel.
+func _bearing_position(target: Vector3, distance: float, blend: float) -> Vector3:
+	var facing: Vector3 = get_player_facing()
+	if facing.length_squared() < 0.01:
+		return target
+
+	var degrees: float = data.approach_bearing_degrees
+	if data.approach_bearing_mirrors and _approach_lane < 0.0:
+		degrees = -degrees
+	# Desde donde mira el jugador, girando alrededor de su eje vertical. A 180
+	# grados el punto cae exactamente detras suyo.
+	var bearing: Vector3 = facing.rotated(Vector3.UP, deg_to_rad(degrees))
+
+	# A la distancia a la que este arquetipo ya pelea: un Ranger no tiene por que
+	# acercarse al flanco, le alcanza con estar en el flanco.
+	var stand_off: float = data.preferred_distance if data.preferred_distance > 0.0 \
+		else maxf(data.attack_range, commit_floor())
+	var wanted: Vector3 = target + bearing * minf(stand_off, distance)
+	var weight: float = clampf(data.approach_bearing_weight, 0.0, 1.0) * blend
+	return target.lerp(wanted, weight)
+
+
+## Piso del stand-off para arquetipos cuerpo a cuerpo, que tienen attack_range
+## chico y quedarian pegados al jugador antes de haber flanqueado nada.
+func commit_floor() -> float:
+	return 3.0
+
+
+## Hacia donde mira el jugador, aplanado. Es la referencia de todo el sistema de
+## flancos: "por la espalda" no significa nada respecto del arena, solo respecto
+## de el.
+##
+## Se lee del basis y no de una API de Player, asi que cualquier Node3D sirve -
+## incluido el nodo pelado con el que los tests paran a un jugador falso.
+func get_player_facing() -> Vector3:
+	var player: Node3D = get_player()
+	if player == null:
+		return Vector3.ZERO
+	# Godot mira hacia -Z.
+	var forward: Vector3 = -player.global_transform.basis.z
+	forward.y = 0.0
+	return forward.normalized() if forward.length_squared() > 0.001 else Vector3.ZERO
+
+
+## Con que velocidad se esta moviendo el jugador, para quien tenga que adelantarse
+## a donde va a estar. Vector3.ZERO si el objetivo no es un cuerpo que se mueva.
+func get_player_velocity() -> Vector3:
+	var body := get_player() as CharacterBody3D
+	return body.velocity if body != null else Vector3.ZERO
 
 
 ## Inside this, the enemy stops flanking and comes straight in. Scaled off its

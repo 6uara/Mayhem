@@ -115,6 +115,27 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL 
 @export var explosion_radius: float = 4.5
 @export var explosion_scene: PackedScene
 
+@export_group("Approach")
+## Donde alrededor del jugador quiere pararse este arquetipo, en grados desde la
+## direccion a la que el jugador esta mirando. 0 = de frente, 90 = por el
+## costado, 180 = por la espalda.
+##
+## Existe porque el problema de una horda no es cuantos son sino DONDE estan: si
+## todos vienen de frente, el jugador resuelve la ola girando lo menos posible y
+## el arena deja de importar. Que cada arquetipo prefiera un sector distinto es
+## lo que obliga a chequear atras, y de paso hace que se lean distinto entre
+## ellos sin cambiarles ni una estadistica.
+@export_range(0.0, 180.0, 5.0) var approach_bearing_degrees: float = 0.0
+## Cuanto le importa. 0 = nada, y el arquetipo se comporta exactamente como
+## antes de que esto existiera - por eso es el default.
+@export_range(0.0, 1.0, 0.05) var approach_bearing_weight: float = 0.0
+## Si vale cualquiera de los dos costados (+-grados) o solo uno.
+##
+## Un angulo de 90 grados espejado son "los flancos"; sin espejar es siempre el
+## mismo, que para un grupo entero se ve como una coreografia. La espalda (180)
+## no tiene espejo util, pero tampoco molesta.
+@export var approach_bearing_mirrors: bool = true
+
 @export_group("Support")
 ## Healer: health restored per pulse. `attack_cooldown` gates how often it pulses.
 @export var heal_amount: float = 12.0

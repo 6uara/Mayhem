@@ -23,6 +23,18 @@ extends ActionLeaf
 @export var pool_duration: float = 5.0
 ## Fracción del daño del arquetipo que hace el charco por tick.
 @export var pool_damage_fraction: float = 0.45
+## Cuanto se adelanta a donde el jugador va a estar, como fraccion del vuelo.
+##
+## 0 tira a donde esta parado, que es tirarle siempre a la espalda: para cuando
+## el frasco llega, el jugador ya se movio, y el charco queda atras suyo negando
+## terreno que acababa de dejar. Nunca lo obliga a nada.
+##
+## 1.0 seria puntería perfecta, y es igual de malo por el otro lado: se vuelve
+## inesquivable corriendo derecho y la unica respuesta es frenar en seco. En el
+## medio el charco cae *en el camino*, delante del jugador, y la pregunta pasa a
+## ser "sigo por acá o me desvío" - que es la unica pregunta que este arquetipo
+## sabe hacer.
+@export_range(0.0, 1.0, 0.05) var lead_fraction: float = 0.65
 
 
 func tick(actor: Node, _blackboard: Blackboard) -> int:
@@ -39,7 +51,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	# A los pies y no al pecho: el charco se apoya en el piso, así que el arco
 	# tiene que terminar en el piso o el frasco explota a la altura de la cintura
 	# y el charco aparece flotando por encima del suelo que dice negar.
-	var target: Vector3 = enemy.get_player_position()
+	var target: Vector3 = _predicted_spot(enemy)
 
 	flask.setup_pool(pool_radius, pool_duration,
 		enemy.data.damage * pool_damage_fraction)
@@ -47,6 +59,26 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	AudioPool.play_3d(enemy.data.attack_sound, origin, AudioPool.BUS_ENEMIES)
 	enemy.start_attack_cooldown()
 	return SUCCESS
+
+
+## A dónde va a estar el jugador cuando el frasco llegue, no dónde está ahora.
+##
+## Es lo que convierte al arquetipo de "te tira cosas" en "te corta el camino".
+## Sólo se adelanta con la parte horizontal de la velocidad: sumar la vertical
+## haría que un jugador saltando reciba el charco por encima o por debajo del
+## piso, y el charco vive en el suelo.
+##
+## No corrige por el terreno. Si el punto predicho cae en el vacío, el frasco
+## sigue volando hasta que algo lo pare o hasta la red de seguridad de
+## `ThrownUtility` - errar es el modo normal de funcionar de este arquetipo, así
+## que no hace falta protegerlo de eso.
+func _predicted_spot(enemy: Enemy) -> Vector3:
+	var here: Vector3 = enemy.get_player_position()
+	if lead_fraction <= 0.0:
+		return here
+	var velocity: Vector3 = enemy.get_player_velocity()
+	velocity.y = 0.0
+	return here + velocity * maxf(flight_time, 0.1) * lead_fraction
 
 
 ## El mismo solver balístico que usan `JumpLink.get_launch_velocity()` y

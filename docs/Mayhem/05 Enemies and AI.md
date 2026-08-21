@@ -20,6 +20,8 @@ high), **Movement** (see below), **Attack** (`attack_windup` — telegraphing is
 mandatory, `attack_cooldown_jitter` and the `Leap` and `Fuse` subgroups — see
 [[#Attack timing is deliberately desynchronised]], [[#The leap]] and
 [[#The fuse]], `projectile_scene` for ranged archetypes, `preferred_distance`),
+**Approach** (`approach_bearing_degrees`/`_weight`/`_mirrors` — see
+[[#Where each archetype comes from]]),
 **Support** (Healer's `heal_amount`/`heal_radius`, Summoner's `summon_data`/
 `summon_count`/`summon_interval`), **Presentation** (`mesh`, `body_color`,
 `has_halo`/`has_tether` — Healer-only, since Ranger and Healer share body
@@ -138,6 +140,38 @@ area denial rather than a large Rusher.
 the archetype's leap range (7m) rather than its punch range (2.2m). Expressing
 that as a hand-computed multiplier over `attack_range` would go silently wrong
 the moment either number moved.
+
+## Where each archetype comes from
+
+A horde's problem is not how many there are, it is **where**. With everything
+arriving from the front, a wave is solved by turning as little as possible: no
+checking your back, no repositioning, and two different archetypes feel the same
+because they occupy the same slice of the screen.
+
+`EnemyData` carries a preferred bearing measured **from the player's own
+facing**, not from any arena direction: `approach_bearing_degrees` (0 front, 90
+flank, 180 behind), `approach_bearing_weight`, `approach_bearing_mirrors`.
+`Enemy.get_approach_position()` blends it with the lane offset that was already
+there.
+
+| Archetype | Bearing | Weight |
+|---|---|---|
+| Bomber | 180° (behind, unmirrored) | 0.85 |
+| Environmental | ±65° (flank) | 0.6 |
+| The original five | 0° | **0.0** |
+
+Weight 0 is the default and reproduces the old behaviour **exactly**, which is
+what let this land without touching the five existing archetypes.
+`test_an_archetype_without_a_bearing_is_untouched` is the net under that claim.
+
+**It fades up close**, on the same ramp the lane offset already used. An enemy
+that insists on your back while you spin orbits forever and never attacks: flank
+from far, commit from near. Without the fade the Bomber is a carousel that never
+goes off.
+
+The bearing comes from `get_player_facing()`, which reads the target's basis
+rather than a `Player` API — so any `Node3D` works, including the bare node the
+tests stand up as a fake player.
 
 ## The fuse
 
