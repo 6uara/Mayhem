@@ -116,8 +116,19 @@ func say(occasion: StringName, format_args: Array = []) -> void:
 	var line_set: HostLineSet = catalog.find(occasion)
 	if line_set == null or not line_set.has_lines():
 		return
+	_speak(occasion, _pick_index(occasion, line_set.lines.size()), format_args)
 
-	var index: int = _pick_index(occasion, line_set.lines.size())
+
+## Speaks a line that has already been chosen. Pacing still applies: a Host
+## mid-sentence, or one that just used this category, drops it rather than
+## talking over itself.
+func _speak(occasion: StringName, index: int, format_args: Array) -> void:
+	if catalog == null:
+		return
+	var line_set: HostLineSet = catalog.find(occasion)
+	if line_set == null or not line_set.has_lines():
+		return
+	index = clampi(index, 0, line_set.lines.size() - 1)
 	var text: String = line_set.lines[index]
 	if not format_args.is_empty():
 		text = text % format_args

@@ -13,6 +13,7 @@ extends Control
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
 @onready var _quit_button: Button = $Root/Panel/Margin/Layout/QuitButton
 @onready var _best: Label = $Root/Panel/Margin/Layout/BestRow/Value
+@onready var _footer: Label = $Root/Panel/Margin/Layout/Footer
 @onready var _settings: SettingsScreen = $Settings
 @onready var _leaderboard: LeaderboardPanel = $Leaderboard
 
@@ -26,6 +27,7 @@ func _ready() -> void:
 	_settings.closed.connect(_on_panel_closed)
 	_leaderboard.closed.connect(_on_panel_closed)
 	_refresh_best()
+	_set_footer()
 	_play_button.grab_focus()
 
 
@@ -35,6 +37,16 @@ func _ready() -> void:
 func _refresh_best() -> void:
 	var best: int = SaveManager.get_best_score()
 	_best.text = "%d" % best if best > 0 else "-"
+
+
+## The ownership line the LICENSE and the itch.io page also carry. Cheap to show,
+## and it is the one place a player who never reads a store page still sees it -
+## which is exactly the audience that matters if a build ever turns up re-uploaded
+## somewhere it should not be. Version comes from config/version so a build can
+## always be identified from a screenshot in a bug report.
+func _set_footer() -> void:
+	var version: String = str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
+	_footer.text = "v%s  -  (c) 2026 Juan Guaragnini.  All rights reserved." % version
 
 
 func _on_play_pressed() -> void:

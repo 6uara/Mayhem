@@ -61,18 +61,26 @@ func open(breakdown: Dictionary, wave_index: int, duration_seconds: float) -> vo
 	_on_currency_changed(EconomyManager.currency)
 	if shop != null:
 		shop.roll_offers()
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	get_tree().paused = true
+	# Por GameManager y no por get_tree() directo: el menu de pausa puede abrirse
+	# encima de la tienda, y con los dos escribiendo el mismo booleano el que
+	# cerraba ultimo descongelaba el juego abajo del otro.
+	GameManager.set_freeze(GameManager.FREEZE_SHOP, true)
 	EventBus.shop_opened.emit()
 
 
+## The player is done shopping: back to the arena.
 func close() -> void:
+	force_close()
+
+
+## Takes the screen down whatever state it is in - the player skipping out, or
+## the run ending under it.
+func force_close() -> void:
 	if not is_open:
 		return
 	is_open = false
 	_root.visible = false
-	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	GameManager.set_freeze(GameManager.FREEZE_SHOP, false)
 	EventBus.shop_closed.emit()
 	shop_closed.emit()
 

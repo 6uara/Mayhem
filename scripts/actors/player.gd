@@ -36,6 +36,7 @@ var _speed_fov: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"player")
+	add_to_group(&"local_player")
 	# Enemy projectiles raycast straight onto this body (no HitboxComponent on
 	# the player) - tag it flesh directly so its impact VFX matches the
 	# enemy-hit case rather than reading as a wall.
@@ -50,6 +51,19 @@ func _ready() -> void:
 	# UpgradeManager - the player is what bridges them.
 	UpgradeManager.upgrades_changed.connect(_apply_survivability_stats)
 	_apply_survivability_stats()
+	_apply_view_nodes()
+	EventBus.local_player_spawned.emit(self)
+
+
+## The third-person body exists for the shadow it casts and nothing else: the
+## camera sits inside its head, so leaving it visible would paint the inside of
+## a skull across the whole screen.
+func _apply_view_nodes() -> void:
+	if camera != null:
+		camera.current = true
+	var third_person := get_node_or_null("Body") as Node3D
+	if third_person != null:
+		third_person.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -179,4 +193,5 @@ func _on_damaged(amount: float, remaining: float) -> void:
 
 
 func _on_died() -> void:
+	# No revives, no teammates to hold the line: the run ends the moment you fall.
 	EventBus.player_died.emit()

@@ -106,11 +106,19 @@ func _detonate() -> void:
 
 
 ## Shared helper: every enemy inside `radius`, closest first.
+##
+## Empty for a cosmetic copy, which is what keeps every effect in the subclasses
+## harmless without any of them having to know they are a copy.
+##
+## Lee la lista de vivos de Enemy y no el grupo del arbol: get_nodes_in_group()
+## arma un Array nuevo en cada llamada, y SlowField preguntaba esto en cada frame
+## de fisica mientras el charco duraba. Es el mismo cambio que ya se le hizo a la
+## separacion de los enemigos, por el mismo motivo.
 func _enemies_in_radius(radius: float) -> Array[Enemy]:
 	var result: Array[Enemy] = []
-	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
-		var enemy := node as Enemy
-		if enemy != null and enemy.is_active \
-				and global_position.distance_to(enemy.global_position) <= radius:
+	var radius_squared: float = radius * radius
+	for enemy: Enemy in Enemy.get_active_enemies():
+		if enemy != null and is_instance_valid(enemy) and enemy.is_active \
+				and global_position.distance_squared_to(enemy.global_position) <= radius_squared:
 			result.push_back(enemy)
 	return result

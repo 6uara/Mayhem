@@ -99,8 +99,13 @@ Un worktree nunca trae `.godot`, así que arranca con caché fresca por definici
 
 ## Estado actual de la suite
 
-Godot 4.7, corrida local del 14/08/2026 sobre `develop` @ `c76d772`:
-**364 tests, 364 en verde**.
+Godot 4.7, corridas locales:
+
+| Rama | Fecha | Resultado |
+| --- | --- | --- |
+| `develop` @ `c76d772` | 14/08/2026 | 364 tests, **364 en verde** |
+| `feat/coop-p2p` @ `de77658` | 14/08/2026 | 380 tests, **380 en verde** |
+| `feat/coop-p2p` @ merge de `develop` | 19/08/2026 | 442 tests, **442 en verde** |
 
 ## What to test
 

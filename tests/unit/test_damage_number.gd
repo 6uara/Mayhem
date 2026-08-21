@@ -18,8 +18,13 @@ func test_headshots_read_differently_from_body_shots() -> void:
 
 	var body_label: Label3D = body.get_node("Label3D")
 	var headshot_label: Label3D = headshot.get_node("Label3D")
-	assert_ne(body_label.font_size, headshot_label.font_size,
+	# Por escala del nodo y no por font_size: cambiar el tamaño de fuente en
+	# runtime obliga a rasterizar la fuente de nuevo, que era la mitad del costo
+	# que reporto el playtest. La distincion visual es la misma.
+	assert_gt(headshot.scale.x, body.scale.x,
 		"a headshot must read as visually distinct from a body shot")
+	assert_eq(body_label.font_size, headshot_label.font_size,
+		"y con el mismo tamaño de fuente, que es lo que lo hace barato")
 	assert_ne(body_label.modulate, headshot_label.modulate)
 
 

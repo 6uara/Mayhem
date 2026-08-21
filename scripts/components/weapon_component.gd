@@ -56,6 +56,20 @@ signal ads_changed(is_ads: bool)
 @export var view_kick_max_degrees: float = 6.0
 @export var view_kick_max_back: float = 0.12
 
+## Vuelta completa del arma mientras recarga. Provisorio hasta que haya animacion
+## de verdad, que es lo que pidio el playtest: no habia *ninguna* señal visual de
+## que estabas recargando, solo un sonido y un arma que no dispara.
+##
+## 360 y no un angulo intermedio a proposito: una vuelta entera termina donde
+## empezo, asi que la pose de reposo se recupera sola por aritmetica en vez de
+## depender de que alguien acuerde de restaurarla. Una recarga interrumpida -
+## cambio de arma, muerte, fin de la run - no puede dejar el arma torcida para
+## siempre porque no hay nada guardado que restaurar.
+@export var reload_spin_degrees: float = 360.0
+## Cuanto baja el arma en el medio del giro. Sale y vuelve con el mismo seno, asi
+## que tampoco deja residuo.
+@export var reload_dip: float = 0.05
+
 var is_reloading: bool = false
 var is_ads: bool = false
 ## 0 = hipfire, 1 = fully aimed. Drives FOV and spread interpolation.
@@ -205,6 +219,18 @@ func get_magazine_size() -> int:
 
 func get_reserve_max() -> int:
 	return int(round(_stat(StatsComponent.RESERVE_AMMO_MAX, float(data.reserve_ammo_max))))
+
+
+## Cuanto va de la recarga, 0 cuando no esta recargando y 1 al terminar. Lo lee
+## el viewmodel para el giro, y sirve igual a cualquier cosa que quiera dibujar
+## una barra de recarga sin duplicar el temporizador.
+func get_reload_progress() -> float:
+	if not is_reloading:
+		return 0.0
+	var total: float = get_reload_time()
+	if total <= 0.0:
+		return 0.0
+	return clampf(1.0 - (_reload_timer / total), 0.0, 1.0)
 
 
 func get_reload_time() -> float:
@@ -579,8 +605,25 @@ func _tick_viewmodel(delta: float) -> void:
 		return
 	_view_kick_offset = _view_kick_offset.move_toward(Vector3.ZERO, view_kick_recovery * delta * 0.1)
 	_view_kick_rot = move_toward(_view_kick_rot, 0.0, view_kick_recovery * delta)
-	_view.position = _view_rest_position + _view_kick_offset
-	_view.rotation_degrees.x = _view_kick_rot
+	var reload_progress: float = get_reload_progress()
+	_view.position = _view_rest_position + _view_kick_offset 		+ Vector3.DOWN * (reload_dip * sin(PI * reload_progress))
+	_view.rotation_degrees.x = _view_kick_rot + _reload_spin(reload_progress)
+
+
+## El giro de recarga, derivado del progreso en vez de animado por un Tween.
+##
+## Un tween sobre _view pelearia con este mismo tick, que le reescribe posicion y
+## rotacion todos los frames; el ultimo en escribir ganaria y el giro saldria a
+## los tirones. Derivarlo ademas resuelve solo el caso feo: si la recarga se
+## corta, el progreso vuelve a cero y el arma con el, sin ningun estado que
+## limpiar.
+##
+## smoothstep y no lineal: una vuelta a velocidad constante arranca y frena de
+## golpe, que es justo lo que delata que es un placeholder.
+func _reload_spin(progress: float) -> float:
+	if progress <= 0.0:
+		return 0.0
+	return -reload_spin_degrees * smoothstep(0.0, 1.0, progress)
 
 
 ## Scoped to this weapon's own id, so WEAPON-category upgrades bought for a

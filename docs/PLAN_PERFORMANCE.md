@@ -117,3 +117,68 @@ todo queda en los defaults de Forward+. Vale revisar glow, SSAO/SDFGI, atlas de
 sombras y MSAA una vez que haya un numero base - pero recien despues de medir,
 porque son los knobs que mas facil arruinan el look a cambio de FPS que, segun la
 tabla de arriba, no hacen ninguna falta.
+
+## Numeros de daño y VFX de daño recibido (2026-08-20)
+
+Reporte del playtest: "los numeros de dano y vfx de dano recibido hacen bajar
+considerablemente los fps". Confirmado y medido - no era una impresion.
+
+`profile_elite_wave.gd` no podia contestar esto: ahi los numeros son una fraccion
+de un cuadro que tambien tiene 27 enemigos, particulas y disparos. Se agrego
+`tools/profile_damage_numbers.gd`, que saca todo lo demas y deja una variable.
+
+    godot --path . -s tools/profile_damage_numbers.gd -- [segundos] [hits/s] [off|hurt]
+
+Tambien con render real, nunca headless: casi todo el costo es de renderer.
+
+### Numeros de daño
+
+60 hits/s sobre 8 objetivos distintos, 10-12s de muestreo, 1920x1080:
+
+| | fps avg | costo vs. apagado |
+|---|---|---|
+| Apagados (linea base) | 755.8 | - |
+| Antes | 256.1 | -66% |
+| Despues | 631.8 | -16% |
+
+De donde salio, en orden de cuanto movio la aguja:
+
+1. **Topear cuantos numeros hay vivos** (12). Es el unico cambio que movio la
+   medicion de verdad: 256 -> 547. La primera version del tope no topeaba nada
+   -contaba sobre el diccionario que la ventana de agregacion va vaciando- y
+   por eso la primera corrida no mejoro un solo frame. Vale la pena recordarlo:
+   sin medir despues de cada cambio, ese bug se hubiera dado por optimizacion.
+2. **Sacar el contorno del Label3D** (`outline_size` 8 -> 0): 547 -> 632. El
+   contorno es un segundo pase entero, y cuesta lo mismo a cualquier grosor -
+   se midio con 4 y con 2, ambos dan lo mismo que 8. Es la unica decision de
+   arte del lote: los numeros pierden el reborde negro. Se revierte con una
+   linea en `scenes/vfx/damage_number.tscn` si se ve mal sobre el arte final.
+3. Un solo `font_size` (la distincion del headshot pasa a ser escala del nodo),
+   y la animacion derivada del progreso en vez de un Tween por numero. Ninguno
+   de los dos aparece por separado en la medicion con el tope puesto; se
+   hicieron igual porque son correctos - rasterizar la fuente de nuevo y crear
+   decenas de Tweens por segundo no compran nada.
+4. Agregar golpes al mismo objetivo dentro de 0.25s. Se lee mejor ademas: un
+   240 dice mas que ocho 30 amontonados.
+
+### VFX de daño recibido
+
+30 golpes recibidos/s:
+
+| | fps avg |
+|---|---|
+| Sin golpes (linea base) | 697.5 |
+| Antes | 648.2 |
+| Despues | 667.2 |
+
+Es la mitad chica del reporte: 7% de costo, no 66%. El arreglo es un solo Tween
+reusado para la viñeta en vez de uno por golpe, que ademas corrige que se
+pisaran entre ellos - el fundido viejo seguia bajando el alpha que el nuevo
+acababa de subir.
+
+### Advertencia sobre estas mediciones
+
+Una corrida por configuracion, en una maquina sin control de ruido termico ni de
+procesos de fondo, a 700 FPS donde un frame son 1.4ms y cualquier cosa se nota
+en porcentaje. Las diferencias grandes (66% -> 16%) son reales y se repitieron;
+las chicas no las afirmaria.

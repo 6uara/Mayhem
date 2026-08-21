@@ -60,6 +60,8 @@ var _player: Player
 var _weapon: WeaponComponent
 var _announce_timer: float = 0.0
 var _utility_slots: Array[Control] = []
+## El fundido de la viñeta de daño. Ver _flash_damage().
+var _damage_tween: Tween
 var _grapple_slot: Control
 
 ## What _tick_wave() last wrote into the timer cluster. It runs every frame, but
@@ -68,6 +70,17 @@ var _grapple_slot: Control
 var _wave_shown: WaveData
 var _over_par_shown: bool = false
 var _intact_shown: bool = true
+## The two labels _tick_wave() writes every frame, held as the values they were
+## last built from rather than as the strings themselves. Both are counters that
+## step - one per second, one per kill - so 59 frames out of 60 were formatting a
+## String and re-laying out a Label to produce what was already on screen.
+var _elapsed_seconds_shown: int = -1
+var _remaining_shown: int = -1
+## Last state pushed into the grapple slot. Assigning `theme_type_variation`
+## invalidates the control and re-notifies its subtree whether or not the
+## variation differs, so this is the same transition-only rule the timer cluster
+## below already follows.
+var _grapple_state_shown: int = -1
 
 
 func _ready() -> void:
@@ -113,9 +126,14 @@ func _process(delta: float) -> void:
 # Binding
 
 func _bind_player() -> void:
-	_player = get_tree().get_first_node_in_group(&"player") as Player
+	# Our own body, never a teammate's - this HUD shows one player's health, ammo
+	# and dash charges, and on every machine that player is the local one.
+	_player = Players.local() as Player
 	if _player == null:
-		push_warning("HUD: no node in the 'player' group")
+		# Normal on a client: the scene is up but our body is still in flight
+		# from the host. Bind when it lands instead of warning about it.
+		if not EventBus.local_player_spawned.is_connected(_on_local_player_spawned):
+			EventBus.local_player_spawned.connect(_on_local_player_spawned)
 		return
 
 	if _player.health != null:
@@ -129,7 +147,15 @@ func _bind_player() -> void:
 		_rebuild_weapon_list()
 	if _player.utility != null:
 		_player.utility.utility_changed.connect(_on_utility_changed.unbind(2))
+		_player.utility.armed_changed.connect(_on_utility_armed)
 	_build_ability_bar()
+
+
+func _on_local_player_spawned(_player_node: Node3D) -> void:
+	EventBus.local_player_spawned.disconnect(_on_local_player_spawned)
+	_bind_player()
+
+
 
 
 ## Three utility slots plus the grapple, separated by a divider.
@@ -152,6 +178,8 @@ func _build_ability_bar() -> void:
 
 	_grapple_slot = _make_slot(MayhemIcon.Kind.GRAPPLE, "GRAPPLE")
 	_ability_bar.add_child(_grapple_slot)
+	# Fresh nodes, so whatever the old ones were showing says nothing about these.
+	_grapple_state_shown = -1
 
 
 func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
@@ -234,21 +262,23 @@ func _tick_movement() -> void:
 	if _grapple_slot == null or _player.grapple == null:
 		return
 	# Ready / attached / cooling, expressed by border and label, not colour alone.
+	# Three states, so the whole thing is one comparison: the slot is only touched
+	# on the frame it actually moves between them.
+	var state: int = 0
+	if _player.grapple.is_grappling:
+		state = 2
+	elif _player.grapple.is_anchor_in_range:
+		state = 1
+	if state == _grapple_state_shown:
+		return
+	_grapple_state_shown = state
+
 	var panel: PanelContainer = _grapple_slot.get_meta(&"panel")
 	var icon: MayhemIcon = _grapple_slot.get_meta(&"icon")
 	var key: Label = _grapple_slot.get_node("Keybind")
-	if _player.grapple.is_grappling:
-		panel.theme_type_variation = &"AbilitySlotReady"
-		icon.color = Tokens.PLAYER
-		key.text = "ATTACHED"
-	elif _player.grapple.is_anchor_in_range:
-		panel.theme_type_variation = &"AbilitySlotReady"
-		icon.color = Tokens.PLAYER
-		key.text = "GRAPPLE"
-	else:
-		panel.theme_type_variation = &"AbilitySlot"
-		icon.color = Tokens.DIM
-		key.text = "GRAPPLE"
+	panel.theme_type_variation = &"AbilitySlotReady" if state > 0 else &"AbilitySlot"
+	icon.color = Tokens.PLAYER if state > 0 else Tokens.DIM
+	key.text = "ATTACHED" if state == 2 else "GRAPPLE"
 
 
 func _tick_wave() -> void:
@@ -265,9 +295,22 @@ func _tick_wave() -> void:
 	if is_new_wave:
 		_wave_shown = wave
 		_par.text = "/ PAR %s" % _format_time(wave.par_time)
+		# A pooled HUD outlives the wave it was showing, and the new wave may open
+		# on the same numbers the old one closed on.
+		_elapsed_seconds_shown = -1
+		_remaining_shown = -1
 
-	_enemies_left.text = "%d" % WaveManager.get_remaining_count()
-	_elapsed.text = _format_time(elapsed)
+	# Same rule as the colour blocks below, for the same reason: these are counters
+	# that step, and the frames between steps have nothing to say.
+	var remaining: int = WaveManager.get_remaining_count()
+	if remaining != _remaining_shown:
+		_remaining_shown = remaining
+		_enemies_left.text = "%d" % remaining
+
+	var elapsed_seconds: int = int(elapsed)
+	if elapsed_seconds != _elapsed_seconds_shown:
+		_elapsed_seconds_shown = elapsed_seconds
+		_elapsed.text = _format_time(elapsed)
 
 	var ratio: float = clampf(elapsed / maxf(wave.par_time, 0.01), 0.0, 1.0)
 	_par_bar.filled = int(round(ratio * float(_par_bar.count)))
@@ -407,6 +450,15 @@ func _on_utility_changed() -> void:
 		icon.color = Tokens.TEXT if carried > 0 else Tokens.DIM
 
 
+## Un gadget en la mano tiene que verse. En modo equipar el jugador queda con
+## algo cargado esperando el disparo, y sin señal en pantalla es un estado
+## invisible: llegas al tiroteo creyendo que tenes el arma.
+func _on_utility_armed(slot: int) -> void:
+	for i: int in _utility_slots.size():
+		var panel: PanelContainer = _utility_slots[i].get_meta(&"panel")
+		panel.modulate = Tokens.REWARD if i == slot else Color.WHITE
+
+
 func _on_weapon_fired(_weapon_id: StringName) -> void:
 	_reticle.note_shot_fired()
 
@@ -543,13 +595,22 @@ func _set_elite_stripe(is_elite: bool) -> void:
 		stripe.visible = is_elite
 
 
+## Un solo Tween reusado, no uno por golpe.
+##
+## Estar rodeado son varios golpes por segundo, y cada uno creaba su propio Tween
+## sobre la misma propiedad: se pisaban entre ellos - el mas viejo seguia bajando
+## el alpha que el nuevo acababa de subir - y ademas se acumulaban. Matar el
+## anterior arregla las dos cosas de una, y es la mitad barata del reporte de
+## performance del playtest.
 func _flash_damage() -> void:
 	var vignette: Control = _state_overlays.get_node_or_null("DamageVignette")
 	if vignette == null:
 		return
 	vignette.modulate.a = 1.0
-	var tween: Tween = create_tween()
-	tween.tween_property(vignette, "modulate:a", 0.0, Tokens.DAMAGE_PULSE)
+	if _damage_tween != null and _damage_tween.is_valid():
+		_damage_tween.kill()
+	_damage_tween = create_tween()
+	_damage_tween.tween_property(vignette, "modulate:a", 0.0, Tokens.DAMAGE_PULSE)
 
 
 func _apply_hud_scale() -> void:

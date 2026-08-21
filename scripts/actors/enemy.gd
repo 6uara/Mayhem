@@ -64,6 +64,15 @@ const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
 const GRAVITY: float = 24.0
 
+## Cuanto se le suma al radio del enemigo para decidir que un salto toco al
+## jugador. Es el medio cuerpo del jugador: el salto pega por contacto, no por
+## alcance, asi que este numero es el ancho de los dos sumado.
+const LEAP_CONTACT_RADIUS: float = 0.5
+## Diferencia de altura maxima para que el contacto cuente. Generoso a proposito:
+## el enemigo cruza el arco entero y puede tocar al jugador a la altura del pecho
+## o pasandole por arriba, y las dos son el mismo golpe.
+const LEAP_CONTACT_HEIGHT: float = 2.0
+
 @export var health: HealthComponent
 @export var agent: NavigationAgent3D
 @export var mesh_instance: MeshInstance3D
@@ -83,6 +92,13 @@ var is_active: bool = false
 var move_target: Vector3 = Vector3.ZERO
 var is_moving: bool = false
 
+## How far into a wind-up this enemy is, 0 when it is not telegraphing anything.
+##
+## Kept as state rather than left inside the material because it has to travel:
+## the telegraph is the player's warning, and a client whose enemies never glow
+## is being asked to dodge something it cannot see coming.
+var windup_progress: float = 0.0
+
 var _player: Node3D
 var _material: StandardMaterial3D
 ## The rigged model currently attached, and the scene it came from. Kept between
@@ -101,6 +117,15 @@ var _gait: LeggedGait
 var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
+## En el aire por un salto de ataque - no por cruzar un link, que es otra cosa.
+var _is_leaping: bool = false
+## Adonde apunto el salto. Se fija al despegar y no se corrige: esquivar el salto
+## es moverse de ahi mientras el enemigo vuela.
+var _leap_target: Vector3 = Vector3.ZERO
+## Un salto pega una sola vez, por mas que roce al jugador varios frames.
+var _leap_hit_landed: bool = false
+## Quieto despues de aterrizar. Es la ventana que premia el esquive.
+var _leap_recovery_left: float = 0.0
 var _behavior_tree: Node
 var _slow_multiplier: float = 1.0
 ## Whoever the healer is currently helping, for the tether beam.
@@ -134,6 +159,12 @@ var _approach_lane: float = 0.0
 ## pedirle el grupo al arbol en cada frame de cada enemigo - que era mil arrays
 ## descartables por segundo en una oleada llena, y es el mismo motivo por el que
 ## los links estan cacheados.
+##
+## Es static, asi que sobrevive a la escena que la lleno: un enemigo que se va
+## sin pasar por el pool -queue_free, cambio de arena, ObjectPool.clear()- tiene
+## que sacarse solo, o la lista arrastra entradas muertas de run en run y cada
+## recalculo de separacion, para cada enemigo vivo, las vuelve a filtrar. De eso
+## se ocupa _exit_tree().
 static var _flock: Array[Enemy] = []
 ## Empujon acumulado de los vecinos, recalculado a intervalos.
 var _separation: Vector3 = Vector3.ZERO
@@ -167,6 +198,12 @@ func _ready() -> void:
 		head_hitbox.hit_taken.connect(_on_hit_taken)
 
 
+## Deja la lista de vivos: el que se va del arbol no vuelve por el pool, y una
+## lista static no se vacia sola entre escenas. Ver `_flock`.
+func _exit_tree() -> void:
+	_flock.erase(self)
+
+
 func _physics_process(delta: float) -> void:
 	if not is_active:
 		return
@@ -179,9 +216,11 @@ func _physics_process(delta: float) -> void:
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
 	_detour_time = maxf(_detour_time - delta, 0.0)
 	_separation_timer = maxf(_separation_timer - delta, 0.0)
+	_leap_recovery_left = maxf(_leap_recovery_left - delta, 0.0)
 	_blocked_link_time = maxf(_blocked_link_time - delta, 0.0)
 	if _blocked_link_time <= 0.0:
 		_blocked_link = null
+
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -197,7 +236,15 @@ func _physics_process(delta: float) -> void:
 		halo.rotate_y(delta * 0.8)
 	_update_tether()
 
-	if _is_traversing_link:
+	if _is_leaping:
+		# En el aire y comprometido. No se dirige y no se frena: que el salto sea
+		# esquivable depende de que no corrija a mitad de vuelo.
+		_tick_leap()
+	elif _leap_recovery_left > 0.0:
+		# Aterrizo y esta juntando las patas. Quieto a proposito.
+		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
+	elif _is_traversing_link:
 		# Mid-arc: steering would fight the ballistic solution and land it short.
 		_tick_link_traversal()
 	elif _stagger_timer > 0.0:
@@ -228,10 +275,21 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	velocity = Vector3.ZERO
 	is_moving = false
 	move_target = spawn_position
+	# Pooled: an enemy carries the previous occupant's half-finished
+	# telegraph otherwise.
+	windup_progress = 0.0
 	_stagger_timer = 0.0
 	_flash_timer = 0.0
-	_attack_cooldown_left = 0.0
+	# Desfase inicial, misma idea que el de separacion de abajo: una oleada
+	# aparece de golpe, y si todos arrancan con el cooldown en cero el primer
+	# ataque de cada arquetipo sale clavado en el mismo frame. El jitter de
+	# start_attack_cooldown() los separa recien despues del primer ataque; esto
+	# hace que ya el primero llegue escalonado.
+	_attack_cooldown_left = randf() * enemy_data.attack_cooldown if enemy_data != null else 0.0
 	_slow_multiplier = 1.0
+	_is_leaping = false
+	_leap_hit_landed = false
+	_leap_recovery_left = 0.0
 	_stuck_time = 0.0
 	_jump_cooldown_left = 0.0
 	_last_position = spawn_position
@@ -284,11 +342,26 @@ func _on_released() -> void:
 	_clear_behavior_tree()
 
 
+## Los enemigos en juego, sin pasar por el arbol.
+##
+## Es la lista que la separacion ya recorria; publica porque quien quiera
+## preguntar "quien esta cerca" tiene el mismo problema que tenia ella, y
+## get_nodes_in_group() arma un Array nuevo en cada llamada. Solo para leer: el
+## alta y la baja son de setup() y _on_released().
+static func get_active_enemies() -> Array[Enemy]:
+	return _flock
+
+
 # Public API - used by the AI leaves
 
+## The player this enemy is fighting. Re-targets only when the current one dies
+## or leaves, never on distance alone: the AI is aggro-locked by design (see
+## MovementComponent's note on why player speed is safe), and picking the
+## closest player every frame would make enemies flip between two teammates
+## running past each other instead of committing to one.
 func get_player() -> Node3D:
-	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group(&"player") as Node3D
+	if _player == null or not Players.is_alive(_player):
+		_player = Players.nearest(global_position)
 	return _player
 
 
@@ -376,8 +449,18 @@ func is_attack_ready() -> bool:
 	return _attack_cooldown_left <= 0.0
 
 
+## Cada espera sale un poco distinta, para que dos enemigos del mismo arquetipo no
+## queden atacando al unisono el resto de la ola.
+##
+## El jitter va centrado en el valor base, asi que a la larga el arquetipo ataca
+## igual de seguido que antes - lo unico que cambia es que las fases se separan
+## solas. Ver EnemyData.attack_cooldown_jitter.
 func start_attack_cooldown() -> void:
-	_attack_cooldown_left = data.attack_cooldown if data != null else 1.0
+	if data == null:
+		_attack_cooldown_left = 1.0
+		return
+	var jitter: float = clampf(data.attack_cooldown_jitter, 0.0, 0.9)
+	_attack_cooldown_left = data.attack_cooldown * randf_range(1.0 - jitter, 1.0 + jitter)
 
 
 func is_staggered() -> bool:
@@ -432,6 +515,90 @@ func deal_melee_damage() -> void:
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
+## Se tira encima del jugador. Devuelve false si desde aca no se puede.
+##
+## El arco se resuelve para caer donde esta el jugador AHORA y no se toca mas: el
+## enemigo se compromete al despegar. Eso es lo que hace que el salto se pueda
+## esquivar moviendose, y es la diferencia con el golpe de melee de antes, que
+## simplemente aparecia cuando el enemigo te habia alcanzado.
+func start_leap() -> bool:
+	if data == null or not data.can_leap or _is_leaping or not is_on_floor():
+		return false
+	var player: Node3D = get_player()
+	if player == null:
+		return false
+	var target: Vector3 = player.global_position
+	if global_position.distance_to(target) > data.leap_range:
+		return false
+	# Sin linea de vision no hay salto: si no, se estrella contra la pared que hay
+	# en el medio y el jugador ve al bicho tirarse a la nada.
+	if not _can_see(player):
+		return false
+
+	_leap_target = target
+	_is_leaping = true
+	_leap_hit_landed = false
+	is_moving = false
+	var time: float = maxf(data.leap_flight_time, 0.1)
+	var offset: Vector3 = target - global_position
+	velocity = Vector3(offset.x, 0.0, offset.z) / time
+	velocity.y = offset.y / time + 0.5 * GRAVITY * time
+	_begin_jump()
+	return true
+
+
+func is_leaping() -> bool:
+	return _is_leaping
+
+
+## True mientras esta tirado despues de un salto: ni ataca ni se mueve.
+func is_recovering() -> bool:
+	return _leap_recovery_left > 0.0
+
+
+## Un paso de salto: mirar si toco al jugador, y si ya aterrizo.
+func _tick_leap() -> void:
+	if not _leap_hit_landed:
+		_check_leap_contact()
+	# is_on_floor() con velocidad hacia abajo es el aterrizaje. La condicion de
+	# velocidad importa porque en el primer frame el enemigo todavia toca el piso
+	# del que acaba de despegar.
+	if is_on_floor() and velocity.y <= 0.0:
+		_end_leap()
+		return
+	# Se cayo del mapa o algo interrumpio el arco.
+	if global_position.y < _leap_target.y - 12.0:
+		_end_leap()
+
+
+## El daño del salto. Es contacto real, no alcance: si el jugador se corrio, el
+## enemigo pasa de largo y no pasa nada.
+func _check_leap_contact() -> void:
+	var player: Node3D = get_player()
+	if player == null:
+		return
+	var offset: Vector3 = player.global_position - global_position
+	# Horizontal: el jugador mide casi dos metros y el enemigo le pasa por
+	# encima o por el pecho segun el momento del arco, y las dos cosas son el
+	# mismo impacto. Comparar en 3D haria que rozarle la cabeza no cuente.
+	var horizontal: float = Vector2(offset.x, offset.z).length()
+	var reach: float = data.collision_radius + LEAP_CONTACT_RADIUS
+	if horizontal > reach or absf(offset.y) > LEAP_CONTACT_HEIGHT:
+		return
+	_leap_hit_landed = true
+	var player_health: HealthComponent = _find_health(player)
+	if player_health != null:
+		player_health.apply_damage(data.damage)
+	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+
+
+func _end_leap() -> void:
+	_is_leaping = false
+	velocity.x = 0.0
+	velocity.z = 0.0
+	_leap_recovery_left = maxf(data.leap_recovery, 0.0) if data != null else 0.0
+
+
 ## Clear line from this enemy's head to the target's chest.
 ##
 ## Note this is NOT perception - enemies still always know where the player is
@@ -454,8 +621,10 @@ func fire_projectile() -> void:
 	if typed == null:
 		push_error("Enemy: %s projectile_scene is not an EnemyProjectile" % data.id)
 		return
-	typed.launch(origin, (target - origin).normalized(), data.damage, data.projectile_speed, self)
+	var direction: Vector3 = (target - origin).normalized()
+	typed.launch(origin, direction, data.damage, data.projectile_speed, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+	# The shot itself is not in the snapshot - snapshots carry who is standing
 
 
 ## Heals every other living enemy inside `heal_radius`. Returns how many it helped,
@@ -481,10 +650,12 @@ func heal_nearby_allies() -> int:
 
 ## Plays the visual half of a wind-up telegraph.
 func show_windup(progress: float) -> void:
-	_set_glow(progress)
+	windup_progress = clampf(progress, 0.0, 1.0)
+	_set_glow(windup_progress)
 
 
 func clear_windup() -> void:
+	windup_progress = 0.0
 	if _flash_timer <= 0.0:
 		_set_glow(0.0)
 
@@ -1136,6 +1307,7 @@ func _on_died() -> void:
 	_clear_behavior_tree()
 	AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
+	EventBus.kill_credited.emit(data.reward_currency)
 	ObjectPool.release(self)
 
 

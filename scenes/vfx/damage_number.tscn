@@ -8,6 +8,5 @@ script = ExtResource("1_number")
 [node name="Label3D" type="Label3D" parent="."]
 billboard = 1
 font_size = 48
-outline_size = 8
-outline_modulate = Color(0, 0, 0, 0.6)
+outline_size = 0
 text = "0"

@@ -8,9 +8,15 @@ extends Control
 
 enum Shape { RECT, SKEWED }
 
+## Guarded for the same reason `filled` is: the HUD pushes the dash pip count in
+## from _process() every frame, and the number it pushes is the same one it
+## pushed last frame in all but a handful of them.
 @export var count: int = 10:
 	set(value):
-		count = maxi(value, 0)
+		var clamped: int = maxi(value, 0)
+		if clamped == count:
+			return
+		count = clamped
 		queue_redraw()
 
 ## Guarded rather than redrawing on every write: the HUD pushes `filled` and
@@ -89,9 +95,13 @@ func set_filled_with_ghost(value: int) -> void:
 
 
 func configure(new_count: int, new_filled: int) -> void:
+	var had_count: int = count
 	count = new_count
 	filled = new_filled
-	_update_min_size()
+	# Only the count moves the widget's footprint, and a minimum-size write is a
+	# re-layout request for the whole container it sits in.
+	if count != had_count:
+		_update_min_size()
 
 
 # Private

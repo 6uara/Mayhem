@@ -66,14 +66,20 @@ func _on_body_entered(body: Node3D) -> void:
 	var player := body as Player
 	if player == null or player.weapon_holder == null:
 		return
+	# Asked before taking it: walking over a box with full pouches must leave it
+	# standing there for when you actually need it.
+	if not player.weapon_holder.has_reserve_room():
+		return
+	_set_available(false)
+	_grant_to(player)
 
-	var taken: int = player.weapon_holder.add_reserve_ammo_fraction(reserve_fraction)
-	if taken <= 0:
-		return  # Already full: leave the pickup for when it is actually needed.
 
+func _grant_to(player: Player) -> void:
+	if player.weapon_holder == null:
+		return
+	player.weapon_holder.add_reserve_ammo_fraction(reserve_fraction)
 	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
 	collected.emit()
-	_set_available(false)
 
 
 func _set_available(available: bool) -> void:

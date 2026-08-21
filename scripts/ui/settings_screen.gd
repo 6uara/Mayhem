@@ -25,6 +25,7 @@ const SCHEMA: Array = [
 	{"key": "input/ads_sensitivity_multiplier", "label": "ADS sensitivity",
 		"type": "slider", "min": 0.1, "max": 2.0, "step": 0.01},
 	{"key": "input/invert_y", "label": "Invert vertical look", "type": "toggle"},
+	{"key": "input/gadget_quick_cast", "label": "Gadget quick cast", "type": "toggle"},
 
 	{"section": "VIDEO"},
 	{"key": "video/fov", "label": "Field of view",
@@ -70,12 +71,20 @@ const ROW_CONTROL_WIDTH: int = 260
 @onready var _back_button: Button = $Panel/Margin/Layout/Footer/BackButton
 @onready var _reset_button: Button = $Panel/Margin/Layout/Footer/ResetButton
 @onready var _reset_hints_button: Button = $Panel/Margin/Layout/Footer/ResetHintsButton
+@onready var _apply_button: Button = $Panel/Margin/Layout/Footer/ApplyButton
 
 ## key -> the control showing it, so a reset can refresh every row in place.
 var _controls: Dictionary = {}
 ## Built dynamically in _build_host_presenter_row() (data-driven, not SCHEMA),
 ## so it's a plain field rather than @onready - there is no fixed .tscn node.
 var _listen_button: Button
+## Los valores tal como estaban al abrir la pantalla. Es contra esto que se mide
+## si hay algo sin aplicar, y es a esto que vuelve Back.
+var _snapshot: Dictionary = {}
+## _refresh_all() escribe los controles, y escribir un CheckButton dispara su
+## `toggled` igual que si lo hubiera tocado el jugador. Sin esto, abrir la
+## pantalla se marcaba solo como "hay cambios sin aplicar".
+var _is_refreshing: bool = false
 
 
 func _ready() -> void:
@@ -85,6 +94,7 @@ func _ready() -> void:
 	_back_button.pressed.connect(close)
 	_reset_button.pressed.connect(_on_reset_pressed)
 	_reset_hints_button.pressed.connect(_on_reset_hints_pressed)
+	_apply_button.pressed.connect(_on_apply_pressed)
 
 
 ## `_input` rather than `_unhandled_input`: this has to beat GameManager to the
@@ -100,14 +110,25 @@ func _input(event: InputEvent) -> void:
 # Public API
 
 func open() -> void:
+	_snapshot = _current_values()
 	_refresh_all()
+	_refresh_apply_state()
 	visible = true
 	_back_button.grab_focus()
 
 
+## Back descarta lo que no se aplico y deja las cosas como estaban al abrir.
+##
+## Es lo que le da sentido al boton de Apply: si Back guardara igual, el boton
+## seria un adorno y no habria forma de arrepentirse de haber movido un slider.
+## Los cambios se siguen escuchando y viendo en vivo mientras la pantalla esta
+## abierta - una sensibilidad no se puede juzgar desde su numero - pero probar no
+## es lo mismo que confirmar, y esta es la unica salida que separa las dos.
 func close() -> void:
 	if not visible:
 		return
+	if _is_dirty():
+		_restore(_snapshot)
 	visible = false
 	SettingsManager.save_settings()
 	closed.emit()
@@ -158,7 +179,10 @@ func _build_host_presenter_row() -> void:
 	option.item_selected.connect(func(index: int) -> void:
 		NarratorManager.set_presenter(presenters[index].id)
 		SettingsManager.set_value("audio/host_presenter", String(presenters[index].id))
-		_listen_button.disabled = presenters[index].preview_line_id == &"")
+		_listen_button.disabled = presenters[index].preview_line_id == &""
+		# Esta fila no pasa por _commit -tiene que avisarle tambien a
+		# NarratorManager-, asi que marca el cambio por su cuenta.
+		_refresh_apply_state())
 	controls.add_child(option)
 
 	_listen_button = Button.new()
@@ -298,11 +322,72 @@ func _make_color(entry: Dictionary) -> Control:
 ## or a volume is that it cannot be judged from its number, and the tree is paused
 ## while this is open, so re-applying costs nothing worth saving.
 func _commit(key: String, value: Variant) -> void:
+	if _is_refreshing:
+		return
 	SettingsManager.set_value(key, value)
 	SettingsManager.apply_all()
+	_refresh_apply_state()
+
+
+## Cada valor que la pantalla puede tocar, para poder comparar contra el estado
+## de apertura. Sale de DEFAULTS y no de SCHEMA porque la fila del presenter se
+## construye aparte y su clave no esta en el schema.
+func _current_values() -> Dictionary:
+	var values: Dictionary = {}
+	for key: String in SettingsManager.DEFAULTS:
+		values[key] = SettingsManager.get_value(key)
+	return values
+
+
+func _is_dirty() -> bool:
+	var now: Dictionary = _current_values()
+	for key: String in _snapshot:
+		if now.get(key) != _snapshot[key]:
+			return true
+	return false
+
+
+func _refresh_apply_state() -> void:
+	if _apply_button != null:
+		_apply_button.disabled = not _is_dirty()
+
+
+func _restore(values: Dictionary) -> void:
+	for key: String in values:
+		SettingsManager.set_value(key, values[key])
+	SettingsManager.apply_all()
+	# El presenter no se aplica por SettingsManager: NarratorManager tiene su
+	# propio estado, y revertir la clave sin avisarle dejaba la pantalla diciendo
+	# una cosa y el juego hablando con otra voz.
+	var presenter: String = String(values.get("audio/host_presenter", ""))
+	if not presenter.is_empty():
+		NarratorManager.set_presenter(StringName(presenter))
+	_refresh_all()
+	_refresh_apply_state()
+
+
+func _on_apply_pressed() -> void:
+	SettingsManager.save_settings()
+	_snapshot = _current_values()
+	_refresh_apply_state()
+	_flash(_apply_button, "Applied")
+
+
+## Confirmacion breve en el propio boton, igual que la de "Reset tutorial hints":
+## el cambio ya se ve y se escucha, lo unico que falta decir es que quedo guardado.
+func _flash(button: Button, message: String) -> void:
+	var original: String = button.text
+	button.text = message
+	button.disabled = true
+	var tween: Tween = create_tween()
+	tween.tween_interval(1.0)
+	tween.tween_callback(func() -> void:
+		button.text = original
+		_refresh_apply_state())
 
 
 func _refresh_all() -> void:
+	_is_refreshing = true
 	for entry: Dictionary in SCHEMA:
 		if entry.has("section"):
 			continue
@@ -326,11 +411,13 @@ func _refresh_all() -> void:
 			slider.set_value_no_signal(float(value))
 			var write: Callable = control.get_meta(&"write")
 			write.call(float(value))
+	_is_refreshing = false
 
 
 func _on_reset_pressed() -> void:
 	SettingsManager.reset_to_defaults()
 	_refresh_all()
+	_refresh_apply_state()
 
 
 ## Not a setting - lets a playtester (or the dev, mid-session) see every

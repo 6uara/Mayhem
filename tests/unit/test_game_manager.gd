@@ -107,3 +107,42 @@ func test_player_dying_twice_is_harmless() -> void:
 	EventBus.player_died.emit()
 	assert_signal_not_emitted(EventBus, "game_state_changed",
 		"already in GAME_OVER - a second death must not re-fire the transition")
+
+
+# ------------------------------------------------- el cambio de escena
+
+## change_scene_to_file() encola el reemplazo y lo aplica al final del frame, no
+## en el momento. Fadear de vuelta antes de eso mostraba la escena vieja: al
+## apretar Play se veia el menu abrirse de nuevo y recien despues la partida.
+func test_the_swap_wait_returns_once_the_scene_is_another_one() -> void:
+	# Corriendo tests no hay escena actual, asi que se pone una: la espera mira
+	# justamente eso, y con null tiene que seguir esperando (es el hueco entre
+	# que se descarta la vieja y aparece la nueva).
+	var previous := Node.new()
+	add_child_autofree(previous)
+	# Colgado de la raiz y no del test: current_scene solo acepta un nodo cuyo
+	# padre sea la raiz del arbol, y asignarle cualquier otro no hace nada.
+	var arrived := Node.new()
+	get_tree().root.add_child(arrived)
+	var original: Node = get_tree().current_scene
+	get_tree().current_scene = arrived
+
+	var started: int = Time.get_ticks_msec()
+	await GameManager._await_scene_swap(previous, 2.0)
+	var elapsed: int = Time.get_ticks_msec() - started
+
+	get_tree().current_scene = original
+	arrived.queue_free()
+	assert_lt(elapsed, 500, "con la escena nueva ya puesta, no espera nada")
+
+
+## Y si la escena nueva nunca llega, se rinde: mejor mostrar lo que haya que
+## dejar al jugador mirando una pantalla negra para siempre.
+func test_the_swap_wait_gives_up_instead_of_hanging() -> void:
+	# Sin escena puesta la espera nunca se satisface, que es justo el caso que
+	# el tope tiene que cortar.
+	var started: int = Time.get_ticks_msec()
+	await GameManager._await_scene_swap(get_tree().current_scene, 0.2)
+	var elapsed: int = Time.get_ticks_msec() - started
+	assert_gt(elapsed, 100, "espero de verdad")
+	assert_lt(elapsed, 2000, "pero no para siempre")

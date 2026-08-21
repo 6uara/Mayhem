@@ -51,11 +51,43 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 ## Wind-up before the attack lands. Telegraphing is mandatory (CLAUDE.md 5.3) and
 ## this is the timing half of it - scale it with damage.
 @export var attack_windup: float = 0.6
+## Cuanto se corre al azar cada cooldown, como fraccion. 0.35 = entre el 65% y el
+## 135% del valor base.
+##
+## Existe porque tres enemigos iguales que aparecen juntos comparten periodo, y
+## sin esto sus ataques quedan pegados para siempre: los tres rangers disparan en
+## la misma decima, el jugador come tres proyectiles o ninguno, y ninguna de las
+## dos cosas se puede jugar. Con el jitter las fases se separan solas y no se
+## vuelven a juntar.
+##
+## Va centrado en 1.0 a proposito - un rango tipo [1.0, 2.0] tambien desincroniza,
+## pero de paso baja el DPS del arquetipo a la mitad, y desincronizar no deberia
+## costar dificultad. Ver tambien el desfase inicial en Enemy.setup().
+@export_range(0.0, 0.9, 0.05) var attack_cooldown_jitter: float = 0.35
 ## Ranged archetypes only.
 @export var projectile_scene: PackedScene
 @export var projectile_speed: float = 30.0
 ## Distance the archetype tries to hold. 0 = close to attack_range and stay.
 @export var preferred_distance: float = 0.0
+
+@export_subgroup("Leap")
+## El melee se tira encima del jugador en vez de golpear parado.
+##
+## Cambia a que se parece el cuerpo a cuerpo: en vez de un golpe que aparece
+## cuando el enemigo ya te alcanzo, es un compromiso que se lee y se esquiva. El
+## enemigo apunta a donde estas al despegar y no corrige en el aire, asi que
+## moverse durante el vuelo es lo que lo hace fallar.
+@export var can_leap: bool = false
+## Desde cuan lejos se anima a saltar. El arco se resuelve para llegar exacto, asi
+## que esto es alcance de verdad y no una sugerencia.
+@export var leap_range: float = 7.0
+## Cuanto dura el vuelo. Es la ventana que tiene el jugador para salirse.
+@export var leap_flight_time: float = 0.5
+## Quieto y vulnerable despues de aterrizar.
+##
+## Es el premio por esquivar: sin esto el salto le sale gratis al enemigo y
+## leer la telegrafia no paga nada.
+@export var leap_recovery: float = 0.5
 
 @export_group("Support")
 ## Healer: health restored per pulse. `attack_cooldown` gates how often it pulses.

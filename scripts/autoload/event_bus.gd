@@ -7,6 +7,16 @@ signal damage_dealt(target: Node, amount: float, is_headshot: bool)
 signal enemy_killed(enemy_type: StringName, position: Vector3, reward: int)
 signal player_damaged(amount: float, remaining: float)
 signal player_died()
+## A kill this machine's player is being paid for.
+##
+## Split off from enemy_killed because the two answer different questions once
+## there is more than one player. enemy_killed means "an enemy died" and drives
+## everything that reacts to that - the wave count, the announcer, kill feel.
+## This one means "and you get the money", which is true on exactly one machine
+## per kill: the host resolves every death, but the bounty follows whoever was
+## shooting. Paying off enemy_killed instead handed the host the whole arena's
+## income and left the clients broke in front of the shop.
+signal kill_credited(reward: int)
 
 # Weapons
 signal weapon_fired(weapon_id: StringName)
@@ -39,6 +49,12 @@ signal game_state_changed(new_state: int)
 ## Pause is not a game state - it can interrupt any of them and leaves the run
 ## intact - so it rides its own signal rather than widening the state enum.
 signal game_paused(is_paused: bool)
+
+# Player lifecycle
+## The player entered the arena. Everything that binds to "the player" waits on
+## this rather than looking it up at _ready(): the body is spawned by
+## PlayerSpawnController, a frame or two after the scene itself is up.
+signal local_player_spawned(player: Node3D)
 
 # Settings
 signal settings_applied()

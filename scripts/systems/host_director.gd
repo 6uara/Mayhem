@@ -7,6 +7,10 @@ extends Node
 ## lines in the game were string literals inside MatchDirector, which is a system
 ## about wave sequencing: adding a third would have meant editing match flow to
 ## write a joke.
+##
+## Every line is spoken locally: there is one player and one Host, and the
+## pacing rules in NarratorManager are what keep them from talking over
+## themselves.
 
 ## Kills inside this window that count as a run worth remarking on.
 @export var streak_kills: int = 4
@@ -30,6 +34,8 @@ func _ready() -> void:
 # Private
 
 func _on_wave_started(wave_index: int, config: WaveData) -> void:
+	# Every peer resets its own bookkeeping - a client that never speaks still
+	# has to forget last wave's low-health warning.
 	_kill_times.clear()
 	_first_blood_done = false
 	_low_health_announced = false
@@ -74,7 +80,7 @@ func _on_enemy_killed() -> void:
 func _on_player_damaged(remaining: float) -> void:
 	if _low_health_announced:
 		return
-	var player: Node = get_tree().get_first_node_in_group(&"player")
+	var player: Node = Players.local()
 	if player == null:
 		return
 	var health: HealthComponent = (player as Player).health if player is Player else null

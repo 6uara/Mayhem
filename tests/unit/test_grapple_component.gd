@@ -61,3 +61,90 @@ func test_departure_still_releases_once_the_grace_window_has_passed() -> void:
 func test_should_release_is_true_when_not_grappling() -> void:
 	_grapple.is_grappling = false
 	assert_true(_grapple.should_release())
+
+
+
+# ------------------------------------------------- encadenar en el aire
+
+## `is_on_floor()` de verdad solo dice true despues de un move_and_slide contra
+## una superficie, y un test unitario no tiene ninguna. Pisar el metodo nativo en
+## un CharacterBody3D falso tampoco sirve: Godot lo rechaza, y una llamada tipada
+## iria igual al metodo nativo. Por eso el componente pregunta por el piso a
+## traves de su propio `_is_airborne()`, que es el punto que esto reemplaza.
+class GroundedGrapple:
+	extends GrappleComponent
+
+	var airborne: bool = true
+
+	func _is_airborne() -> bool:
+		return airborne
+
+
+func _chainable_grapple() -> GroundedGrapple:
+	var grapple := GroundedGrapple.new()
+	grapple.body = _body
+	grapple.cooldown = 5.0
+	grapple.ground_grace = 2.0
+	add_child_autofree(grapple)
+	return grapple
+
+
+## El pedido del playtest: soltarse en el aire y volver a engancharse enseguida.
+func test_releasing_in_the_air_leaves_the_grapple_ready_to_chain() -> void:
+	var grapple: GroundedGrapple = _chainable_grapple()
+	await wait_frames(1)
+
+	grapple.airborne = true
+	grapple.is_grappling = true
+	grapple.release()
+
+	assert_false(grapple.is_grappling, "solto")
+	assert_eq(grapple._cooldown_left, 0.0, "encadenar en el aire no cobra cooldown")
+
+
+## La otra mitad de la regla: el cooldown no desaparece, se difiere.
+func test_two_seconds_on_the_ground_finally_charge_the_cooldown() -> void:
+	var grapple: GroundedGrapple = _chainable_grapple()
+	await wait_frames(1)
+
+	grapple.airborne = true
+	grapple.is_grappling = true
+	grapple.release()
+
+	grapple.airborne = false
+	grapple._tick_chain_debt(2.1)
+
+	assert_gt(grapple._cooldown_left, 0.0, "quedarse en el piso cobra lo que se debia")
+
+
+## Tocar y salir no paga nada - es lo que mantiene vivo un recorrido que pasa
+## rozando una plataforma.
+func test_touching_down_briefly_does_not_charge_the_cooldown() -> void:
+	var grapple: GroundedGrapple = _chainable_grapple()
+	await wait_frames(1)
+
+	grapple.airborne = true
+	grapple.is_grappling = true
+	grapple.release()
+
+	grapple.airborne = false
+	grapple._tick_chain_debt(1.0)
+	grapple.airborne = true
+	grapple._tick_chain_debt(0.1)
+	grapple.airborne = false
+	grapple._tick_chain_debt(1.5)
+
+	assert_eq(grapple._cooldown_left, 0.0,
+		"el contador de piso se reinicia al despegar, no se acumula")
+
+
+## Soltarse ya parado en el piso es el caso viejo y no cambia.
+func test_releasing_on_the_ground_charges_the_cooldown_immediately() -> void:
+	var grapple: GroundedGrapple = _chainable_grapple()
+	await wait_frames(1)
+
+	grapple.airborne = false
+	grapple.is_grappling = true
+	grapple.release()
+
+	assert_gt(grapple._cooldown_left, 0.0, "sin vuelo no hay encadenado que premiar")
