@@ -25,3 +25,7 @@ Thumbs.db
 ## godotTools.editorPath is an absolute path to whichever Godot build that
 ## particular machine has installed, so this is per-user by nature.
 .vscode/
+
+## Backup que Blender escribe solo al guardar, al lado del .blend. Se regenera
+## en cada guardado y versionarlo duplica el peso del asset sin agregar nada.
+*.blend1

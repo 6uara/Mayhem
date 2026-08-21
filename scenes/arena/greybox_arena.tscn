@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_pad"]
 [ext_resource type="PackedScene" path="res://scenes/arena/spawn_door.tscn" id="3_door"]
 [ext_resource type="Script" uid="uid://dg7yh07a2eohc" path="res://scripts/systems/arena_navigation.gd" id="4_nav"]
-[ext_resource type="NavigationMesh" uid="uid://bbd8u1bap6a0" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
+[ext_resource type="NavigationMesh" uid="uid://betx41acwkcnk" path="res://scenes/arena/greybox_arena_navmesh.tres" id="5_navmesh"]
 [ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="6_ammo"]
 [ext_resource type="PackedScene" uid="uid://nhxdwxrtbidm" path="res://scenes/arena/hazard_zone.tscn" id="7_hazard"]
 [ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="8_vanish"]
@@ -14,24 +14,18 @@
 [ext_resource type="Shader" uid="uid://c42rrpioq1j2y" path="res://assets/shaders/arena_glitch_panel.gdshader" id="14_glitch"]
 [ext_resource type="Shader" uid="uid://dddq5ttb4c1vq" path="res://assets/shaders/hologram_wall.gdshader" id="15_holo"]
 [ext_resource type="Texture2D" uid="uid://cm3erd5wp2jjq" path="res://assets/textures/Noise128x128/Techno/Techno_03-128x128.png" id="16_holonoise"]
+[ext_resource type="PackedScene" uid="uid://di201w21e5d2v" path="res://scenes/arena/arenastands.tscn" id="16_ie8lt"]
 
 [sub_resource type="Environment" id="Env_arena"]
 background_mode = 1
-background_color = Color(0.09, 0.1, 0.13, 1)
+background_color = Color(0.117091246, 0.23474121, 0.3964596, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.5, 0.55, 0.65, 1)
 ambient_light_energy = 0.6
 tonemap_mode = 2
 glow_enabled = true
 glow_intensity = 0.9
-glow_strength = 1.0
-glow_bloom = 0.0
 glow_hdr_threshold = 1.05
-glow_hdr_scale = 2.0
-
-[sub_resource type="StandardMaterial3D" id="Mat_floor"]
-albedo_color = Color(0.32, 0.33, 0.36, 1)
-roughness = 0.85
 
 [sub_resource type="ShaderMaterial" id="Mat_wall"]
 render_priority = 0
@@ -101,41 +95,6 @@ transform = Transform3D(0.86, -0.35, 0.37, 0, 0.72, 0.69, -0.51, -0.6, 0.62, 0, 
 light_energy = 1.1
 shadow_enabled = true
 
-[node name="Floor" type="CSGBox3D" parent="." unique_id=1763754559 groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-use_collision = true
-collision_mask = 0
-size = Vector3(70, 1, 70)
-material = SubResource("Mat_floor")
-
-[node name="WallNorth" type="CSGBox3D" parent="." unique_id=909491122 groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -35)
-use_collision = true
-collision_mask = 0
-size = Vector3(70, 12, 1)
-material = SubResource("Mat_wall")
-
-[node name="WallSouth" type="CSGBox3D" parent="." unique_id=85424110 groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 35)
-use_collision = true
-collision_mask = 0
-size = Vector3(70, 12, 1)
-material = SubResource("Mat_wall")
-
-[node name="WallEast" type="CSGBox3D" parent="." unique_id=131456754 groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 6, 0)
-use_collision = true
-collision_mask = 0
-size = Vector3(1, 12, 70)
-material = SubResource("Mat_wall")
-
-[node name="WallWest" type="CSGBox3D" parent="." unique_id=784012259 groups=["navigation_source"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 6, 0)
-use_collision = true
-collision_mask = 0
-size = Vector3(1, 12, 70)
-material = SubResource("Mat_wall")
-
 [node name="PatternWall" type="CSGBox3D" parent="." unique_id=2026334196 groups=["navigation_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 4, 30)
 use_collision = true
@@ -203,30 +162,30 @@ script = ExtResource("4_nav")
 [node name="SpawnDoors" type="Node3D" parent="." unique_id=809450170]
 
 [node name="Door01" parent="SpawnDoors" unique_id=1001855610 instance=ExtResource("3_door")]
-transform = Transform3D(0.7074, 0, -0.7068, 0, 1, 0, 0.7068, 0, 0.7074, -30, 0, -30)
+transform = Transform3D(-0.102488, 0, 0.994725, 0, 1, 0, -0.994725, 0, -0.102488, -43.5655, 0, 3.27438)
 
 [node name="Door02" parent="SpawnDoors" unique_id=2119835574 instance=ExtResource("3_door")]
-transform = Transform3D(0.7074, 0, 0.7068, 0, 1, 0, -0.7068, 0, 0.7074, 30, 0, -30)
+transform = Transform3D(0.98647, 0, -0.163884, 0, 1, 0, 0.163884, 0, 0.98647, 16.1845, 0, -52.0969)
 door_id = &"door_02"
 
 [node name="Door03" parent="SpawnDoors" unique_id=1761624449 instance=ExtResource("3_door")]
-transform = Transform3D(-0.707, 0, -0.7072, 0, 1, 0, 0.7072, 0, -0.707, -30, 0, 30)
+transform = Transform3D(-0.999696, 0, 0.0242745, 0, 1, 0, -0.0242745, 0, -0.999696, 3.54151, 0, 52.318)
 door_id = &"door_03"
 
 [node name="Door04" parent="SpawnDoors" unique_id=410740972 instance=ExtResource("3_door")]
-transform = Transform3D(-0.707, 0, 0.7072, 0, 1, 0, -0.7072, 0, -0.707, 30, 0, 30)
+transform = Transform3D(-0.153257, 0, -0.988177, 0, 1, 0, 0.988177, 0, -0.153257, 61.1061, 0, 6.6685)
 door_id = &"door_04"
 
 [node name="Door05" parent="SpawnDoors" unique_id=283957854 instance=ExtResource("3_door")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -33)
+transform = Transform3D(0.993793, 0, 0.111248, 0, 1, 0, -0.111248, 0, 0.993793, 3.8659, 0, -52.3554)
 door_id = &"door_05"
 
 [node name="Door06" parent="SpawnDoors" unique_id=2147149839 instance=ExtResource("3_door")]
-transform = Transform3D(-0.0002, 0, -1, 0, 1, 0, 1, 0, -0.0002, -24, 3.4, -16)
+transform = Transform3D(0.109332, 0, 0.994005, 0, 1, 0, -0.994005, 0, 0.109332, -43.3674, 0, -5.62298)
 door_id = &"door_06"
 
 [node name="Door07" parent="SpawnDoors" unique_id=2052969368 instance=ExtResource("3_door")]
-transform = Transform3D(-0.0002, 0, 1, 0, 1, 0, -1, 0, -0.0002, 24, 3.4, 14)
+transform = Transform3D(0.0002, 0, -1, 0, 1, 0, 1, 0, 0.0002, 60.6104, 0, -9.64766)
 door_id = &"door_07"
 
 [node name="AmmoPickups" type="Node3D" parent="." unique_id=1171072071]
@@ -381,3 +340,33 @@ mesh = ExtResource("13_container")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Container2" unique_id=793760517]
 shape = SubResource("Shape_container")
+
+[node name="Arena" parent="." unique_id=105377587 instance=ExtResource("16_ie8lt")]
+transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4, 9.440987, 0, -1.1451492)
+
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="." unique_id=297706754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.848101, -1, 0)
+visible = false
+operation = 2
+use_collision = true
+
+[node name="Floor3" type="CSGCylinder3D" parent="CSGCombiner3D" unique_id=651311307 groups=["navigation_source"]]
+transform = Transform3D(1.0632267, 0, 0, 0, 10.242976, 0, 0, 0, 1.0858625, 0, 0, 0)
+use_collision = true
+collision_mask = 0
+radius = 62.316406
+sides = 18
+
+[node name="Floor2" type="CSGCylinder3D" parent="CSGCombiner3D" unique_id=569188644 groups=["navigation_source"]]
+transform = Transform3D(0.8951629, 0, 0, 0, 11.457383, 0, 0, 0, 0.8992062, -1.1774082, 0, 0.19026756)
+operation = 2
+use_collision = true
+collision_mask = 0
+radius = 62.316406
+sides = 20
+
+[node name="Floor" type="CSGCylinder3D" parent="." unique_id=1451961995 groups=["navigation_source"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.848101, -1, 0)
+use_collision = true
+collision_mask = 0
+radius = 62.316406
