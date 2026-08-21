@@ -163,6 +163,11 @@ func test_nothing_can_path_past_the_invisible_wall() -> void:
 	var wall: Node3D = arena.get_node_or_null("InvisibleWall")
 	var region := arena.get_node("Navigation") as NavigationRegion3D
 	var map: RID = region.get_navigation_map()
+	# El mapa se sincroniza en su propio momento, no cuando pasan N frames de
+	# fisica. Sin forzarlo, query_path() a veces contesta con una ruta vacia y el
+	# test falla en rojo sin que nada este mal - se lo vio pasar una vez en una
+	# corrida completa y pasar bien en las tres siguientes.
+	NavigationServer3D.map_force_update(map)
 	var centre := Vector2(wall.global_position.x, wall.global_position.z)
 	# Medida y no leida: la pared es un tubo eliptico, asi que "el radio" depende
 	# del rumbo. Se mide el que se va a usar.

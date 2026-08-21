@@ -1,16 +1,32 @@
 class_name ThrownUtility
 extends Node3D
-## Base for the three thrown utilities. Handles the arc, the landing and the pooled
+## Base for anything thrown on an arc. Handles the arc, the landing and the pooled
 ## lifetime; subclasses implement what happens when it goes off.
 ##
 ## Stepped like projectiles rather than simulated as a RigidBody3D - same reasoning
 ## (CLAUDE.md 5.1) and it keeps the throw predictable enough to aim.
+##
+## Started as "base for the three thrown utilities" and stayed that way until the
+## Environmental archetype needed to lob a flask, which is the same object with a
+## different payload. Two things had to open up for that, both of them cases where
+## the player's version was one special case being treated as the only one:
+## `launch_with_velocity()` (a fixed force along a direction is one way to get a
+## velocity, not the only one - an enemy solves a ballistic arc to a target
+## instead) and `hit_mask` (see below).
 
 const GRAVITY: float = 18.0
 ## Safety net so a utility thrown off the map still returns to the pool.
 const MAX_FLIGHT_TIME: float = 6.0
 
 @export var data: UtilityData
+## What the arc lands on.
+##
+## The player's utilities stop on enemies on purpose: a stun grenade that sails
+## through the crowd it was aimed at is a wasted charge. An enemy's flask has the
+## opposite need - it is lobbed *over* the horde at the player, and stopping on
+## the first ally turns area denial into a puddle at its own feet. So the payload
+## picks, instead of the base class assuming.
+@export_flags_3d_physics var hit_mask: int = PhysicsLayers.WORLD | PhysicsLayers.ENEMY
 @export var bounce_damping: float = 0.35
 ## Seconds between landing and going off. 0 detonates on contact.
 @export var fuse_time: float = 0.0
@@ -42,8 +58,7 @@ func _physics_process(delta: float) -> void:
 	_velocity.y -= GRAVITY * delta
 	var from: Vector3 = global_position
 	var to: Vector3 = from + _velocity * delta
-	var query := PhysicsRayQueryParameters3D.create(from, to,
-		PhysicsLayers.WORLD | PhysicsLayers.ENEMY)
+	var query := PhysicsRayQueryParameters3D.create(from, to, hit_mask)
 	if _thrower != null and _thrower is CollisionObject3D:
 		query.exclude = [(_thrower as CollisionObject3D).get_rid()]
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
@@ -61,15 +76,30 @@ func _physics_process(delta: float) -> void:
 
 # Public API
 
+## Throw along `direction` at the utility's own force. The player's throw.
 func launch(from: Vector3, direction: Vector3, thrower: Node) -> void:
+	launch_with_velocity(from, direction * (data.throw_force if data != null else 14.0),
+		thrower)
+
+
+## Throw with a velocity the caller worked out. Anything that has to *arrive*
+## somewhere - an enemy solving the arc to where the player is standing - has a
+## velocity, not a direction and a force.
+func launch_with_velocity(from: Vector3, velocity: Vector3, thrower: Node) -> void:
 	global_position = from
 	_thrower = thrower
-	_velocity = direction * (data.throw_force if data != null else 14.0)
+	_velocity = velocity
 	_flight_time = 0.0
 	_fuse_left = fuse_time
 	_has_landed = false
 	_is_active = true
 	visible = true
+
+
+## La gravedad con la que este objeto vuela, para que quien resuelva un arco hacia
+## el use el mismo numero. Con otro, el frasco cae corto o largo y nada lo dice.
+static func get_gravity() -> float:
+	return GRAVITY
 
 
 func _on_acquired() -> void:

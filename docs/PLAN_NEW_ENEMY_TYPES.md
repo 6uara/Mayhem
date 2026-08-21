@@ -9,8 +9,8 @@ futuro, igual que `feat/coop-p2p`: se deja planteada y documentada para que el
 trabajo esté listo para arrancar cuando haya tiempo, sin presionar el alcance de
 la entrega.
 
-Estado: **el Bomber está construido** (§3, paso 1 de §6). El resto sigue siendo
-plan.
+Estado: **el Bomber y el Environmental están construidos** (pasos 1 y 2 de §6).
+El resto sigue siendo plan.
 
 Base: `develop` @ `7722071`. Todo lo marcado "medido" fue verificado leyendo el
 código contra ese commit, no asumido.
@@ -179,7 +179,34 @@ Ranger.
 **Test necesario:** que mantenga altura sobre terreno irregular sin hundirse en
 una rampa ni clavarse en el techo.
 
-### 4.2 Environmental
+### 4.2 Environmental — **frasco de hazard construido**
+
+El frasco de hazard está hecho (paso 2 de §6). El de atrapado **no**, y sigue
+siendo el paso 8: último a propósito. Detalle en
+[05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The flask; tests en
+`tests/integration/test_environmental.gd`.
+
+El plan decía "trabajo casi nulo" y era cierto, pero por un motivo que no estaba
+escrito: no fue que el charco ya existiera, fue que **el objeto que vuela también
+existía**. `ThrownUtility` —la base de las tres utilidades del jugador— ya
+resolvía el arco, el aterrizaje y el pool, y un frasco enemigo es literalmente el
+mismo objeto con otra carga. Se le abrieron dos cosas, las dos casos en que la
+versión del jugador era un caso particular tratado como el único:
+`launch_with_velocity()` (una fuerza fija en una dirección es *una* forma de
+conseguir una velocidad, no la única) y `hit_mask` (las utilidades del jugador
+frenan contra enemigos a propósito; el frasco tiene que pasarles por encima).
+
+El resto fue reusar `HazardZone` sin tocarlo, igual que el slam del Elite. Eso es
+lo que hace que un arquetipo nuevo no pueda romper la telegrafía sin querer: el
+aviso de 0.6s y el decal al radio exacto vienen incluidos.
+
+**Decisión de diseño que salió al construirlo:** el Environmental no apunta al
+jugador, apunta al piso bajo sus pies, y **errar es su modo normal de
+funcionar**. Lo que hace es sacarte de donde estás parado. Un Environmental que
+acierta y uno que erra por poco te obligan a moverte igual, y ahí está toda la
+diferencia con el Ranger — si apuntara a pegar, sería un Ranger lento.
+
+### 4.2.1 El plan original
 
 Tira frascos en parábola (reusando el solver balístico) que al aterrizar dejan
 una zona. Dos tipos:
@@ -359,7 +386,8 @@ El orden importa porque los bloqueos se comparten.
 1. ~~**Bomber** (M)~~ — **hecho.** Confirmó lo que se quería confirmar: agregar un
    arquetipo hoy es barato. Lo caro no fue el enemigo sino su telegrafía, que es
    más o menos la moraleja del proyecto entero.
-2. **Environmental, sólo frasco de hazard** (S) — `HazardZone` ya está entera.
+2. ~~**Environmental, sólo frasco de hazard** (S)~~ — **hecho.** Salió más barato
+   que el Bomber: `HazardZone` estaba entera y `ThrownUtility` también.
 3. **Atribución de muertes** (M) — §2.4. Es independiente de los Gladiadores y
    mejora el juego solo: que la moneda venga de lo que hacés es correcto igual.
 4. **Prioridad de voces en `AudioPool`** (M) — pendiente previo y precondición
@@ -394,9 +422,16 @@ Tomadas (no re-discutir sin motivo nuevo):
   construir).
 - La explosión es un nodo propio y no un `HazardZone` (§3.1).
 
+- El Environmental apunta al piso y no al jugador; errar es su modo normal (§4.2).
+- El frasco de hazard reusa `ThrownUtility` y `HazardZone` sin escribir ni el
+  arco ni el área (§4.2).
+
 Abiertas:
 
 - Tuning del Bomber: espoleta, radio, daño y velocidad están sin jugar (§3.1).
+- Tuning del Environmental: cadencia de 4.5s, arco de 1.1s, charco de 3.2m por
+  5s. Tampoco jugado. El riesgo concreto es que tres Environmentals a la vez
+  pavimenten el arena y el jugador se quede sin piso.
 - Tasa exacta de regeneración de los Gladiadores (§5.1) — puede forzar el cambio
   a curación completa entre olas.
 - Peso exacto del net worth contra la distancia en la fórmula de §5.3.

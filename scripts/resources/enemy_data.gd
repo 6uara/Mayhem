@@ -4,7 +4,7 @@ extends Resource
 ## archetype; this resource is what makes a Rusher a Rusher - silhouette, audio,
 ## stats and behavior tree all come from here.
 
-enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER }
+enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL }
 
 @export var id: StringName = &""
 @export var display_name: String = ""

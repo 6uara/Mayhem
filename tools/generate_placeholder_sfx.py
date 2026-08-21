@@ -376,6 +376,20 @@ def explosion(rng: random.Random) -> list[float]:
     )
 
 
+def flask_throw(rng: random.Random) -> list[float]:
+    """Glass leaving a hand: a wet swish with a hollow ring under it.
+
+    The Environmental's arc is its telegraph, so the sound has to fire at the
+    throw and not at the landing - by the time the flask hits, the player should
+    already be moving.
+    """
+    return _mix(
+        (_lowpass(_noise(ms(150), 0.02, 0.24, 0.55, rng), 2200.0), 0),
+        (_tone(ms(260), 430.0, 0.004, 0.32, 0.45, sweep=0.7), 0),
+        (_tone(ms(180), 880.0, 0.002, 0.2, 0.22, sweep=0.8), ms(30)),
+    )
+
+
 def wall_deploy(rng: random.Random) -> list[float]:
     return _mix(
         (_tone(ms(320), 150.0, 0.005, 0.4, 0.7, sweep=2.0), 0),
@@ -505,6 +519,16 @@ def main() -> None:
         _write("enemies/bomber_%s.wav" % kind, maker(bomber_rng, 1.7))
     _write("enemies/bomber_fuse.wav", fuse_arm())
     _write("world/explosion.wav", explosion(bomber_rng))
+    # Igual que el Bomber, con semilla propia y por el mismo motivo.
+    env_rng = random.Random(20260822)
+    for kind, maker in (
+        ("spawn", enemy_spawn),
+        ("windup", enemy_windup),
+        ("death", enemy_death),
+    ):
+        _write("enemies/environmental_%s.wav" % kind, maker(env_rng, 0.72))
+    # Su "ataque" es el lanzamiento, asi que no lleva el golpe generico.
+    _write("enemies/environmental_attack.wav", flask_throw(env_rng))
     _write("world/spawn_door.wav", door_open(rng))
     _write("world/hazard_warning.wav", hazard_warning(rng))
     _write("world/platform_warning.wav", platform_warning(rng))

@@ -4,7 +4,7 @@ tags: [mayhem, enemies, ai]
 
 # Enemies and AI
 
-## One scene, six archetypes
+## One scene, seven archetypes
 
 `scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~1275 lines, the largest
 script in the codebase by a wide margin) is shared by every archetype. `EnemyData`
@@ -12,7 +12,7 @@ script in the codebase by a wide margin) is shared by every archetype. `EnemyDat
 Rusher: silhouette, stats, behavior tree, audio. `Enemy` itself is architecture-
 agnostic — it reads `data.*` and never branches on archetype by name.
 
-`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER`.
+`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL`.
 
 `EnemyData` field groups: **Stats** (health/speed/damage/range/cooldown/mass,
 `stagger_resistance` — 0 = staggered by every hit, 1 = immovable, elites sit
@@ -26,7 +26,7 @@ mandatory, `attack_cooldown_jitter` and the `Leap` and `Fuse` subgroups — see
 proportions and the halo is what separates their silhouettes at range),
 **Audio**, **Economy** (`reward_currency`).
 
-Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber}.tres`.
+Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber,environmental}.tres`.
 Behavior trees: `scenes/enemies/ai/tree_{archetype}.tscn`.
 
 `EnemyData.mesh` is the grey-box silhouette and is drawn centred on the body
@@ -186,6 +186,51 @@ fire inside the horde** — a Ranger cannot hit a team-mate with a stray shot. I
 line-of-sight checks each victim for the same reason `deal_melee_damage()` does:
 a blast that turns a corner is damage with nothing on screen to explain it.
 
+## The flask
+
+The Environmental (`data/enemies/environmental.tres`, `ActionThrowFlask`,
+`EnemyFlask`) lobs a flask on an arc at the ground under the player, and where it
+lands a pool denies that ground. It does not aim at the player: **missing is the
+normal mode of operation**, because the job is to move you off the spot you are
+standing on, not to hit you. An Environmental that lands it and one that misses
+by a metre both cost you your position, and that is the whole difference between
+it and the Ranger.
+
+Almost none of this is new code, which was the point of building it second:
+
+- The arc, the landing and the pooled lifetime are `ThrownUtility` — the same
+  base the player's three thrown utilities use. It really is the same object with
+  a different payload.
+- The pool is a `HazardZone`, unmodified, exactly like the Elite's slam. That
+  matters more than it sounds: the pool inherits the 0.6s warning and the
+  decal-drawn-at-the-damage-radius law **for free**, so a new archetype cannot
+  break the telegraph by accident. A bespoke area could have skipped both and
+  nothing would have failed.
+
+Two things had to open up in `ThrownUtility`, both cases where the player's
+version was one special case being treated as the only one:
+
+- `launch_with_velocity()` — a fixed force along a direction is one way to get a
+  velocity. Anything that has to *arrive* somewhere solves a ballistic arc
+  instead, and `ActionThrowFlask._arc_to()` uses the same solve as
+  [[#Jump links]] and [[#The leap]]. It reads gravity from
+  `ThrownUtility.get_gravity()` rather than writing the constant twice — the
+  failure mode of two copies is "flasks land short", which nobody reads as a
+  constants bug.
+- `hit_mask` — the player's utilities stop on enemies on purpose (a stun grenade
+  that sails through the crowd is a wasted charge). The flask needs the opposite:
+  it is lobbed *over* the horde, and stopping on the first ally turns area denial
+  into a puddle at its own feet. So the payload picks.
+
+The throw lives entirely in the leaf, not on `Enemy`, following `ActionEliteSlam`.
+That also avoids a cycle: `EnemyFlask` extends `ThrownUtility`, which names
+`Enemy`, so an `enemy.gd` that named the flask would close the loop — see the
+note in `Explosion._victims()` for what that failure looks like.
+
+**Not built:** the trapping flask (§4.2 of the plan), the one that immobilises.
+It is deliberately last, because taking away movement fights the game's own
+movement pillar and the call should be made while playing.
+
 ## Enemy meshes
 
 `EnemyData.mesh` is typed `Mesh` (not `PackedScene`) — an imported `.fbx` scene
@@ -208,7 +253,7 @@ Behavior trees live under `scenes/enemies/ai/`, built from leaves in
 - **Actions**: `action_chase_player`, `action_keep_distance`, `action_melee_attack`,
   `action_leap_attack`, `action_ranged_attack`, `action_telegraph`,
   `action_heal_allies`, `action_summon_adds`, `action_elite_slam`,
-  `action_arm_fuse`.
+  `action_arm_fuse`, `action_throw_flask`.
   `action_melee_attack` is still the standing hit, but no tree uses it since the
   Rusher moved to `action_leap_attack` — it stays as the plain melee an archetype
   without `can_leap` would use.

@@ -6,6 +6,7 @@
 [ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="4_ranger"]
 [ext_resource type="Resource" uid="uid://cdi5iigv8qtk4" path="res://data/enemies/healer.tres" id="5_healer"]
 [ext_resource type="Resource" uid="uid://bk401winjlkty" path="res://data/enemies/summoner.tres" id="6_summoner"]
+[ext_resource type="Resource" path="res://data/enemies/environmental.tres" id="8_env"]
 
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")
@@ -38,9 +39,17 @@ spawn_door_ids = Array[StringName]([&"door_05"])
 delay = 14.0
 interval = 5.0
 
+[sub_resource type="Resource" id="Group_5"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("8_env")
+count = 3
+spawn_door_ids = Array[StringName]([&"door_07"])
+delay = 15.0
+interval = 3.5
+
 [resource]
 script = ExtResource("1_wave")
 wave_index = 8
-spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_3")])
+spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_3"), SubResource("Group_5")])
 par_time = 115.0
 completion_bonus = 150

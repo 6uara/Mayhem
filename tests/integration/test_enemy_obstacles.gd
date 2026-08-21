@@ -94,7 +94,7 @@ func test_an_archetype_with_jumping_disabled_stays_grounded() -> void:
 func test_every_archetype_can_clear_its_own_max_step() -> void:
 	# The tallest hop each archetype claims it can make has to actually be possible
 	# with the jump velocity it carries, or max_step_height is a lie in the data.
-	for archetype: String in ["rusher", "ranger", "elite", "healer", "summoner", "bomber"]:
+	for archetype: String in ["rusher", "ranger", "elite", "healer", "summoner", "bomber", "environmental"]:
 		var data: EnemyData = load("res://data/enemies/%s.tres" % archetype)
 		if not data.can_jump:
 			continue
@@ -151,7 +151,7 @@ func test_a_ledge_taller_than_the_step_is_not_climbed() -> void:
 ## The step height is a promise the navmesh already made on the enemy's behalf.
 func test_step_height_covers_what_the_navmesh_bake_assumes() -> void:
 	var navmesh: NavigationMesh = load("res://scenes/arena/greybox_arena_navmesh.tres")
-	for archetype: String in ["rusher", "ranger", "elite", "healer", "summoner", "bomber"]:
+	for archetype: String in ["rusher", "ranger", "elite", "healer", "summoner", "bomber", "environmental"]:
 		var data: EnemyData = load("res://data/enemies/%s.tres" % archetype)
 		assert_true(data.max_auto_step >= navmesh.agent_max_climb,
 			"%s can step %.2fm but the bake hands out paths with %.2fm climbs" % [

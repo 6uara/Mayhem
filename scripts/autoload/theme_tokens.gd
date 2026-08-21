@@ -138,6 +138,11 @@ const ENEMY_SUMMONER := Color("#FF3BC1")
 ## off". Cold enough not to be confused with REWARD's amber, which is the only
 ## other bright warm thing in the arena.
 const ENEMY_BOMBER   := Color("#F5E000")
+## Verde tóxico: es el único arquetipo cuyo peligro no está en su cuerpo sino en
+## lo que deja en el piso, y el verde es lo que ya significa "químico" sin que
+## nadie lo explique. Lejos del mint de HEAL (que es pálido y desaturado a
+## propósito, y además nunca aparece en el mundo salvo como VFX de curación).
+const ENEMY_ENVIRONMENTAL := Color("#5FD93A")
 
 const ENEMY_HEIGHT := {
 	"rusher": 1.2,
@@ -146,6 +151,7 @@ const ENEMY_HEIGHT := {
 	"healer": 2.0,
 	"summoner": 2.2,
 	"bomber": 1.0,
+	"environmental": 2.5,
 }
 
 const CHASSIS       := Color("#2C3140")
