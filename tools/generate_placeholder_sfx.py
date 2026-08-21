@@ -347,6 +347,35 @@ def stun_pop(rng: random.Random) -> list[float]:
     )
 
 
+def fuse_arm() -> list[float]:
+    """The Bomber's fuse catching: two rising beeps, then it is a fact.
+
+    Deliberately not a wind-up. Every other enemy tell says "an attack is coming
+    and you can interrupt it"; this one says "a timer started and you cannot".
+    Clean square-ish beeps rather than the servo whine the other archetypes share,
+    so it is the one enemy sound that is not part of that family.
+    """
+    return _mix(
+        (_tone(ms(90), 1180.0, 0.001, 0.13, 0.7), 0),
+        (_tone(ms(120), 1560.0, 0.001, 0.16, 0.7), ms(130)),
+    )
+
+
+def explosion(rng: random.Random) -> list[float]:
+    """The payoff. The loudest thing an enemy does, and it has to out-read a wave.
+
+    Low body carrying most of the weight, bright transient on top so it cuts
+    through a crowded mix, and a long filtered tail - a short blast reads as a
+    hit rather than as an explosion.
+    """
+    return _mix(
+        (_noise(ms(70), 0.0004, 0.1, 1.0, rng), 0),
+        (_tone(ms(620), 78.0, 0.002, 0.75, 0.95, sweep=0.45), 0),
+        (_lowpass(_noise(ms(700), 0.01, 0.8, 0.7, rng), 900.0), ms(20)),
+        (_lowpass(_noise(ms(420), 0.06, 0.55, 0.3, rng), 2600.0), ms(60)),
+    )
+
+
 def wall_deploy(rng: random.Random) -> list[float]:
     return _mix(
         (_tone(ms(320), 150.0, 0.005, 0.4, 0.7, sweep=2.0), 0),
@@ -458,6 +487,24 @@ def main() -> None:
         _write("enemies/%s_death.wav" % name, enemy_death(rng, pitch))
         _write("enemies/%s_attack.wav" % name, enemy_attack(rng, pitch))
     _write("enemies/healer_pulse.wav", heal_pulse())
+    # El Bomber sale del bucle de arriba, con su propio stream de RNG.
+    #
+    # No es capricho: `rng` es una sola secuencia compartida, asi que meter un
+    # sexto arquetipo en esa lista le corre el ruido a TODO lo que se genera
+    # despues. Los archivos seguirian siendo validos, pero el diff de "agregue
+    # una bomba" incluiria media carpeta de audio reescrita y ya no se podria
+    # leer. Semilla propia = los otros cinco arquetipos y todo lo de abajo salen
+    # byte por byte iguales.
+    bomber_rng = random.Random(20260821)
+    for kind, maker in (
+        ("spawn", enemy_spawn),
+        ("windup", enemy_windup),
+        ("death", enemy_death),
+        ("attack", enemy_attack),
+    ):
+        _write("enemies/bomber_%s.wav" % kind, maker(bomber_rng, 1.7))
+    _write("enemies/bomber_fuse.wav", fuse_arm())
+    _write("world/explosion.wav", explosion(bomber_rng))
     _write("world/spawn_door.wav", door_open(rng))
     _write("world/hazard_warning.wav", hazard_warning(rng))
     _write("world/platform_warning.wav", platform_warning(rng))

@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/explosion.gd" id="1_explosion"]
+
+[sub_resource type="SphereMesh" id="Mesh_flash"]
+resource_local_to_scene = true
+radius = 1.0
+height = 2.0
+radial_segments = 16
+rings = 8
+
+[node name="Explosion" type="Node3D" node_paths=PackedStringArray("flash_mesh")]
+script = ExtResource("1_explosion")
+flash_mesh = NodePath("Flash")
+
+[node name="Flash" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_flash")

@@ -4,7 +4,7 @@ tags: [mayhem, enemies, ai]
 
 # Enemies and AI
 
-## One scene, five archetypes
+## One scene, six archetypes
 
 `scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~1275 lines, the largest
 script in the codebase by a wide margin) is shared by every archetype. `EnemyData`
@@ -12,22 +12,31 @@ script in the codebase by a wide margin) is shared by every archetype. `EnemyDat
 Rusher: silhouette, stats, behavior tree, audio. `Enemy` itself is architecture-
 agnostic — it reads `data.*` and never branches on archetype by name.
 
-`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER`.
+`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER`.
 
 `EnemyData` field groups: **Stats** (health/speed/damage/range/cooldown/mass,
 `stagger_resistance` — 0 = staggered by every hit, 1 = immovable, elites sit
 high), **Movement** (see below), **Attack** (`attack_windup` — telegraphing is
-mandatory, `attack_cooldown_jitter` and the `Leap` subgroup — see
-[[#Attack timing is deliberately desynchronised]] and [[#The leap]],
-`projectile_scene` for ranged archetypes, `preferred_distance`),
+mandatory, `attack_cooldown_jitter` and the `Leap` and `Fuse` subgroups — see
+[[#Attack timing is deliberately desynchronised]], [[#The leap]] and
+[[#The fuse]], `projectile_scene` for ranged archetypes, `preferred_distance`),
 **Support** (Healer's `heal_amount`/`heal_radius`, Summoner's `summon_data`/
 `summon_count`/`summon_interval`), **Presentation** (`mesh`, `body_color`,
 `has_halo`/`has_tether` — Healer-only, since Ranger and Healer share body
 proportions and the halo is what separates their silhouettes at range),
 **Audio**, **Economy** (`reward_currency`).
 
-Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner}.tres`.
+Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber}.tres`.
 Behavior trees: `scenes/enemies/ai/tree_{archetype}.tscn`.
+
+`EnemyData.mesh` is the grey-box silhouette and is drawn centred on the body
+capsule (`collision_height * 0.5`), the same place `_resize_capsule` puts the
+shapes and the same pivot `tools/bake_enemy_meshes.gd` bakes into a real model.
+It used to be pinned at `y = 0.9` by the scene — half of the 1.8m capsule the
+scene was authored with, and therefore right for no archetype that actually
+exists. The Ranger got away with it, the Elite and the Summoner sat low, and
+anything shorter than 1.8m floated. Archetypes with a `model_scene` never
+noticed either way, since the primitive is hidden under a model.
 
 ## Movement fields — a contract, not taste
 
@@ -130,6 +139,53 @@ the archetype's leap range (7m) rather than its punch range (2.2m). Expressing
 that as a hand-computed multiplier over `attack_range` would go silently wrong
 the moment either number moved.
 
+## The fuse
+
+The Bomber (`EnemyData.has_fuse` and the `Fuse` subgroup, `Enemy.arm_fuse()` /
+`_tick_fuse()` / `_detonate()`, `ActionArmFuse`) is a countdown with legs. It has
+no attack: it walks at you, arms within `fuse_arm_range`, and `fuse_time` later
+it goes off wherever it happens to be standing.
+
+The design rests on one rule — **an armed fuse cannot be put out**:
+
+- Running away does not disarm it. If it did, the answer to a Bomber would be
+  "leave", and the archetype would have no question in it.
+- Stagger and stun do not pause it. `_tick_fuse()` runs before the movement
+  branches in `_physics_process` and outside all of them, so being knocked
+  around, mid-air or frozen changes nothing.
+- **Killing it detonates it early**, which is what turns the Bomber from a threat
+  into a tool: shooting one while it stands in a crowd is a play. Killing one
+  that never armed also detonates — a bomb that sometimes isn't reads far worse
+  than one that always is, and always-explodes is what makes that play
+  deliberate rather than accidental.
+
+So the only question it asks is *where*, and the answer has to be reachable:
+`test_the_fuse_outlasts_the_walk_from_where_it_arms` pins `fuse_time` above the
+time it takes to cross `fuse_arm_range` at `move_speed`, because those are three
+numbers tuned separately in a `.tres` and the relationship between them breaks
+silently.
+
+**One detonation, one site.** `_detonate()` does not spawn the blast; it kills
+the Bomber, and `_on_died()` is the only place the blast comes from. That is what
+makes the bomb that runs out and the bomb that eats a shotgun the exact same
+death for the economy, the wave counter and the pool. `_has_detonated` is the
+latch that stops the self-inflicted kill from re-entering and exploding twice.
+
+`Explosion` (`scripts/actors/explosion.gd`) is deliberately **not** a
+`HazardZone`. A hazard warns for 0.6s and then punishes standing still; an
+explosion has already warned — the fuse was the warning, and far longer than
+0.6s — and resolves in the instant it arrives. What it does inherit is the law:
+the radius that hurts is the radius that was drawn. The `FuseRing` decal on the
+enemy is authored from `explosion_radius` and dragged around by the walking bomb,
+which is what lets the player pick the spot rather than only the moment. The
+blink accelerates from `Tokens.TELL_BOMBER_FUSE_SLOW` to `_FAST`, the same
+language the vanishing platform already taught.
+
+The blast damages the player and the horde alike, and **that is the only friendly
+fire inside the horde** — a Ranger cannot hit a team-mate with a stray shot. It
+line-of-sight checks each victim for the same reason `deal_melee_damage()` does:
+a blast that turns a corner is damage with nothing on screen to explain it.
+
 ## Enemy meshes
 
 `EnemyData.mesh` is typed `Mesh` (not `PackedScene`) — an imported `.fbx` scene
@@ -151,13 +207,22 @@ Behavior trees live under `scenes/enemies/ai/`, built from leaves in
 
 - **Actions**: `action_chase_player`, `action_keep_distance`, `action_melee_attack`,
   `action_leap_attack`, `action_ranged_attack`, `action_telegraph`,
-  `action_heal_allies`, `action_summon_adds`, `action_elite_slam`.
+  `action_heal_allies`, `action_summon_adds`, `action_elite_slam`,
+  `action_arm_fuse`.
   `action_melee_attack` is still the standing hit, but no tree uses it since the
   Rusher moved to `action_leap_attack` — it stays as the plain melee an archetype
   without `can_leap` would use.
 - **Conditions**: `condition_player_in_range` (`range_multiplier`,
-  `absolute_range`, `use_leap_range`, `invert`), `condition_attack_ready`,
-  `condition_not_staggered`.
+  `absolute_range`, `use_leap_range`, `use_fuse_range`, `invert`),
+  `condition_attack_ready`, `condition_not_staggered`.
+
+`tree_bomber` is the smallest tree in the game and half the archetype's
+personality: no attack branch, no attack telegraph, no cooldown. It closes, it
+arms, and everything after that lives in `Enemy._tick_fuse()` — outside the tree,
+because a tree can abandon a branch and a fuse cannot be abandoned.
+`ActionArmFuse` returns SUCCESS only on the frame it arms and FAILURE forever
+after, so the selector falls through to chasing: an armed bomb that stops walking
+hands the player the one decision the archetype exists to ask for.
 
 `BeehaveGlobalMetrics` / `BeehaveGlobalDebugger` are addon autoloads, registered
 last in `project.godot` load order.

@@ -344,20 +344,20 @@ shape = SubResource("Shape_container")
 [node name="Arena" parent="." unique_id=105377587 instance=ExtResource("16_ie8lt")]
 transform = Transform3D(4, 0, 0, 0, 1, 0, 0, 0, 4, 9.440987, 0, -1.1451492)
 
-[node name="CSGCombiner3D" type="CSGCombiner3D" parent="." unique_id=297706754]
+[node name="InvisibleWall" type="CSGCombiner3D" parent="." unique_id=297706754]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.848101, -1, 0)
 visible = false
 operation = 2
 use_collision = true
 
-[node name="Floor3" type="CSGCylinder3D" parent="CSGCombiner3D" unique_id=651311307 groups=["navigation_source"]]
+[node name="Floor3" type="CSGCylinder3D" parent="InvisibleWall" unique_id=651311307 groups=["navigation_source"]]
 transform = Transform3D(1.0632267, 0, 0, 0, 10.242976, 0, 0, 0, 1.0858625, 0, 0, 0)
 use_collision = true
 collision_mask = 0
 radius = 62.316406
 sides = 18
 
-[node name="Floor2" type="CSGCylinder3D" parent="CSGCombiner3D" unique_id=569188644 groups=["navigation_source"]]
+[node name="Floor2" type="CSGCylinder3D" parent="InvisibleWall" unique_id=569188644 groups=["navigation_source"]]
 transform = Transform3D(0.8951629, 0, 0, 0, 11.457383, 0, 0, 0, 0.8992062, -1.1774082, 0, 0.19026756)
 operation = 2
 use_collision = true

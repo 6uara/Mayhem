@@ -84,6 +84,9 @@ const LEAP_CONTACT_HEIGHT: float = 2.0
 @export var tree_holder: Node
 @export var halo: MeshInstance3D
 @export var tether: MeshInstance3D
+## Anillo en el piso que dibuja el radio de la explosion mientras la espoleta
+## cuenta. Solo lo usan los arquetipos con `EnemyData.has_fuse`.
+@export var fuse_ring: MeshInstance3D
 @export var flash_color: Color = Color(1.0, 0.9, 0.75)
 
 var data: EnemyData
@@ -128,6 +131,17 @@ var _leap_hit_landed: bool = false
 var _leap_recovery_left: float = 0.0
 var _behavior_tree: Node
 var _slow_multiplier: float = 1.0
+
+## Segundos que le quedan a la espoleta. Solo significa algo con `_fuse_armed`.
+var _fuse_left: float = 0.0
+## Armada. No se apaga: ni huyendo, ni aturdiendo, ni matandolo - morir la
+## adelanta. Ver EnemyData.has_fuse.
+var _fuse_armed: bool = false
+var _fuse_blink_time: float = 0.0
+var _fuse_material: StandardMaterial3D
+## Una explosion por cuerpo. Sin esto la bomba que se mata a si misma al detonar
+## vuelve a entrar por _on_died() y revienta dos veces.
+var _has_detonated: bool = false
 ## Whoever the healer is currently helping, for the tether beam.
 var _tether_target: Enemy
 var _stuck_time: float = 0.0
@@ -236,6 +250,12 @@ func _physics_process(delta: float) -> void:
 		halo.rotate_y(delta * 0.8)
 	_update_tether()
 
+	# Antes de cualquier rama de movimiento, y fuera de todas ellas. La cuenta
+	# corre igual si el bicho esta aturdido, saltando o quieto: una espoleta
+	# armada no depende de que el enemigo pueda hacer nada.
+	if _fuse_armed:
+		_tick_fuse(delta)
+
 	if _is_leaping:
 		# En el aire y comprometido. No se dirige y no se frena: que el salto sea
 		# esquivable depende de que no corrija a mitad de vuelo.
@@ -287,6 +307,12 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	# hace que ya el primero llegue escalonado.
 	_attack_cooldown_left = randf() * enemy_data.attack_cooldown if enemy_data != null else 0.0
 	_slow_multiplier = 1.0
+	# Pooleado: el cuerpo puede venir de haber sido una bomba. Una espoleta
+	# heredada explotaria a los dos segundos de spawnear un Rusher.
+	_fuse_armed = false
+	_fuse_left = 0.0
+	_fuse_blink_time = 0.0
+	_has_detonated = false
 	_is_leaping = false
 	_leap_hit_landed = false
 	_leap_recovery_left = 0.0
@@ -313,6 +339,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_apply_presentation()
 	_apply_collision()
 	_apply_silhouette_markers()
+	_apply_fuse_ring()
 
 	if health != null:
 		health.max_health = data.max_health
@@ -547,6 +574,39 @@ func start_leap() -> bool:
 	return true
 
 
+## Prende la espoleta. Devuelve false si el arquetipo no tiene, o si ya estaba
+## armada - eso es lo que hace que la hoja del arbol pueda llamarla cada frame.
+##
+## A partir de aca la explosion es un hecho. No hay ninguna via para apagarla, y
+## eso es a proposito: si huir la desarmara, el Bomber seria un enemigo del que
+## te alejas, y toda la decision interesante ("donde lo hago explotar") vive en
+## que la respuesta no pueda ser "en ningun lado".
+func arm_fuse() -> bool:
+	if data == null or not data.has_fuse or _fuse_armed or _has_detonated:
+		return false
+	_fuse_armed = true
+	_fuse_left = maxf(data.fuse_time, 0.05)
+	_fuse_blink_time = 0.0
+	AudioPool.play_3d(data.fuse_sound, global_position, AudioPool.BUS_ENEMIES)
+	return true
+
+
+func is_fuse_armed() -> bool:
+	return _fuse_armed
+
+
+func get_fuse_left() -> float:
+	return _fuse_left if _fuse_armed else 0.0
+
+
+## Desde cuan lejos se arma la espoleta. Cae en attack_range cuando el arquetipo
+## no declara uno propio, igual que hitbox_radius cae en collision_radius.
+func get_fuse_arm_range() -> float:
+	if data == null:
+		return 0.0
+	return data.fuse_arm_range if data.fuse_arm_range > 0.0 else data.attack_range
+
+
 func is_leaping() -> bool:
 	return _is_leaping
 
@@ -590,6 +650,89 @@ func _check_leap_contact() -> void:
 	if player_health != null:
 		player_health.apply_damage(data.damage)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
+
+
+## Un paso de la cuenta regresiva.
+##
+## No mira distancia, ni linea de vision, ni si el jugador sigue vivo. Una vez
+## armada la espoleta es aritmetica, y esa es toda su personalidad.
+func _tick_fuse(delta: float) -> void:
+	_fuse_left -= delta
+	if _fuse_left <= 0.0:
+		_detonate()
+		return
+
+	# El parpadeo se acelera hacia el final. Es el mismo idioma que la plataforma
+	# que se desvanece (Tokens.PLATFORM_BLINK_STEP -> _FAST), asi que el jugador
+	# ya sabe leerlo sin que nadie se lo enseñe de nuevo.
+	var urgency: float = 1.0 - clampf(_fuse_left / maxf(data.fuse_time, 0.05), 0.0, 1.0)
+	var step: float = lerpf(Tokens.TELL_BOMBER_FUSE_SLOW, Tokens.TELL_BOMBER_FUSE_FAST, urgency)
+	_fuse_blink_time += delta
+	var lit: bool = fmod(_fuse_blink_time, step * 2.0) < step
+	if _fuse_material != null:
+		_fuse_material.emission_energy_multiplier = 2.6 if lit else 0.35
+		_fuse_material.albedo_color.a = 0.75 if lit else 0.2
+	# El cuerpo late con el anillo. El anillo dice donde, el cuerpo dice cual -
+	# con tres bombas encimadas los anillos se superponen y dejan de distinguirse.
+	_set_glow(1.0 if lit else 0.15)
+
+
+## La cuenta llego a cero: se mata a si misma.
+##
+## No larga el estallido aca. El estallido tiene un solo lugar - _on_died() - y
+## eso es lo que hace que la bomba que revienta sola y la bomba que le vuelan de
+## un escopetazo sean exactamente la misma muerte, para la economia, para el
+## contador de la oleada y para el pool. Matarse es como esta llega ahi.
+func _detonate() -> void:
+	_fuse_armed = false
+	if health != null and not health.is_dead:
+		health.apply_damage(health.current_health)
+		return
+	# Sin HealthComponent, o ya muerta y todavia contando: nadie va a emitir
+	# died(), asi que el camino normal no existe y se hace a mano.
+	if not _has_detonated:
+		_has_detonated = true
+		_spawn_blast()
+
+
+## El estallido en si. Sale del pool y sobrevive al cuerpo que lo causo, que en
+## este mismo frame vuelve al suyo.
+func _spawn_blast() -> void:
+	if data == null or data.explosion_scene == null:
+		return
+	var blast := ObjectPool.acquire(data.explosion_scene) as Explosion
+	if blast == null:
+		push_error("Enemy: explosion_scene de %s no es una Explosion" % data.id)
+		return
+	blast.global_position = global_position + Vector3.UP * (data.collision_height * 0.5)
+	blast.detonate(data.explosion_radius, data.explosion_damage, data.explosion_sound, self)
+
+
+## El anillo de aviso en el piso, del tamaño exacto del estallido.
+##
+## Es la mitad visual de la promesa que hace HazardZone: lo que se dibuja es lo
+## que lastima. Aca ademas se arrastra, porque la bomba camina - por eso el
+## jugador puede decidir donde va a reventar en vez de solo cuando.
+func _apply_fuse_ring() -> void:
+	if fuse_ring == null:
+		return
+	var carries_fuse: bool = data != null and data.has_fuse
+	fuse_ring.visible = carries_fuse
+	if not carries_fuse:
+		return
+	fuse_ring.scale = Vector3(data.explosion_radius, 1.0, data.explosion_radius)
+	if _fuse_material == null:
+		_fuse_material = StandardMaterial3D.new()
+		_fuse_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_fuse_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_fuse_material.emission_enabled = true
+		fuse_ring.material_override = _fuse_material
+	# HAZARD y no el amarillo del cuerpo: el anillo dice "esto te quema", que es
+	# la misma frase que dicen el charco del Elite y las trampas del arena. El
+	# color del cuerpo identifica al arquetipo, el del piso identifica al peligro.
+	_fuse_material.albedo_color = Color(Tokens.WORLD_HAZARD, 0.2)
+	_fuse_material.emission = Tokens.WORLD_HAZARD
+	_fuse_material.emission_energy_multiplier = 0.35
 
 
 func _end_leap() -> void:
@@ -1059,6 +1202,17 @@ func _apply_presentation() -> void:
 	if data.mesh != null:
 		mesh_instance.mesh = data.mesh
 	mesh_instance.scale = Vector3.ONE * data.body_scale
+	# Centrada sobre la capsula, igual que _resize_capsule hace con las formas.
+	#
+	# Estaba fija en 0.9 desde la escena, que es la mitad de la capsula de 1.8 con
+	# la que se autoro - o sea, correcta para un arquetipo de 1.8m de alto y para
+	# ninguno de los que hay. El Ranger (1.9) zafaba por poco, el Elite (2.8) y el
+	# Summoner (2.2) quedaban hundidos, y cualquier arquetipo mas bajo que 1.8
+	# flota. Las mallas ya vienen con el pivote en su propio centro (es lo que
+	# garantiza tools/bake_enemy_meshes.gd), asi que la mitad de la altura es
+	# donde va. Los arquetipos con model_scene no lo notan: ahi esta primitiva
+	# no se dibuja.
+	mesh_instance.position.y = data.collision_height * 0.5
 	if _material == null:
 		_material = StandardMaterial3D.new()
 		mesh_instance.material_override = _material
@@ -1303,8 +1457,19 @@ func _on_died() -> void:
 		return
 	is_active = false
 	is_moving = false
+	_fuse_armed = false
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
+	# Antes del release, porque el cuerpo se va al pool tres lineas mas abajo y el
+	# estallido necesita saber donde estaba parado.
+	#
+	# Sin preguntar si la espoleta llego a armarse: es una bomba, y una bomba que
+	# explota siempre se lee mucho mejor que una que a veces no. Matar un Bomber
+	# recien spawneado del otro lado del arena tambien revienta - eso es lo que lo
+	# vuelve un recurso que el jugador puede usar a proposito.
+	if data != null and data.has_fuse and not _has_detonated:
+		_has_detonated = true
+		_spawn_blast()
 	AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
 	EventBus.kill_credited.emit(data.reward_currency)

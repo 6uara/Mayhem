@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://scripts/components/health_component.gd" id="2_health"]
@@ -22,11 +22,18 @@ rings = 24
 [sub_resource type="BoxMesh" id="Mesh_tether"]
 size = Vector3(0.07, 0.07, 1)
 
+[sub_resource type="CylinderMesh" id="Mesh_fuse_ring"]
+resource_local_to_scene = true
+top_radius = 1.0
+bottom_radius = 1.0
+height = 0.06
+radial_segments = 24
+
 [sub_resource type="SphereShape3D" id="Shape_head"]
 resource_local_to_scene = true
 radius = 0.25
 
-[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder", "halo", "tether")]
+[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder", "halo", "tether", "fuse_ring")]
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_enemy")
@@ -41,6 +48,7 @@ head_hitbox_shape = NodePath("HeadHitbox/CollisionShape3D")
 tree_holder = NodePath("BehaviorTree")
 halo = NodePath("Halo")
 tether = NodePath("Tether")
+fuse_ring = NodePath("FuseRing")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -95,3 +103,11 @@ mesh = SubResource("Mesh_halo")
 visible = false
 # The beam is scaled along -Z toward the heal target each frame.
 mesh = SubResource("Mesh_tether")
+
+[node name="FuseRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+visible = false
+# The blast radius, drawn on the floor and dragged around by the walking bomb.
+# Only an archetype with has_fuse turns it on - see Enemy._apply_fuse_ring().
+# Almost flush with the ground so it reads as a decal rather than as an object.
+mesh = SubResource("Mesh_fuse_ring")

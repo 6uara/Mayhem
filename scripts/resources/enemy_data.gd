@@ -4,7 +4,7 @@ extends Resource
 ## archetype; this resource is what makes a Rusher a Rusher - silhouette, audio,
 ## stats and behavior tree all come from here.
 
-enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
+enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER }
 
 @export var id: StringName = &""
 @export var display_name: String = ""
@@ -89,6 +89,32 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 ## leer la telegrafia no paga nada.
 @export var leap_recovery: float = 0.5
 
+@export_subgroup("Fuse")
+## El arquetipo es una bomba: se arma cerca del jugador y despues revienta.
+##
+## No es un ataque, es una cuenta regresiva. Una vez armada no se desarma - huir
+## no la apaga, y morir la adelanta en vez de cancelarla - asi que la pregunta
+## que le hace al jugador no es "escapo?" sino "donde lo hago explotar?". Eso lo
+## convierte en un recurso: matarlo parado al lado de un grupo es una jugada.
+##
+## Enemy no pregunta por arquetipo en ningun lado; lee esto. Cualquier arquetipo
+## futuro que quiera explotar lo consigue prendiendo este flag.
+@export var has_fuse: bool = false
+## Cuanto tarda la espoleta desde que se arma. Es la ventana entera que tiene el
+## jugador para reposicionarse, asi que va larga a proposito.
+@export var fuse_time: float = 2.2
+## Desde cuan cerca del jugador se arma. 0 = usa attack_range.
+##
+## Va separado de attack_range porque el Bomber no golpea: su "alcance" es el
+## radio de la explosion, y armar la espoleta recien cuando ya esta encima no le
+## da tiempo a nadie a leer nada.
+@export var fuse_arm_range: float = 0.0
+@export var explosion_damage: float = 55.0
+## Radio del estallido. Es tambien el radio exacto del anillo de aviso que el
+## Bomber arrastra mientras cuenta: el decal es la promesa (ver HazardZone).
+@export var explosion_radius: float = 4.5
+@export var explosion_scene: PackedScene
+
 @export_group("Support")
 ## Healer: health restored per pulse. `attack_cooldown` gates how often it pulses.
 @export var heal_amount: float = 12.0
@@ -160,6 +186,10 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER }
 @export var windup_sound: AudioStream
 @export var attack_sound: AudioStream
 @export var death_sound: AudioStream
+## Loop de la espoleta armada. Suena una vez al armarse y despues acompaña el
+## parpadeo: con tres bombas en pantalla el oido es lo que dice cuantas hay.
+@export var fuse_sound: AudioStream
+@export var explosion_sound: AudioStream
 
 @export_group("Economy")
 @export var reward_currency: int = 10

@@ -131,6 +131,13 @@ const ENEMY_RANGER   := Color("#FF7A1F")
 const ENEMY_ELITE    := Color("#FC3A00")
 const ENEMY_HEALER   := Color("#B45CFF")
 const ENEMY_SUMMONER := Color("#FF3BC1")
+## Warning yellow, and the only enemy outside the warm red-to-magenta family. The
+## Bomber is the one archetype the player is supposed to look at and think about
+## position rather than threat, so it does not read as "another one of those" -
+## and yellow is the colour every player already knows means "this is about to go
+## off". Cold enough not to be confused with REWARD's amber, which is the only
+## other bright warm thing in the arena.
+const ENEMY_BOMBER   := Color("#F5E000")
 
 const ENEMY_HEIGHT := {
 	"rusher": 1.2,
@@ -138,6 +145,7 @@ const ENEMY_HEIGHT := {
 	"elite": 2.8,
 	"healer": 2.0,
 	"summoner": 2.2,
+	"bomber": 1.0,
 }
 
 const CHASSIS       := Color("#2C3140")
@@ -150,6 +158,15 @@ const TELL_RANGER_CHARGE  := 0.80
 const TELL_RANGER_AIMLINE := 0.20  ## line is visible this long before the shot
 const TELL_ELITE_WINDUP   := 1.20
 const TELL_SUMMON_PLATE   := 1.50
+## The Bomber's fuse blink, accelerating from the first step to the second as the
+## count runs out. Same language as the vanishing platform (PLATFORM_BLINK_STEP /
+## _FAST) on purpose: the player has already been taught that a blink getting
+## faster means a deadline, so the fuse needs no new vocabulary.
+##
+## Unlike every other tell in this block, this one keeps running while the enemy
+## walks - it is a countdown, not a wind-up, and it does not stop for anything.
+const TELL_BOMBER_FUSE_SLOW := 0.28
+const TELL_BOMBER_FUSE_FAST := 0.07
 
 ## Arena interactive colour law
 const WORLD_TRAVERSAL := PLAYER  ## "you can use this"  — square/bracket shape

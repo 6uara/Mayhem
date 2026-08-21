@@ -16,6 +16,14 @@ extends ConditionLeaf
 ## golpe, que se desincroniza en silencio en cuanto alguien toca cualquiera de
 ## los dos numeros.
 @export var use_leap_range: bool = false
+## Mide contra el alcance al que el arquetipo arma su espoleta
+## (EnemyData.fuse_arm_range, o attack_range si no declara uno).
+##
+## Mismo motivo que use_leap_range: una bomba se arma desde bastante mas lejos
+## de lo que "golpea", y expresar esa distancia como un multiplicador a mano
+## sobre attack_range se desincroniza en silencio en cuanto alguien mueve
+## cualquiera de los dos numeros.
+@export var use_fuse_range: bool = false
 @export var invert: bool = false
 
 
@@ -23,8 +31,11 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	var enemy := actor as Enemy
 	if enemy == null or enemy.data == null:
 		return FAILURE
-	var base_range: float = enemy.data.leap_range if use_leap_range \
-		else enemy.data.attack_range
+	var base_range: float = enemy.data.attack_range
+	if use_leap_range:
+		base_range = enemy.data.leap_range
+	elif use_fuse_range:
+		base_range = enemy.get_fuse_arm_range()
 	var limit: float = absolute_range if absolute_range > 0.0 \
 		else base_range * range_multiplier
 	var in_range: bool = enemy.get_distance_to_player() <= limit

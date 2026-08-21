@@ -9,10 +9,19 @@ futuro, igual que `feat/coop-p2p`: se deja planteada y documentada para que el
 trabajo esté listo para arrancar cuando haya tiempo, sin presionar el alcance de
 la entrega.
 
-Estado: **sólo plan**. No hay código en esta rama todavía.
+Estado: **el Bomber está construido** (§3, paso 1 de §6). El resto sigue siendo
+plan.
 
-Base: `develop` @ `b76b80e`. Todo lo marcado "medido" fue verificado leyendo el
+Base: `develop` @ `7722071`. Todo lo marcado "medido" fue verificado leyendo el
 código contra ese commit, no asumido.
+
+**El Gladiador va en su propia rama**, que sale de ésta cuando la infraestructura
+compartida esté lista — es decir después de los pasos 3, 4 y 5 de §6 (atribución
+de muertes, prioridad de voces, abstracción de objetivo + facciones). Esos tres
+mejoran el juego por sí solos y tocan el núcleo de `enemy.gd`, así que si viajaran
+en la rama del Gladiador chocarían de frente con los arquetipos simples, que tocan
+los mismos archivos. La rama del Gladiador va a contener sólo diseño de arquetipo:
+los tres habitantes, el net worth, el botín disputado y la marca del líder.
 
 ---
 
@@ -47,10 +56,9 @@ antes de todo ataque (CLAUDE.md 5.3). Ver el bloque de reglas de
 - **`ObjectPool`**, y **`attack_cooldown_jitter`** para que un grupo nuevo no
   ataque al unísono.
 
-> **Dependencia:** el Bomber y los Gladiadores se apoyan en el salto
-> (`Enemy.start_leap()`) y en el jitter de cadencia, que viven en
-> `feat/enemy-attack-variation-and-leap` y **todavía no están en `develop`**.
-> Hay que mergear esa rama primero, o rebasar encima.
+> **Dependencia, ya resuelta:** el salto (`Enemy.start_leap()`) y el jitter de
+> cadencia están en `develop` desde entonces, así que no hay nada que mergear
+> antes de arrancar.
 
 ---
 
@@ -92,7 +100,12 @@ balance, es un sistema que no existe.
 
 ---
 
-## 3. Bomber
+## 3. Bomber — **construido**
+
+Lo de abajo era el plan y se cumplió tal cual, salvo por lo anotado al final de
+la sección. Detalle de implementación en
+[05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The fuse; los tests
+viven en `tests/integration/test_bomber.gd`.
 
 **Fantasía:** una cuenta regresiva con patas. La pregunta no es "¿escapo?" sino
 "¿dónde lo hago explotar?".
@@ -111,13 +124,39 @@ de un grupo es una jugada, no un accidente. Se conecta directo con §5.4.
 **Es la única fuente de fuego amigo dentro de la horda** (ver la matriz en §5.2):
 su explosión lastima a todo el mundo, incluidos otros miembros de la horda.
 
-Trabajo: arquetipo nuevo en el enum + `data/enemies/bomber.tres` + árbol
-`tree_bomber.tscn`. La explosión reusa `HazardZone` con duración corta, o un
-`Area3D` de un solo tick.
+### 3.1 Lo que cambió al construirlo
 
-**Hueco abierto:** si un Gladiador mata a un Bomber que nunca llegó a armarse
-(nunca vio al jugador), ¿explota igual? Asumo que **sí** — es una bomba, y que
-explote siempre es más legible que una regla condicional. Confirmar al construir.
+- **La explosión no reusa `HazardZone`.** Se probó y está mal: un hazard avisa
+  0.6s antes de armarse, y una explosión ya avisó — la espoleta *fue* el aviso, y
+  duró 2.2s. Un charco con 0.6s de gracia después de que la bomba revienta no es
+  una explosión. Quedó como `Explosion` (`scripts/actors/explosion.gd`), un solo
+  tick, sin aviso propio. Lo que sí hereda es la ley: el radio que lastima es el
+  que se dibujó.
+- **Apareció una mitad visual que el plan no tenía.** "¿Dónde lo hago explotar?"
+  no se puede contestar si no se ve dónde alcanza, así que el Bomber arrastra un
+  anillo en el piso (`FuseRing`) del tamaño exacto de `explosion_radius`, que
+  parpadea cada vez más rápido — el mismo idioma que la plataforma que se
+  desvanece. Sin eso el arquetipo es un Rusher que pega más fuerte.
+- **`Enemy` no pregunta por arquetipo.** La espoleta entera cuelga de
+  `EnemyData.has_fuse`, así que cualquier arquetipo futuro que quiera explotar lo
+  consigue prendiendo un flag. Los Gladiadores van a necesitar exactamente esto.
+- **Se corrigió de paso la altura de las mallas primitivas.** Estaban clavadas a
+  `y = 0.9` en `enemy.tscn` — media cápsula de 1.8m, correcta para ningún
+  arquetipo existente. El Bomber mide 1m y habría flotado. Ahora se centran sobre
+  la cápsula, que además es el pivote que `bake_enemy_meshes.gd` ya garantiza.
+  Efecto colateral: el Elite y el Summoner dejaron de estar hundidos.
+
+**Hueco cerrado:** un Bomber que nunca llegó a armarse **también explota** al
+morir. Es lo que el plan asumía, y construirlo lo confirmó por un motivo que no
+estaba escrito: la regla condicional no sólo se lee peor, además rompe la jugada.
+Si matar un Bomber recién spawneado no revienta, el jugador no puede *elegir*
+usarlo como bomba — sólo aprovecharlo cuando el juego ya decidió que estaba
+armado.
+
+**Sigue abierto:** el número. `fuse_time = 2.2`, `explosion_radius = 4.5`,
+`explosion_damage = 55` y `move_speed = 5.4` están tuneados de escritorio, no
+jugados. La relación entre los tres primeros y `fuse_arm_range` sí está atada por
+un test; el *feel* no.
 
 ---
 
@@ -317,8 +356,9 @@ Trabajo concreto:
 
 El orden importa porque los bloqueos se comparten.
 
-1. **Bomber** (M) — no toca ningún bloqueo salvo el fuego amigo de su explosión;
-   valida que agregar un arquetipo hoy sea barato.
+1. ~~**Bomber** (M)~~ — **hecho.** Confirmó lo que se quería confirmar: agregar un
+   arquetipo hoy es barato. Lo caro no fue el enemigo sino su telegrafía, que es
+   más o menos la moraleja del proyecto entero.
 2. **Environmental, sólo frasco de hazard** (S) — `HazardZone` ya está entera.
 3. **Atribución de muertes** (M) — §2.4. Es independiente de los Gladiadores y
    mejora el juego solo: que la moneda venga de lo que hacés es correcto igual.
@@ -350,9 +390,13 @@ Tomadas (no re-discutir sin motivo nuevo):
 - La espoleta del Bomber no se desarma huyendo; morir la adelanta.
 - La cadena de la explosión se le acredita a quien la causó.
 
+- Un Bomber que nunca se armó **explota igual** al morir (§3.1, cerrada al
+  construir).
+- La explosión es un nodo propio y no un `HazardZone` (§3.1).
+
 Abiertas:
 
-- ¿Un Bomber que nunca se armó explota al morir? (asumo que sí, §3)
+- Tuning del Bomber: espoleta, radio, daño y velocidad están sin jugar (§3.1).
 - Tasa exacta de regeneración de los Gladiadores (§5.1) — puede forzar el cambio
   a curación completa entre olas.
 - Peso exacto del net worth contra la distancia en la fórmula de §5.3.
@@ -360,6 +404,11 @@ Abiertas:
 
 ## 8. Recordatorio
 
-Nada de esto está empezado. Al arrancar: mergear o rebasar
-`feat/enemy-attack-variation-and-leap` primero (§1), y correr `gut` después de
-cada paso.
+Correr `gut` después de cada paso (`pwsh tools/run_tests.ps1`). La suite está en
+**484/484**, así que cualquier rojo es nuestro.
+
+**Si aparece `Could not find type "X" in the current scope"` sobre una clase que
+existe:** es el caché global de clases de Godot y no el código. Se arregla con
+`pwsh tools/run_tests.ps1 -Import`. Falla feo — la clase entera deja de existir,
+la escena que la usa se instancia como su tipo base, y los errores salen en
+sesenta tests que no tienen nada que ver.
