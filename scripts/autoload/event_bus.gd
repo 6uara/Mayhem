@@ -50,31 +50,11 @@ signal game_state_changed(new_state: int)
 ## intact - so it rides its own signal rather than widening the state enum.
 signal game_paused(is_paused: bool)
 
-# Coop
-## The body this machine drives entered the arena. Everything that binds to
-## "the player" waits on this rather than looking it up at _ready(): players are
-## spawned by PlayerSpawnController now, and on a client the local body arrives
-## over the network several frames after the scene is up.
+# Player lifecycle
+## The player entered the arena. Everything that binds to "the player" waits on
+## this rather than looking it up at _ready(): the body is spawned by
+## PlayerSpawnController, a frame or two after the scene itself is up.
 signal local_player_spawned(player: Node3D)
-## One player went down. In solo this is immediately followed by player_died -
-## there is no one left to carry the run. In coop it is not the end of anything
-## on its own: the match continues, and whoever fell watches it from a teammate's
-## shoulder until the wave is over.
-##
-## Kept separate from player_died precisely because those two meant the same
-## thing while there was only ever one player, and coop is where they part.
-signal player_downed(peer_id: int)
-## A downed player started or stopped spectating. The HUD hides itself while
-## this is true - it shows *your* ammo and health, and you have neither.
-signal spectating_changed(is_spectating: bool, target_name: String)
-## A downed player is back on their feet. Emitted on every peer, because the
-## body has to stand up everywhere at once - the shop phase revives whoever fell
-## during the wave, so going down costs you the rest of a wave rather than the
-## rest of the run.
-signal player_revived(peer_id: int)
-## The wave break started or ended on this machine. Carries how many players
-## have finished shopping so the screen can say who it is waiting for.
-signal shop_ready_changed(ready_count: int, total: int)
 
 # Settings
 signal settings_applied()

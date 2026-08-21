@@ -2,8 +2,8 @@ extends GutTest
 ## Arranca la escena de juego real en una sesion solo y verifica que todo quede
 ## acoplado.
 ##
-## Existe por lo que cambio al traer coop: `game.tscn` tenia un nodo `Player`
-## puesto a mano, y ahora lo instancia PlayerSpawnController en runtime. Todo lo
+## Existe porque `game.tscn` no lleva un nodo `Player` puesto a mano: lo
+## instancia PlayerSpawnController en runtime. Todo lo
 ## que antes podia dar por sentado que el jugador ya existia al cargar la escena
 ## -el HUD, la camara, el grupo local_player- pasa a depender de un orden de
 ## inicializacion, y eso no falla en un test unitario: falla al abrir el juego,
@@ -46,10 +46,9 @@ func test_the_spawned_body_is_the_local_player() -> void:
 	assert_eq(local, Players.all()[0], "el unico jugador tiene que ser el local")
 
 
-func test_the_local_player_is_alive_and_not_downed() -> void:
+func test_the_local_player_is_alive() -> void:
 	var local := Players.local() as Player
 	assert_not_null(local)
-	assert_false(local.is_downed, "arranca de pie")
 	assert_true(Players.is_alive(local), "arranca vivo")
 
 
@@ -93,6 +92,3 @@ func test_a_kill_still_pays_the_wallet_in_solo() -> void:
 	assert_gt(EconomyManager.currency, before, "una kill en solo tiene que pagar")
 
 
-func test_nothing_thinks_this_is_a_network_session() -> void:
-	assert_false(NetworkManager.is_online(), "no se abrio ningun socket")
-	assert_true(NetworkManager.is_host(), "en solo el jugador es su propio host")

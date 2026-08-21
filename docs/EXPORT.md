@@ -122,15 +122,14 @@ escribe `layout_mode` en un Control - nosotros nunca lo pusimos. Al empaquetar l
 instancia, Godot calcula los overrides de la instancia comparandola con la escena base, y sin
 `layout_mode` sintetiza `anchors_preset = 0`, que es `PRESET_TOP_LEFT`. Ese override pisa los
 anchors de la base, la raiz instanciada queda en size `(0, 0)`, y un hijo anclado al 50% con
-offsets negativos (`-420/-330` en `settings_screen`, `-260/-250` en `coop_panel`) cae fuera de
+offsets negativos (`-420/-330` en `settings_screen`) cae fuera de
 la esquina. Con `layout_mode = 3` el override sintetizado pasa a ser `layout_mode = 1` (anchors)
 y los anchors sobreviven.
 
 Afecta solo a raices `Control`. `hud.tscn`, `pause_menu.tscn`, `shop_screen.tscn`,
-`match_overlay.tscn`, `loading_screen.tscn` y `scene_transition.tscn` tienen raiz `CanvasLayer`,
-y `spectator_view.tscn` `Node3D`: sus hijos Control cuelgan del viewport y nunca dependieron de
-esto. Las tres que si tenian raiz `Control` e instanciada -`coop_panel`, `settings_screen` y
-`leaderboard_panel`- son exactamente las tres que se rompian. `main_menu.tscn` tambien tiene
+`match_overlay.tscn`, `loading_screen.tscn` y `scene_transition.tscn` tienen raiz `CanvasLayer`:
+sus hijos Control cuelgan del viewport y nunca dependieron de esto. Las que si tenian raiz
+`Control` e instanciada -`settings_screen` y `leaderboard_panel`- son las que se rompian. `main_menu.tscn` tambien tiene
 raiz Control pero es la escena principal, no una instancia, y por eso siempre estuvo bien.
 
 Medido en un build exportado real, fullscreen a 2560x1440: antes las tres raices reportaban
@@ -168,6 +167,6 @@ in-editor if you check `OS.has_feature("dev") or OS.has_feature("editor")` — s
    alone.
 4. Launch the release build and confirm no Debug Draw geometry is visible.
 5. Confirm 60 FPS with a full elite wave on screen (section 10 of `CLAUDE.md`).
-6. **En el build, no en el editor**: abrir Options, Best runs y Coop desde el menu, y Options
-   desde la pausa. Los cuatro paneles tienen que quedar centrados. Es el unico sintoma de la
+6. **En el build, no en el editor**: abrir Options y Best runs desde el menu, y Options
+   desde la pausa. Los tres paneles tienen que quedar centrados. Es el unico sintoma de la
    trampa de `layout_mode` de mas arriba, y no se ve corriendo desde el editor.

@@ -22,21 +22,6 @@ var _fuse_left: float = 0.0
 var _has_landed: bool = false
 var _is_active: bool = false
 var _thrower: Node = null
-## A copy flying for the eyes of one machine. It arcs, lands, goes off and looks
-## exactly like the real one; it changes nothing about the enemies, because the
-## host is flying its own copy of the same throw and that one is the throw.
-##
-## Without this a client's grenade did nothing at all: it stunned the puppets in
-## front of it, which are scenery, while the real enemies on the host kept
-## coming. Utilities are the answer to being surrounded, so "does nothing" is
-## the difference between a teammate and a spectator.
-var is_cosmetic: bool = false
-## Names this throw. Every machine's copy of the same throw carries the same
-## number, which is how a landing correction from the host finds the right one.
-var throw_id: int = 0
-## The component that threw this, and the node the correction travels on. Only
-## the utilities that need to agree on where they stopped ever use it.
-var thrower_utility: Node = null
 
 
 func _physics_process(delta: float) -> void:
@@ -96,17 +81,6 @@ func _on_released() -> void:
 	_is_active = false
 	_velocity = Vector3.ZERO
 	_thrower = null
-	thrower_utility = null
-	# Pooled: the next throw out of this slot is somebody's real one.
-	is_cosmetic = false
-	throw_id = 0
-
-
-## Moves a copy onto the spot the host's own throw came to rest on. Base class
-## does nothing with it: a utility only needs this if standing in a slightly
-## different place would change the game, which is the wall and nothing else.
-func snap_to_landing(_position: Vector3, _yaw: float) -> void:
-	pass
 
 
 # Overridden by subclasses
@@ -142,8 +116,6 @@ func _detonate() -> void:
 ## separacion de los enemigos, por el mismo motivo.
 func _enemies_in_radius(radius: float) -> Array[Enemy]:
 	var result: Array[Enemy] = []
-	if is_cosmetic:
-		return result
 	var radius_squared: float = radius * radius
 	for enemy: Enemy in Enemy.get_active_enemies():
 		if enemy != null and is_instance_valid(enemy) and enemy.is_active \

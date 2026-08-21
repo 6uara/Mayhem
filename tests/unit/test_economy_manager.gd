@@ -86,9 +86,8 @@ func test_generic_spend_refuses_a_negative_cost() -> void:
 	assert_eq(EconomyManager.currency, 100, "a negative price must not print money")
 
 
-## Income arrives on kill_credited, not enemy_killed. The two were the same
-## event while there was one player; in coop the host resolves every death in
-## the arena and only some of them are its money - see EventBus.
+## Income arrives on kill_credited, not enemy_killed: one announces a death,
+## the other says this wallet gets paid for it - see EventBus.
 func test_kills_pay_into_the_wave_total() -> void:
 	EconomyManager.begin_wave()
 	EventBus.kill_credited.emit(10)

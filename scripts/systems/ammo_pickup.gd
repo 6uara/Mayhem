@@ -47,15 +47,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not is_available:
-		# The host owns the respawn clock. Left to run on every peer it drifts:
-		# each machine starts counting when its own copy was taken, and a pickup
-		# that is back on one screen and still gone on another is worse than one
-		# that comes back a few frames late everywhere.
-		if not NetworkManager.is_host():
-			return
 		_respawn_left -= delta
 		if _respawn_left <= 0.0:
-			_announce_available(true)
+			_set_available(true)
 		return
 
 	_bob_time += delta
@@ -66,77 +60,18 @@ func _process(delta: float) -> void:
 
 # Private
 
-## Only ever reacts to the body this machine drives.
-##
-## A teammate walking over a pickup trips this on every peer, and reserve ammo
-## lives on the machine that owns the gun - the host topping up its copy of a
-## client's weapon would be filling a magazine nobody is holding. Whoever
-## touched it asks for it from their own machine, and everyone else finds out
-## the pickup is gone.
 func _on_body_entered(body: Node3D) -> void:
 	if not is_available or not body.is_in_group(&"player"):
 		return
 	var player := body as Player
-	if player == null or player.weapon_holder == null or not player.is_local():
+	if player == null or player.weapon_holder == null:
 		return
-	# Asked before claiming rather than after: a player with full pouches must
-	# not take a pickup away from the teammate two steps behind them.
+	# Asked before taking it: walking over a box with full pouches must leave it
+	# standing there for when you actually need it.
 	if not player.weapon_holder.has_reserve_room():
 		return
-
-	# Solo is the host branch: a session of one, taking the pickup from itself.
-	if NetworkManager.is_host():
-		_claim_for(NetworkManager.SERVER_ID)
-		return
-	# The ammo is not granted here and now. It arrives with the host's answer,
-	# which is what stops two players a ping apart both walking away with the
-	# same box - the second one is told the box is already gone.
-	_request_claim.rpc_id(NetworkManager.SERVER_ID)
-
-
-# Coop
-#
-# The pickup is host-owned state: whether it is there, and who got it. Only the
-# grant itself happens on the claimant's machine, because that is where its
-# weapon's ammo actually lives.
-
-@rpc("any_peer", "call_remote", "reliable")
-func _request_claim() -> void:
-	if not multiplayer.is_server():
-		return
-	_claim_for(multiplayer.get_remote_sender_id())
-
-
-## Host: hand the pickup to one peer and tell everyone it is gone.
-func _claim_for(peer_id: int) -> void:
-	if not is_available:
-		return  # Someone else got here first. Their claim already went out.
-	_announce_available(false)
-	if peer_id == NetworkManager.SERVER_ID:
-		var player := Players.local() as Player
-		if player != null:
-			_grant_to(player)
-		return
-	_receive_grant.rpc_id(peer_id)
-
-
-@rpc("authority", "call_remote", "reliable")
-func _receive_grant() -> void:
-	var player := Players.local() as Player
-	if player != null:
-		_grant_to(player)
-
-
-@rpc("authority", "call_local", "reliable")
-func _receive_available(available: bool) -> void:
-	_set_available(available)
-
-
-func _announce_available(available: bool) -> void:
-	if NetworkManager.is_online():
-		_receive_available.rpc(available)
-		return
-	_set_available(available)
+	_set_available(false)
+	_grant_to(player)
 
 
 func _grant_to(player: Player) -> void:

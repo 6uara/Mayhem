@@ -92,22 +92,6 @@ var is_active: bool = false
 var move_target: Vector3 = Vector3.ZERO
 var is_moving: bool = false
 
-## Identifies this enemy across the network. Assigned by the host on spawn and
-## carried in every snapshot, so a client can tell which body a position update
-## belongs to. Zero means "not replicated" - the single-player case.
-var net_id: int = 0
-## True on a client's copy of a host-owned enemy. A remote enemy is a puppet:
-## it has no brain, takes no damage locally and never moves itself. Everything
-## it does arrives from the host, and simulating any of it here would fight the
-## incoming snapshot rather than smooth it.
-var is_remote: bool = false
-## Peer whose shot last landed on this enemy, and therefore who gets paid when it
-## dies. Zero means the host's own player, which is also the single-player answer.
-##
-## Last hit rather than most damage: it costs one integer instead of a table per
-## enemy, and in a horde shooter where the same rusher is being shot by three
-## people the last hit is the one that reads as the kill anyway.
-var last_damager: int = 0
 ## How far into a wind-up this enemy is, 0 when it is not telegraphing anything.
 ##
 ## Kept as state rather than left inside the material because it has to travel:
@@ -237,26 +221,6 @@ func _physics_process(delta: float) -> void:
 	if _blocked_link_time <= 0.0:
 		_blocked_link = null
 
-	if is_remote:
-		# Keep the cosmetics that are purely local - the halo spin and the
-		# healer's tether are decoration, not state anyone needs to agree on.
-		# Everything below this line is simulation, and on a client it would
-		# argue with the host's snapshot instead of following it.
-		if halo != null and halo.visible:
-			halo.rotate_y(delta * 0.8)
-		_update_tether()
-		# Re-applied every frame because the block above wipes the emission the
-		# moment the hit flash ends, and on a puppet nothing else would put the
-		# telegraph back. The value itself arrives in the snapshot.
-		#
-		# Via _set_glow y no escribiendo _material a mano: desde que los enemigos
-		# traen modelo, el brillo son dos materiales -el de la capsula y el
-		# overlay sobre las mallas del modelo-. Pintar solo el primero dejaba al
-		# spider bot sin telegrafo en el cliente, que es justo el enemigo que mas
-		# se ve.
-		if windup_progress > 0.0 and _flash_timer <= 0.0:
-			_set_glow(windup_progress)
-		return
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -311,9 +275,8 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	velocity = Vector3.ZERO
 	is_moving = false
 	move_target = spawn_position
-	# Pooled: an enemy carries the previous occupant's bounty claim - and its
-	# half-finished telegraph - otherwise.
-	last_damager = 0
+	# Pooled: an enemy carries the previous occupant's half-finished
+	# telegraph otherwise.
 	windup_progress = 0.0
 	_stagger_timer = 0.0
 	_flash_timer = 0.0
@@ -356,35 +319,13 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 		health.reset()
 	if agent != null:
 		agent.max_speed = data.move_speed
-	# A puppet keeps its hitboxes so local shots still register a hit to report
-	# to the host, but it is never given a brain - the host owns every decision
-	# this enemy makes, and a second tree running here would pick different ones.
 	_set_hitboxes_enabled(true)
-	if not is_remote:
-		_rebuild_behavior_tree()
+	_rebuild_behavior_tree()
 
 	is_active = true
 	if not _flock.has(self):
 		_flock.append(self)
 	AudioPool.play_3d(data.spawn_sound, global_position, AudioPool.BUS_ENEMIES)
-
-
-## Client-side exit: the host has decided this enemy is gone.
-##
-## Plays the same death beat a real kill does but claims none of its
-## consequences. The reward and the wave's remaining count belong to the host's
-## simulation; emitting enemy_killed here would pay every client its own copy of
-## the bounty and let four machines disagree about when the wave is clear.
-func despawn_remote() -> void:
-	if not is_active:
-		return
-	is_active = false
-	is_moving = false
-	_set_hitboxes_enabled(false)
-	_clear_behavior_tree()
-	if data != null:
-		AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
-	ObjectPool.release(self)
 
 
 func _on_acquired() -> void:
@@ -572,11 +513,6 @@ func deal_melee_damage() -> void:
 	if player_health != null:
 		player_health.apply_damage(data.damage)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
-	# Broadcast from here rather than from the tree action, so a swing that
-	# whiffed - the player left the wind-up, or a wall got in the way - stays
-	# silent on every machine instead of only on this one.
-	if EnemyReplicator.instance != null:
-		EnemyReplicator.instance.broadcast_melee(self)
 
 
 ## Se tira encima del jugador. Devuelve false si desde aca no se puede.
@@ -689,11 +625,6 @@ func fire_projectile() -> void:
 	typed.launch(origin, direction, data.damage, data.projectile_speed, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 	# The shot itself is not in the snapshot - snapshots carry who is standing
-	# where, and a projectile that is only sampled 20 times a second reads as a
-	# row of blinks. What travels is the launch, and each client flies its own
-	# copy from there.
-	if EnemyReplicator.instance != null:
-		EnemyReplicator.instance.broadcast_projectile(self, origin, direction)
 
 
 ## Heals every other living enemy inside `heal_radius`. Returns how many it helped,
@@ -719,10 +650,6 @@ func heal_nearby_allies() -> int:
 
 ## Plays the visual half of a wind-up telegraph.
 func show_windup(progress: float) -> void:
-	# windup_progress se sigue guardando aunque _set_glow ya no lo necesite:
-	# EnemyReplicator lo serializa para que el cliente vea el telegrafo del
-	# enemigo que el host esta cargando. Es estado replicado, no una variable
-	# de dibujo.
 	windup_progress = clampf(progress, 0.0, 1.0)
 	_set_glow(windup_progress)
 
@@ -1380,14 +1307,6 @@ func _on_died() -> void:
 	_clear_behavior_tree()
 	AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
-	# The bounty goes to whoever was shooting, which is not always the machine
-	# resolving the death. EnemyReplicator sends it on when that is a client;
-	# with no session, or with the host's own player on the trigger, it is paid
-	# here and the single-player path is unchanged.
-	if EnemyReplicator.instance != null and EnemyReplicator.instance.credit_kill(
-			last_damager, data.id, global_position, data.reward_currency):
-		ObjectPool.release(self)
-		return
 	EventBus.kill_credited.emit(data.reward_currency)
 	ObjectPool.release(self)
 

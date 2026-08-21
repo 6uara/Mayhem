@@ -25,9 +25,8 @@ func _ready() -> void:
 		# Degrade gracefully: a missing resource must never crash the run.
 		push_warning("EconomyManager: %s missing, using defaults" % CONFIG_PATH)
 		config = EconomyConfig.new()
-	# Deliberately not enemy_killed: in coop that fires on the host for every
-	# death in the arena, including the ones a client shot. kill_credited is the
-	# same event narrowed to "and this wallet gets it" - see EventBus.
+	# Deliberately not enemy_killed: that one announces a death, kill_credited
+	# is the same event narrowed to "and this wallet gets it" - see EventBus.
 	EventBus.kill_credited.connect(_on_kill_credited)
 	EventBus.player_died.connect(reset)
 	reset()

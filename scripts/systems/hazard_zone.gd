@@ -117,12 +117,6 @@ func _apply_radius() -> void:
 
 
 func _damage(body: Node3D) -> void:
-	# The acid is part of the arena, so it exists and ticks on every machine -
-	# but only the host may act on it. A client burning its own copy of a player
-	# would fight the health the host replicates back, and burning its own copy
-	# of an enemy would do nothing at all except make the two disagree.
-	if NetworkManager.is_online() and not NetworkManager.is_host():
-		return
 	if not body.is_in_group(&"player") and not body.is_in_group(&"enemy"):
 		return
 	if not _is_standing_in_it(body):

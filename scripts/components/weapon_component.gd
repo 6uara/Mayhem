@@ -339,17 +339,7 @@ func _resolve_hitscan(origin: Vector3, target: Vector3, hit: Dictionary) -> void
 			var damage: float = get_damage() * _falloff_at(distance)
 			if hitbox.is_headshot_zone:
 				damage *= data.headshot_multiplier
-			# Mismo desvio que hace Projectile, y por el mismo motivo: en coop la
-			# salud de cada enemigo la posee el host, asi que este impacto es un
-			# pedido y no un resultado. Resolver el disparo en el gatillo hizo
-			# mas corto el camino desde apretar hasta aplicar daño, pero no
-			# cambio quien tiene derecho a aplicarlo - un cliente que llamara a
-			# take_hit() aca mataria su propia copia del enemigo y veria al de
-			# verdad seguir caminando. En solo el replicator resuelve en el acto.
-			if EnemyReplicator.instance != null:
-				EnemyReplicator.instance.report_hit(hitbox, damage, target)
-			else:
-				hitbox.take_hit(damage, target)
+			hitbox.take_hit(damage, target)
 
 	if not _wants_tracer() or data.projectile_scene == null:
 		return

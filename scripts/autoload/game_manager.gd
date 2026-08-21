@@ -106,28 +106,6 @@ func restart_run() -> void:
 	await _reveal()
 
 
-## Host-only: pulls every peer into the arena at once.
-##
-## The scene change is broadcast rather than left to each client to perform when
-## it feels like it. Players are spawned by the host into a scene it assumes is
-## already standing on the other side, so peers drifting into the arena at their
-## own pace is the difference between a coop match and three people staring at a
-## menu while a fourth fights alone.
-func start_coop_run() -> void:
-	if not NetworkManager.is_host():
-		return
-	if not NetworkManager.is_online():
-		# Solo: no one to tell, and rpc() with no real peer is an error.
-		restart_run()
-		return
-	_begin_run.rpc()
-
-
-@rpc("authority", "call_local", "reliable")
-func _begin_run() -> void:
-	restart_run()
-
-
 func return_to_menu() -> void:
 	var scene: PackedScene = await _prepare_scene(MENU_SCENE_PATH)
 	clear_freezes()

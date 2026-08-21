@@ -63,12 +63,6 @@ static func is_alive(body: Node3D) -> bool:
 	var player := body as Player
 	if player == null:
 		return true
-	# is_downed is the networked answer and health.is_dead the local one. A
-	# client's own body never takes damage locally, so on that machine only
-	# is_downed is ever true; on the host both are. Checking either way round
-	# alone would call a corpse alive on one of the two.
-	if player.is_downed:
-		return false
 	return player.health == null or not player.health.is_dead
 
 

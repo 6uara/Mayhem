@@ -9,7 +9,6 @@ extends Control
 
 @onready var _root: Control = $Root
 @onready var _play_button: Button = $Root/Panel/Margin/Layout/PlayButton
-@onready var _coop_button: Button = $Root/Panel/Margin/Layout/CoopButton
 @onready var _leaderboard_button: Button = $Root/Panel/Margin/Layout/LeaderboardButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
 @onready var _quit_button: Button = $Root/Panel/Margin/Layout/QuitButton
@@ -17,19 +16,16 @@ extends Control
 @onready var _footer: Label = $Root/Panel/Margin/Layout/Footer
 @onready var _settings: SettingsScreen = $Settings
 @onready var _leaderboard: LeaderboardPanel = $Leaderboard
-@onready var _coop: CoopPanel = $Coop
 
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_play_button.pressed.connect(_on_play_pressed)
-	_coop_button.pressed.connect(_on_coop_pressed)
 	_leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
 	_quit_button.pressed.connect(get_tree().quit)
 	_settings.closed.connect(_on_panel_closed)
 	_leaderboard.closed.connect(_on_panel_closed)
-	_coop.closed.connect(_on_panel_closed)
 	_refresh_best()
 	_set_footer()
 	_play_button.grab_focus()
@@ -55,11 +51,6 @@ func _set_footer() -> void:
 
 func _on_play_pressed() -> void:
 	GameManager.restart_run()
-
-
-func _on_coop_pressed() -> void:
-	_root.visible = false
-	_coop.open()
 
 
 func _on_leaderboard_pressed() -> void:
