@@ -88,7 +88,14 @@ Hay bits de capa libres (`PhysicsLayers` llega a `TRIGGER`, 1 << 11).
 `Enemy._steer()` hace `direction.y = 0.0` (`enemy.gd:519`). La altura sale sólo
 de la gravedad y de saltos balísticos que siempre aterrizan.
 
-### 2.4 No existe atribución de muertes
+### 2.4 No existe atribución de muertes — **cerrado**
+
+> Construido en el paso 3 de §6. Lo que sigue era el diagnóstico. Hoy
+> `HealthComponent.last_attacker` guarda quién pegó último, todas las fuentes de
+> daño lo pasan, y `kill_credited` sale sólo si el golpe final fue del jugador.
+> Falta la otra mitad de §5.4 — el botín ajeno cayendo al piso (`CurrencyPickup`)
+> —, que no tiene sentido sin alguien más que mate, o sea sin Gladiadores.
+
 
 **Este es nuevo y es el que habilita toda la economía de abajo.** Hoy `Enemy`
 emite `EventBus.enemy_killed(id, position, reward)` al morir
@@ -444,8 +451,13 @@ El orden importa porque los bloqueos se comparten.
    más o menos la moraleja del proyecto entero.
 2. ~~**Environmental, sólo frasco de hazard** (S)~~ — **hecho.** Salió más barato
    que el Bomber: `HazardZone` estaba entera y `ThrownUtility` también.
-3. **Atribución de muertes** (M) — §2.4. Es independiente de los Gladiadores y
-   mejora el juego solo: que la moneda venga de lo que hacés es correcto igual.
+3. ~~**Atribución de muertes** (M)~~ — **hecho.** Salió más barato de lo
+   esperado porque `kill_credited` ya estaba separada de `enemy_killed` desde el
+   coop: la señal correcta existía y sólo le faltaba la condición. Lo único que
+   hubo que inventar fue el dueño del golpe, y va en `HealthComponent`, que es
+   por donde ya pasaban todas las fuentes de daño. Detalle en
+   [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §Whose kill it was;
+   tests en `tests/integration/test_kill_attribution.gd`.
 4. **Prioridad de voces en `AudioPool`** (M) — pendiente previo y precondición
    real para tres facciones.
 5. **Abstracción de objetivo + facciones** (L) — §2.1 y §2.2, con los tests
@@ -477,6 +489,13 @@ Tomadas (no re-discutir sin motivo nuevo):
 - Un Bomber que nunca se armó **explota igual** al morir (§3.1, cerrada al
   construir).
 - La explosión es un nodo propio y no un `HazardZone` (§3.1).
+
+- La atribución vive en `HealthComponent` y no en cada fuente de daño: es el
+  único embudo por el que pasan todas (paso 3, cerrada al construir).
+- Un golpe sin atacante no le roba la muerte a quien la tenía: `null` es "nadie
+  se la atribuye", no "ahora es de nadie".
+- `enemy_killed` sigue anunciando toda muerte, la cobre alguien o no. El
+  contador de la oleada no puede depender de quién pegó.
 
 - El Environmental apunta al piso y no al jugador; errar es su modo normal (§4.2).
 - El frasco de hazard reusa `ThrownUtility` y `HazardZone` sin escribir ni el

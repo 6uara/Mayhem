@@ -33,6 +33,7 @@ globals):
 # Combat
 signal damage_dealt(target: Node, amount: float, is_headshot: bool)
 signal enemy_killed(enemy_type: StringName, position: Vector3, reward: int)
+signal kill_credited(reward: int)   # ...y es tuya: sólo si diste el golpe final
 signal player_damaged(amount: float, remaining: float)
 signal player_died()
 
@@ -66,6 +67,13 @@ signal game_paused(is_paused: bool)   # rides its own signal, not part of State
 # Settings
 signal settings_applied()
 ```
+
+`enemy_killed` y `kill_credited` no son redundantes: la primera anuncia una
+muerte y la escucha todo lo que reacciona a eso (el contador de la oleada, el
+anunciador, el feel), y sale siempre. La segunda dice "y esta plata es tuya", y
+desde la atribución de muertes sale sólo cuando el golpe final fue del jugador —
+ver [[05 Enemies and AI#Whose kill it was]]. `EconomyManager` cuelga de la
+segunda, nunca de la primera.
 
 `game_paused` is deliberately not folded into `game_state_changed`: pause can
 interrupt any state and leaves the run intact underneath, so widening the state

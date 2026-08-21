@@ -162,7 +162,7 @@ func _resolve_hit(hit: Dictionary) -> void:
 		# per-enemy damage_multiplier and applies it in take_hit().
 		if hitbox.is_headshot_zone:
 			damage *= _headshot_multiplier
-		hitbox.take_hit(damage, hit_position)
+		hitbox.take_hit(damage, hit_position, _shooter)
 	_spawn_impact(hit_position, normal, collider)
 	_expire()
 

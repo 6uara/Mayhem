@@ -265,6 +265,41 @@ note in `Explosion._victims()` for what that failure looks like.
 It is deliberately last, because taking away movement fights the game's own
 movement pillar and the call should be made while playing.
 
+## Whose kill it was
+
+Hasta ahora morirse alcanzaba para que el jugador cobrara: `Enemy._on_died()`
+emitía `kill_credited` incondicionalmente. Eso funciona mientras el jugador sea
+el único que reparte daño, y deja de funcionar en cuanto hay alguien más — los
+Gladiadores (§5 del plan), pero también la explosión del Bomber, que ya existe.
+
+La atribución vive en **un solo lugar**: `HealthComponent.last_attacker`. Es el
+embudo por el que ya pasaban todas las fuentes de daño del juego, y anotar al
+atacante en cada una por separado era garantizar que la próxima se olvidara.
+`apply_damage(amount, attacker)` lo deja registrado; `take_hit()` lo pasa por
+arriba para el hitbox.
+
+Tres reglas que no son obvias:
+
+- **Un golpe sin atacante no borra al dueño anterior.** `null` significa "nadie
+  se lo atribuye", no "ahora es de nadie". Es el caso de la espoleta del Bomber
+  matándose sola: si el jugador lo dejó al borde de la muerte y la cuenta llegó a
+  cero un frame antes que la próxima bala, esa muerte sigue siendo suya.
+- **La explosión tiene dos nodos distintos y no hay que confundirlos.**
+  `Explosion.detonate()` recibe `source` (quién revienta, y queda excluido de sus
+  propias víctimas) y `attacker` (de quién es lo que mate). El Bomber es lo
+  primero; el que voló al Bomber es lo segundo. Esa distinción **es** la jugada:
+  si la cadena se atribuyera a sí misma, elegir dónde matarlo no pagaría nada.
+- **El charco es del actor, no del volumen.** `HazardZone.attacker` se setea en
+  `setup()`, porque el `HazardZone` vuelve al pool y el próximo lo reusa,
+  mientras que el Elite o el Environmental que lo dejó no.
+
+`enemy_killed` y `kill_credited` siguen siendo dos señales porque ahora sí
+contestan cosas distintas: la primera es "murió uno" y la cobra el contador de la
+oleada pase lo que pase — una ola que no termina porque la última muerte fue
+ajena sería un cuelgue, no un balance —, la segunda es "y es tuyo".
+
+Tests en `tests/integration/test_kill_attribution.gd`.
+
 ## Enemy meshes
 
 `EnemyData.mesh` is typed `Mesh` (not `PackedScene`) — an imported `.fbx` scene

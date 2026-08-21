@@ -25,11 +25,14 @@ func _ready() -> void:
 
 ## Applies `base_damage` scaled by this zone's multiplier.
 ## Returns the damage actually dealt so the shooter can drive hitmarkers.
-func take_hit(base_damage: float, hit_position: Vector3) -> float:
+##
+## `attacker` viaja hasta el HealthComponent y es lo que decide de quién es la
+## muerte. Opcional: un hitbox golpeado por algo anónimo sigue sangrando igual.
+func take_hit(base_damage: float, hit_position: Vector3, attacker: Node = null) -> float:
 	var amount: float = base_damage * damage_multiplier
 	var applied: float = 0.0
 	if health_component != null:
-		applied = health_component.apply_damage(amount)
+		applied = health_component.apply_damage(amount, attacker)
 	hit_taken.emit(applied, is_headshot_zone, hit_position)
 	EventBus.damage_dealt.emit(owner, applied, is_headshot_zone)
 	return applied

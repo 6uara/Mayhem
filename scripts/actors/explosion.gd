@@ -51,11 +51,16 @@ func _process(delta: float) -> void:
 ## Revienta acá, ahora. Devuelve a cuántos alcanzó.
 ##
 ## `source` es quien la causó y queda excluido - un Bomber no se mata a sí mismo
-## dos veces, ya está muerto. Cuando exista la atribución de muertes
-## (PLAN_NEW_ENEMY_TYPES §2.4) este es el parámetro que va a llevar el asesino
-## real: el jugador que voló al Bomber es dueño de lo que la explosión mate.
+## dos veces, ya está muerto.
+##
+## `attacker` es de quién es lo que la explosión mate, y **no** es lo mismo que
+## `source`: el que revienta es el Bomber, pero el dueño de la cadena es el que
+## voló al Bomber (PLAN_NEW_ENEMY_TYPES §5.4). Esa distinción es toda la jugada -
+## si la explosión se atribuyera a sí misma, elegir dónde matarlo no pagaría nada
+## y el arquetipo volvería a ser un accidente. `null` deja la muerte sin dueño,
+## que es lo correcto para un Bomber que reventó solo sin que nadie lo tocara.
 func detonate(radius: float, damage: float, sound: AudioStream = null,
-		source: Node3D = null) -> int:
+		source: Node3D = null, attacker: Node = null) -> int:
 	radius = maxf(radius, 0.1)
 	if flash_mesh != null:
 		flash_mesh.mesh = _flash_mesh_for(radius)
@@ -78,7 +83,7 @@ func detonate(radius: float, damage: float, sound: AudioStream = null,
 		var health: HealthComponent = _find_health(body)
 		if health == null:
 			continue
-		health.apply_damage(damage)
+		health.apply_damage(damage, attacker if is_instance_valid(attacker) else null)
 		hits += 1
 	detonated.emit(hits)
 	return hits

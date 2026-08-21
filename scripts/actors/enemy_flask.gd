@@ -49,4 +49,6 @@ func _leave_pool() -> void:
 		push_error("EnemyFlask: hazard_scene no es un HazardZone")
 		return
 	zone.global_position = global_position
-	zone.setup(pool_damage, pool_radius, pool_duration)
+	# El charco es del que lo tiró, no del frasco: el frasco vuelve al pool en la
+	# línea siguiente y el charco le sobrevive cinco segundos.
+	zone.setup(pool_damage, pool_radius, pool_duration, _thrower)

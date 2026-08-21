@@ -339,7 +339,10 @@ func _resolve_hitscan(origin: Vector3, target: Vector3, hit: Dictionary) -> void
 			var damage: float = get_damage() * _falloff_at(distance)
 			if hitbox.is_headshot_zone:
 				damage *= data.headshot_multiplier
-			hitbox.take_hit(damage, target)
+			# `body` y no el arma: el dueño de la muerte es el que aprieta el
+			# gatillo, no el fierro. Es el mismo nodo que recibe Projectile.launch()
+			# como shooter, así que hitscan y bala atribuyen igual.
+			hitbox.take_hit(damage, target, body)
 
 	if not _wants_tracer() or data.projectile_scene == null:
 		return

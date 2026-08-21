@@ -34,6 +34,12 @@ signal expired()
 ## True once the warning has elapsed and it can actually damage.
 var is_armed: bool = false
 
+## Quién causó el charco, o `null` en una trampa del arena, que no es de nadie.
+## Lo que muera adentro es de quien lo puso (PLAN_NEW_ENEMY_TYPES §2.4). Que sea
+## el enemigo y no el charco importa: el charco vuelve al pool y el próximo lo
+## reusa, el enemigo no.
+var attacker: Node = null
+
 var _time_left: float = 0.0
 var _tick_timer: float = 0.0
 var _bodies_inside: Array[Node3D] = []
@@ -88,10 +94,12 @@ func arm() -> void:
 
 
 ## Reconfigures a pooled hazard - the Elite's slam uses this.
-func setup(hazard_damage: float, hazard_radius: float, hazard_duration: float) -> void:
+func setup(hazard_damage: float, hazard_radius: float, hazard_duration: float,
+		hazard_attacker: Node = null) -> void:
 	damage = hazard_damage
 	radius = hazard_radius
 	duration = hazard_duration
+	attacker = hazard_attacker
 	_bodies_inside.clear()
 	arm()
 
@@ -124,7 +132,7 @@ func _damage(body: Node3D) -> void:
 	for child: Node in body.get_children():
 		var health := child as HealthComponent
 		if health != null:
-			health.apply_damage(damage)
+			health.apply_damage(damage, attacker if is_instance_valid(attacker) else null)
 			return
 
 

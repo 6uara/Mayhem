@@ -601,7 +601,7 @@ func deal_melee_damage() -> void:
 		return
 	var player_health: HealthComponent = _find_health(player)
 	if player_health != null:
-		player_health.apply_damage(data.damage)
+		player_health.apply_damage(data.damage, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -711,7 +711,7 @@ func _check_leap_contact() -> void:
 	_leap_hit_landed = true
 	var player_health: HealthComponent = _find_health(player)
 	if player_health != null:
-		player_health.apply_damage(data.damage)
+		player_health.apply_damage(data.damage, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -768,7 +768,14 @@ func _spawn_blast() -> void:
 		push_error("Enemy: explosion_scene de %s no es una Explosion" % data.id)
 		return
 	blast.global_position = global_position + Vector3.UP * (data.collision_height * 0.5)
-	blast.detonate(data.explosion_radius, data.explosion_damage, data.explosion_sound, self)
+	# El estallido lo causa esta bomba, pero lo que mate es del que la mató: matar
+	# un Bomber al lado de un grupo es cobrar el grupo (PLAN_NEW_ENEMY_TYPES §5.4).
+	# La cadena no se encadena de nuevo - si la explosión mata a otro Bomber, ese
+	# segundo estallido hereda el mismo dueño por el mismo camino, porque el golpe
+	# que lo mató ya venía atribuido.
+	var owner_of_the_blast: Node = health.last_attacker if health != null else null
+	blast.detonate(data.explosion_radius, data.explosion_damage, data.explosion_sound,
+		self, owner_of_the_blast)
 
 
 ## El anillo de aviso en el piso, del tamaño exacto del estallido.
@@ -1534,9 +1541,30 @@ func _on_died() -> void:
 		_has_detonated = true
 		_spawn_blast()
 	AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
+	# Los dos contestan preguntas distintas y por eso siguen siendo dos: enemy_killed
+	# es "murió uno" y lo cobra el contador de la oleada pase lo que pase;
+	# kill_credited es "y es tuyo", que a partir de ahora no siempre es cierto.
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
-	EventBus.kill_credited.emit(data.reward_currency)
+	if _killed_by_the_player():
+		EventBus.kill_credited.emit(data.reward_currency)
 	ObjectPool.release(self)
+
+
+## Si el golpe final fue del jugador, que es lo único que se cobra
+## (PLAN_NEW_ENEMY_TYPES §5.4).
+##
+## Sube por los padres en vez de mirar sólo el nodo: el atacante que llega es el
+## cuerpo del jugador hoy, pero una utilidad o un charco puesto por él pueden
+## atribuirse a un hijo suyo, y esa muerte también es suya.
+func _killed_by_the_player() -> bool:
+	if health == null:
+		return false
+	var attacker: Node = health.last_attacker
+	while attacker != null and is_instance_valid(attacker):
+		if attacker.is_in_group(&"player"):
+			return true
+		attacker = attacker.get_parent()
+	return false
 
 
 func _find_health(node: Node) -> HealthComponent:

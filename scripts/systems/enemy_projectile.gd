@@ -69,7 +69,7 @@ func _physics_process(delta: float) -> void:
 	if not _is_cosmetic and player != null and player.is_in_group(&"player"):
 		var health: HealthComponent = _find_health(player)
 		if health != null:
-			health.apply_damage(_damage)
+			health.apply_damage(_damage, _shooter)
 	_spawn_impact(hit["position"], hit["normal"], hit["collider"])
 	_expire()
 

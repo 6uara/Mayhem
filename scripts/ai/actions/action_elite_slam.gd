@@ -38,4 +38,4 @@ func _leave_pool(enemy: Enemy) -> void:
 		return
 	zone.global_position = enemy.global_position
 	zone.setup(enemy.data.damage * pool_damage_fraction,
-		enemy.data.attack_range * pool_radius_multiplier, pool_duration)
+		enemy.data.attack_range * pool_radius_multiplier, pool_duration, enemy)

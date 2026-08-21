@@ -162,10 +162,9 @@ armados para que arrancar no cueste una sesión de arqueología:
   3. **No hay vuelo.** `Enemy._steer()` hace `direction.y = 0.0`; la altura sale
      sólo de la gravedad y de saltos balísticos que siempre aterrizan. Un
      enemigo volador necesita un modo de movimiento nuevo, no un número distinto.
-  4. **No existe atribución de muertes.** `Enemy` emite
-     `EventBus.enemy_killed(id, position, reward)` al morir (`enemy.gd:1138`) y
-     `EconomyManager._on_enemy_killed()` suma la moneda sin preguntar quién
-     mató (`economy_manager.gd:97`). No hay concepto de "asesino" en ningún
-     lado. Cualquier regla del tipo "sólo cobrás lo que rematás vos" es un
-     sistema nuevo, no un ajuste de balance — y es útil por sí sola, aunque los
-     Gladiadores nunca se construyan.
+  4. ~~**No existe atribución de muertes.**~~ **Cerrado.** `HealthComponent`
+     guarda `last_attacker`, todas las fuentes de daño lo pasan, y `Enemy`
+     emite `kill_credited` sólo cuando el golpe final fue del jugador. La
+     muerte se sigue anunciando por `enemy_killed` pase lo que pase, porque el
+     contador de la oleada no puede depender de quién pegó. Ver
+     [05 Enemies and AI](05%20Enemies%20and%20AI.md) §Whose kill it was.
