@@ -124,6 +124,38 @@ together — one ref-counted mechanism, not two, so `MusicManager` gets VO
 ducking for free the moment `NarratorManager` calls `push_duck()`/`pop_duck()`
 around a line; it never needed its own.
 
+### Voice priority
+
+Una voz que no está libre ya no significa "este sonido no suena". `play_3d()` /
+`play_2d()` toman una prioridad y, con el pool lleno, se la roban a una voz que
+valga **estrictamente** menos. La escala (`AudioPool.Priority`) no mide
+importancia en abstracto, mide qué se rompe si el sonido falta:
+
+| Nivel | Qué es | Qué pasa si no suena |
+|---|---|---|
+| `CRITICAL` | El arma del jugador, la voz del Host | Se cae el pilar 1 |
+| `TELEGRAPH` | Wind-ups, la espoleta del Bomber, el aviso del charco y el de la plataforma | Daño sin aviso — la regla de CLAUDE.md 5.3 |
+| `NORMAL` | Todo lo demás: enemigos, mundo, UI | Se nota poco |
+| `AMBIENT` | Impactos | No se nota: es un sonido por bala |
+
+La prioridad **sale del bus** (`BUS_PRIORITY`), así que las cuarenta llamadas que
+ya existían quedaron bien clasificadas sin tocar ninguna — el bus ya decía de qué
+era cada sonido. La excepción son los avisos, que están repartidos entre `Enemies`
+y `World` y por eso piden su nivel a mano; son cuatro llamadas.
+
+Dos reglas que no son obvias:
+
+- **Igual prioridad no roba.** Con "menor o igual", una ráfaga de SMG se cortaría
+  a sí misma en el segundo tiro.
+- **Se roba la voz más lejana del oyente**, a igual prioridad (la más vieja en el
+  pool 2D, que no tiene posición). Un impacto a treinta metros ya casi no se oye.
+
+Esto cierra el hallazgo §3 de [HANDOFF_FEEL_AND_FIXES.md](../HANDOFF_FEEL_AND_FIXES.md):
+`tools/configure_audio_mix.gd` describía la jerarquía "VO y Weapons arriba, UI
+abajo", pero eso era ganancia. Esta es la mitad que faltaba, que es asignación de
+voces. Era además precondición de los Gladiadores: tres bandos peleando llenan el
+mix mucho más rápido que uno.
+
 ## MusicManager
 
 `scripts/autoload/music_manager.gd`. Crossfades a looping music bed to match

@@ -650,7 +650,10 @@ func arm_fuse() -> bool:
 	_fuse_armed = true
 	_fuse_left = maxf(data.fuse_time, 0.05)
 	_fuse_blink_time = 0.0
-	AudioPool.play_3d(data.fuse_sound, global_position, AudioPool.BUS_ENEMIES)
+	# La espoleta es un aviso, no un sonido de bicho: se roba una voz antes que
+	# perderse. Una bomba silenciosa es una bomba invisible.
+	AudioPool.play_3d(data.fuse_sound, global_position, AudioPool.BUS_ENEMIES,
+		0.0, 1.0, AudioPool.Priority.TELEGRAPH)
 	return true
 
 

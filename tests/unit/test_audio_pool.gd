@@ -57,12 +57,95 @@ func test_play_3d_resolves_an_unknown_bus_to_master() -> void:
 
 
 func test_play_3d_pool_exhaustion_drops_the_sound_and_warns() -> void:
-	var players: Array[AudioStreamPlayer3D] = []
-	for i: int in AudioPool.POOL_SIZE_3D:
-		players.push_back(AudioPool.play_3d(_stream, Vector3.ZERO))
+	_fill_3d_with(AudioPool.BUS_SFX)
 	assert_null(AudioPool.play_3d(_stream, Vector3.ZERO),
-		"every 3D voice is busy - the next request must be dropped, not crash")
+		"every 3D voice is busy and none is worth less - dropped, not crash")
 	assert_push_warning("3D pool exhausted")
+
+
+# ------------------------------------------------------------ prioridad de voces
+#
+# El pool se satura de verdad: una ola elite son 27 enemigos, mas una SMG a 15
+# balas por segundo, mas un impacto por bala. Sin prioridad la unica regla era el
+# orden de llegada, y lo que se caia podia ser el disparo del jugador - el pilar 1
+# perdiendo contra el paso de un bicho. Con tres facciones va a ser peor.
+
+func test_the_bus_decides_the_priority_so_no_call_site_has_to() -> void:
+	assert_eq(AudioPool._resolve_priority(AudioPool.BUS_WEAPONS, -1),
+		AudioPool.Priority.CRITICAL as int, "el arma del jugador nunca se cae")
+	assert_eq(AudioPool._resolve_priority(AudioPool.BUS_VO, -1),
+		AudioPool.Priority.CRITICAL as int, "la voz del Host tampoco")
+	assert_eq(AudioPool._resolve_priority(AudioPool.BUS_IMPACTS, -1),
+		AudioPool.Priority.AMBIENT as int, "los impactos son el sacrificio barato")
+	assert_eq(AudioPool._resolve_priority(AudioPool.BUS_ENEMIES, -1),
+		AudioPool.Priority.NORMAL as int, "el resto es normal")
+
+
+func test_an_explicit_priority_beats_the_bus() -> void:
+	assert_eq(AudioPool._resolve_priority(AudioPool.BUS_WORLD, AudioPool.Priority.TELEGRAPH),
+		AudioPool.Priority.TELEGRAPH as int,
+		"los avisos viven repartidos entre buses y por eso se piden a mano")
+
+
+## El caso que motiva todo esto: el pool lleno de impactos y el jugador dispara.
+func test_the_players_gunshot_steals_a_voice_instead_of_being_dropped() -> void:
+	_fill_3d_with(AudioPool.BUS_IMPACTS)
+	var shot: AudioStreamPlayer3D = AudioPool.play_3d(_stream, Vector3.ZERO,
+		AudioPool.BUS_WEAPONS)
+	assert_not_null(shot, "el disparo del jugador nunca se cae")
+	assert_true(shot.playing, "y suena")
+
+
+func test_a_telegraph_steals_a_voice_too() -> void:
+	_fill_3d_with(AudioPool.BUS_IMPACTS)
+	var warning: AudioStreamPlayer3D = AudioPool.play_3d(_stream, Vector3.ZERO,
+		AudioPool.BUS_WORLD, 0.0, 1.0, AudioPool.Priority.TELEGRAPH)
+	assert_not_null(warning, "un aviso que no suena es dano sin telegrafia")
+
+
+## Al reves: lo barato no le saca la voz a lo caro. Sin esta mitad, la prioridad
+## no ordena nada - solo cambia quien pisa a quien.
+func test_an_impact_does_not_steal_from_the_gun() -> void:
+	_fill_3d_with(AudioPool.BUS_WEAPONS)
+	assert_null(AudioPool.play_3d(_stream, Vector3.ZERO, AudioPool.BUS_IMPACTS),
+		"un impacto no calla un disparo")
+	assert_push_warning("3D pool exhausted")
+
+
+## Igual prioridad no roba, y esto importa mas de lo que parece: con "menor o
+## igual" una rafaga se cortaria a si misma en el segundo tiro.
+func test_a_sound_never_steals_from_its_own_kind() -> void:
+	_fill_3d_with(AudioPool.BUS_WEAPONS)
+	assert_null(AudioPool.play_3d(_stream, Vector3.ZERO, AudioPool.BUS_WEAPONS),
+		"el segundo disparo no corta al primero")
+	assert_push_warning("3D pool exhausted")
+
+
+## La voz robada es la que menos se extrana: a igual prioridad, la mas lejana.
+func test_the_stolen_voice_is_the_farthest_one() -> void:
+	var far: AudioStreamPlayer3D = AudioPool.play_3d(_stream, Vector3(500, 0, 0),
+		AudioPool.BUS_IMPACTS)
+	var near: AudioStreamPlayer3D = AudioPool.play_3d(_stream, Vector3(1, 0, 0),
+		AudioPool.BUS_IMPACTS)
+	for i: int in AudioPool.POOL_SIZE_3D - 2:
+		AudioPool.play_3d(_stream, Vector3(5, 0, 0), AudioPool.BUS_WEAPONS)
+
+	var stolen: AudioStreamPlayer3D = AudioPool.play_3d(_stream, Vector3.ZERO,
+		AudioPool.BUS_WEAPONS)
+	assert_eq(stolen, far, "se calla el impacto lejano, no el de al lado")
+	assert_true(near.playing, "el cercano sigue sonando")
+
+
+func test_the_2d_pool_steals_by_priority_as_well() -> void:
+	for i: int in AudioPool.POOL_SIZE_2D:
+		AudioPool.play_2d(_stream, AudioPool.BUS_UI)
+	assert_not_null(AudioPool.play_2d(_stream, AudioPool.BUS_VO),
+		"la voz del Host se queda con una voz del pool 2D")
+
+
+func _fill_3d_with(bus: StringName) -> void:
+	for i: int in AudioPool.POOL_SIZE_3D:
+		AudioPool.play_3d(_stream, Vector3.ZERO, bus)
 
 
 func test_stop_all_stops_every_active_player() -> void:

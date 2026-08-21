@@ -66,7 +66,8 @@ func trigger() -> void:
 	if state != State.SOLID:
 		return
 	_set_state(State.WARNING)
-	AudioPool.play_3d(warning_sound, global_position, AudioPool.BUS_WORLD)
+	AudioPool.play_3d(warning_sound, global_position, AudioPool.BUS_WORLD,
+		0.0, 1.0, AudioPool.Priority.TELEGRAPH)
 
 
 # Private

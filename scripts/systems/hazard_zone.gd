@@ -82,7 +82,8 @@ func arm() -> void:
 	if telegraph != null:
 		telegraph.set_blink_step(0.15)
 		telegraph.state = TelegraphComponent.State.WARNING
-	AudioPool.play_3d(warning_sound, global_position, AudioPool.BUS_WORLD)
+	AudioPool.play_3d(warning_sound, global_position, AudioPool.BUS_WORLD,
+		0.0, 1.0, AudioPool.Priority.TELEGRAPH)
 
 	await get_tree().create_timer(Tokens.HAZARD_WARNING).timeout
 	if not is_inside_tree():

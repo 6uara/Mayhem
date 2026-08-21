@@ -32,8 +32,10 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 
 	if not _sound_played:
 		_sound_played = true
+		# TELEGRAPH y no el default del bus: la preparacion es la mitad sonora del
+		# aviso, y un aviso que se cae por saturacion es dano sin telegrafia.
 		AudioPool.play_3d(enemy.data.windup_sound, enemy.global_position,
-			AudioPool.BUS_ENEMIES)
+			AudioPool.BUS_ENEMIES, 0.0, 1.0, AudioPool.Priority.TELEGRAPH)
 
 	var duration: float = maxf(enemy.data.attack_windup * windup_multiplier, 0.05)
 	_elapsed += get_physics_process_delta_time()

@@ -100,7 +100,13 @@ re-check `tests/integration/test_shooting_and_hitboxes.gd`.
 
 ---
 
-## 3. Player weapon fire can be silently dropped under load — *medido*
+## 3. Player weapon fire can be silently dropped under load — *medido* — **ARREGLADO**
+
+> Cerrado en la rama `nice-to-have/new-enemy-types`. `AudioPool` tiene una escala
+> de prioridad derivada del bus y roba voces en vez de descartar el sonido que
+> llega tarde; los avisos la piden a mano. Ver
+> [02 Autoloads](Mayhem/02%20Autoloads.md) §Voice priority. Lo de abajo es el
+> diagnóstico original.
 
 `AudioPool._find_free_3d()` (`scripts/autoload/audio_pool.gd:113`) scans 48
 players for a free one and, failing that, **drops the sound**. There is no

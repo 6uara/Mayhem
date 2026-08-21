@@ -410,11 +410,12 @@ Trabajo concreto:
 ### 5.5 Riesgos que quedan vivos
 
 - **Audio.** Cada arquetipo tiene que ser identificable sólo por sonido
-  (CLAUDE.md 6). Con tres bandos peleando el mix se llena, y ya hay un hallazgo
-  previo de que `AudioPool` descarta sonidos sin prioridad cuando se satura (ver
-  [HANDOFF_FEEL_AND_FIXES.md](HANDOFF_FEEL_AND_FIXES.md) §3). **Los Gladiadores
-  lo van a empeorar.** Conviene cerrar el ítem de prioridad de voces antes, no
-  después.
+  (CLAUDE.md 6). Con tres bandos peleando el mix se llena. La mitad estructural
+  está cerrada — `AudioPool` ya roba voces por prioridad en vez de descartar el
+  sonido que llega tarde (paso 4) —, así que lo que queda es el riesgo de diseño
+  y no el bug: 48 voces siguen siendo 48, y tres facciones las van a usar todas.
+  Si al jugarlo el mix se empasta, la respuesta ya no es "prioridad" sino menos
+  sonidos o más agrupación.
 - **Legibilidad general.** Con tres bandos, el jugador tiene que responder
   "¿quién le pega a quién?" de un vistazo. Color propio para los Gladiadores que
   no se confunda con el rojo de la horda ni con el acento de hazard, y silueta
@@ -458,8 +459,11 @@ El orden importa porque los bloqueos se comparten.
    por donde ya pasaban todas las fuentes de daño. Detalle en
    [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §Whose kill it was;
    tests en `tests/integration/test_kill_attribution.gd`.
-4. **Prioridad de voces en `AudioPool`** (M) — pendiente previo y precondición
-   real para tres facciones.
+4. ~~**Prioridad de voces en `AudioPool`** (M)~~ — **hecho.** La prioridad sale
+   del bus, así que las cuarenta llamadas existentes quedaron clasificadas sin
+   tocar ninguna; sólo los avisos la piden a mano, porque están repartidos entre
+   `Enemies` y `World`. Detalle en
+   [02 Autoloads](Mayhem/02%20Autoloads.md) §Voice priority.
 5. **Abstracción de objetivo + facciones** (L) — §2.1 y §2.2, con los tests
    actuales como red.
 6. **Gladiadores** (L) — encima de 3 y 5: facciones, net worth, botín, marca del
