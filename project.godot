@@ -184,6 +184,7 @@ pause={
 3d_physics/layer_10="hazard"
 3d_physics/layer_11="interactable"
 3d_physics/layer_12="trigger"
+3d_physics/layer_13="gladiator"
 
 [physics]
 

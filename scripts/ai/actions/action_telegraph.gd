@@ -39,7 +39,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 
 	var duration: float = maxf(enemy.data.attack_windup * windup_multiplier, 0.05)
 	_elapsed += get_physics_process_delta_time()
-	enemy.face_player(get_physics_process_delta_time(), 4.0)
+	enemy.face_target(get_physics_process_delta_time(), 4.0)
 	enemy.show_windup(clampf(_elapsed / duration, 0.0, 1.0))
 
 	if _elapsed < duration:

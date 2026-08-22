@@ -18,7 +18,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	if enemy == null or enemy.data == null:
 		return FAILURE
 
-	if enemy.get_distance_to_player() <= enemy.data.attack_range * stop_at_range_multiplier:
+	if enemy.get_distance_to_target() <= enemy.data.attack_range * stop_at_range_multiplier:
 		enemy.stop_moving()
 		return SUCCESS
 
@@ -29,7 +29,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		# closes as it arrives. See Enemy.get_approach_position - a pack that all
 		# paths to one point walks in single file.
 		enemy.set_move_target(enemy.get_approach_position())
-	enemy.face_player(get_physics_process_delta_time())
+	enemy.face_target(get_physics_process_delta_time())
 	return RUNNING
 
 

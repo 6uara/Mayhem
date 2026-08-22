@@ -102,7 +102,10 @@ var is_moving: bool = false
 ## is being asked to dodge something it cannot see coming.
 var windup_progress: float = 0.0
 
-var _player: Node3D
+## Contra quién está peleando. Era `_player` y se llamaba así porque no había otra
+## cosa que pudiera ser; ahora es el hostil más cercano, que para la horda de hoy
+## sigue dando el jugador siempre.
+var _target: Node3D
 var _material: StandardMaterial3D
 ## The rigged model currently attached, and the scene it came from. Kept between
 ## spawns: this node is pooled, and re-instantiating a model every time one left
@@ -324,6 +327,9 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_jump_pending = false
 	_was_on_floor = true
 	_approach_lane = randf_range(-1.0, 1.0)
+	# Pooleado: el cuerpo puede volver como otro arquetipo y hasta como otra
+	# facción, y el objetivo del ocupante anterior no tiene por qué serlo suyo.
+	_target = null
 	_separation = Vector3.ZERO
 	# Desfasado a proposito. Con todos arrancando en cero, los veintisiete
 	# enemigos de una oleada elite recalculaban vecinos en el mismo frame y
@@ -381,20 +387,85 @@ static func get_active_enemies() -> Array[Enemy]:
 
 # Public API - used by the AI leaves
 
-## The player this enemy is fighting. Re-targets only when the current one dies
-## or leaves, never on distance alone: the AI is aggro-locked by design (see
-## MovementComponent's note on why player speed is safe), and picking the
-## closest player every frame would make enemies flip between two teammates
-## running past each other instead of committing to one.
+## De qué bando pelea. Lo contesta como método y no como propiedad porque es lo
+## que `Factions.of()` le pregunta a cualquier nodo sin conocer su tipo, que es
+## como esa utilidad evita nombrar a `Enemy` y cerrar un ciclo de clases.
+func get_faction() -> Factions.Id:
+	return data.faction if data != null else Factions.Id.HORDE
+
+
+## Contra quién pelea este enemigo. **No** es "el jugador": es el hostil más
+## cercano, y para la horda de hoy eso da el jugador siempre, porque no hay nadie
+## más de otra facción en el arena (PLAN_NEW_ENEMY_TYPES §2.1).
+##
+## Re-apunta sólo cuando el objetivo actual se muere o se va, nunca por distancia:
+## la IA está aggro-lockeada a propósito (ver la nota de MovementComponent sobre
+## por qué la velocidad del jugador es segura), y elegir el más cercano cada frame
+## haría que el bicho oscile entre dos hostiles que se cruzan corriendo en vez de
+## comprometerse con uno. Eso también es lo que mantiene barata la búsqueda: se
+## recorre la lista al perder el objetivo, no todos los frames - que es la
+## advertencia de costo de §5.3 del plan, resuelta por no hacer el trabajo.
+func get_target() -> Node3D:
+	# Primero lo liberado, y acá y no adentro de `_is_valid_target()`: pasarle un
+	# objeto ya liberado a un parámetro tipado es un error del motor antes de que
+	# la función llegue a correr, así que la validez no se puede preguntar del otro
+	# lado de la llamada. El caso es real: el objetivo puede desaparecer del árbol
+	# entre dos frames.
+	#
+	# Y sin acompañarlo de `!= null`, que es la trampa: un objeto liberado compara
+	# **igual** a null, así que esa guarda se saltea sola justo en el caso que
+	# tiene que atajar. `is_instance_valid()` sola contesta bien las dos cosas.
+	if not is_instance_valid(_target):
+		_target = null
+	if not _is_valid_target(_target):
+		_target = _find_target()
+	return _target
+
+
+## Nombre viejo, mismo objetivo. Existe porque la refactorización tenía que poder
+## demostrar que no cambió nada, y la prueba de eso son los tests de los cinco
+## arquetipos originales pasando **sin tocarse** (§5.6 del plan).
 func get_player() -> Node3D:
-	if _player == null or not Players.is_alive(_player):
-		_player = Players.nearest(global_position)
-	return _player
+	return get_target()
 
 
-func get_player_position() -> Vector3:
-	var player: Node3D = get_player()
-	return player.global_position if player != null else global_position
+func _is_valid_target(candidate: Node3D) -> bool:
+	if candidate == null or not is_instance_valid(candidate):
+		return false
+	var enemy := candidate as Enemy
+	if enemy != null:
+		return enemy.is_active
+	return Players.is_alive(candidate)
+
+
+## El hostil más cercano. Los jugadores salen de `Players`, que ya sabía
+## buscarlos; los de otras facciones, del array estático que la separación ya
+## recorría - y no de `get_nodes_in_group()`, que arma un Array nuevo por llamada.
+func _find_target() -> Node3D:
+	var mine: Factions.Id = get_faction()
+	var best: Node3D = null
+	var best_distance: float = INF
+
+	if Factions.are_hostile(mine, Factions.Id.PLAYER):
+		best = Players.nearest(global_position)
+		if best != null:
+			best_distance = global_position.distance_squared_to(best.global_position)
+
+	for other: Enemy in _flock:
+		if other == self or not other.is_active:
+			continue
+		if not Factions.are_hostile(mine, other.get_faction()):
+			continue
+		var distance: float = global_position.distance_squared_to(other.global_position)
+		if distance < best_distance:
+			best_distance = distance
+			best = other
+	return best
+
+
+func get_target_position() -> Vector3:
+	var target: Node3D = get_target()
+	return target.global_position if target != null else global_position
 
 
 ## Where this enemy walks while it is closing in - a point beside the player
@@ -415,10 +486,10 @@ func get_player_position() -> Vector3:
 ## nothing and the enemy goes for the player itself, because an attack aimed at a
 ## point beside someone is an attack that misses.
 func get_approach_position() -> Vector3:
-	var player: Node3D = get_player()
-	if player == null:
+	var victim: Node3D = get_target()
+	if victim == null:
 		return global_position
-	var target: Vector3 = player.global_position
+	var target: Vector3 = victim.global_position
 	var wants_bearing: bool = data != null and data.approach_bearing_weight > 0.0
 	if is_zero_approx(_approach_lane) and not wants_bearing:
 		return target
@@ -451,7 +522,7 @@ func get_approach_position() -> Vector3:
 ## cerca. Que la insistencia baje a cero justo donde empieza el rango de ataque
 ## es lo que evita el carrusel.
 func _bearing_position(target: Vector3, distance: float, blend: float) -> Vector3:
-	var facing: Vector3 = get_player_facing()
+	var facing: Vector3 = get_target_facing()
 	if facing.length_squared() < 0.01:
 		return target
 
@@ -483,20 +554,20 @@ func commit_floor() -> float:
 ##
 ## Se lee del basis y no de una API de Player, asi que cualquier Node3D sirve -
 ## incluido el nodo pelado con el que los tests paran a un jugador falso.
-func get_player_facing() -> Vector3:
-	var player: Node3D = get_player()
-	if player == null:
+func get_target_facing() -> Vector3:
+	var target: Node3D = get_target()
+	if target == null:
 		return Vector3.ZERO
 	# Godot mira hacia -Z.
-	var forward: Vector3 = -player.global_transform.basis.z
+	var forward: Vector3 = -target.global_transform.basis.z
 	forward.y = 0.0
 	return forward.normalized() if forward.length_squared() > 0.001 else Vector3.ZERO
 
 
 ## Con que velocidad se esta moviendo el jugador, para quien tenga que adelantarse
 ## a donde va a estar. Vector3.ZERO si el objetivo no es un cuerpo que se mueva.
-func get_player_velocity() -> Vector3:
-	var body := get_player() as CharacterBody3D
+func get_target_velocity() -> Vector3:
+	var body := get_target() as CharacterBody3D
 	return body.velocity if body != null else Vector3.ZERO
 
 
@@ -507,11 +578,16 @@ func _approach_commit_distance() -> float:
 	return maxf(reach * 1.8, 2.5)
 
 
-func get_distance_to_player() -> float:
-	var player: Node3D = get_player()
-	if player == null:
+func get_distance_to_target() -> float:
+	var target: Node3D = get_target()
+	if target == null:
 		return INF
-	return global_position.distance_to(player.global_position)
+	return global_position.distance_to(target.global_position)
+
+
+## Nombre viejo, ver get_player().
+func get_distance_to_player() -> float:
+	return get_distance_to_target()
 
 
 func set_move_target(target: Vector3) -> void:
@@ -526,8 +602,8 @@ func stop_moving() -> void:
 
 
 ## Yaw-only turn toward the player; enemies never pitch.
-func face_player(delta: float, turn_speed: float = 8.0) -> void:
-	var to_player: Vector3 = get_player_position() - global_position
+func face_target(delta: float, turn_speed: float = 8.0) -> void:
+	var to_player: Vector3 = get_target_position() - global_position
 	to_player.y = 0.0
 	if to_player.length_squared() < 0.01:
 		return
@@ -587,21 +663,21 @@ func get_move_speed() -> float:
 	return speed * _slow_multiplier
 
 
-## Melee hit on the player, applied only if they are still in range.
+## Melee hit on whatever it is fighting, applied only if it is still in range.
 func deal_melee_damage() -> void:
-	var player: Node3D = get_player()
-	if player == null or data == null:
+	var victim: Node3D = get_target()
+	if victim == null or data == null:
 		return
-	if global_position.distance_to(player.global_position) > data.attack_range * 1.4:
-		return  # The player escaped the wind-up. That is the point of telegraphing.
-	if not _can_see(player):
+	if global_position.distance_to(victim.global_position) > data.attack_range * 1.4:
+		return  # The target escaped the wind-up. That is the point of telegraphing.
+	if not _can_see(victim):
 		# Distance alone is not reach. An enemy wedged under a platform is within
 		# 3m of someone standing on top of it, and would otherwise punch through
 		# the floor - damage from nowhere, with nothing on screen to explain it.
 		return
-	var player_health: HealthComponent = _find_health(player)
-	if player_health != null:
-		player_health.apply_damage(data.damage, self)
+	var victim_health: HealthComponent = _find_health(victim)
+	if victim_health != null:
+		victim_health.apply_damage(data.damage, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -614,15 +690,15 @@ func deal_melee_damage() -> void:
 func start_leap() -> bool:
 	if data == null or not data.can_leap or _is_leaping or not is_on_floor():
 		return false
-	var player: Node3D = get_player()
-	if player == null:
+	var victim: Node3D = get_target()
+	if victim == null:
 		return false
-	var target: Vector3 = player.global_position
+	var target: Vector3 = victim.global_position
 	if global_position.distance_to(target) > data.leap_range:
 		return false
 	# Sin linea de vision no hay salto: si no, se estrella contra la pared que hay
 	# en el medio y el jugador ve al bicho tirarse a la nada.
-	if not _can_see(player):
+	if not _can_see(victim):
 		return false
 
 	_leap_target = target
@@ -700,10 +776,10 @@ func _tick_leap() -> void:
 ## El daño del salto. Es contacto real, no alcance: si el jugador se corrio, el
 ## enemigo pasa de largo y no pasa nada.
 func _check_leap_contact() -> void:
-	var player: Node3D = get_player()
-	if player == null:
+	var victim: Node3D = get_target()
+	if victim == null:
 		return
-	var offset: Vector3 = player.global_position - global_position
+	var offset: Vector3 = victim.global_position - global_position
 	# Horizontal: el jugador mide casi dos metros y el enemigo le pasa por
 	# encima o por el pecho segun el momento del arco, y las dos cosas son el
 	# mismo impacto. Comparar en 3D haria que rozarle la cabeza no cuente.
@@ -712,9 +788,9 @@ func _check_leap_contact() -> void:
 	if horizontal > reach or absf(offset.y) > LEAP_CONTACT_HEIGHT:
 		return
 	_leap_hit_landed = true
-	var player_health: HealthComponent = _find_health(player)
-	if player_health != null:
-		player_health.apply_damage(data.damage, self)
+	var victim_health: HealthComponent = _find_health(victim)
+	if victim_health != null:
+		victim_health.apply_damage(data.damage, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -831,7 +907,7 @@ func fire_projectile() -> void:
 	if data == null or data.projectile_scene == null:
 		return
 	var origin: Vector3 = global_position + Vector3.UP * data.head_offset
-	var target: Vector3 = get_player_position() + Vector3.UP * 1.0
+	var target: Vector3 = get_target_position() + Vector3.UP * 1.0
 	var projectile: Node = ObjectPool.acquire(data.projectile_scene)
 	var typed := projectile as EnemyProjectile
 	if typed == null:
@@ -845,6 +921,10 @@ func fire_projectile() -> void:
 
 ## Heals every other living enemy inside `heal_radius`. Returns how many it helped,
 ## so the healer's tree can fail when there is nothing to do.
+##
+## "Ally" pasó a significar algo: es el de la misma facción, no cualquiera que
+## esté en el grupo `&"enemy"`. Un Healer de la horda curando a un Gladiador
+## sería el mismo error que un Gladiador cobrando una muerte del jugador.
 func heal_nearby_allies() -> int:
 	if data == null:
 		return 0
@@ -852,6 +932,8 @@ func heal_nearby_allies() -> int:
 	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
 		var other := node as Enemy
 		if other == null or other == self or not other.is_active or other.health == null:
+			continue
+		if other.get_faction() != get_faction():
 			continue
 		if global_position.distance_to(other.global_position) > data.heal_radius:
 			continue
@@ -1444,6 +1526,11 @@ func _update_tether() -> void:
 
 
 func _apply_collision() -> void:
+	# El cuerpo vive en la capa de su facción. Es lo que deja que una consulta de
+	# física filtre por bando sin poder preguntar después - ver
+	# `Factions.body_layer()`. Para la horda es `ENEMY`, o sea lo mismo que trae
+	# authorado `enemy.tscn`.
+	collision_layer = Factions.body_layer(get_faction())
 	_resize_capsule(body_shape, data.collision_height, data.collision_radius, 0.5)
 	# The hitbox tracks the silhouette, the body capsule tracks the navmesh - see
 	# EnemyData.hitbox_radius for why those stopped being the same number.

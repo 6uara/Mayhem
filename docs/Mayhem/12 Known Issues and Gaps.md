@@ -152,13 +152,14 @@ armados para que arrancar no cueste una sesión de arqueología:
   De ese plan vale la pena traer acá los cuatro bloqueos que encontró, porque son
   limitaciones del código actual y no del trabajo futuro:
 
-  1. **El objetivo está cableado al jugador.** `Enemy` no tiene noción de "mi
-     objetivo", tiene `get_player()` (grupo `&"player"`), y de ahí cuelgan el
-     melee, el salto, el disparo y todos los leaves de Beehave. Cualquier
-     enemigo que pelee contra otro enemigo necesita esa abstracción primero.
-  2. **Un proyectil enemigo no puede tocar a un enemigo.** `EnemyProjectile`
-     enmascara `WORLD | PLAYER` *y además* verifica `is_in_group(&"player")`
-     antes de aplicar daño — son dos filtros, no uno. No existe daño entre NPCs.
+  1. ~~**El objetivo está cableado al jugador.**~~ **Cerrado.**
+     `Enemy.get_target()` resuelve el hostil más cercano, `get_player()` quedó
+     como alias, y la facción es un campo de `EnemyData`. Los cinco arquetipos
+     originales se comportan igual: ningún test existente se modificó.
+  2. ~~**Un proyectil enemigo no puede tocar a un enemigo.**~~ **Cerrado.** Los
+     dos filtros se abrieron: la máscara sale de `Factions.hostile_mask()` y el
+     chequeo de grupo pasó a ser de facción. Ver
+     [05 Enemies and AI](05%20Enemies%20and%20AI.md) §Factions.
   3. **No hay vuelo.** `Enemy._steer()` hace `direction.y = 0.0`; la altura sale
      sólo de la gravedad y de saltos balísticos que siempre aterrizan. Un
      enemigo volador necesita un modo de movimiento nuevo, no un número distinto.

@@ -38,7 +38,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		base_range = enemy.get_fuse_arm_range()
 	var limit: float = absolute_range if absolute_range > 0.0 \
 		else base_range * range_multiplier
-	var in_range: bool = enemy.get_distance_to_player() <= limit
+	var in_range: bool = enemy.get_distance_to_target() <= limit
 	if invert:
 		in_range = not in_range
 	return SUCCESS if in_range else FAILURE

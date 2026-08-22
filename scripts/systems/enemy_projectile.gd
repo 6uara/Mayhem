@@ -53,8 +53,13 @@ func _physics_process(delta: float) -> void:
 
 	var from: Vector3 = global_position
 	var to: Vector3 = from + _velocity * delta
+	# Las capas de lo que este tirador puede lastimar, y no `PLAYER` cableado. Era
+	# el primero de los dos filtros que hacían imposible que un proyectil enemigo
+	# tocara a un enemigo (PLAN_NEW_ENEMY_TYPES §2.2). Para la horda esto da
+	# `PLAYER | GLADIATOR`, y como no hay ningún cuerpo en `GLADIATOR` todavía, la
+	# bala vuela exactamente igual que antes.
 	var query := PhysicsRayQueryParameters3D.create(from, to,
-		PhysicsLayers.WORLD | PhysicsLayers.PLAYER)
+		PhysicsLayers.WORLD | Factions.hostile_mask(Factions.of(_shooter)))
 	if _shooter != null and _shooter is CollisionObject3D:
 		query.exclude = [(_shooter as CollisionObject3D).get_rid()]
 	var hit: Dictionary = _shooter.get_world_3d().direct_space_state.intersect_ray(query) \
@@ -65,9 +70,12 @@ func _physics_process(delta: float) -> void:
 		return
 
 	global_position = hit["position"]
-	var player := hit["collider"] as Node
-	if not _is_cosmetic and player != null and player.is_in_group(&"player"):
-		var health: HealthComponent = _find_health(player)
+	# El segundo filtro, que era `is_in_group(&"player")`: ahora pregunta por bando
+	# en vez de preguntar por el jugador. Sin esto la máscara de arriba dejaría
+	# pasar la bala hasta el cuerpo y el daño se caería igual, un metro después.
+	var victim := hit["collider"] as Node
+	if not _is_cosmetic and Factions.hostile(_shooter, victim):
+		var health: HealthComponent = _find_health(victim)
 		if health != null:
 			health.apply_damage(_damage, _shooter)
 	_spawn_impact(hit["position"], hit["normal"], hit["collider"])

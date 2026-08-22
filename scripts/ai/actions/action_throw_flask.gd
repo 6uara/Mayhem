@@ -73,10 +73,10 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 ## `ThrownUtility` - errar es el modo normal de funcionar de este arquetipo, así
 ## que no hace falta protegerlo de eso.
 func _predicted_spot(enemy: Enemy) -> Vector3:
-	var here: Vector3 = enemy.get_player_position()
+	var here: Vector3 = enemy.get_target_position()
 	if lead_fraction <= 0.0:
 		return here
-	var velocity: Vector3 = enemy.get_player_velocity()
+	var velocity: Vector3 = enemy.get_target_velocity()
 	velocity.y = 0.0
 	return here + velocity * maxf(flight_time, 0.1) * lead_fraction
 

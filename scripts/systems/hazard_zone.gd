@@ -128,6 +128,12 @@ func _apply_radius() -> void:
 func _damage(body: Node3D) -> void:
 	if not body.is_in_group(&"player") and not body.is_in_group(&"enemy"):
 		return
+	# Un charco con dueño no quema a los del dueño. Antes sí: el charco del Elite
+	# lastimaba a la horda entera, que es el fuego amigo que §5.2 del plan reserva
+	# **sólo** para la explosión del Bomber. Una trampa del arena no tiene dueño y
+	# sigue quemando a todo el mundo, que es lo correcto para una trampa.
+	if is_instance_valid(attacker) and not Factions.hostile(attacker, body):
+		return
 	if not _is_standing_in_it(body):
 		return
 	for child: Node in body.get_children():

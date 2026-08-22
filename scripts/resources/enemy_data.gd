@@ -9,6 +9,10 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL 
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export var archetype: Archetype = Archetype.RUSHER
+## De qué bando pelea. Separado de `archetype` a propósito: el arquetipo dice
+## **cómo** pelea y la facción dice **contra quién**, y los Gladiadores van a
+## reusar arquetipos existentes cambiando sólo esto (ver `Factions`).
+@export var faction: Factions.Id = Factions.Id.HORDE
 ## Behavior tree scene, instantiated under the enemy at spawn.
 @export var behavior_tree: PackedScene
 

@@ -126,7 +126,10 @@ func _victims(radius: float) -> Array[Node3D]:
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = sphere
 	query.transform = Transform3D(Basis(), global_position)
-	query.collision_mask = PhysicsLayers.PLAYER | PhysicsLayers.ENEMY
+	# Todas las capas con gente adentro: una explosión no distingue bandos, y ese
+	# es justamente su lugar en la matriz de §5.2 - el único fuego amigo que hay.
+	query.collision_mask = PhysicsLayers.PLAYER | PhysicsLayers.ENEMY \
+		| PhysicsLayers.GLADIATOR
 	# Los cuerpos, no las areas: los hitboxes son Area3D y devolverian el mismo
 	# enemigo dos veces, una por el cuerpo y otra por cada caja de impacto.
 	query.collide_with_areas = false

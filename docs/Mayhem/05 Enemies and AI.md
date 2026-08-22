@@ -265,6 +265,73 @@ note in `Explosion._victims()` for what that failure looks like.
 It is deliberately last, because taking away movement fights the game's own
 movement pillar and the call should be made while playing.
 
+## Factions, and who an enemy is actually fighting
+
+`Enemy` no tenía la noción de "mi objetivo": tenía `get_player()`, y de ahí
+colgaba todo — el melee, el salto, el disparo, los flancos y tres hojas del árbol
+de Beehave. Eso es correcto mientras "hostil" y "el jugador" sean sinónimos, y
+deja de serlo con una tercera facción (§2.1 y §5.2 del plan).
+
+**La regla de hostilidad es una sola:** todos son hostiles a todos los que no son
+de su facción (`Factions.are_hostile()`). La celda rara de la matriz del plan —
+horda contra horda, permitido sólo para la explosión del Bomber — **no** vive en
+la matriz: vive en `Explosion`, que es el único que lastima sin preguntar.
+Ponerla en la matriz habría hecho que cualquier daño futuro entre miembros de la
+horda pareciera autorizado.
+
+`Enemy.get_target()` reemplaza a `get_player()`, que queda como alias. La
+resolución es "el hostil más cercano", y para la horda de hoy eso da el jugador
+siempre porque no hay nadie más de otra facción en el arena — que es exactamente
+lo que permitió cambiarlo sin tocar un solo test de los cinco arquetipos
+originales.
+
+**El aggro-lock hace dos trabajos.** Se re-apunta sólo al perder el objetivo,
+nunca por distancia. Eso ya evitaba que un bicho oscilara entre dos jugadores que
+se cruzan corriendo; ahora además es lo que resuelve gratis las dos advertencias
+de §5.3 del plan — la histéresis (no hay ping-pong porque no se vuelve a elegir)
+y el costo (la lista se recorre al perder el objetivo, no cada frame).
+
+**La facción es un campo de `EnemyData`, no una clase.** El arquetipo dice *cómo*
+pelea y la facción dice *contra quién*, así que un Gladiador va a poder reusar un
+arquetipo existente cambiando un `.tres`.
+
+### Lo que la física tiene que saber
+
+Los Gladiadores tienen capa propia (`PhysicsLayers.GLADIATOR`) en vez de compartir
+`ENEMY`, y `Enemy._apply_collision()` la asigna desde la facción. No es
+decoración: hay consultas que se resuelven en el servidor de física y no pueden
+filtrar por bando después. Un proyectil de la horda tiene que **atravesar** a un
+compañero y **frenar** contra un Gladiador, y eso es una máscara, no un `if`.
+
+Los dos filtros de §2.2 quedaron abiertos así:
+
+- `EnemyProjectile` enmascara `WORLD | Factions.hostile_mask(tirador)` en vez de
+  `WORLD | PLAYER`. Para la horda eso da `PLAYER | GLADIATOR`, y como no hay
+  ningún cuerpo en esa capa todavía, la bala vuela exactamente igual que antes.
+- El `is_in_group(&"player")` posterior pasó a ser una pregunta de facción. Los
+  dos hacían falta: sin el segundo, la máscara deja pasar la bala hasta el cuerpo
+  y el daño se cae un metro después.
+
+`HazardZone` también aprendió bandos: un charco con dueño no quema a los del
+dueño. Antes sí — el charco del Elite lastimaba a la horda entera, que es el fuego
+amigo que el plan reserva sólo para el Bomber. Una trampa del arena no tiene dueño
+y sigue quemando a todo el mundo, que es lo correcto para una trampa. Por el mismo
+motivo, "ally" pasó a significar algo en `heal_nearby_allies()`: el Healer cura a
+los de su facción, no a cualquiera que esté en el grupo `&"enemy"`.
+
+### Lo que quedó igual a propósito
+
+- **Los nombres de las hojas.** `action_chase_player`, `condition_player_in_range`
+  y compañía siguen llamándose así aunque llamen a la API de objetivo. Renombrar
+  los archivos toca cada `.tscn` de árbol de comportamiento, que es riesgo sin
+  ganancia.
+- **La separación (`_flock`) no sabe de facciones.** Un Gladiador y un Rusher se
+  empujan como si fueran del mismo bando. Puede estar bien —son cuerpos— y sigue
+  siendo una decisión abierta del plan (§5.5).
+
+Tests en `tests/integration/test_factions.gd`. La otra mitad de la red es que
+`test_enemy_behavior.gd` y `test_enemy_pathing_fixes.gd` pasan **sin modificarse**.
+
 ## Whose kill it was
 
 Hasta ahora morirse alcanzaba para que el jugador cobrara: `Enemy._on_died()`

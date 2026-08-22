@@ -9,8 +9,11 @@ futuro, igual que `feat/coop-p2p`: se deja planteada y documentada para que el
 trabajo esté listo para arrancar cuando haya tiempo, sin presionar el alcance de
 la entrega.
 
-Estado: **el Bomber y el Environmental están construidos** (pasos 1 y 2 de §6).
-El resto sigue siendo plan.
+Estado: **construidos los pasos 1 a 5** — el Bomber, el Environmental (frasco de
+hazard), los rumbos de aproximación, la atribución de muertes, la prioridad de
+voces y la abstracción de objetivo + facciones. Con eso **la infraestructura
+compartida está terminada**: lo que queda son los Gladiadores (§5, rama propia),
+el Ranged Flyer y el frasco de atrapado.
 
 Base: `develop` @ `7722071`. Todo lo marcado "medido" fue verificado leyendo el
 código contra ese commit, no asumido.
@@ -67,7 +70,11 @@ antes de todo ataque (CLAUDE.md 5.3). Ver el bloque de reglas de
 Ninguno de los cuatro enemigos es difícil por sí mismo. Son difíciles porque el
 código actual asume cuatro cosas que dejan de ser ciertas.
 
-### 2.1 El objetivo está cableado al jugador
+### 2.1 El objetivo está cableado al jugador — **cerrado**
+
+> Construido en el paso 5 de §6. `Enemy.get_target()` resuelve el hostil más
+> cercano y `get_player()` quedó como alias. Lo que sigue era el diagnóstico.
+
 
 `Enemy` no tiene concepto de "mi objetivo": tiene `get_player()`, que resuelve el
 grupo `&"player"` (`enemy.gd:289`). De ahí cuelga todo — `get_distance_to_player()`,
@@ -75,7 +82,12 @@ grupo `&"player"` (`enemy.gd:289`). De ahí cuelga todo — `get_distance_to_pla
 `fire_projectile()`, y los leaves `action_chase_player`, `action_keep_distance`,
 `condition_player_in_range`.
 
-### 2.2 Un proyectil enemigo no puede tocar a un enemigo
+### 2.2 Un proyectil enemigo no puede tocar a un enemigo — **cerrado**
+
+> Construido en el paso 5. Los dos filtros se abrieron: la máscara sale de
+> `Factions.hostile_mask()` y el chequeo de grupo pasó a ser de facción. Los
+> Gladiadores tienen capa propia (bit 13). Lo que sigue era el diagnóstico.
+
 
 `EnemyProjectile` enmascara `WORLD | PLAYER` **y además** verifica
 `is_in_group(&"player")` antes de aplicar daño (`enemy_projectile.gd:43,55`).
@@ -441,6 +453,11 @@ Trabajo concreto:
   disparo de Ranger no.
 - Un test de que el net worth se reinicia entre olas.
 
+De esa lista ya están hechos, por el paso 5: los cinco arquetipos originales
+comportándose igual (ningún test tocado), y la matriz de §5.2 - una explosión de
+Bomber lastima horda y un disparo de Ranger no. Lo demás espera a que existan los
+Gladiadores.
+
 ---
 
 ## 6. Orden sugerido
@@ -464,10 +481,15 @@ El orden importa porque los bloqueos se comparten.
    tocar ninguna; sólo los avisos la piden a mano, porque están repartidos entre
    `Enemies` y `World`. Detalle en
    [02 Autoloads](Mayhem/02%20Autoloads.md) §Voice priority.
-5. **Abstracción de objetivo + facciones** (L) — §2.1 y §2.2, con los tests
-   actuales como red.
+5. ~~**Abstracción de objetivo + facciones** (L)~~ — **hecho.** La red aguantó:
+   ni un test existente se tocó. Lo más barato de todo fue la histéresis y el
+   costo de §5.3, que salieron gratis del aggro-lock que ya existía - no se
+   vuelve a elegir objetivo, así que no hay ni ping-pong ni búsqueda por frame.
+   Detalle en [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md)
+   §Factions, and who an enemy is actually fighting.
 6. **Gladiadores** (L) — encima de 3 y 5: facciones, net worth, botín, marca del
-   líder.
+   líder. **La infraestructura compartida está terminada**, así que es acá donde
+   la rama del Gladiador se abre (ver el encabezado).
 7. **Ranged Flyer** (L) — independiente de todo lo demás.
 8. **Environmental, frasco de atrapado** (M) — último a propósito: es el que más
    puede pelear con el pilar de movilidad, y conviene decidirlo jugando.
@@ -514,7 +536,8 @@ Abiertas:
 - Tasa exacta de regeneración de los Gladiadores (§5.1) — puede forzar el cambio
   a curación completa entre olas.
 - Peso exacto del net worth contra la distancia en la fórmula de §5.3.
-- Si la separación (`_flock`) debe respetar facciones.
+- Si la separación (`_flock`) debe respetar facciones. Hoy no las respeta: un
+  Gladiador y un Rusher se empujan como si fueran del mismo bando.
 
 ## 8. Recordatorio
 

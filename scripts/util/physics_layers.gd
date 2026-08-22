@@ -15,3 +15,7 @@ const GRAPPLE_ANCHOR: int = 1 << 8
 const HAZARD: int = 1 << 9
 const INTERACTABLE: int = 1 << 10
 const TRIGGER: int = 1 << 11
+## Los cuerpos de la tercera facción. Bit propio y no `ENEMY` compartido porque
+## hay consultas que se resuelven en el servidor de física y no pueden filtrar por
+## facción después - ver `Factions.body_layer()`.
+const GLADIATOR: int = 1 << 12

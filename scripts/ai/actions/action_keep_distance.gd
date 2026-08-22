@@ -19,8 +19,8 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	if preferred <= 0.0:
 		return FAILURE
 
-	var distance: float = enemy.get_distance_to_player()
-	enemy.face_player(get_physics_process_delta_time())
+	var distance: float = enemy.get_distance_to_target()
+	enemy.face_target(get_physics_process_delta_time())
 
 	if absf(distance - preferred) <= tolerance:
 		enemy.stop_moving()
@@ -29,7 +29,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	_repath_timer -= get_physics_process_delta_time()
 	if _repath_timer <= 0.0:
 		_repath_timer = repath_interval
-		var player_position: Vector3 = enemy.get_player_position()
+		var player_position: Vector3 = enemy.get_target_position()
 		var away: Vector3 = enemy.global_position - player_position
 		away.y = 0.0
 		if away.length_squared() < 0.01:
