@@ -3,7 +3,7 @@ extends GutTest
 ## enemy spawns with no brain, no silhouette or no audio and nothing errors.
 
 const ARCHETYPES: Array[String] = ["rusher", "ranger", "elite", "healer", "summoner",
-	"bomber", "environmental"]
+	"bomber", "environmental", "flyer"]
 
 
 func _load(name: String) -> EnemyData:
@@ -37,10 +37,12 @@ func test_archetype_enum_matches_the_resource() -> void:
 	assert_eq(_load("summoner").archetype, EnemyData.Archetype.SUMMONER)
 	assert_eq(_load("bomber").archetype, EnemyData.Archetype.BOMBER)
 	assert_eq(_load("environmental").archetype, EnemyData.Archetype.ENVIRONMENTAL)
+	assert_eq(_load("flyer").archetype, EnemyData.Archetype.FLYER)
 
 
 func test_ranged_archetypes_have_a_projectile() -> void:
 	assert_not_null(_load("ranger").projectile_scene, "the ranger must be able to shoot")
+	assert_not_null(_load("flyer").projectile_scene, "y el Flyer, que pelea igual pero desde arriba")
 
 
 func test_summoner_summons_something_that_is_not_itself() -> void:

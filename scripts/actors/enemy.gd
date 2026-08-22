@@ -239,7 +239,12 @@ func _physics_process(delta: float) -> void:
 		_blocked_link = null
 
 
-	if not is_on_floor():
+	if is_flying():
+		# La gravedad no se le aplica, y no es que la compense: no la tiene. Un
+		# volador que se sostiene peleando contra su propio peso oscila, y la
+		# oscilacion se ve.
+		pass
+	elif not is_on_floor():
 		velocity.y -= GRAVITY * delta
 	elif velocity.y < 0.0:
 		# Only cancel downward speed. Zeroing unconditionally would wipe the jump
@@ -259,7 +264,13 @@ func _physics_process(delta: float) -> void:
 	if _fuse_armed:
 		_tick_fuse(delta)
 
-	if _is_leaping:
+	if is_flying():
+		# Hermana de _is_leaping y no un caso adentro de _steer(): un volador no
+		# usa el navmesh, y por lo tanto tampoco JumpLink, ni el manejo de
+		# obstrucciones, ni el juicio del aterrizaje. Meterlo en _steer() habria
+		# sido pedirle a esa funcion que sepa de dos mundos.
+		_fly(delta)
+	elif _is_leaping:
 		# En el aire y comprometido. No se dirige y no se frena: que el salto sea
 		# esquivable depende de que no corrija a mitad de vuelo.
 		_tick_leap()
@@ -285,6 +296,11 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
 	move_and_slide()
+	if is_flying():
+		# Las dos de abajo son maquinaria de caminar: una juzga si el salto que
+		# termino valio la pena y la otra destraba a quien se atasco contra una
+		# pared caminando. Un volador no salta y no se atasca - sube.
+		return
 	_judge_landing()
 	_check_obstruction(delta)
 
@@ -573,8 +589,22 @@ func get_target_velocity() -> Vector3:
 
 ## Inside this, the enemy stops flanking and comes straight in. Scaled off its
 ## own reach so a long-armed elite commits sooner than a rusher.
+##
+## Salvo para los que no se acercan nunca. Un arquetipo que kitea pelea parado a
+## `preferred_distance`, asi que atarle el commit a `attack_range` lo compromete
+## muchisimo antes de llegar a pelear: el Flyer, con alcance 20, se comprometia a
+## 36m y despues se plantaba a 13m - o sea que flanqueaba mientras caminaba y se
+## ponia de frente justo cuando empezaba el tiroteo. Su requisito entero (§4.1 del
+## plan: nunca de frente) era falso en silencio.
+##
+## Sale con `approach_bearing_weight > 0` y no con `preferred_distance` sola,
+## porque el Ranger y el Healer tambien kitean y no piden rumbo: para ellos el
+## numero de siempre es el correcto, y cambiarselo seria moverles el carril
+## lateral sin que nadie lo haya pedido.
 func _approach_commit_distance() -> float:
 	var reach: float = data.attack_range if data != null else 2.0
+	if data != null and data.approach_bearing_weight > 0.0 and data.preferred_distance > 0.0:
+		return maxf(data.preferred_distance * 0.5, commit_floor())
 	return maxf(reach * 1.8, 2.5)
 
 
@@ -1005,6 +1035,115 @@ func _steer(delta: float) -> void:
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+## Si este arquetipo vuela. Es una pregunta de datos, como `has_fuse`: `Enemy` no
+## pregunta por arquetipo en ningun lado.
+func is_flying() -> bool:
+	return data != null and data.can_fly
+
+
+## El movimiento entero de un volador: mantener altura y andar en linea recta.
+##
+## No hay navmesh, no hay gravedad y no hay saltos. Lo unico que reemplaza a todo
+## eso son dos rayos - uno abajo para saber a que altura esta el piso, y uno
+## adelante para no incrustarse en una pared.
+func _fly(delta: float) -> void:
+	_hold_altitude(delta)
+
+	if _stagger_timer > 0.0 or not is_moving:
+		# Aturdido sigue volando. Es la diferencia con un enemigo de piso, que al
+		# ser aturdido simplemente deja de empujar: si el aturdimiento le apagara
+		# la altura al volador, cada impacto lo haria caerse, y "le pegue y se
+		# cayo" es una promesa que el arquetipo no cumple.
+		_stop_horizontal(delta)
+		return
+
+	var direction: Vector3 = move_target - global_position
+	direction.y = 0.0
+	if direction.length_squared() < 0.04:
+		_stop_horizontal(delta)
+		return
+	direction = direction.normalized()
+
+	if _separation_timer <= 0.0:
+		_separation_timer = SEPARATION_INTERVAL
+		_separation = _compute_separation()
+	if _separation != Vector3.ZERO:
+		direction = (direction + _separation * SEPARATION_WEIGHT).normalized()
+
+	# Algo adelante: subir. Es la unica esquiva que un volador tiene garantizada -
+	# rodear lo puede meter en un rincon, y arriba siempre hay salida salvo bajo
+	# techo, que es el caso que _flight_target_height() ya atiende. Pisa la
+	# correccion de altura de este frame a proposito: la pared es mas urgente que
+	# la altura de crucero, y en cuanto la pasa vuelve sola.
+	if _blocked_ahead(direction):
+		velocity.y = maxf(velocity.y, data.flight_climb_speed)
+
+	var speed: float = get_move_speed()
+	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
+	velocity.z = move_toward(velocity.z, direction.z * speed, 30.0 * delta)
+
+
+func _blocked_ahead(direction: Vector3) -> bool:
+	var world: World3D = get_world_3d()
+	if world == null or data == null or data.flight_probe_distance <= 0.0:
+		return false
+	# Desde el centro del cuerpo: desde los pies el rayo se come cualquier lomo
+	# del terreno que el volador va a pasar por arriba igual.
+	var from: Vector3 = global_position + Vector3.UP * (data.collision_height * 0.5)
+	var query := PhysicsRayQueryParameters3D.create(from,
+		from + direction * data.flight_probe_distance, PhysicsLayers.WORLD)
+	query.exclude = [get_rid()]
+	return not world.direct_space_state.intersect_ray(query).is_empty()
+
+
+## La altura sobre el terreno, no sobre el cero del arena.
+##
+## Un rayo largo hacia abajo, y la altura buscada es donde ese rayo pego mas
+## `flight_height`. Sobre una rampa que sube, el piso sube y el volador sube con
+## el; sin esto se mete adentro de la cuesta.
+##
+## Sin piso abajo -un pozo, el borde del arena- se queda a la altura que tiene.
+## Es lo unico que no se lee como un bug: bajar a buscar un piso que no existe es
+## caerse, y subir sin motivo lo saca de la pelea.
+func _hold_altitude(delta: float) -> void:
+	var wanted: float = _flight_target_height()
+	if is_nan(wanted):
+		velocity.y = move_toward(velocity.y, 0.0, data.flight_climb_speed * delta * 4.0)
+		return
+
+	# Proporcional y saturado: corrige rapido cuando esta lejos de su altura y se
+	# frena al llegar, en vez de rebotar alrededor de ella.
+	var error: float = wanted - global_position.y
+	var climb: float = data.flight_climb_speed
+	velocity.y = move_toward(velocity.y, clampf(error * 3.0, -climb, climb), climb * 6.0 * delta)
+
+
+## La altura a la que deberia estar ahora mismo, o NAN si abajo no hay nada.
+func _flight_target_height() -> float:
+	var world: World3D = get_world_3d()
+	if world == null or data == null:
+		return NAN
+	var from: Vector3 = global_position + Vector3.UP * 0.5
+	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 200.0,
+		PhysicsLayers.WORLD)
+	query.exclude = [get_rid()]
+	var hit: Dictionary = world.direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return NAN
+
+	var wanted: float = (hit["position"] as Vector3).y + data.flight_height
+	# Y ahora el techo. Un volador que insiste en su altura debajo de una galeria
+	# se queda apretado contra el techo temblando; lo que corresponde es volar mas
+	# bajo mientras dure el techo, que es lo que haria cualquier cosa que vuela.
+	var ceiling := PhysicsRayQueryParameters3D.create(from,
+		Vector3(from.x, wanted + data.collision_height, from.z), PhysicsLayers.WORLD)
+	ceiling.exclude = [get_rid()]
+	var above: Dictionary = world.direct_space_state.intersect_ray(ceiling)
+	if not above.is_empty():
+		wanted = minf(wanted, (above["position"] as Vector3).y - data.collision_height)
+	return wanted
 
 
 ## Decides whether the jump that just ended was worth taking.

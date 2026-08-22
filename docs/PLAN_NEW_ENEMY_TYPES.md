@@ -9,11 +9,11 @@ futuro, igual que `feat/coop-p2p`: se deja planteada y documentada para que el
 trabajo esté listo para arrancar cuando haya tiempo, sin presionar el alcance de
 la entrega.
 
-Estado: **construidos los pasos 1 a 5** — el Bomber, el Environmental (frasco de
+Estado: **construidos los pasos 1 a 5 y el 7** — el Bomber, el Environmental (frasco de
 hazard), los rumbos de aproximación, la atribución de muertes, la prioridad de
-voces y la abstracción de objetivo + facciones. Con eso **la infraestructura
-compartida está terminada**: lo que queda son los Gladiadores (§5, rama propia),
-el Ranged Flyer y el frasco de atrapado.
+voces, la abstracción de objetivo + facciones y el Ranged Flyer. Con eso **la infraestructura
+compartida está terminada**: lo que queda son los Gladiadores (§5, en su propia
+rama) y el frasco de atrapado (paso 8).
 
 Base: `develop` @ `7722071`. Todo lo marcado "medido" fue verificado leyendo el
 código contra ese commit, no asumido.
@@ -95,7 +95,12 @@ Son dos filtros, no uno.
 
 Hay bits de capa libres (`PhysicsLayers` llega a `TRIGGER`, 1 << 11).
 
-### 2.3 No hay vuelo
+### 2.3 No hay vuelo — **cerrado**
+
+> Construido en el paso 7. `Enemy._fly()` es una rama temprana de
+> `_physics_process`, hermana de `_is_leaping`: sin navmesh, sin gravedad y sin
+> saltos, con la altura resuelta por raycast contra el terreno. Lo que sigue era
+> el diagnóstico.
 
 `Enemy._steer()` hace `direction.y = 0.0` (`enemy.gd:519`). La altura sale sólo
 de la gravedad y de saltos balísticos que siempre aterrizan.
@@ -181,7 +186,13 @@ un test; el *feel* no.
 
 ## 4. Ranged Flyer y Environmental
 
-### 4.1 Ranged Flyer — **no construido**
+### 4.1 Ranged Flyer — **construido**
+
+> El requisito de los costados se cumple, pero no salió gratis como decía el
+> texto de abajo: el sistema de rumbos estaba ahí y no llegaba a aplicarse, ver
+> §Flight en la doc. Los `.tres` del Flyer están sin jugar, como los del Bomber y
+> el Environmental.
+
 
 **Requisito de posicionamiento (decidido, pendiente de implementar):** el Flyer
 ataca **desde los costados**, y arranca **fuera del campo de visión del
@@ -490,7 +501,11 @@ El orden importa porque los bloqueos se comparten.
 6. **Gladiadores** (L) — encima de 3 y 5: facciones, net worth, botín, marca del
    líder. **La infraestructura compartida está terminada**, así que es acá donde
    la rama del Gladiador se abre (ver el encabezado).
-7. **Ranged Flyer** (L) — independiente de todo lo demás.
+7. ~~**Ranged Flyer** (L)~~ — **hecho.** El vuelo salió como estaba planeado
+   (rama hermana de `_is_leaping`, altura por raycast). Lo que no estaba
+   planeado fue el hallazgo: el rumbo de aproximación no funcionaba para ningún
+   arquetipo de alcance, porque el commit estaba atado a `attack_range`. Detalle
+   en [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §Flight.
 8. **Environmental, frasco de atrapado** (M) — último a propósito: es el que más
    puede pelear con el pilar de movilidad, y conviene decidirlo jugando.
 
@@ -530,6 +545,10 @@ Tomadas (no re-discutir sin motivo nuevo):
 Abiertas:
 
 - Tuning del Bomber: espoleta, radio, daño y velocidad están sin jugar (§3.1).
+- Tuning del Flyer: altura de 5m, velocidad 5.6, alcance 20 y cadencia 2.6s,
+  todo de escritorio. El riesgo concreto es la altura: si vuela demasiado alto se
+  vuelve un blanco cómodo y deja de presionar, y si vuela bajo se confunde con la
+  horda de piso y el arquetipo no se lee.
 - Tuning del Environmental: cadencia de 4.5s, arco de 1.1s, charco de 3.2m por
   5s. Tampoco jugado. El riesgo concreto es que tres Environmentals a la vez
   pavimenten el arena y el jugador se quede sin piso.

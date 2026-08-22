@@ -4,7 +4,7 @@ extends Resource
 ## archetype; this resource is what makes a Rusher a Rusher - silhouette, audio,
 ## stats and behavior tree all come from here.
 
-enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL }
+enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL, FLYER }
 
 @export var id: StringName = &""
 @export var display_name: String = ""
@@ -92,6 +92,29 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL 
 ## Es el premio por esquivar: sin esto el salto le sale gratis al enemigo y
 ## leer la telegrafia no paga nada.
 @export var leap_recovery: float = 0.5
+
+@export_subgroup("Flight")
+## Este arquetipo vuela: no pisa el navmesh, no le pega la gravedad y no salta.
+##
+## Es un modo de movimiento entero, no un numero distinto. Todo lo demas del
+## enemigo -navegacion, saltos, links, el juicio del aterrizaje- asume un cuerpo
+## que camina y termina apoyado en algo, y nada de eso aplica. Por eso el vuelo es
+## una rama temprana en _physics_process y no un caso especial adentro de
+## _steer(): un volador no participa de ninguna de esas maquinarias.
+@export var can_fly: bool = false
+## A que altura sobre el terreno se mantiene, medida con un rayo hacia abajo.
+##
+## Sobre el terreno y no sobre el cero del arena: una rampa que sube tiene que
+## empujarlo hacia arriba, o el volador se mete adentro del piso a mitad de la
+## cuesta y el jugador ve un bicho nadando en la geometria.
+@export var flight_height: float = 5.0
+## Cuan rapido corrige la altura. Aparte de move_speed porque son dos
+## sensibilidades distintas: un volador nervioso en vertical se lee como un bug
+## aunque su velocidad horizontal este bien.
+@export var flight_climb_speed: float = 6.0
+## Cuanto adelante mira para no chocarse. Al encontrar algo sube, que es la unica
+## esquiva que un volador tiene garantizada - rodear puede meterlo en un rincon.
+@export var flight_probe_distance: float = 3.0
 
 @export_subgroup("Fuse")
 ## El arquetipo es una bomba: se arma cerca del jugador y despues revienta.

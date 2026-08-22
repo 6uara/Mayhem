@@ -160,9 +160,11 @@ armados para que arrancar no cueste una sesión de arqueología:
      dos filtros se abrieron: la máscara sale de `Factions.hostile_mask()` y el
      chequeo de grupo pasó a ser de facción. Ver
      [05 Enemies and AI](05%20Enemies%20and%20AI.md) §Factions.
-  3. **No hay vuelo.** `Enemy._steer()` hace `direction.y = 0.0`; la altura sale
-     sólo de la gravedad y de saltos balísticos que siempre aterrizan. Un
-     enemigo volador necesita un modo de movimiento nuevo, no un número distinto.
+  3. ~~**No hay vuelo.**~~ **Cerrado.** `Enemy._fly()` es una rama hermana de
+     `_is_leaping`: sin navmesh, sin gravedad y sin saltos, con la altura
+     resuelta por raycast contra el terreno. Era un modo de movimiento nuevo, y
+     entró como tal. Ver
+     [05 Enemies and AI](05%20Enemies%20and%20AI.md) §Flight.
   4. ~~**No existe atribución de muertes.**~~ **Cerrado.** `HealthComponent`
      guarda `last_attacker`, todas las fuentes de daño lo pasan, y `Enemy`
      emite `kill_credited` sólo cuando el golpe final fue del jugador. La

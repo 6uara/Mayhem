@@ -85,6 +85,14 @@ func test_up_close_it_stops_circling_and_commits() -> void:
 func test_the_environmental_works_from_an_angle() -> void:
 	var env: Enemy = await _spawn(ENVIRONMENTAL, Vector3(0.0, 0.0, -30.0))
 	var approach: Vector3 = env.get_approach_position()
+	# Que el punto no sea el jugador mismo, primero. Sin esta línea el test pasaba
+	# vacío: `approach == target` da un vector nulo, `normalized()` lo deja nulo,
+	# el `dot` da 0 y el ángulo da 90 grados exactos - o sea que "se sale del
+	# frente" se cumplía justamente cuando el enemigo iba derecho al jugador. Fue
+	# lo que dejó pasar que el commit se comía el rumbo entero (ver
+	# `_approach_commit_distance()`).
+	assert_gt(approach.distance_to(_player.global_position), 1.0,
+		"el punto de aproximacion no puede ser el jugador mismo")
 	var to_approach: Vector3 = (approach - _player.global_position).normalized()
 	var facing: Vector3 = -_player.global_transform.basis.z
 	var degrees: float = rad_to_deg(acos(clampf(to_approach.dot(facing), -1.0, 1.0)))

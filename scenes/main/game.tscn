@@ -69,7 +69,7 @@ multimesh = SubResource("MM_points")
 [node name="EnemySpawner" type="Node" parent="."]
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("7_enemy")
-prewarm_count = 32
+prewarm_count = 36
 
 [node name="MatchDirector" type="Node" parent="." node_paths=PackedStringArray("spawner", "shop_screen")]
 script = ExtResource("8_director")

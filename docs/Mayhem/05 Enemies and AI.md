@@ -265,6 +265,63 @@ note in `Explosion._victims()` for what that failure looks like.
 It is deliberately last, because taking away movement fights the game's own
 movement pillar and the call should be made while playing.
 
+## Flight
+
+Volar no es un número distinto, es un modo de movimiento entero. Todo lo demás
+del enemigo —navegación, saltos, `JumpLink`, manejo de obstrucciones, el juicio
+del aterrizaje— asume un cuerpo que camina y termina apoyado en algo, y nada de
+eso aplica. Por eso `_fly()` es **una rama temprana en `_physics_process`,
+hermana de `_is_leaping`**, y no un caso especial embutido en `_steer()`: meterlo
+ahí habría sido pedirle a esa función que sepa de dos mundos.
+
+Lo que reemplaza a toda esa maquinaria son dos rayos:
+
+- **Hacia abajo**, para la altura. La altura es sobre el **terreno**, no sobre el
+  cero del arena: en una rampa que sube, el volador sube. Sin eso se mete dentro
+  de la cuesta, que se ve como un bicho nadando en la geometría. Sin piso abajo
+  —un pozo, el borde del arena— mantiene la altura que tiene: bajar a buscar un
+  piso que no existe es caerse.
+- **Hacia adelante**, para no incrustarse. Al encontrar algo, sube. Es la única
+  esquiva garantizada; rodear puede meterlo en un rincón. La subida pisa la
+  corrección de altura de ese frame a propósito —la pared es más urgente que la
+  altura de crucero— y en cuanto la pasa vuelve sola.
+
+Hay un tercer rayo hacia arriba dentro del control de altura: bajo una galería,
+un volador que insiste en su altura de crucero se queda apretado contra el techo
+temblando, así que el techo le baja el objetivo mientras dure.
+
+**Aturdirlo lo frena, no lo baja.** Si el stagger le apagara la altura, cada
+impacto lo tiraría al piso y el arquetipo dejaría de existir. Y la gravedad no se
+le compensa: no la tiene. Un volador que se sostiene peleando contra su propio
+peso oscila, y la oscilación se ve.
+
+`EnemyData.can_fly` lo enciende, igual que `has_fuse` enciende la espoleta:
+`Enemy` no pregunta por arquetipo en ningún lado.
+
+### Lo que se descubrió construyéndolo
+
+El Flyer tenía que llegar **desde los costados** (§4.1 del plan) y no llegaba, por
+un motivo que no tenía nada que ver con volar: `_approach_commit_distance()`
+estaba atado a `attack_range`, así que un arquetipo de alcance 20 se comprometía
+—dejaba de flanquear y encaraba de frente— a 36m, y después se plantaba a pelear
+a 13m. O sea que flanqueaba mientras caminaba y se ponía de frente justo cuando
+empezaba el tiroteo. Su requisito entero era falso en silencio.
+
+Ahora, cuando un arquetipo pide rumbo **y** kitea, el commit sale de
+`preferred_distance` y no del alcance. Sale con las dos condiciones y no con
+`preferred_distance` sola porque el Ranger y el Healer también kitean y no piden
+rumbo: para ellos el número de siempre es el correcto.
+
+**Esto además arregla al Environmental**, que tenía el mismo problema (commit a
+32.4m, pelea a 12m) y por lo tanto tampoco flanqueaba nunca. Su test no lo
+detectó porque pasaba de forma vacía: con el punto de aproximación igual a la
+posición del jugador, `normalized()` da el vector nulo, el `dot` da 0 y el ángulo
+da 90 grados exactos — o sea que "se sale del frente" se cumplía justamente
+cuando el enemigo iba derecho al jugador. El test ahora exige primero que el
+punto no sea el jugador mismo.
+
+Tests en `tests/integration/test_flyer.gd`.
+
 ## Factions, and who an enemy is actually fighting
 
 `Enemy` no tenía la noción de "mi objetivo": tenía `get_player()`, y de ahí

@@ -529,6 +529,21 @@ def main() -> None:
         _write("enemies/environmental_%s.wav" % kind, maker(env_rng, 0.72))
     # Su "ataque" es el lanzamiento, asi que no lleva el golpe generico.
     _write("enemies/environmental_attack.wav", flask_throw(env_rng))
+    # El Flyer, con semilla propia por el mismo motivo que los dos de arriba.
+    #
+    # El pitch mas alto de todos los arquetipos, y no por variedad: es el unico
+    # que ataca desde afuera del campo de vision (PLAN_NEW_ENEMY_TYPES §4.1), asi
+    # que su sonido es literalmente lo unico que lo anuncia. Agudo se localiza
+    # mejor de oido que grave, que es justo lo que hace falta cuando lo que hay
+    # que contestar es "de que lado".
+    flyer_rng = random.Random(20260823)
+    for kind, maker in (
+        ("spawn", enemy_spawn),
+        ("windup", enemy_windup),
+        ("death", enemy_death),
+        ("attack", enemy_attack),
+    ):
+        _write("enemies/flyer_%s.wav" % kind, maker(flyer_rng, 2.1))
     _write("world/spawn_door.wav", door_open(rng))
     _write("world/hazard_warning.wav", hazard_warning(rng))
     _write("world/platform_warning.wav", platform_warning(rng))
