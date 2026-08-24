@@ -62,6 +62,7 @@ var _announce_timer: float = 0.0
 var _utility_slots: Array[Control] = []
 ## El fundido de la viñeta de daño. Ver _flash_damage().
 var _damage_tween: Tween
+var _snare_tween: Tween
 var _grapple_slot: Control
 
 ## What _tick_wave() last wrote into the timer cluster. It runs every frame, but
@@ -94,6 +95,8 @@ func _ready() -> void:
 	EventBus.enemy_killed.connect(_on_enemy_killed)
 	EventBus.weapon_fired.connect(_on_weapon_fired)
 	EventBus.wave_started.connect(_on_wave_started)
+	EventBus.player_snared.connect(_on_player_snared)
+	EventBus.player_snare_ended.connect(_on_player_snare_ended)
 	EventBus.settings_applied.connect(_apply_hud_scale)
 	UpgradeManager.upgrades_changed.connect(_refresh_powerups)
 	NarratorManager.subtitle_shown.connect(_on_subtitle_shown)
@@ -611,6 +614,35 @@ func _flash_damage() -> void:
 		_damage_tween.kill()
 	_damage_tween = create_tween()
 	_damage_tween.tween_property(vignette, "modulate:a", 0.0, Tokens.DAMAGE_PULSE)
+
+
+## El charco de atrapado, en pantalla.
+##
+## Es lo único que le baja la velocidad al jugador, y sin decirlo se leía como que
+## el juego se había trabado - y peor: la salida (dash o gancho) no se le ocurre a
+## nadie que no sepa que está atrapado. Se queda prendida mientras dure, al revés
+## que la viñeta de daño, porque no informa un golpe sino un estado.
+##
+## Sin parpadeo a propósito: entra, se queda y sale, así que no necesita la
+## excepción de `reduce_flashing`.
+func _on_player_snared(_multiplier: float) -> void:
+	_tween_snare(1.0, 0.12)
+
+
+func _on_player_snare_ended(was_broken: bool) -> void:
+	# Romperlo se apaga de golpe, irse caminando se desvanece. La diferencia es la
+	# que enseña que romperlo fue una acción y no una casualidad.
+	_tween_snare(0.0, 0.08 if was_broken else 0.3)
+
+
+func _tween_snare(alpha: float, duration: float) -> void:
+	var vignette: Control = _state_overlays.get_node_or_null("SnareVignette")
+	if vignette == null:
+		return
+	if _snare_tween != null and _snare_tween.is_valid():
+		_snare_tween.kill()
+	_snare_tween = create_tween()
+	_snare_tween.tween_property(vignette, "modulate:a", alpha, duration)
 
 
 func _apply_hud_scale() -> void:

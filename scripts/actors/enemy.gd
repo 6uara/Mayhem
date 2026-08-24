@@ -59,6 +59,10 @@ const SEPARATION_INTERVAL: float = 0.05
 const APPROACH_SPREAD: float = 2.4
 ## Distance over which the lane closes to nothing as the enemy arrives.
 const APPROACH_FADE: float = 4.0
+## Cuantas veces se prueba acercando un destino de vuelo antes de rendirse y usar
+## la posicion del objetivo. Cuatro alcanza para un pozo y no cuesta nada: son
+## rayos, y solo se tiran al repathear.
+const GROUND_ANCHOR_SAMPLES: int = 4
 
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
@@ -142,6 +146,8 @@ var _fuse_left: float = 0.0
 var _fuse_armed: bool = false
 var _fuse_blink_time: float = 0.0
 var _fuse_material: StandardMaterial3D
+## Altura de crucero pisada por una accion, o -1 si vale la del arquetipo.
+var _flight_height_override: float = -1.0
 ## Una explosion por cuerpo. Sin esto la bomba que se mata a si misma al detonar
 ## vuelve a entrar por _on_died() y revienta dos veces.
 var _has_detonated: bool = false
@@ -331,6 +337,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_fuse_armed = false
 	_fuse_left = 0.0
 	_fuse_blink_time = 0.0
+	_flight_height_override = -1.0
 	_has_detonated = false
 	_is_leaping = false
 	_leap_hit_landed = false
@@ -605,6 +612,15 @@ func _approach_commit_distance() -> float:
 	var reach: float = data.attack_range if data != null else 2.0
 	if data != null and data.approach_bearing_weight > 0.0 and data.preferred_distance > 0.0:
 		return maxf(data.preferred_distance * 0.5, commit_floor())
+	# Un arquetipo con espoleta se compromete antes de armar, no despues.
+	#
+	# El Bomber armaba a 6m con el rumbo por la espalda todavia al 78% de su peso,
+	# o sea que se armaba detras del jugador - y su telegrafia visual es un anillo
+	# en el piso, que detras no se ve. La pregunta del arquetipo es "donde lo hago
+	# explotar", y esa pregunta necesita que se vea donde esta: sin esto la
+	# pregunta real era "te acordaste de mirar atras", que es otra y peor.
+	if data != null and data.has_fuse:
+		return maxf(get_fuse_arm_range(), maxf(reach * 1.8, 2.5))
 	return maxf(reach * 1.8, 2.5)
 
 
@@ -621,6 +637,9 @@ func get_distance_to_player() -> float:
 
 
 func set_move_target(target: Vector3) -> void:
+	# Un volador no puede querer ir a donde no hay piso: ver ground_anchored_position().
+	if is_flying():
+		target = ground_anchored_position(target)
 	move_target = target
 	is_moving = true
 	if agent != null:
@@ -1121,6 +1140,57 @@ func _hold_altitude(delta: float) -> void:
 
 
 ## La altura a la que deberia estar ahora mismo, o NAN si abajo no hay nada.
+## La altura de crucero de este volador ahora mismo. Normalmente la del arquetipo,
+## salvo mientras algo la este pisando - la picada de `ActionFlyerDive`.
+func get_flight_height() -> float:
+	if data == null:
+		return 0.0
+	return _flight_height_override if _flight_height_override > 0.0 else data.flight_height
+
+
+## Baja (o sube) la altura de crucero mientras dure una accion. Es temporal a
+## proposito: la altura del `.tres` sigue siendo la verdad del arquetipo, y quien
+## la pisa tiene que devolverla.
+func set_flight_height_override(height: float) -> void:
+	_flight_height_override = maxf(height, 0.0)
+
+
+func clear_flight_height_override() -> void:
+	_flight_height_override = -1.0
+
+
+## Si hay piso solido debajo de un punto. Lo usa el clamp de los voladores: un
+## Flyer sobre un pozo esta fuera del alcance de media mitad del arsenal, asi que
+## la respuesta del jugador deja de existir.
+func has_ground_below(point: Vector3, height: float = 60.0) -> bool:
+	var world: World3D = get_world_3d()
+	if world == null:
+		return false
+	var from: Vector3 = point + Vector3.UP * 0.5
+	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * height,
+		PhysicsLayers.WORLD)
+	query.exclude = [get_rid()]
+	return not world.direct_space_state.intersect_ray(query).is_empty()
+
+
+## Acerca un destino de vuelo hasta que tenga piso debajo.
+##
+## Un volador no usa el navmesh, asi que nada le impedia posicionarse sobre un
+## pozo o fuera del arena - y ahi arriba es inatacable con todo lo que no sea el
+## rifle. No es una restriccion de dificultad: es la garantia de que la respuesta
+## del jugador existe. Camina el segmento hacia el objetivo, que siempre esta
+## parado en algo, y se queda con la primera muestra que tenga suelo.
+func ground_anchored_position(point: Vector3) -> Vector3:
+	if has_ground_below(point):
+		return point
+	var anchor: Vector3 = get_target_position()
+	for step: int in range(1, GROUND_ANCHOR_SAMPLES + 1):
+		var candidate: Vector3 = point.lerp(anchor, float(step) / float(GROUND_ANCHOR_SAMPLES))
+		if has_ground_below(candidate):
+			return candidate
+	return anchor
+
+
 func _flight_target_height() -> float:
 	var world: World3D = get_world_3d()
 	if world == null or data == null:
@@ -1133,7 +1203,7 @@ func _flight_target_height() -> float:
 	if hit.is_empty():
 		return NAN
 
-	var wanted: float = (hit["position"] as Vector3).y + data.flight_height
+	var wanted: float = (hit["position"] as Vector3).y + get_flight_height()
 	# Y ahora el techo. Un volador que insiste en su altura debajo de una galeria
 	# se queda apretado contra el techo temblando; lo que corresponde es volar mas
 	# bajo mientras dure el techo, que es lo que haria cualquier cosa que vuela.

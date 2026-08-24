@@ -1,4 +1,4 @@
-[gd_scene load_steps=44 format=3]
+[gd_scene load_steps=46 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/components/camera_recoil_component.gd" id="2_recoil"]
@@ -15,6 +15,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/land.wav" id="13_land"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/dash.wav" id="14_dash"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/slide.wav" id="15_slide"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/snare_caught.wav" id="45_snare_caught"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/snare_break.wav" id="46_snare_break"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/grapple_fire.wav" id="16_gfire"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/grapple_release.wav" id="17_grelease"]
 [ext_resource type="Script" path="res://scripts/components/weapon_holder.gd" id="18_holder"]
@@ -214,6 +216,8 @@ grapple = NodePath("../GrappleComponent")
 jump_sound = ExtResource("12_jump")
 land_sound = ExtResource("13_land")
 dash_sound = ExtResource("14_dash")
+snare_caught_sound = ExtResource("45_snare_caught")
+snare_break_sound = ExtResource("46_snare_break")
 slide_sound = ExtResource("15_slide")
 
 [node name="GrappleComponent" type="Node" parent="." node_paths=PackedStringArray("body", "aim_node", "stats")]

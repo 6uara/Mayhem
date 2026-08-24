@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_tree"]
 [ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector.gd" id="2_selector"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://scripts/ai/conditions/condition_not_staggered.gd" id="6_steady"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_telegraph.gd" id="7_telegraph"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_ranged_attack.gd" id="8_ranged"]
+[ext_resource type="Script" path="res://scripts/ai/conditions/condition_dive_ready.gd" id="11_dive_ready"]
+[ext_resource type="Script" path="res://scripts/ai/actions/action_flyer_dive.gd" id="12_dive"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_keep_distance.gd" id="9_kite"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_chase_player.gd" id="10_chase"]
 
@@ -36,6 +38,26 @@ windup_multiplier = 1.0
 
 [node name="Shoot" type="Node" parent="Root/ShootBranch"]
 script = ExtResource("8_ranged")
+
+[node name="DiveBranch" type="Node" parent="Root"]
+script = ExtResource("3_sequence")
+
+[node name="Steady" type="Node" parent="Root/DiveBranch"]
+script = ExtResource("6_steady")
+
+[node name="DiveReady" type="Node" parent="Root/DiveBranch"]
+script = ExtResource("11_dive_ready")
+interval = 8.0
+
+[node name="DiveTelegraph" type="Node" parent="Root/DiveBranch"]
+script = ExtResource("7_telegraph")
+windup_multiplier = 0.6
+
+[node name="Dive" type="Node" parent="Root/DiveBranch"]
+script = ExtResource("12_dive")
+dive_height = 2.5
+dive_distance = 6.0
+dive_duration = 1.2
 
 [node name="KeepDistance" type="Node" parent="Root"]
 script = ExtResource("9_kite")

@@ -461,6 +461,26 @@ def zip_release(rng: random.Random) -> list[float]:
     )
 
 
+def snare_caught(rng: random.Random) -> list[float]:
+    """Algo espeso que se cierra: el charco de atrapado agarrando al jugador.
+
+    Baja de tono en vez de subir, que es lo contrario del dash, y por eso se lee
+    como "te frenaron" y no como "hiciste algo".
+    """
+    return _mix(
+        (_tone(ms(420), 200.0, 0.01, 0.5, 0.5, sweep=0.4), 0),
+        (_lowpass(_noise(ms(340), 0.02, 0.4, 0.35, rng), 700.0), 0),
+    )
+
+
+def snare_break(rng: random.Random) -> list[float]:
+    """Romperlo: un tiron corto que sube. Es el sonido que ensena que habia salida."""
+    return _mix(
+        (_noise(ms(70), 0.001, 0.1, 0.6, rng), 0),
+        (_tone(ms(240), 320.0, 0.002, 0.22, 0.55, sweep=2.6), 0),
+    )
+
+
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
@@ -557,6 +577,9 @@ def main() -> None:
     _write("world/ammo_pickup.wav", ammo_pickup())
     _write("ui/purchase.wav", purchase())
     _write("ui/denied.wav", denied())
+    snare_rng = random.Random(20260824)
+    _write("world/snare_caught.wav", snare_caught(snare_rng))
+    _write("world/snare_break.wav", snare_break(snare_rng))
     print("Done. These are placeholders - replace them in Phase 5.")
 
 

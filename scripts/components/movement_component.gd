@@ -92,6 +92,10 @@ const SNARE_GRACE: float = 0.9
 @export var jump_sound: AudioStream
 @export var land_sound: AudioStream
 @export var dash_sound: AudioStream
+## El charco de atrapado agarrando, y el tirón de romperlo. El segundo es el que
+## más enseña: es el que dice que había una salida.
+@export var snare_caught_sound: AudioStream
+@export var snare_break_sound: AudioStream
 @export var slide_sound: AudioStream
 
 var state: State = State.GROUNDED:
@@ -215,19 +219,35 @@ func is_snared() -> bool:
 func apply_snare(multiplier: float) -> void:
 	if _snare_grace_left > 0.0:
 		return
+	var was_snared: bool = is_snared()
 	_snare_multiplier = clampf(multiplier, 0.05, 1.0)
+	# Sólo en la transición: el charco re-aplica el efecto diez veces por segundo,
+	# y avisar en cada refresco sería diez sonidos por segundo.
+	if is_snared() and not was_snared:
+		_announce_snare()
 
 
 func clear_snare() -> void:
+	var was_snared: bool = is_snared()
 	_snare_multiplier = 1.0
+	if was_snared:
+		EventBus.player_snare_ended.emit(false)
 
 
 ## La salida. El dash y el gancho lo rompen y compran unos segundos de gracia,
 ## que es lo que convierte al charco en una pregunta ("¿gasto una carga?") en vez
 ## de en un castigo. Las dos son acciones que ya existían y cuestan un recurso.
 func break_snare() -> void:
+	var was_snared: bool = is_snared()
 	_snare_multiplier = 1.0
 	_snare_grace_left = SNARE_GRACE
+	if not was_snared:
+		return
+	# Romperlo suena, y suena distinto de que se te acabe el charco. Es la mitad
+	# que enseña la regla: gastaste algo y te soltó.
+	if body != null:
+		AudioPool.play_3d(snare_break_sound, body.global_position, AudioPool.BUS_WORLD)
+	EventBus.player_snare_ended.emit(true)
 
 
 # States
@@ -476,6 +496,12 @@ func _set_head_height(height: float) -> void:
 		return
 	var tween: Tween = create_tween()
 	tween.tween_property(head, "position:y", height, 0.12)
+
+
+func _announce_snare() -> void:
+	if body != null:
+		AudioPool.play_3d(snare_caught_sound, body.global_position, AudioPool.BUS_WORLD)
+	EventBus.player_snared.emit(_snare_multiplier)
 
 
 func _stat(stat_key: StringName, base_value: float) -> float:

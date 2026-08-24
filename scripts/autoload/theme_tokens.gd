@@ -143,6 +143,11 @@ const ENEMY_BOMBER   := Color("#F5E000")
 ## nadie lo explique. Lejos del mint de HEAL (que es pálido y desaturado a
 ## propósito, y además nunca aparece en el mundo salvo como VFX de curación).
 const ENEMY_ENVIRONMENTAL := Color("#5FD93A")
+## Violeta frío: el único que no pisa el piso, y el único color del elenco que no
+## aparece en ninguna otra parte del mundo. Estaba escrito a mano en el `.tres`,
+## que es exactamente lo que esta lista existe para impedir - y de paso lo dejaba
+## afuera de las pruebas de conformidad, que iteran ENEMY_HEIGHT.
+const ENEMY_FLYER    := Color("#9966F2")
 
 const ENEMY_HEIGHT := {
 	"rusher": 1.2,
@@ -152,6 +157,9 @@ const ENEMY_HEIGHT := {
 	"summoner": 2.2,
 	"bomber": 1.0,
 	"environmental": 2.5,
+	# Mas bajo que el Bomber, que es la otra esfera del elenco: comparten forma, y
+	# en el aire la silueta es lo unico que queda para distinguirlos de un vistazo.
+	"flyer": 0.8,
 }
 
 const CHASSIS       := Color("#2C3140")

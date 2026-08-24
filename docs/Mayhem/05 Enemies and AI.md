@@ -220,6 +220,29 @@ fire inside the horde** — a Ranger cannot hit a team-mate with a stray shot. I
 line-of-sight checks each victim for the same reason `deal_melee_damage()` does:
 a blast that turns a corner is damage with nothing on screen to explain it.
 
+### What the fuse learned later
+
+Three things came out of the behaviour pass
+([PLAN_ENEMY_BEHAVIOR.md](../PLAN_ENEMY_BEHAVIOR.md) §2), and all three were
+arithmetic nobody had done rather than decisions anybody had made:
+
+- **It commits before it arms.** `_approach_commit_distance()` returns
+  `fuse_arm_range` for any archetype with `has_fuse`. Before that it returned
+  `max(attack_range × 1.8, 2.5)` = 2.88m for the Bomber, so at its 6m arming
+  range the back-bearing still weighed 0.78 of 0.85 — it lit the fuse from
+  *behind* the player, with its only visual tell (the floor ring) off screen. The
+  archetype's question is "where do I make it explode", and that question needs
+  you to see where it is.
+- **The blast falls off with distance**, from full damage at the centre to
+  `Explosion.EDGE_DAMAGE_FRACTION` (0.35) at the ring. Flat damage made "I
+  dodged" and "I nearly dodged" pay the same, and a border that means nothing
+  teaches nothing. The ring is still the promise: the radius that hurts is
+  exactly the one drawn.
+- **Two fuses may count at once, never three** (`ActionArmFuse.max_armed`). A cap
+  by role, not by headcount: what saturates is not how many enemies there are but
+  how many ask the same thing at the same time. The one that cannot arm keeps
+  walking, so it arms as soon as a slot frees up.
+
 ## The flask
 
 The Environmental (`data/enemies/environmental.tres`, `ActionThrowFlask`,
@@ -352,6 +375,31 @@ cuando el enemigo iba derecho al jugador. El test ahora exige primero que el
 punto no sea el jugador mismo.
 
 Tests en `tests/integration/test_flyer.gd`.
+
+### The dive, and never parking over a hole
+
+Flight as built had a hole the flight code could not see: the tree was *shoot →
+keep distance → chase*, with no leaf that ever brought the Flyer down. It floated
+at 13m and 5m, fired every 2.6s, and could be resolved only by attrition — which
+is the pattern behind the genre's least-loved flyers. `ActionFlyerDive` +
+`ConditionDiveReady` add the commitment window: every 8s (≈3 shots) it telegraphs,
+drops to 2.5m, closes to 6m for 1.2s, then climbs back. Being staggered mid-dive
+aborts it, which is also the reward for hitting it while it was close.
+
+Two nodes and not one, because a reactive sequence re-ticks its conditions every
+frame while the action runs: a clock living inside the dive would cut the dive on
+the frame after it started. The clock lives in the condition, the descent in the
+action, and the shared state on the blackboard — one publishes the interval, the
+other rearms it.
+
+The dive is **below** the shoot branch in the selector, so a ready shot wins. In
+practice that means the dive starts on the frame the attack is not ready — right
+after firing — and has the whole cadence as clear runway.
+
+Separately, `Enemy.set_move_target()` now anchors a flyer's destination to ground
+(`ground_anchored_position()`): it walks the segment toward the target until a
+downward ray finds floor. A flyer hovering over a pit is out of reach of half the
+arsenal, and that is not difficulty — it is the player's answer ceasing to exist.
 
 ## Factions, and who an enemy is actually fighting
 
@@ -497,6 +545,20 @@ hands the player the one decision the archetype exists to ask for.
 last in `project.godot` load order.
 
 ## Stagger, slow, stun
+
+On the player's side there is exactly one of these, the snare, and it is the only
+thing in the game that slows the player. It announces itself:
+`MovementComponent.apply_snare()` fires `EventBus.player_snared` on the
+transition only — the pool re-applies the effect ten times a second — and
+`break_snare()` fires `player_snare_ended(true)` while walking out of it fires
+`false`. The HUD holds a `SnareVignette` for as long as it lasts (a state, not a
+hit, so it stays lit rather than pulsing), and the two sounds separate being
+caught from tearing free. The one that matters is tearing free: it is what
+teaches that there was a way out.
+
+No camera cue on purpose. `CameraFeelComponent`'s step bob advances with distance
+travelled rather than time, so it already slows down on its own — a shake on top
+would be saying the same thing twice.
 
 `Enemy.apply_stun(duration)`, `apply_slow(multiplier)` / `clear_slow()`,
 `is_staggered()` — `stagger_resistance` (0–1) on `EnemyData` scales how much a

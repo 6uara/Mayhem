@@ -173,3 +173,92 @@ func test_its_approach_point_is_off_to_one_side() -> void:
 func test_it_does_not_jump() -> void:
 	assert_false(_data().can_jump,
 		"un volador que saltara estaria peleando contra su propio modo de moverse")
+
+
+# ----------------------------------------------------- la ventana de compromiso
+
+## Sin esto el arquetipo no hace ninguna pregunta: flota a 13m, tira cada 2.6s y
+## se resuelve por acumulacion. La picada es el momento en el que matarlo se
+## siente bien, y es lo unico que separa a un volador de un peaje.
+func test_the_dive_brings_it_down_to_where_the_shotgun_lives() -> void:
+	_add_ground(Vector3(0.0, -0.5, 0.0), Vector3(200.0, 1.0, 200.0))
+	var flyer: Enemy = await _spawn(FLYER, Vector3.ZERO)
+	var dive := ActionFlyerDive.new()
+	dive.dive_height = 2.5
+	add_child_autofree(dive)
+	var blackboard := Blackboard.new()
+	add_child_autofree(blackboard)
+
+	assert_almost_eq(flyer.get_flight_height(), _data().flight_height, 0.01,
+		"antes de la picada vuela a su altura de crucero")
+	dive.before_run(flyer, blackboard)
+	assert_almost_eq(flyer.get_flight_height(), 2.5, 0.01, "durante la picada, baja")
+
+
+## Y vuelve a subir. Un Flyer que se queda con la altura de picada pisada es un
+## Flyer que no vuelve a volar nunca, y eso no falla: se ve como que el arquetipo
+## era otro.
+func test_the_dive_always_gives_the_altitude_back() -> void:
+	_add_ground(Vector3(0.0, -0.5, 0.0), Vector3(200.0, 1.0, 200.0))
+	var flyer: Enemy = await _spawn(FLYER, Vector3.ZERO)
+	var dive := ActionFlyerDive.new()
+	dive.dive_height = 2.5
+	add_child_autofree(dive)
+	var blackboard := Blackboard.new()
+	add_child_autofree(blackboard)
+
+	dive.before_run(flyer, blackboard)
+	dive.interrupt(flyer, blackboard)
+	assert_almost_eq(flyer.get_flight_height(), _data().flight_height, 0.01,
+		"cortada a la mitad, la altura vuelve igual")
+
+
+## El reloj de la picada no puede vivir adentro de la picada: la secuencia
+## reactiva vuelve a preguntar la condicion en cada frame mientras la accion
+## corre, asi que si la condicion se rearmara sola la picada se cortaria en el
+## frame siguiente al que empieza.
+func test_the_dive_clock_is_rearmed_by_the_dive_and_not_by_itself() -> void:
+	_add_ground(Vector3(0.0, -0.5, 0.0), Vector3(200.0, 1.0, 200.0))
+	var flyer: Enemy = await _spawn(FLYER, Vector3.ZERO)
+	var ready := ConditionDiveReady.new()
+	ready.interval = 8.0
+	add_child_autofree(ready)
+	var blackboard := Blackboard.new()
+	add_child_autofree(blackboard)
+
+	blackboard.set_value(ConditionDiveReady.COOLDOWN_KEY, 0.0)
+	assert_eq(ready.tick(flyer, blackboard), BeehaveNode.SUCCESS, "con el reloj en cero, toca")
+	assert_eq(ready.tick(flyer, blackboard), BeehaveNode.SUCCESS,
+		"y sigue tocando mientras la picada corre, o se cortaria sola")
+
+	var dive := ActionFlyerDive.new()
+	add_child_autofree(dive)
+	dive._finish(flyer, blackboard)
+	assert_eq(ready.tick(flyer, blackboard), BeehaveNode.FAILURE,
+		"terminada la picada, el reloj arranca de nuevo")
+
+
+# ------------------------------------------------------ nunca sobre el vacio
+
+## Un volador sobre un pozo esta fuera del alcance de media mitad del arsenal. No
+## es dificultad: es que la respuesta del jugador deja de existir.
+func test_it_will_not_park_itself_over_a_hole() -> void:
+	# Una isla de piso, y el resto del mundo vacio.
+	_add_ground(Vector3(0.0, -0.5, 0.0), Vector3(20.0, 1.0, 20.0))
+	_player.global_position = Vector3.ZERO
+	var flyer: Enemy = await _spawn(FLYER, Vector3(2.0, 5.0, 0.0))
+
+	flyer.set_move_target(Vector3(60.0, 5.0, 0.0))
+	assert_lt(flyer.move_target.x, 11.0,
+		"el destino se acerca hasta tener piso debajo, en vez de quedar sobre el vacio")
+	assert_true(flyer.has_ground_below(flyer.move_target), "y el punto final tiene piso")
+
+
+## Pero si el punto ya tiene piso, no se toca. El clamp es una red, no un iman.
+func test_a_destination_with_ground_under_it_is_left_alone() -> void:
+	_add_ground(Vector3(0.0, -0.5, 0.0), Vector3(200.0, 1.0, 200.0))
+	var flyer: Enemy = await _spawn(FLYER, Vector3.ZERO)
+	var wanted := Vector3(14.0, 5.0, 3.0)
+	flyer.set_move_target(wanted)
+	assert_almost_eq(flyer.move_target.distance_to(wanted), 0.0, 0.01,
+		"sobre piso firme, el destino queda donde estaba")

@@ -14,6 +14,15 @@ Todo lo marcado **(medido)** se verificó leyendo el código y los `.tres` de es
 rama, no se asumió. Todo lo marcado **(recomendación)** es una decisión de diseño
 abierta, con su motivo y con la perilla concreta que la aplica.
 
+> **Estado: aplicado.** Las recomendaciones de §8 están construidas y verdes
+> (568 tests). Lo que sigue se deja como estaba escrito —el diagnóstico y el
+> porqué— con una marca **(aplicado)** en cada una y lo que cambió al hacerlo en
+> §9. Lo único que no se hizo es §1.2, el arquetipo que cobra munición, que el
+> propio documento pone fuera de alcance.
+>
+> Los números siguen sin jugarse. Aplicar no es tunear: lo que se cerró son los
+> comportamientos que faltaban y los agujeros medidos, no el balance.
+
 ---
 
 ## 0. Alcance: los Gladiadores no entran acá
@@ -87,7 +96,7 @@ es el hueco: un enemigo que sólo se resuelve gastando, no esquivando.
 Números de hoy (medido, `data/enemies/bomber.tres`): vida 55, velocidad 5.4,
 espoleta 2.2s, radio 4.5m, daño 55, se arma a 6.0m, rumbo 180° con peso 0.85.
 
-### 2.1 No está en ninguna oleada (medido) — la recomendación número uno
+### 2.1 No está en ninguna oleada (medido) — **aplicado**
 
 Buscar `bomber` en `data/waves/` no devuelve **nada**. El arquetipo está
 construido, probado y documentado, y **el juego no lo spawnea nunca**. Es el
@@ -105,7 +114,7 @@ lo ves solo, en una situación donde equivocarte no te mata.
   coincidir. Acá aparece la jugada de la cadena.
 - **Oleada 9-10, `count = 2-3`, `interval ≈ 4s`**, mezclados.
 
-### 2.2 Se arma mientras todavía viene por la espalda (medido)
+### 2.2 Se arma mientras todavía viene por la espalda (medido) — **aplicado (opción A)**
 
 La cuenta: el rumbo de aproximación se desvanece a partir de
 `_approach_commit_distance()`, que para el Bomber vale `max(1.6 × 1.8, 2.5) =
@@ -139,7 +148,7 @@ la promesa del arquetipo es *"¿dónde lo hago explotar?"*, y esa pregunta neces
 que veas dónde está. Un Bomber que se arma detrás tuyo no hace esa pregunta, hace
 "¿te acordaste de mirar atrás?", que es otra y peor.
 
-### 2.3 El daño es plano dentro del radio (medido)
+### 2.3 El daño es plano dentro del radio (medido) — **aplicado**
 
 `Explosion.detonate()` aplica `damage` completo a todo lo que esté dentro de
 `radius` y tenga línea de visión. No hay caída con la distancia: 55 de daño a
@@ -179,7 +188,7 @@ Números de hoy (medido, `data/enemies/flyer.tres`): vida 45, velocidad 5.6,
 altura 5.0m, distancia preferida 13m, alcance 20m, cadencia 2.6s, proyectil
 24 m/s, daño 12, rumbo ±90° con peso 0.75.
 
-### 3.1 El riesgo real no es la altura, es que nunca se compromete (medido)
+### 3.1 El riesgo real no es la altura, es que nunca se compromete (medido) — **aplicado**
 
 El árbol del Flyer (`tree_flyer.tscn`) es: disparar si está en rango → si no,
 mantener distancia → si no, acercarse. **No hay ninguna hoja que lo baje, lo
@@ -211,7 +220,7 @@ compromiso.** Concretamente, una hoja nueva en el árbol, después de N disparos
 Cualquiera de las dos convierte la pregunta de "¿le sigo tirando?" en "¿me guardo
 el pico de daño para cuando baje?", que es una decisión y no una tarea.
 
-### 3.2 Puede volar sobre lugares donde el jugador no puede pegarle (recomendación)
+### 3.2 Puede volar sobre lugares donde el jugador no puede pegarle — **aplicado**
 
 `_fly()` mantiene altura por raycast contra el terreno y **sube** cuando encuentra
 algo adelante. No hay nada que le impida derivar sobre un pozo, sobre geometría
@@ -224,7 +233,7 @@ encontró algo), y si deriva fuera, que su siguiente destino sea hacia adentro. 
 es una restricción de dificultad: es la garantía de que la respuesta del jugador
 existe.
 
-### 3.3 No tiene color propio ni entra en las pruebas de conformidad (medido)
+### 3.3 No tiene color propio ni entra en las pruebas de conformidad (medido) — **aplicado**
 
 Dos huecos chicos y concretos:
 
@@ -265,7 +274,7 @@ Números de hoy (medido): cadencia 4.5s, arco 1.1s, adelanto 0.65, charco de ác
 3.2m por 5s, charco de atrapado 2.6m por 4s al 35% de velocidad con 0.9s de
 gracia, alternando uno de cada dos.
 
-### 4.1 La saturación es el riesgo real, y tiene número (medido)
+### 4.1 La saturación es el riesgo real, y tiene número (medido) — **aplicado**
 
 Con tres Environmentals vivos (que es lo que las oleadas 9 y 10 spawnean hoy) y
 cadencia 4.5s, cae un frasco cada 1.5s. Los charcos de ácido duran 5s, así que en
@@ -284,7 +293,7 @@ primer número), aplicado donde se tira y no donde se spawnea. Si ya hay cuatro,
 Environmental hace su telegrafía y **no tira** —lo cual además lo vuelve legible:
 el jugador ve que la presión tiene techo.
 
-### 4.2 Dos charcos superpuestos son una condena, no una jugada (recomendación)
+### 4.2 Dos charcos superpuestos son una condena, no una jugada — **aplicado**
 
 Nada impide hoy que un frasco de atrapado caiga sobre un charco de ácido. Esa
 combinación es: 35% de velocidad **dentro** de un charco que hace daño por tick,
@@ -302,7 +311,7 @@ atrapado no hace daño porque frenar y quemar es cobrar dos veces): acá se cier
 el caso que la implementación no cubría, que es dos charcos distintos haciéndolo
 entre los dos.
 
-### 4.3 El atrapado se adelanta demasiado (recomendación)
+### 4.3 El atrapado se adelanta demasiado — **aplicado**
 
 `lead_fraction = 0.65` es del frasco de ácido y está bien razonado: el charco cae
 *en el camino*, y la pregunta es "sigo o me desvío". Pero el de atrapado usa el
@@ -314,7 +323,7 @@ de atrapado en tu camino te agarra.
 Sigue cortando el camino, pero cae delante tuyo y no encima, y la respuesta pasa a
 ser frenar o rodear en vez de gastar el dash sí o sí.
 
-### 4.4 Estar atrapado no se ve ni se oye (medido)
+### 4.4 Estar atrapado no se ve ni se oye (medido) — **aplicado**
 
 `MovementComponent.apply_snare()` baja la velocidad y **nada más**: no hay señal,
 no hay VFX, no hay sonido. El jugador se entera de que está atrapado porque camina
@@ -348,7 +357,7 @@ que había una salida.
 Tres reglas, en orden de importancia, y las tres son de pacing antes que de
 dificultad.
 
-### 5.1 Presentación aislada, después mezcla
+### 5.1 Presentación aislada, después mezcla — **aplicado**
 
 Ningún arquetipo nuevo debería debutar dentro de una ola llena. El debut aislado
 es lo que permite aprender la telegrafía sin pagarla, y es práctica estándar
@@ -362,7 +371,7 @@ Flyer en la 9 (`count = 2`, delay 18s), y **el Bomber no debuta nunca**.
 Flyer a `count = 1` (hoy entra de a dos, en la ola más cargada del juego hasta ese
 punto, junto con tres Environmentals).
 
-### 5.2 Un solo eje de presión a la vez
+### 5.2 Un solo eje de presión a la vez — **aplicado**
 
 En la oleada 10 (medido), los `delay` son: Flyer 16s, Environmental 18s, Summoner
 20s. Los tres picos caen en una ventana de cuatro segundos, encima de tres Elites
@@ -375,7 +384,7 @@ una sola crecida. La curva de tensión con picos y valles es más difícil de
 sostener y más fácil de recordar que una rampa; es lo que el Director de *Left 4
 Dead* construye deliberadamente al alternar picos con calma.
 
-### 5.3 Techos por rol, no por cantidad
+### 5.3 Techos por rol, no por cantidad — **aplicado**
 
 **Recomendación:** máximo **3 Environmentals** vivos (ya se cumple), máximo **2
 Bombers armados** al mismo tiempo, máximo **3 Flyers** (por lectura de pantalla, no
@@ -431,6 +440,51 @@ es de diseño y no de números.
 6. **Adelanto propio del atrapado** (§4.3), **token y altura del Flyer** (§3.3),
    **separación de picos en las olas** (§5.2).
 
-Nada de esto bloquea la rama de los Gladiadores, y nada de esto debería empezar
-antes de haber jugado una run entera con los tres arquetipos en las olas. Los
-números de arriba son hipótesis con motivo, no correcciones.
+Nada de esto bloquea la rama de los Gladiadores. Los números de arriba son
+hipótesis con motivo, no correcciones: siguen sin jugarse.
+
+---
+
+## 9. Lo que cambió al aplicarlo
+
+Los seis puntos de §8 están construidos. Lo que no estaba en el plan y salió al
+hacerlo:
+
+- **La caída de daño rompió un test que medía otra cosa.** `test_it_only_ever_
+  explodes_once` ponía un Rusher a 2m del Bomber y esperaba el daño entero; con
+  la caída, el número esperado pasó a depender de la distancia — y ahí se vio que
+  los dos cuerpos **estaban cayendo**, porque ese test nunca tuvo piso, y no caían
+  igual porque no se spawnearon en el mismo frame. Con daño plano eso era
+  invisible. La caída lo delató: el test medía la física, no la explosión.
+- **El rumbo del Bomber se corrigió solo con una línea, y con la que ya existía.**
+  `_approach_commit_distance()` era el lugar: un arquetipo con `has_fuse` devuelve
+  su propio `fuse_arm_range`, así que se compromete antes de armar sin que nada
+  más cambie. La red aguantó — `test_up_close_it_stops_circling_and_commits` y
+  los dos de la espalda pasan sin tocarse.
+- **La picada del Flyer necesitó dos nodos y no uno.** Una secuencia reactiva
+  vuelve a preguntar sus condiciones en cada frame mientras la acción corre, así
+  que un reloj que viviera adentro de la picada la cortaría en el frame siguiente
+  al que empieza. El reloj quedó en `ConditionDiveReady`, el descenso en
+  `ActionFlyerDive`, y el estado compartido en el blackboard: uno publica el
+  número y el otro lo rearma, sin que ninguno conozca al otro.
+- **La silueta del Flyer tuvo que bajar de 1.0m a 0.8m.** Al entrar en
+  `ENEMY_HEIGHT` quedó cubierto por las cuatro pruebas de conformidad, y una de
+  ellas —la de los 40m— lo pescó compartiendo rectángulo con el Rusher. Es
+  exactamente el agujero que el documento decía que había, y se notó en el primer
+  segundo de estar tapado.
+- **El tope de charcos consume la cadencia igual.** Si el Environmental no tira
+  por el techo, igual telegrafía y arranca su cooldown; si no, se quedaría
+  intentándolo en cada frame contra el tope y se convertiría en un enemigo que
+  nunca hace nada.
+- **El atrapado que iba a caer sobre un charco vivo no se cancela: cambia de
+  carga.** Devuelve el frasco al pool y saca uno de ácido. Cancelar el tiro le
+  regalaba al jugador un turno gratis por pararse cerca de un charco.
+- **Del feedback del atrapado se hicieron dos tercios a propósito.** La viñeta y
+  los dos sonidos, sí. La sacudida de cámara, no: el bob de `CameraFeel` avanza
+  con la distancia recorrida y no con el tiempo, así que **ya** reporta el
+  atrapado — se hace lento solo. Agregarle una sacudida encima era decir dos
+  veces lo mismo.
+- **Faltaba una prueba de composición y ahora existe.** `test_wave_composition.gd`
+  falla si un arquetipo no aparece en ninguna ola, si uno debuta más grande de lo
+  que va a aparecer después, o si dos picos tardíos se pisan. El Bomber invisible
+  no era un olvido puntual: era una categoría de error que nada miraba.

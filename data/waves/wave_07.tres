@@ -6,6 +6,7 @@
 [ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="4_ranger"]
 [ext_resource type="Resource" uid="uid://cdi5iigv8qtk4" path="res://data/enemies/healer.tres" id="5_healer"]
 [ext_resource type="Resource" path="res://data/enemies/environmental.tres" id="7_env"]
+[ext_resource type="Resource" path="res://data/enemies/bomber.tres" id="90_bomber"]
 
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")
@@ -37,9 +38,17 @@ spawn_door_ids = Array[StringName]([&"door_04"])
 delay = 14.0
 interval = 4.0
 
+[sub_resource type="Resource" id="Group_bomber"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("90_bomber")
+count = 2
+spawn_door_ids = Array[StringName]([&"door_01", &"door_03"])
+delay = 8.0
+interval = 6.0
+
 [resource]
 script = ExtResource("1_wave")
 wave_index = 6
-spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_4")])
+spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_4"), SubResource("Group_bomber")])
 par_time = 95.0
 completion_bonus = 120

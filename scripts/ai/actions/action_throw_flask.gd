@@ -52,6 +52,24 @@ extends ActionLeaf
 ## salir. Un charco de atrapado del tamaño del de ácido es una condena.
 @export var snare_radius: float = 2.6
 @export var snare_duration: float = 4.0
+## Cuánto se adelanta el de atrapado, que no es lo mismo que el de ácido.
+##
+## Adelantarse con algo que te **empuja** y con algo que te **retiene** son dos
+## cosas distintas: un charco de ácido en tu camino te desvía, uno de atrapado en
+## tu camino te agarra. Con el 0.65 del ácido la única respuesta era gastar el
+## dash sí o sí; con 0.4 sigue cortando el camino pero cae delante y no encima, y
+## vuelven a existir frenar y rodear.
+@export_range(0.0, 1.0, 0.05) var snare_lead_fraction: float = 0.4
+
+@export_group("Saturación")
+## Cuántos charcos enemigos pueden estar vivos a la vez en todo el arena.
+##
+## La negación de terreno no escala lineal: dos charcos son el doble de trabajo y
+## cuatro son un laberinto. Tres Environmentals a cadencia 4.5s tiran uno cada
+## 1.5s y los charcos duran 5s, así que sin tope el arena se pavimenta. Con tope,
+## el que no puede tirar igual telegrafía, y eso además lo vuelve legible: se ve
+## que la presión tiene techo.
+@export var max_live_pools: int = 4
 
 ## Cuántos frascos van tirados. Vive en la hoja y no en `Enemy` porque es de este
 ## ataque: cada Environmental lleva su propia cuenta, igual que su cadencia.
@@ -62,6 +80,13 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	var enemy := actor as Enemy
 	if enemy == null or enemy.data == null or flask_scene == null:
 		return FAILURE
+
+	var live: Array[HazardZone] = _live_enemy_pools(enemy)
+	if max_live_pools > 0 and live.size() >= max_live_pools:
+		# Telegrafió y no tira: la cadencia se consume igual, así que el arquetipo
+		# no se queda trabado intentándolo en cada frame.
+		enemy.start_attack_cooldown()
+		return SUCCESS
 
 	var is_snare: bool = _next_is_snare()
 	var scene: PackedScene = snare_flask_scene if is_snare else flask_scene
@@ -75,7 +100,19 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	# A los pies y no al pecho: el charco se apoya en el piso, así que el arco
 	# tiene que terminar en el piso o el frasco explota a la altura de la cintura
 	# y el charco aparece flotando por encima del suelo que dice negar.
-	var target: Vector3 = _predicted_spot(enemy)
+	var target: Vector3 = _predicted_spot(enemy, is_snare)
+	if is_snare and _overlaps_a_pool(target, live):
+		# Un charco de atrapado encima de uno de ácido es 35% de velocidad adentro
+		# de algo que quema, con una sola salida que puede no estar disponible: la
+		# única configuración del juego que puede matar sin que el jugador haya
+		# podido hacer nada. Cada charco tiene que poder hacer su propia pregunta;
+		# dos encimadas no son una pregunta más difícil, son ninguna.
+		is_snare = false
+		flask = _swap_payload(flask, flask_scene)
+		if flask == null:
+			return FAILURE
+		# Con la carga cambia el adelanto, así que el punto se vuelve a pedir.
+		target = _predicted_spot(enemy, false)
 
 	if is_snare:
 		# Sin daño: frenar y quemar a la vez son dos castigos por una decisión, y
@@ -101,13 +138,14 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 ## sigue volando hasta que algo lo pare o hasta la red de seguridad de
 ## `ThrownUtility` - errar es el modo normal de funcionar de este arquetipo, así
 ## que no hace falta protegerlo de eso.
-func _predicted_spot(enemy: Enemy) -> Vector3:
+func _predicted_spot(enemy: Enemy, is_snare: bool = false) -> Vector3:
 	var here: Vector3 = enemy.get_target_position()
-	if lead_fraction <= 0.0:
+	var lead: float = snare_lead_fraction if is_snare else lead_fraction
+	if lead <= 0.0:
 		return here
 	var velocity: Vector3 = enemy.get_target_velocity()
 	velocity.y = 0.0
-	return here + velocity * maxf(flight_time, 0.1) * lead_fraction
+	return here + velocity * maxf(flight_time, 0.1) * lead
 
 
 ## El mismo solver balístico que usan `JumpLink.get_launch_velocity()` y
@@ -132,3 +170,37 @@ func _next_is_snare() -> bool:
 	if snare_flask_scene == null or snare_every <= 0:
 		return false
 	return (_throws + 1) % snare_every == 0
+
+
+## Los charcos que hay vivos ahora mismo y son de alguien, o sea tirados por un
+## enemigo. Las trampas del arena están en el mismo grupo y no tienen dueño: son
+## parte del nivel y no de la presión de la ola, así que no cuentan contra el tope.
+func _live_enemy_pools(enemy: Enemy) -> Array[HazardZone]:
+	var found: Array[HazardZone] = []
+	for node: Node in enemy.get_tree().get_nodes_in_group(&"hazard"):
+		# Los pooleados que ya volvieron al pool siguen en el árbol, apagados.
+		if node.is_in_group(ObjectPool.RELEASED_GROUP):
+			continue
+		var zone := node as HazardZone
+		if zone != null and is_instance_valid(zone.attacker):
+			found.push_back(zone)
+	return found
+
+
+func _overlaps_a_pool(spot: Vector3, live: Array[HazardZone]) -> bool:
+	for zone: HazardZone in live:
+		var apart: Vector3 = zone.global_position - spot
+		apart.y = 0.0
+		if apart.length() < zone.radius + snare_radius:
+			return true
+	return false
+
+
+## Devuelve el frasco al pool y saca el otro. Pasa cuando el de atrapado iba a
+## caer encima de un charco vivo: la carga cambia, el tiro sigue.
+func _swap_payload(flask: EnemyFlask, scene: PackedScene) -> EnemyFlask:
+	ObjectPool.release(flask)
+	var swapped := ObjectPool.acquire(scene) as EnemyFlask
+	if swapped == null:
+		push_error("ActionThrowFlask: la escena del frasco no es un EnemyFlask")
+	return swapped

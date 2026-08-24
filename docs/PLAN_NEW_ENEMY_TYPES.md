@@ -21,8 +21,9 @@ código contra ese commit, no asumido.
 > simples, lo que queda es diseño y no código —qué preguntas hacen, dónde
 > debutan, qué números mover—. Vive en
 > [PLAN_ENEMY_BEHAVIOR.md](PLAN_ENEMY_BEHAVIOR.md), que también cubre los
-> hallazgos medidos sobre esta rama (entre ellos que el Bomber no está en
-> ninguna oleada).
+> hallazgos medidos sobre esta rama (entre ellos que el Bomber no estaba en
+> ninguna oleada). **Sus recomendaciones ya están aplicadas**; los números
+> siguen sin jugarse.
 
 **El Gladiador va en su propia rama, `feat/gladiators`**, que sale de ésta cuando
 la infraestructura compartida esté lista — es decir después de los pasos 3, 4 y 5 de §6 (atribución
@@ -605,7 +606,7 @@ Abiertas:
 ## 8. Recordatorio
 
 Correr `gut` después de cada paso (`pwsh tools/run_tests.ps1`). La suite está en
-**549/549**, así que cualquier rojo es nuestro.
+**568/568**, así que cualquier rojo es nuestro.
 
 **Si aparece `Could not find type "X" in the current scope"` sobre una clase que
 existe:** es el caché global de clases de Godot y no el código. Se arregla con

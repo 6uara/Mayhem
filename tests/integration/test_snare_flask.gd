@@ -126,3 +126,88 @@ func test_the_environmental_alternates_payloads() -> void:
 		return
 	assert_not_null(throw.snare_flask_scene, "y una segunda carga cargada")
 	assert_eq(throw.snare_every, 2, "uno de cada dos tiros atrapa")
+
+
+# ------------------------------------------------- el atrapado se ve y se oye
+
+## Estar atrapado tiene que anunciarse. Sin esto, el jugador no sabe por que esta
+## lento y la salida que el charco tiene -dash o gancho- no se le ocurre nunca:
+## el sistema entero se lee como que el juego se trabo.
+func test_being_caught_announces_itself() -> void:
+	var movement: MovementComponent = _movement()
+	watch_signals(EventBus)
+	movement.apply_snare(0.35)
+	assert_signal_emitted(EventBus, "player_snared", "avisa que lo agarraron")
+
+
+## Y avisa una sola vez, no diez por segundo: el charco re-aplica el efecto en
+## cada refresco, y un aviso por refresco son diez sonidos por segundo.
+func test_the_pool_refresh_does_not_re_announce() -> void:
+	var movement: MovementComponent = _movement()
+	movement.apply_snare(0.35)
+	watch_signals(EventBus)
+	movement.apply_snare(0.35)
+	movement.apply_snare(0.35)
+	assert_signal_emit_count(EventBus, "player_snared", 0, "solo avisa la transicion")
+
+
+## Romperlo se anuncia distinto de que se te acabe el charco, y esa diferencia es
+## la que ensena que romperlo fue una accion y no una casualidad.
+func test_breaking_it_reads_differently_from_walking_out_of_it() -> void:
+	var movement: MovementComponent = _movement()
+	movement.apply_snare(0.35)
+	watch_signals(EventBus)
+	movement.break_snare()
+	assert_signal_emitted_with_parameters(EventBus, "player_snare_ended", [true])
+
+	movement.clear_snare()
+	movement._snare_grace_left = 0.0
+	movement.apply_snare(0.35)
+	watch_signals(EventBus)
+	movement.clear_snare()
+	assert_signal_emitted_with_parameters(EventBus, "player_snare_ended", [false])
+
+
+# ---------------------------------------------------------------- saturacion
+
+func _throw_leaf() -> ActionThrowFlask:
+	var tree: Node = load(ENV_TREE).instantiate()
+	add_child_autofree(tree)
+	return tree.get_node("Root/ThrowBranch/Throw") as ActionThrowFlask
+
+
+## La negacion de terreno no escala lineal: dos charcos son el doble de trabajo y
+## cuatro son un laberinto. El tope es lo que evita que tres Environmentals
+## pavimenten el arena.
+func test_the_arena_has_a_ceiling_of_live_pools() -> void:
+	var throw: ActionThrowFlask = _throw_leaf()
+	assert_gt(throw.max_live_pools, 0, "hay tope")
+	assert_lte(throw.max_live_pools, 5, "y es un tope que se nota")
+
+
+## El de atrapado se adelanta menos que el de acido, porque adelantarse con algo
+## que te retiene no es lo mismo que adelantarse con algo que te empuja.
+func test_the_snare_leads_less_than_the_acid() -> void:
+	var throw: ActionThrowFlask = _throw_leaf()
+	assert_lt(throw.snare_lead_fraction, throw.lead_fraction,
+		"un charco que agarra no se tira tan adelante como uno que desvia")
+	assert_gt(throw.snare_lead_fraction, 0.0,
+		"pero sigue cortando el camino: tirarle a los pies es tirarle a la espalda")
+
+
+## Un charco de atrapado encima de uno de acido es la unica configuracion del
+## juego que puede matar sin que el jugador haya podido hacer nada.
+func test_a_snare_is_never_thrown_on_top_of_a_live_pool() -> void:
+	var throw: ActionThrowFlask = _throw_leaf()
+	var zone := ObjectPool.acquire(load("res://scenes/arena/hazard_zone.tscn")) as HazardZone
+	if zone == null:
+		assert_true(false, "no se pudo instanciar el charco")
+		return
+	zone.global_position = Vector3.ZERO
+	zone.radius = 3.2
+	var live: Array[HazardZone] = [zone]
+
+	assert_true(throw._overlaps_a_pool(Vector3(1.0, 0.0, 0.0), live),
+		"encima del charco vivo: no")
+	assert_false(throw._overlaps_a_pool(Vector3(12.0, 0.0, 0.0), live),
+		"lejos del charco vivo: si")

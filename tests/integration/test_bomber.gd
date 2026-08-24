@@ -44,6 +44,23 @@ func _data() -> EnemyData:
 	return load(BOMBER)
 
 
+## Un piso, para los tests que dejan correr la espoleta entera. Sin el, los dos
+## cuerpos caen -y no caen igual, porque no se spawnearon en el mismo frame-, asi
+## que la distancia entre ellos crece sola durante los 2.2 segundos. Con dano
+## plano eso no se notaba; con la caida de dano por distancia, si.
+func _make_floor() -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.collision_layer = PhysicsLayers.WORLD
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(200.0, 1.0, 200.0)
+	shape.shape = box
+	shape.position = Vector3(0.0, -0.5, 0.0)
+	body.add_child(shape)
+	add_child_autofree(body)
+	return body
+
+
 # ----------------------------------------------------------------- la espoleta
 
 func test_a_fresh_bomber_is_not_counting() -> void:
@@ -153,15 +170,23 @@ func test_a_bomber_that_never_armed_still_explodes_when_killed() -> void:
 ## vuelve a entrar por el mismo camino que usaria un escopetazo - sin un candado
 ## explota dos veces y hace el doble de daño del que promete el circulo.
 func test_it_only_ever_explodes_once() -> void:
+	_make_floor()
 	var bomber: Enemy = await _spawn(BOMBER, Vector3.ZERO)
 	var victim: Enemy = await _spawn(RUSHER, Vector3(2.0, 0.0, 0.0))
 	victim.health.max_health = 10000.0
 	victim.health.reset()
+	# Quieto mientras corre la cuenta. Sin esto la separacion lo empuja lejos del
+	# Bomber durante los 2.2s, y lo que el test terminaba midiendo era la caida de
+	# dano con la distancia en vez de cuantas veces exploto.
+	victim.apply_stun(_data().fuse_time + 1.0)
+	# Y el Bomber tambien: aturdido sigue contando -eso es el arquetipo- pero deja
+	# de caminar, asi que los dos siguen donde se los puso.
+	bomber.apply_stun(_data().fuse_time + 1.0)
 	bomber.arm_fuse()
 	await wait_seconds(_data().fuse_time + 0.5)
 
 	var lost: float = victim.health.max_health - victim.health.current_health
-	assert_almost_eq(lost, _data().explosion_damage, 0.5,
+	assert_almost_eq(lost, _blast_damage_at(2.0), 1.0,
 		"un solo estallido, un solo tick de daño")
 
 
@@ -196,7 +221,7 @@ func test_the_blast_is_the_hordes_only_friendly_fire() -> void:
 	bomber.health.apply_damage(bomber.health.max_health)
 	await wait_physics_frames(2)
 
-	assert_almost_eq(ally.health.current_health, before - _data().explosion_damage, 0.5,
+	assert_almost_eq(ally.health.current_health, before - _blast_damage_at(1.5), 0.5,
 		"la explosion no distingue bandos")
 
 
@@ -226,3 +251,66 @@ func test_the_ring_is_drawn_at_the_blast_radius() -> void:
 		"el circulo dibujado es el circulo que lastima")
 	assert_almost_eq(bomber.fuse_ring.scale.z, _data().explosion_radius, 0.01,
 		"y es un circulo, no una elipse")
+
+
+# ------------------------------------------------------- el borde significa algo
+
+## Cuanto dano le toca a algo parado a esta distancia del centro. Espeja la caida
+## de `Explosion`, que es lo que permite que los tests de arriba midan el numero
+## real en vez de aflojar la tolerancia hasta que cualquier cosa pase.
+func _blast_damage_at(distance: float) -> float:
+	var falloff: float = clampf(distance / _data().explosion_radius, 0.0, 1.0)
+	return _data().explosion_damage * lerpf(1.0, Explosion.EDGE_DAMAGE_FRACTION, falloff)
+
+
+## Esquivar por poco y no esquivar tienen que pagar distinto. Con dano plano el
+## que salia rozando el anillo cobraba lo mismo que el que se quedaba adentro, y
+## de un borde que no significa nada no se aprende donde esta el borde.
+func test_the_blast_costs_less_at_the_edge_than_at_the_centre() -> void:
+	var radius: float = _data().explosion_radius
+	var bomber: Enemy = await _spawn(BOMBER, Vector3.ZERO)
+	var near: Enemy = await _spawn(RUSHER, Vector3(0.6, 0.0, 0.0))
+	var far: Enemy = await _spawn(RUSHER, Vector3(radius - 0.3, 0.0, 0.0))
+	for victim: Enemy in [near, far]:
+		victim.health.max_health = 10000.0
+		victim.health.reset()
+	var near_before: float = near.health.current_health
+	var far_before: float = far.health.current_health
+
+	bomber.health.apply_damage(bomber.health.max_health)
+	await wait_physics_frames(2)
+
+	var near_lost: float = near_before - near.health.current_health
+	var far_lost: float = far_before - far.health.current_health
+	assert_gt(near_lost, far_lost, "el centro cobra mas que el borde")
+	assert_gt(far_lost, 0.0, "pero el borde cobra: sigue siendo la promesa del anillo")
+	assert_almost_eq(near_lost, _blast_damage_at(0.6), 0.5, "cerca del centro, casi entero")
+
+
+## La espoleta se arma **despues** de haberse puesto de frente, no mientras
+## todavia viene rodeando. Es lo que hace que el anillo del piso -que es toda su
+## telegrafia visual- este en pantalla cuando empieza a contar.
+func test_it_commits_before_it_arms() -> void:
+	var bomber: Enemy = await _spawn(BOMBER, Vector3.ZERO)
+	assert_gte(bomber._approach_commit_distance(), bomber.get_fuse_arm_range(),
+		"deja de flanquear antes de entrar en rango de armado")
+
+
+## Dos cuentas regresivas a la vez son dos decisiones; tres no agregan ninguna,
+## solo tapan a las otras dos.
+func test_only_so_many_fuses_may_count_at_once() -> void:
+	var leaf := ActionArmFuse.new()
+	leaf.max_armed = 2
+	add_child_autofree(leaf)
+	var bombers: Array[Enemy] = []
+	for index: int in 3:
+		bombers.append(await _spawn(BOMBER, Vector3(float(index) * 3.0, 0.0, 0.0)))
+
+	var blackboard := Blackboard.new()
+	add_child_autofree(blackboard)
+	var armed: int = 0
+	for bomber: Enemy in bombers:
+		if leaf.tick(bomber, blackboard) == BeehaveNode.SUCCESS:
+			armed += 1
+	assert_eq(armed, 2, "el tercero no arma: espera a que se libere un lugar")
+	assert_false(bombers[2].is_fuse_armed(), "y sigue viniendo sin contar")

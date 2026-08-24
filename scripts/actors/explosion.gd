@@ -18,6 +18,15 @@ extends Node3D
 
 signal detonated(hit_count: int)
 
+## Que fraccion del dano queda justo en el borde del radio. En el centro va
+## entero, y entre los dos la caida es lineal.
+##
+## Sin esto "esquive" y "casi esquive" pagaban lo mismo -55 a medio metro y 55 a
+## cuatro-, y de un borde que no significa nada no se aprende donde esta. El
+## anillo sigue siendo la promesa: el radio que lastima es exactamente el que se
+## dibujo, solo que ahora el borde tambien dice algo.
+const EDGE_DAMAGE_FRACTION: float = 0.35
+
 ## Cuánto dura el destello antes de volver al pool. No hace daño en ese rato: el
 ## daño ya se aplicó, esto es sólo lo que se ve.
 @export var flash_time: float = 0.35
@@ -83,10 +92,18 @@ func detonate(radius: float, damage: float, sound: AudioStream = null,
 		var health: HealthComponent = _find_health(body)
 		if health == null:
 			continue
-		health.apply_damage(damage, attacker if is_instance_valid(attacker) else null)
+		health.apply_damage(_damage_at(body.global_position, radius, damage),
+			attacker if is_instance_valid(attacker) else null)
 		hits += 1
 	detonated.emit(hits)
 	return hits
+
+
+## Cuanto dano le toca a algo que esta a esta distancia del centro.
+func _damage_at(position: Vector3, radius: float, full_damage: float) -> float:
+	var distance: float = global_position.distance_to(position)
+	var falloff: float = clampf(distance / maxf(radius, 0.01), 0.0, 1.0)
+	return full_damage * lerpf(1.0, EDGE_DAMAGE_FRACTION, falloff)
 
 
 func _on_acquired() -> void:
