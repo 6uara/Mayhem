@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="EnemyData" format=3]
+[gd_resource type="Resource" script_class="EnemyData" format=3 uid="uid://niqw77xwlhay"]
 
-[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bjtsflnvsj88u" path="res://scripts/resources/enemy_data.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_environmental.tscn" id="2_tree"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/environmental_spawn.wav" id="3_spawn"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/environmental_windup.wav" id="4_windup"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/environmental_attack.wav" id="5_attack"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/environmental_death.wav" id="6_death"]
+[ext_resource type="AudioStream" uid="uid://dq33d3g0xddep" path="res://assets/audio/sfx/enemies/environmental_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" uid="uid://ckqm4ibctyott" path="res://assets/audio/sfx/enemies/environmental_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" uid="uid://c2hpu7n6onjdr" path="res://assets/audio/sfx/enemies/environmental_attack.wav" id="5_attack"]
+[ext_resource type="AudioStream" uid="uid://bf7g35w2suiqb" path="res://assets/audio/sfx/enemies/environmental_death.wav" id="6_death"]
 
 [sub_resource type="CylinderMesh" id="Mesh_environmental"]
 top_radius = 0.28
@@ -30,7 +30,6 @@ attack_windup = 0.9
 preferred_distance = 12.0
 approach_bearing_degrees = 65.0
 approach_bearing_weight = 0.6
-approach_bearing_mirrors = true
 mesh = SubResource("Mesh_environmental")
 body_color = Color(0.3725, 0.851, 0.2275, 1)
 collision_height = 2.5

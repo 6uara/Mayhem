@@ -6,10 +6,9 @@
 [ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="4_ranger"]
 [ext_resource type="Resource" uid="uid://cdi5iigv8qtk4" path="res://data/enemies/healer.tres" id="5_healer"]
 [ext_resource type="Resource" uid="uid://bk401winjlkty" path="res://data/enemies/summoner.tres" id="6_summoner"]
-[ext_resource type="Resource" path="res://data/enemies/environmental.tres" id="8_env"]
-
-[ext_resource type="Resource" path="res://data/enemies/flyer.tres" id="9_flyer"]
-[ext_resource type="Resource" path="res://data/enemies/bomber.tres" id="90_bomber"]
+[ext_resource type="Resource" uid="uid://niqw77xwlhay" path="res://data/enemies/environmental.tres" id="8_env"]
+[ext_resource type="Resource" uid="uid://bbfl272yxf2rg" path="res://data/enemies/flyer.tres" id="9_flyer"]
+[ext_resource type="Resource" uid="uid://gaqwoiqvofb6" path="res://data/enemies/bomber.tres" id="90_bomber"]
 
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")
@@ -53,7 +52,6 @@ interval = 3.5
 [sub_resource type="Resource" id="Group_6"]
 script = ExtResource("2_group")
 enemy_data = ExtResource("9_flyer")
-count = 1
 spawn_door_ids = Array[StringName]([&"door_06"])
 delay = 21.0
 interval = 3.0

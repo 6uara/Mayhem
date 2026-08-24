@@ -5,8 +5,8 @@
 [ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="3_rusher"]
 [ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="4_ranger"]
 [ext_resource type="Resource" uid="uid://bk401winjlkty" path="res://data/enemies/summoner.tres" id="5_summoner"]
-[ext_resource type="Resource" path="res://data/enemies/environmental.tres" id="7_env"]
-[ext_resource type="Resource" path="res://data/enemies/bomber.tres" id="90_bomber"]
+[ext_resource type="Resource" uid="uid://niqw77xwlhay" path="res://data/enemies/environmental.tres" id="7_env"]
+[ext_resource type="Resource" uid="uid://gaqwoiqvofb6" path="res://data/enemies/bomber.tres" id="90_bomber"]
 
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")

@@ -1,16 +1,14 @@
-[gd_resource type="Resource" script_class="EnemyData" format=3]
+[gd_resource type="Resource" script_class="EnemyData" format=3 uid="uid://bbfl272yxf2rg"]
 
-[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bjtsflnvsj88u" path="res://scripts/resources/enemy_data.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_flyer.tscn" id="2_tree"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/flyer_spawn.wav" id="3_spawn"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/flyer_windup.wav" id="4_windup"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/flyer_attack.wav" id="5_attack"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/flyer_death.wav" id="6_death"]
+[ext_resource type="AudioStream" uid="uid://bakp7qsqjt51q" path="res://assets/audio/sfx/enemies/flyer_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" uid="uid://bipp0y0bmvvbv" path="res://assets/audio/sfx/enemies/flyer_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" uid="uid://bt4l6vmaev0qc" path="res://assets/audio/sfx/enemies/flyer_attack.wav" id="5_attack"]
+[ext_resource type="AudioStream" uid="uid://bthpo4y33412w" path="res://assets/audio/sfx/enemies/flyer_death.wav" id="6_death"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="7_projectile"]
 
 [sub_resource type="SphereMesh" id="Mesh_flyer"]
-radius = 0.5
-height = 1.0
 radial_segments = 12
 rings = 6
 
@@ -26,26 +24,21 @@ damage = 12.0
 attack_range = 20.0
 attack_cooldown = 2.6
 mass = 0.7
-stagger_resistance = 0.0
-attack_windup = 0.7
 can_jump = false
-can_fly = true
-flight_height = 5.0
-flight_climb_speed = 6.0
-flight_probe_distance = 3.0
+attack_windup = 0.7
 projectile_scene = ExtResource("7_projectile")
 projectile_speed = 24.0
 preferred_distance = 13.0
+can_fly = true
 approach_bearing_degrees = 90.0
 approach_bearing_weight = 0.75
-approach_bearing_mirrors = true
 mesh = SubResource("Mesh_flyer")
 body_color = Color(0.6, 0.4, 0.95, 1)
 collision_height = 0.8
 collision_radius = 0.5
+hitbox_radius = 0.55
 head_offset = 0.5
 head_radius = 0.3
-hitbox_radius = 0.55
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")

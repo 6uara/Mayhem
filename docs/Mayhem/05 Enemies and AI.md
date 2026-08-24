@@ -69,6 +69,41 @@ In order:
    progress, gated by `JUMP_COOLDOWN = 0.9s`. Probes at shin height (0.12m) for
    an obstacle and at `max_step_height` for clearance.
 
+## Destinations have to exist
+
+Nothing used to guarantee that the point an enemy walks to was somewhere it could
+walk. `get_approach_position()` pushes the destination *outward* from the player —
+by the flank, by the back, by the side lane — and `ActionKeepDistance` does the
+same at `preferred_distance`. With the player near a wall, that lands outside the
+navmesh: in the dead strip between the invisible wall and the floor edge, or in
+the void.
+
+An off-mesh destination does not error. The agent paths as close as it can, the
+enemy shoves against the wall, and `_check_obstruction()` reads no-progress as
+being stuck and sends it jumping — once a second, forever. From the outside that
+is exactly "enemies get stuck on the arena edges", and nothing in the log says so.
+It was measured with the Bomber, whose 180° bearing makes it the worst case: with
+the player backed against the wall, the point it wants to occupy is *inside* the
+wall. It asked to walk 2.6m outside the mesh.
+
+Two halves, both in `Enemy`:
+
+- **`navigable_position()`**, called from `set_move_target()` for anything on
+  foot. If the destination is more than `NAV_SNAP_TOLERANCE` (1m, less than the
+  agent's own `target_desired_distance`) off the mesh, it walks the segment back
+  toward the target — who is standing on valid ground by definition — and takes
+  the first sample that lands inside. Deliberately *not* `map_get_closest_point`
+  on its own: the closest point to a destination in the dead strip is the dead
+  strip, which the bake leaves as a separate island and is therefore just as
+  unreachable. It is the same shape as the flyer's `ground_anchored_position()`,
+  for the same reason.
+- **An unreachable target retargets instead of only stopping.** `_steer()` used to
+  stop dead when `is_target_reachable()` said no — but `is_moving` stayed true, so
+  the obstruction handler kept reading it as stuck. Now it re-aims at the target
+  once and retries; if the unreachable destination *was* the target (on a
+  platform, say), it stops as before, which is where the obstacle jump is still
+  the right answer.
+
 ## Jump links
 
 `scripts/systems/jump_link.gd` (`class_name JumpLink extends NavigationLink3D`),

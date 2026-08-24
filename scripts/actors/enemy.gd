@@ -63,6 +63,10 @@ const APPROACH_FADE: float = 4.0
 ## la posicion del objetivo. Cuatro alcanza para un pozo y no cuesta nada: son
 ## rayos, y solo se tiran al repathear.
 const GROUND_ANCHOR_SAMPLES: int = 4
+## Cuanto puede estar un destino fuera del navmesh antes de que haya que acercarlo.
+## Un metro es menos que el `target_desired_distance` del agente, asi que por
+## debajo de eso el enemigo llega igual y no hace falta tocar nada.
+const NAV_SNAP_TOLERANCE: float = 1.0
 
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
@@ -637,9 +641,9 @@ func get_distance_to_player() -> float:
 
 
 func set_move_target(target: Vector3) -> void:
-	# Un volador no puede querer ir a donde no hay piso: ver ground_anchored_position().
-	if is_flying():
-		target = ground_anchored_position(target)
+	# Ni un volador puede querer ir a donde no hay piso, ni uno de a pie a donde no
+	# hay navmesh. Ver ground_anchored_position() y navigable_position().
+	target = ground_anchored_position(target) if is_flying() else navigable_position(target)
 	move_target = target
 	is_moving = true
 	if agent != null:
@@ -1029,7 +1033,21 @@ func _steer(delta: float) -> void:
 			if path_point.distance_squared_to(global_position) > 0.01:
 				next_point = path_point
 		elif not agent.is_target_reachable():
-			# As close as walking gets. Stop rather than shove.
+			# Lo mas cerca que llega caminando. Antes se frenaba y listo, y ahi se
+			# quedaba: `is_moving` seguia en true, asi que `_check_obstruction()` lo
+			# leia como atascado y lo mandaba a saltar contra lo que tuviera
+			# delante, un salto por segundo, para siempre.
+			#
+			# Un destino inalcanzable casi siempre es un destino de flanqueo que
+			# quedo del otro lado de algo. El objetivo, en cambio, esta parado en
+			# piso valido por definicion, asi que se vuelve a apuntar ahi y se
+			# reintenta. Si el inalcanzable ya era el objetivo -esta arriba de una
+			# plataforma-, no hay nada mejor que hacer y se frena, que es donde el
+			# salto de obstaculo sigue siendo la salida.
+			var anchor: Vector3 = get_target_position()
+			if move_target.distance_squared_to(anchor) > 1.0:
+				set_move_target(anchor)
+				return
 			_stop_horizontal(delta)
 			return
 
@@ -1189,6 +1207,47 @@ func ground_anchored_position(point: Vector3) -> Vector3:
 		if has_ground_below(candidate):
 			return candidate
 	return anchor
+
+
+## Acerca un destino de piso hasta que caiga adentro del navmesh.
+##
+## Nada obligaba a que el punto al que un enemigo quiere caminar exista. El rumbo
+## de aproximacion y el carril lateral empujan el destino hacia afuera del jugador
+## -por el flanco, por la espalda-, y con el jugador cerca de una pared eso cae del
+## otro lado: en la franja muerta entre la pared invisible y el borde del piso, o
+## directamente en el vacio. El agente entonces rutea hasta lo mas cerca que puede,
+## que es la pared, el enemigo empuja contra ella, y `_check_obstruction()` lo lee
+## como estar atascado y lo manda a saltar. Desde afuera eso es exactamente "se
+## trabo en el borde del arena", y no hay ningun error que lo diga.
+##
+## Se camina el segmento hacia el objetivo -que siempre esta parado en piso
+## valido- y se toma la primera muestra que caiga adentro. Acercar hacia el
+## jugador y no saltar al punto mas cercano del navmesh importa: el punto mas
+## cercano a un destino en la franja muerta es la franja muerta misma, que es una
+## isla aparte del bake y por lo tanto igual de inalcanzable.
+func navigable_position(point: Vector3) -> Vector3:
+	if agent == null or not _has_navmesh():
+		return point
+	var map: RID = agent.get_navigation_map()
+	if not map.is_valid():
+		return point
+	if _off_mesh_by(map, point) <= NAV_SNAP_TOLERANCE:
+		return point
+
+	var anchor: Vector3 = get_target_position()
+	for step: int in range(1, GROUND_ANCHOR_SAMPLES + 1):
+		var candidate: Vector3 = point.lerp(anchor, float(step) / float(GROUND_ANCHOR_SAMPLES))
+		if _off_mesh_by(map, candidate) <= NAV_SNAP_TOLERANCE:
+			return candidate
+	return anchor
+
+
+## Cuanto se aleja un punto del navmesh, medido en el plano. La altura se ignora a
+## proposito: un destino sobre una plataforma esta bien aunque el poligono este
+## tres metros mas abajo.
+func _off_mesh_by(map: RID, point: Vector3) -> float:
+	var closest: Vector3 = NavigationServer3D.map_get_closest_point(map, point)
+	return Vector2(point.x - closest.x, point.z - closest.z).length()
 
 
 func _flight_target_height() -> float:
