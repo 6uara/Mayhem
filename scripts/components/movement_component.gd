@@ -19,6 +19,12 @@ signal mantled()
 
 enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 
+## Cuánto dura la inmunidad al atrapado después de romperlo. Tiene que alcanzar
+## para salir del charco: un dash son 0.16s a 16 m/s, o sea ~2.5m, y el charco de
+## atrapado mide 2.6m de radio - así que la gracia tiene que cubrir también el par
+## de pasos que siguen al dash, o el borde te agarra de nuevo al salir.
+const SNARE_GRACE: float = 0.9
+
 @export var body: CharacterBody3D
 @export var head: Node3D
 @export var stats: StatsComponent
@@ -97,6 +103,15 @@ var state: State = State.GROUNDED:
 
 var dash_charges := DashCharges.new()
 
+## El frasco de atrapado del Environmental (PLAN_NEW_ENEMY_TYPES §4.2). Es lo
+## único del juego que le baja la velocidad al jugador, y por eso tiene salida:
+## ver `apply_snare()`.
+var _snare_multiplier: float = 1.0
+## Segundos de inmunidad al charco después de romperlo. Sin esto, salir dashando
+## de un charco de 3m no sirve de nada - el refresco del charco te vuelve a
+## agarrar en el aire, dentro del mismo charco del que estás saliendo.
+var _snare_grace_left: float = 0.0
+
 var _dash_time_left: float = 0.0
 var _dash_direction: Vector3 = Vector3.ZERO
 var _head_rest_height: float = 0.0
@@ -117,6 +132,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Antes del `body == null`: la gracia del atrapado corre igual que el reloj de
+	# la carga de dash, sin depender de que haya un cuerpo al que mover.
+	_snare_grace_left = maxf(_snare_grace_left - delta, 0.0)
 	if body == null:
 		return
 	dash_charges.tick(delta)
@@ -173,11 +191,43 @@ func get_move_speed() -> float:
 	var player := body as Player
 	if player != null and player.weapon != null:
 		speed *= player.weapon.get_move_speed_multiplier()
-	return speed
+	return speed * _snare_multiplier
 
 
 func is_sliding() -> bool:
 	return state == State.SLIDING
+
+
+func is_snared() -> bool:
+	return _snare_multiplier < 1.0
+
+
+## Frena al jugador mientras esté parado en el charco. Lo aplica `SnareZone`, en
+## cada refresco, y por eso no lleva duración: el charco es el que dura.
+##
+## No es inmovilización, a propósito. Quitarle el control al jugador es lo más
+## hostil que puede hacer un shooter, y este se apoya entero en movilidad
+## (CLAUDE.md 5.2): un charco que congela pelea contra el pilar del juego. Lo que
+## hace es volver caro caminar, con dos salidas que el jugador ya tiene en los
+## dedos - el dash y el gancho, ver `break_snare()`. Siempre hay algo que hacer.
+##
+## Se ignora durante la gracia: si no, romperlo no significaría nada.
+func apply_snare(multiplier: float) -> void:
+	if _snare_grace_left > 0.0:
+		return
+	_snare_multiplier = clampf(multiplier, 0.05, 1.0)
+
+
+func clear_snare() -> void:
+	_snare_multiplier = 1.0
+
+
+## La salida. El dash y el gancho lo rompen y compran unos segundos de gracia,
+## que es lo que convierte al charco en una pregunta ("¿gasto una carga?") en vez
+## de en un castigo. Las dos son acciones que ya existían y cuestan un recurso.
+func break_snare() -> void:
+	_snare_multiplier = 1.0
+	_snare_grace_left = SNARE_GRACE
 
 
 # States
@@ -283,6 +333,7 @@ func _handle_action_input(wish_direction: Vector3) -> void:
 
 	if Input.is_action_just_pressed("grapple") and grapple != null and grapple.try_fire():
 		state = State.GRAPPLING
+		break_snare()
 		return
 
 	if Input.is_action_just_pressed("crouch_slide") and state == State.GROUNDED:
@@ -301,6 +352,7 @@ func _try_dash(wish_direction: Vector3) -> void:
 	_dash_direction = _dash_direction.normalized()
 	_dash_time_left = dash_duration
 	state = State.DASHING
+	break_snare()
 	AudioPool.play_3d(dash_sound, body.global_position, AudioPool.BUS_WORLD)
 	EventBus.dash_used.emit(dash_charges.get_available())
 

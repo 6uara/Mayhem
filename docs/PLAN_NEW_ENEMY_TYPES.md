@@ -9,11 +9,10 @@ futuro, igual que `feat/coop-p2p`: se deja planteada y documentada para que el
 trabajo esté listo para arrancar cuando haya tiempo, sin presionar el alcance de
 la entrega.
 
-Estado: **construidos los pasos 1 a 5 y el 7** — el Bomber, el Environmental (frasco de
-hazard), los rumbos de aproximación, la atribución de muertes, la prioridad de
-voces, la abstracción de objetivo + facciones y el Ranged Flyer. Con eso **la infraestructura
-compartida está terminada**: lo que queda son los Gladiadores (§5, en su propia
-rama) y el frasco de atrapado (paso 8).
+Estado: **construidos los pasos 1 a 5, el 7 y el 8** — el Bomber, el Environmental
+(los dos frascos), los rumbos de aproximación, la atribución de muertes, la
+prioridad de voces, la abstracción de objetivo + facciones y el Ranged Flyer. Con
+eso **lo único que queda son los Gladiadores** (§5, en su propia rama).
 
 Base: `develop` @ `7722071`. Todo lo marcado "medido" fue verificado leyendo el
 código contra ese commit, no asumido.
@@ -226,10 +225,10 @@ Ranger.
 **Test necesario:** que mantenga altura sobre terreno irregular sin hundirse en
 una rampa ni clavarse en el techo.
 
-### 4.2 Environmental — **frasco de hazard construido**
+### 4.2 Environmental — **construido, los dos frascos**
 
-El frasco de hazard está hecho (paso 2 de §6). El de atrapado **no**, y sigue
-siendo el paso 8: último a propósito. Detalle en
+El frasco de hazard está hecho (paso 2 de §6) y el de atrapado también (paso 8,
+último a propósito). Detalle en
 [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The flask; tests en
 `tests/integration/test_environmental.gd`.
 
@@ -246,6 +245,29 @@ frenan contra enemigos a propósito; el frasco tiene que pasarles por encima).
 El resto fue reusar `HazardZone` sin tocarlo, igual que el slam del Elite. Eso es
 lo que hace que un arquetipo nuevo no pueda romper la telegrafía sin querer: el
 aviso de 0.6s y el decal al radio exacto vienen incluidos.
+
+**Cómo salió el frasco de atrapado (paso 8):** las dos advertencias de §4.2.1 se
+respetaron enteras. No inmoviliza —baja la velocidad al 35% y nunca a cero—, y
+tiene salida: el dash y el gancho la rompen y compran 0.9s de gracia. La gracia
+no es cortesía sino aritmética: un dash cubre ~2.5m y el charco mide 2.6m de
+radio, así que sin ella el refresco del charco te vuelve a agarrar dentro del
+charco del que estás saliendo, y romperlo no significaría nada.
+
+Lo que el plan no anticipó, y salió gratis: **el frasco de atrapado no necesitó
+ni una clase nueva de frasco**. `EnemyFlask` ya elegía su carga por `hazard_scene`,
+así que el frasco nuevo es la misma escena apuntando a un `SnareZone` — que a su
+vez es un `HazardZone`, o sea que hereda el aviso de 0.6s y el decal al radio
+exacto sin escribir ninguno de los dos. Lo único verdaderamente nuevo fue la
+capacidad del lado del jugador, que es justo lo que la advertencia 2 decía.
+
+Dos decisiones que se tomaron construyendo:
+
+- **El charco de atrapado no hace daño.** Frenar y quemar es cobrar dos veces por
+  una decisión, y lo que este arquetipo cobra es posición.
+- **El Environmental alterna cargas, uno de cada dos, y nunca abre con la de
+  atrapado.** Alternar en vez de elegir por situación es a propósito: el arco de
+  1.1s es la telegrafía, y el jugador tiene que poder ver cuál viene. Un charco
+  que atrapa sin haberse podido leer antes de caer es la versión hostil de esto.
 
 **Decisión de diseño que salió al construirlo:** el Environmental no apunta al
 jugador, apunta al piso bajo sus pies, y **errar es su modo normal de
@@ -506,8 +528,13 @@ El orden importa porque los bloqueos se comparten.
    planeado fue el hallazgo: el rumbo de aproximación no funcionaba para ningún
    arquetipo de alcance, porque el commit estaba atado a `attack_range`. Detalle
    en [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §Flight.
-8. **Environmental, frasco de atrapado** (M) — último a propósito: es el que más
-   puede pelear con el pilar de movilidad, y conviene decidirlo jugando.
+8. ~~**Environmental, frasco de atrapado** (M)~~ — **hecho.** Último a propósito
+   y valió la pena: la mitad enemiga costó dos escenas y ninguna clase de frasco
+   nueva, y todo el trabajo real fue del lado del jugador —`apply_snare()`,
+   `break_snare()` y la gracia—, que es exactamente donde la advertencia 2 de
+   §4.2.1 decía que iba a estar. Detalle en
+   [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The trapping flask;
+   tests en `tests/integration/test_snare_flask.gd`.
 
 ---
 
@@ -539,6 +566,11 @@ Tomadas (no re-discutir sin motivo nuevo):
   contador de la oleada no puede depender de quién pegó.
 
 - El Environmental apunta al piso y no al jugador; errar es su modo normal (§4.2).
+- El charco de atrapado ralentiza (35%) y **nunca** inmoviliza; el dash y el
+  gancho lo rompen y dan 0.9s de gracia (paso 8, cerrada al construir).
+- El charco de atrapado no hace daño: frenar y quemar es cobrar dos veces.
+- El Environmental alterna cargas uno de cada dos y nunca abre con la de
+  atrapado: el arco es la telegrafía y tiene que poder leerse cuál viene.
 - El frasco de hazard reusa `ThrownUtility` y `HazardZone` sin escribir ni el
   arco ni el área (§4.2).
 
@@ -549,8 +581,11 @@ Abiertas:
   todo de escritorio. El riesgo concreto es la altura: si vuela demasiado alto se
   vuelve un blanco cómodo y deja de presionar, y si vuela bajo se confunde con la
   horda de piso y el arquetipo no se lee.
-- Tuning del Environmental: cadencia de 4.5s, arco de 1.1s, charco de 3.2m por
-  5s. Tampoco jugado. El riesgo concreto es que tres Environmentals a la vez
+- Tuning del Environmental: cadencia de 4.5s, arco de 1.1s, charco de ácido de
+  3.2m por 5s, charco de atrapado de 2.6m por 4s al 35% de velocidad, con 0.9s de
+  gracia al romperlo. Tampoco jugado. El riesgo propio del atrapado es la
+  relación entre la gracia y el radio: si el dash no alcanza para salir, deja de
+  ser una salida. El riesgo concreto es que tres Environmentals a la vez
   pavimenten el arena y el jugador se quede sin piso.
 - Tasa exacta de regeneración de los Gladiadores (§5.1) — puede forzar el cambio
   a curación completa entre olas.
@@ -561,7 +596,7 @@ Abiertas:
 ## 8. Recordatorio
 
 Correr `gut` después de cada paso (`pwsh tools/run_tests.ps1`). La suite está en
-**484/484**, así que cualquier rojo es nuestro.
+**549/549**, así que cualquier rojo es nuestro.
 
 **Si aparece `Could not find type "X" in the current scope"` sobre una clase que
 existe:** es el caché global de clases de Godot y no el código. Se arregla con

@@ -261,9 +261,40 @@ That also avoids a cycle: `EnemyFlask` extends `ThrownUtility`, which names
 `Enemy`, so an `enemy.gd` that named the flask would close the loop — see the
 note in `Explosion._victims()` for what that failure looks like.
 
-**Not built:** the trapping flask (§4.2 of the plan), the one that immobilises.
-It is deliberately last, because taking away movement fights the game's own
-movement pillar and the call should be made while playing.
+### The trapping flask
+
+The second payload (`SnareZone`, `scenes/enemies/enemy_snare_flask.tscn`) is the
+plan's §4.2, built last on purpose: it is the only thing in the game that slows
+the *player*, and taking away movement fights the game's own movement pillar.
+
+Three calls make it fair, and each one is a test in
+`tests/integration/test_snare_flask.gd`:
+
+- **It slows, it never immobilises.** `MovementComponent.apply_snare()` scales
+  ground speed to 35%; it never reaches zero. Freezing the player is the most
+  hostile thing a shooter built on dash, grapple and slide can do.
+- **It has an exit the player already has in their fingers.** Dashing or
+  grappling calls `break_snare()`, which clears it *and* buys `SNARE_GRACE`
+  (0.9s) of immunity. The grace is not politeness: a dash covers ~2.5m and the
+  pool has a 2.6m radius, so without it the pool's next refresh re-catches you
+  mid-escape, inside the pool you are escaping. Both exits cost a resource, so
+  the pool asks a question instead of handing out a punishment.
+- **It does no damage.** `damage` is 0 on the scene. Slowing *and* burning is
+  charging twice for one decision, and the currency this archetype deals in is
+  position.
+
+`SnareZone extends HazardZone` rather than being its own Area3D, for the same
+reason the acid pool is one: it inherits the 0.6s warning and the
+decal-at-the-exact-radius law for free. It refreshes who is inside on the same
+0.1s beat as `SlowField`, and releases them on exit, expiry and pool return —
+a pool that expires while still holding the player leaves them slow forever,
+which is this archetype's worst possible bug.
+
+The Environmental **alternates** payloads (`ActionThrowFlask.snare_every = 2`),
+and never leads with the trapping one. Alternation is predictable on purpose:
+the flight arc is the telegraph, so the player gets 1.1s to see which flask is
+coming. A pool that traps without having been readable on the way down is the
+hostile version of this archetype.
 
 ## Flight
 

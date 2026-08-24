@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/enemy_flask.gd" id="1_flask"]
+[ext_resource type="PackedScene" path="res://scenes/arena/snare_zone.tscn" id="2_snare"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_flask"]
+albedo_color = Color(0.988, 0.227, 0, 1)
+emission_enabled = true
+emission = Color(0.988, 0.227, 0, 1)
+emission_energy_multiplier = 1.6
+shading_mode = 0
+
+[sub_resource type="SphereMesh" id="Mesh_flask"]
+material = SubResource("Mat_flask")
+radius = 0.26
+height = 0.52
+radial_segments = 12
+rings = 6
+
+[node name="EnemySnareFlask" type="Node3D"]
+script = ExtResource("1_flask")
+hazard_scene = ExtResource("2_snare")
+fuse_time = 0.0
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_flask")

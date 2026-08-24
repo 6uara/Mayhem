@@ -36,16 +36,40 @@ extends ActionLeaf
 ## sabe hacer.
 @export_range(0.0, 1.0, 0.05) var lead_fraction: float = 0.65
 
+@export_group("Frasco de atrapado")
+## La segunda carga del arquetipo: un charco que no lastima, frena
+## (PLAN_NEW_ENEMY_TYPES §4.2). Vacío = el Environmental sólo tira ácido, que es
+## exactamente como se comportaba antes de que esto existiera.
+@export var snare_flask_scene: PackedScene
+## Uno de cada cuántos tiros es de atrapado. 0 = ninguno.
+##
+## Alternar y no elegir por situación es a propósito: el jugador tiene que poder
+## anticipar cuál viene, y el aviso es el arco - el frasco vuela 1.1s y se ve de
+## qué color es. Un charco que frena sin haberse podido leer antes de caer es la
+## versión hostil de este arquetipo.
+@export var snare_every: int = 2
+## Más chico que el de ácido: se lo esquiva peor, porque frenarse dentro cuesta
+## salir. Un charco de atrapado del tamaño del de ácido es una condena.
+@export var snare_radius: float = 2.6
+@export var snare_duration: float = 4.0
+
+## Cuántos frascos van tirados. Vive en la hoja y no en `Enemy` porque es de este
+## ataque: cada Environmental lleva su propia cuenta, igual que su cadencia.
+var _throws: int = 0
+
 
 func tick(actor: Node, _blackboard: Blackboard) -> int:
 	var enemy := actor as Enemy
 	if enemy == null or enemy.data == null or flask_scene == null:
 		return FAILURE
 
-	var flask := ObjectPool.acquire(flask_scene) as EnemyFlask
+	var is_snare: bool = _next_is_snare()
+	var scene: PackedScene = snare_flask_scene if is_snare else flask_scene
+	var flask := ObjectPool.acquire(scene) as EnemyFlask
 	if flask == null:
-		push_error("ActionThrowFlask: flask_scene no es un EnemyFlask")
+		push_error("ActionThrowFlask: la escena del frasco no es un EnemyFlask")
 		return FAILURE
+	_throws += 1
 
 	var origin: Vector3 = enemy.global_position + Vector3.UP * enemy.data.head_offset
 	# A los pies y no al pecho: el charco se apoya en el piso, así que el arco
@@ -53,8 +77,13 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	# y el charco aparece flotando por encima del suelo que dice negar.
 	var target: Vector3 = _predicted_spot(enemy)
 
-	flask.setup_pool(pool_radius, pool_duration,
-		enemy.data.damage * pool_damage_fraction)
+	if is_snare:
+		# Sin daño: frenar y quemar a la vez son dos castigos por una decisión, y
+		# el que este charco cobra es el de posición. Ver `SnareZone`.
+		flask.setup_pool(snare_radius, snare_duration, 0.0)
+	else:
+		flask.setup_pool(pool_radius, pool_duration,
+			enemy.data.damage * pool_damage_fraction)
 	flask.launch_with_velocity(origin, _arc_to(origin, target), enemy)
 	AudioPool.play_3d(enemy.data.attack_sound, origin, AudioPool.BUS_ENEMIES)
 	enemy.start_attack_cooldown()
@@ -95,3 +124,11 @@ func _arc_to(from: Vector3, to: Vector3) -> Vector3:
 	var velocity := Vector3(offset.x, 0.0, offset.z) / time
 	velocity.y = offset.y / time + 0.5 * ThrownUtility.get_gravity() * time
 	return velocity
+
+
+## Si el próximo tiro es de atrapado. El primero nunca lo es: el arquetipo se
+## presenta con lo que ya sabe hacer y recién después cambia la carga.
+func _next_is_snare() -> bool:
+	if snare_flask_scene == null or snare_every <= 0:
+		return false
+	return (_throws + 1) % snare_every == 0

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://addons/beehave/nodes/beehave_tree.gd" id="1_tree"]
 [ext_resource type="Script" path="res://addons/beehave/nodes/composites/selector.gd" id="2_selector"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://scripts/ai/actions/action_keep_distance.gd" id="9_kite"]
 [ext_resource type="Script" path="res://scripts/ai/actions/action_chase_player.gd" id="10_chase"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/enemy_flask.tscn" id="11_flask"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy_snare_flask.tscn" id="12_snare"]
 
 [node name="EnvironmentalTree" type="Node"]
 script = ExtResource("1_tree")
@@ -42,6 +43,10 @@ flight_time = 1.1
 pool_radius = 3.2
 pool_duration = 5.0
 pool_damage_fraction = 0.45
+snare_flask_scene = ExtResource("12_snare")
+snare_every = 2
+snare_radius = 2.6
+snare_duration = 4.0
 
 [node name="KeepDistance" type="Node" parent="Root"]
 script = ExtResource("9_kite")
