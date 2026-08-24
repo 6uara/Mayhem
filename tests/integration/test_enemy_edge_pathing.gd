@@ -139,3 +139,53 @@ func test_the_correction_pulls_the_destination_toward_the_player() -> void:
 		"el destino se acerca al jugador, no se aleja")
 	assert_lt(bomber.move_target.distance_to(_player.global_position), 6.0,
 		"y sigue siendo un punto alrededor del jugador")
+
+
+# ------------------------------------------------- aparecer del lado equivocado
+
+## El segundo síntoma reportado: los que salen por puertas lejanas recorren el
+## borde del arena y recién después se destraban.
+##
+## No era el steering. El piso se bakea entero, incluida la franja de afuera de la
+## pared invisible, y esa franja es una isla navegable **sin comunicación con el
+## interior**; encima el interior se erosiona 0.85m hacia adentro (el
+## `agent_radius` del bake). Entre las dos cosas queda una banda de un par de
+## metros donde una puerta está físicamente adentro del arena y su polígono más
+## cercano es el anillo de afuera. Cinco de las siete puertas caen ahí.
+func test_every_door_puts_its_enemies_somewhere_they_can_walk_from() -> void:
+	_player.global_position = Vector3.ZERO
+	await wait_physics_frames(1)
+	var doors: Array = get_tree().get_nodes_in_group(&"spawn_door")
+	assert_gt(doors.size(), 0, "hay puertas")
+
+	for node: Node in doors:
+		var door := node as SpawnDoor
+		var rusher: Enemy = await _spawn("rusher", door.get_spawn_position())
+		assert_true(_can_walk_to_centre(rusher.global_position),
+			"%s deja al enemigo en una isla desde la que no se llega al centro"
+				% door.door_id)
+
+
+## Y la corrección es un empujón, no un teletransporte: el enemigo tiene que
+## seguir apareciendo en su puerta.
+func test_the_spawn_correction_is_small() -> void:
+	_player.global_position = Vector3.ZERO
+	await wait_physics_frames(1)
+	for node: Node in get_tree().get_nodes_in_group(&"spawn_door"):
+		var door := node as SpawnDoor
+		var wanted: Vector3 = door.get_spawn_position()
+		var rusher: Enemy = await _spawn("rusher", wanted)
+		var moved: float = Vector2(rusher.global_position.x - wanted.x,
+			rusher.global_position.z - wanted.z).length()
+		# Medido: las cinco puertas que caían del lado malo se arreglan con un
+		# metro. Tres es red, no expectativa.
+		assert_lt(moved, 3.0,
+			"%s corrige %.1f m: eso ya no es aparecer en la puerta" % [door.door_id, moved])
+
+
+func _can_walk_to_centre(from: Vector3) -> bool:
+	var path: PackedVector3Array = NavigationServer3D.map_get_path(_map(), from,
+		Vector3.ZERO, true)
+	if path.is_empty():
+		return false
+	return path[path.size() - 1].distance_to(Vector3.ZERO) <= 2.0

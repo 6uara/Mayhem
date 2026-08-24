@@ -104,6 +104,35 @@ Two halves, both in `Enemy`:
   platform, say), it stops as before, which is where the obstacle jump is still
   the right answer.
 
+### And so does the ground you are put down on
+
+The same class of bug, one step earlier: an enemy can be *spawned* on navmesh that
+leads nowhere. The floor is baked whole, including the strip outside the invisible
+wall, and that strip is a navigable island with no connection to the interior. On
+top of that the interior is eroded inward by the bake's `agent_radius` (0.85m). Between
+the two there is a couple of metres where a door is physically inside the arena
+and its nearest polygon is the outer ring. **Five of the arena's seven doors sit
+in that band** (measured: a path from their spawn point to the arena centre ends
+41–45m short, after walking 90–158m around the ring).
+
+What the player sees is an enemy that comes out of a far door, patrols the arena
+edge, and eventually joins the fight — the "eventually" being the moment steering
+or a shove carries it across the eroded seam into the real island.
+
+`Enemy.playable_spawn()`, called first thing in `setup()`, steps the spawn point
+one metre at a time toward the target until a path query actually arrives there.
+Asking "is this point on the navmesh?" is not enough — the bad points *are* on the
+navmesh — so the question has to be "can anything be reached from here?", and the
+target is the reference because it stands on valid ground by definition. In this
+arena every affected door is fixed by a single metre, which is why the correction
+is measured in metres rather than in a fraction of the way in: a fraction would
+have enemies appearing eight metres inside the gate.
+
+The doors could also be authored a metre further in, which would make this a
+no-op. The runtime guard stays either way: it is what keeps a future door, or a
+future arena, from reintroducing a bug whose only symptom is enemies taking the
+scenic route.
+
 ## Jump links
 
 `scripts/systems/jump_link.gd` (`class_name JumpLink extends NavigationLink3D`),

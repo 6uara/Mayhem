@@ -67,6 +67,16 @@ const GROUND_ANCHOR_SAMPLES: int = 4
 ## Un metro es menos que el `target_desired_distance` del agente, asi que por
 ## debajo de eso el enemigo llega igual y no hace falta tocar nada.
 const NAV_SNAP_TOLERANCE: float = 1.0
+## De a cuanto se mete hacia adentro un punto de aparicion que quedo del lado malo,
+## y cuantas veces. En metros y no en fracciones del camino a proposito: la puerta
+## esta a decenas de metros del jugador y la banda mala mide un par, asi que una
+## fraccion del camino haria aparecer al enemigo ocho metros adentro del arena en
+## vez de justo pasando la puerta.
+const SPAWN_SNAP_STEP: float = 1.0
+const SPAWN_SNAP_SAMPLES: int = 8
+## Cuanto puede quedarse corta una ruta y seguir contando como que llego. Un
+## camino que termina a mas de esto del destino es un camino a otra isla.
+const NAV_ARRIVAL_TOLERANCE: float = 2.0
 
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
@@ -320,6 +330,9 @@ func _physics_process(delta: float) -> void:
 ## Configures the enemy for an archetype. Called every time it leaves the pool.
 func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	data = enemy_data
+	# Donde lo dejo la puerta puede no ser un lugar desde el que se pueda caminar
+	# a ningun lado. Ver playable_spawn().
+	spawn_position = playable_spawn(spawn_position)
 	global_position = spawn_position
 	velocity = Vector3.ZERO
 	is_moving = false
@@ -1207,6 +1220,66 @@ func ground_anchored_position(point: Vector3) -> Vector3:
 		if has_ground_below(candidate):
 			return candidate
 	return anchor
+
+
+## Corrige un punto de aparicion que cayo en navmesh incomunicado.
+##
+## El sintoma medido: un enemigo que sale por una puerta lejana camina en circulos
+## por el borde del arena y recien despues de un rato se destraba. La causa no es
+## la puerta ni el steering, es de que lado de una linea invisible aparece.
+##
+## El piso se bakea entero, incluida la franja que queda **afuera** de la pared
+## invisible, y esa franja es una isla aparte: navegable y sin comunicacion con el
+## interior. Y el interior, ademas, se erosiona 0.85m -el `agent_radius` del bake-
+## hacia adentro de la pared. Entre las dos cosas queda una banda de un par de
+## metros donde una puerta puede estar fisicamente adentro del arena y aun asi
+## tener la isla de afuera como poligono mas cercano. Cinco de las siete puertas
+## caen ahi (medido).
+##
+## Lo que pasa entonces no falla: el agente rutea dentro de la isla equivocada, o
+## sea el anillo del borde, y el enemigo lo recorre. Se destraba cuando el steering
+## o un empujon lo cruzan al interior, que es el "eventualmente se arregla solo"
+## del reporte.
+##
+## Por eso no alcanza con preguntar si el punto esta en el navmesh: hay que
+## preguntar si desde ahi se puede llegar a alguna parte. La referencia es el
+## objetivo, que esta parado en piso valido y del lado bueno por definicion.
+func playable_spawn(spawn_position: Vector3) -> Vector3:
+	if agent == null or not _has_navmesh():
+		return spawn_position
+	var map: RID = agent.get_navigation_map()
+	if not map.is_valid():
+		return spawn_position
+	# Sin objetivo no hay referencia de "el lado bueno", y `get_target_position()`
+	# contesta con la posicion propia -que durante `setup()` todavia es la del
+	# ocupante anterior del pool-. Mejor no tocar nada.
+	if get_target() == null:
+		return spawn_position
+	var anchor: Vector3 = get_target_position()
+	if _can_reach(map, spawn_position, anchor):
+		return spawn_position
+
+	var inward: Vector3 = anchor - spawn_position
+	inward.y = 0.0
+	if inward.length_squared() < 0.01:
+		return spawn_position
+	inward = inward.normalized()
+
+	for step: int in range(1, SPAWN_SNAP_SAMPLES + 1):
+		# La altura la resuelve la gravedad; mover el spawn en vertical seria
+		# meterlo adentro del piso o dejarlo cayendo.
+		var candidate: Vector3 = spawn_position + inward * (float(step) * SPAWN_SNAP_STEP)
+		if _can_reach(map, candidate, anchor):
+			return candidate
+	return spawn_position
+
+
+## Si desde `from` se puede caminar hasta `to`, o sea si estan en la misma isla.
+func _can_reach(map: RID, from: Vector3, to: Vector3) -> bool:
+	var path: PackedVector3Array = NavigationServer3D.map_get_path(map, from, to, true)
+	if path.is_empty():
+		return false
+	return path[path.size() - 1].distance_to(to) <= NAV_ARRIVAL_TOLERANCE
 
 
 ## Acerca un destino de piso hasta que caiga adentro del navmesh.
