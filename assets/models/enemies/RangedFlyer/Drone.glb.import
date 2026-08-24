@@ -3,18 +3,18 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c5re6lw0wrpoh"
-path="res://.godot/imported/LowPoly_SpiderBot_Rzenn.fbx-9aa97f6939f38420c6f02564ef870bb2.scn"
+uid="uid://b6xox2ie214mt"
+path="res://.godot/imported/Drone.glb-9a93825231b6e99d944b4db5268a9512.scn"
 
 [deps]
 
-source_file="res://assets/models/LowPoly_SpiderBot_Rzenn.fbx"
-dest_files=["res://.godot/imported/LowPoly_SpiderBot_Rzenn.fbx-9aa97f6939f38420c6f02564ef870bb2.scn"]
+source_file="res://assets/models/enemies/RangedFlyer/Drone.glb"
+dest_files=["res://.godot/imported/Drone.glb-9a93825231b6e99d944b4db5268a9512.scn"]
 
 [params]
 
-nodes/root_type=""
-nodes/root_name=""
+nodes/root_type="Node3D"
+nodes/root_name="Scene Root"
 nodes/root_script=null
 mesh_library/use_node_names_as_mesh_names=false
 array_mesh/deduplicate_surfaces=true
@@ -32,7 +32,7 @@ meshes/force_disable_compression=false
 skins/use_named_skins=true
 animation/import=true
 animation/fps=30
-animation/trimming=true
+animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path=""
@@ -40,7 +40,6 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-fbx/importer=0
-fbx/allow_geometry_helper_nodes=false
-fbx/embedded_image_handling=1
-fbx/naming_version=2
+gltf/naming_version=2
+gltf/embedded_image_handling=1
+gltf/texture_map_mode=0

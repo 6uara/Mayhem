@@ -9,6 +9,7 @@
 [ext_resource type="AudioStream" uid="uid://bqejbpwfr1xm4" path="res://assets/audio/sfx/enemies/bomber_fuse.wav" id="7_fuse"]
 [ext_resource type="AudioStream" uid="uid://c5vq0dh37881n" path="res://assets/audio/sfx/world/explosion.wav" id="8_boom"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/explosion.tscn" id="9_explosion"]
+[ext_resource type="PackedScene" uid="uid://ciq7nkpmedlhc" path="res://assets/models/enemies/Bomber/Bomber.blend" id="10_model"]
 
 [sub_resource type="SphereMesh" id="Mesh_bomber"]
 radius = 0.7
@@ -34,6 +35,10 @@ approach_bearing_degrees = 180.0
 approach_bearing_weight = 0.85
 approach_bearing_mirrors = false
 mesh = SubResource("Mesh_bomber")
+model_scene = ExtResource("10_model")
+model_scale = 0.6
+model_offset = Vector3(-0.031, 0.6, 0)
+model_yaw_degrees = 0.0
 body_color = Color(0.9608, 0.8784, 0, 1)
 collision_height = 1.0
 collision_radius = 0.7

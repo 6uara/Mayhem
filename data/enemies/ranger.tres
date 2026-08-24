@@ -7,6 +7,7 @@
 [ext_resource type="AudioStream" uid="uid://cfs0l6ydduu6s" path="res://assets/audio/sfx/enemies/ranger_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://1y37qtodsxpq" path="res://assets/audio/sfx/enemies/ranger_death.wav" id="6_death"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="7_projectile"]
+[ext_resource type="PackedScene" uid="uid://xyji60ghga3d" path="res://assets/models/enemies/Ranged/Range.blend" id="8_model"]
 
 [sub_resource type="PrismMesh" id="Mesh_ranger"]
 size = Vector3(0.75, 1.9, 0.6)
@@ -27,6 +28,10 @@ projectile_scene = ExtResource("7_projectile")
 projectile_speed = 26.0
 preferred_distance = 14.0
 mesh = SubResource("Mesh_ranger")
+model_scene = ExtResource("8_model")
+model_scale = 0.29
+model_offset = Vector3(-0.127, 0, 0)
+model_yaw_degrees = 0.0
 body_color = Color(1, 0.478, 0.122, 1)
 collision_height = 1.9
 collision_radius = 0.34

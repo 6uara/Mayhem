@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cig2ye16ufrqr"
-path="res://.godot/imported/LowPoly_SpiderBot_Rzenn.blend-310bbc91c63284fc57adc1b7a7e8e81e.scn"
+uid="uid://ciq7nkpmedlhc"
+path="res://.godot/imported/Bomber.blend-6f7fc6e0a588b85b8e8a3c02849e7774.scn"
 
 [deps]
 
-source_file="res://assets/models/LowPoly_SpiderBot_Rzenn.blend"
-dest_files=["res://.godot/imported/LowPoly_SpiderBot_Rzenn.blend-310bbc91c63284fc57adc1b7a7e8e81e.scn"]
+source_file="res://assets/models/enemies/Bomber/Bomber.blend"
+dest_files=["res://.godot/imported/Bomber.blend-6f7fc6e0a588b85b8e8a3c02849e7774.scn"]
 
 [params]
 

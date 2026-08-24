@@ -7,6 +7,7 @@
 [ext_resource type="AudioStream" uid="uid://bt4l6vmaev0qc" path="res://assets/audio/sfx/enemies/flyer_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://bthpo4y33412w" path="res://assets/audio/sfx/enemies/flyer_death.wav" id="6_death"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="7_projectile"]
+[ext_resource type="PackedScene" uid="uid://b6xox2ie214mt" path="res://assets/models/enemies/RangedFlyer/Drone.glb" id="8_model"]
 
 [sub_resource type="SphereMesh" id="Mesh_flyer"]
 radial_segments = 12
@@ -33,6 +34,10 @@ can_fly = true
 approach_bearing_degrees = 90.0
 approach_bearing_weight = 0.75
 mesh = SubResource("Mesh_flyer")
+model_scene = ExtResource("8_model")
+model_scale = 0.62
+model_offset = Vector3(0, 0.4, 0)
+model_yaw_degrees = 0.0
 body_color = Color(0.6, 0.4, 0.95, 1)
 collision_height = 0.8
 collision_radius = 0.5
