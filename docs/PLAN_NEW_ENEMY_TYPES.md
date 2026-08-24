@@ -17,8 +17,15 @@ eso **lo único que queda son los Gladiadores** (§5, en su propia rama).
 Base: `develop` @ `7722071`. Todo lo marcado "medido" fue verificado leyendo el
 código contra ese commit, no asumido.
 
-**El Gladiador va en su propia rama**, que sale de ésta cuando la infraestructura
-compartida esté lista — es decir después de los pasos 3, 4 y 5 de §6 (atribución
+> **Recomendaciones de comportamiento:** una vez construidos los tres arquetipos
+> simples, lo que queda es diseño y no código —qué preguntas hacen, dónde
+> debutan, qué números mover—. Vive en
+> [PLAN_ENEMY_BEHAVIOR.md](PLAN_ENEMY_BEHAVIOR.md), que también cubre los
+> hallazgos medidos sobre esta rama (entre ellos que el Bomber no está en
+> ninguna oleada).
+
+**El Gladiador va en su propia rama, `feat/gladiators`**, que sale de ésta cuando
+la infraestructura compartida esté lista — es decir después de los pasos 3, 4 y 5 de §6 (atribución
 de muertes, prioridad de voces, abstracción de objetivo + facciones). Esos tres
 mejoran el juego por sí solos y tocan el núcleo de `enemy.gd`, así que si viajaran
 en la rama del Gladiador chocarían de frente con los arquetipos simples, que tocan
@@ -522,7 +529,9 @@ El orden importa porque los bloqueos se comparten.
    §Factions, and who an enemy is actually fighting.
 6. **Gladiadores** (L) — encima de 3 y 5: facciones, net worth, botín, marca del
    líder. **La infraestructura compartida está terminada**, así que es acá donde
-   la rama del Gladiador se abre (ver el encabezado).
+   la rama del Gladiador se abre (ver el encabezado). **Fuera del alcance de esta
+   rama**: `feat/new-enemy-types` se cierra con el paso 8, y todo lo de §5 se
+   trabaja en `feat/gladiators`.
 7. ~~**Ranged Flyer** (L)~~ — **hecho.** El vuelo salió como estaba planeado
    (rama hermana de `_is_leaping`, altura por raycast). Lo que no estaba
    planeado fue el hallazgo: el rumbo de aproximación no funcionaba para ningún
