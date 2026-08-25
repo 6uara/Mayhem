@@ -98,6 +98,8 @@ func _ready() -> void:
 	EventBus.player_snared.connect(_on_player_snared)
 	EventBus.player_snare_ended.connect(_on_player_snare_ended)
 	EventBus.settings_applied.connect(_apply_hud_scale)
+	# Un rebind cambia la tecla que la ranura del gancho anuncia.
+	EventBus.settings_applied.connect(_refresh_grapple_keybind)
 	UpgradeManager.upgrades_changed.connect(_refresh_powerups)
 	NarratorManager.subtitle_shown.connect(_on_subtitle_shown)
 	NarratorManager.subtitle_hidden.connect(_on_subtitle_hidden)
@@ -179,7 +181,7 @@ func _build_ability_bar() -> void:
 	divider.custom_minimum_size = Vector2(1, Tokens.SLOT_SIZE.y)
 	_ability_bar.add_child(divider)
 
-	_grapple_slot = _make_slot(MayhemIcon.Kind.GRAPPLE, "GRAPPLE")
+	_grapple_slot = _make_slot(MayhemIcon.Kind.GRAPPLE, _grapple_keybind_text(0))
 	_ability_bar.add_child(_grapple_slot)
 	# Fresh nodes, so whatever the old ones were showing says nothing about these.
 	_grapple_state_shown = -1
@@ -281,7 +283,36 @@ func _tick_movement() -> void:
 	var key: Label = _grapple_slot.get_node("Keybind")
 	panel.theme_type_variation = &"AbilitySlotReady" if state > 0 else &"AbilitySlot"
 	icon.color = Tokens.PLAYER if state > 0 else Tokens.DIM
-	key.text = "ATTACHED" if state == 2 else "GRAPPLE"
+	key.text = _grapple_keybind_text(state)
+
+
+## "E GRAPPLE" - la ranura nombra la habilidad y la tecla que la dispara, leyendo
+## el InputMap en el momento, de modo que un rebind nunca la deja mintiendo.
+func _grapple_keybind_text(state: int) -> String:
+	var label: String = "ATTACHED" if state == 2 else "GRAPPLE"
+	var key: String = _key_label(&"grapple")
+	return label if key == "" else "%s %s" % [key, label]
+
+
+func _key_label(action: StringName) -> String:
+	if not InputMap.has_action(action):
+		return ""
+	for event: InputEvent in InputMap.action_get_events(action):
+		var key: InputEventKey = event as InputEventKey
+		if key != null:
+			return OS.get_keycode_string(key.physical_keycode)
+		var mouse: InputEventMouseButton = event as InputEventMouseButton
+		if mouse != null:
+			return "MOUSE %d" % mouse.button_index
+	return ""
+
+
+## El texto vive en dos estados, asi que se reescribe con el que este mostrando.
+func _refresh_grapple_keybind() -> void:
+	if _grapple_slot == null:
+		return
+	var key: Label = _grapple_slot.get_node("Keybind")
+	key.text = _grapple_keybind_text(maxi(_grapple_state_shown, 0))
 
 
 func _tick_wave() -> void:
