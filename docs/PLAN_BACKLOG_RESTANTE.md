@@ -9,6 +9,12 @@ contra el estado real del repo al 2026-08-10. Está escrito para ser ejecutado
 tarea por tarea por un agente (Claude Code / Sonnet): cada entrada dice qué
 archivos tocar, qué construir, qué testear y cuándo se considera cerrada.
 
+> **El estado de las tareas de este plan quedó viejo.** Se escribió contra el
+> repo del 2026-08-10 y desde entonces se cerraron 16 de sus 24 tareas. Las
+> instrucciones de cada tarea siguen valiendo; **qué falta hacer está en
+> [BACKLOG_ESTADO.md](BACKLOG_ESTADO.md)**, auditado contra el repo al
+> 2026-08-25.
+
 **Leé esta sección de reglas antes de la primera tarea. Aplica a todas.**
 
 ---
