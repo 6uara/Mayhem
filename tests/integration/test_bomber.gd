@@ -287,13 +287,19 @@ func test_the_blast_costs_less_at_the_edge_than_at_the_centre() -> void:
 	assert_almost_eq(near_lost, _blast_damage_at(0.6), 0.5, "cerca del centro, casi entero")
 
 
-## La espoleta se arma **despues** de haberse puesto de frente, no mientras
-## todavia viene rodeando. Es lo que hace que el anillo del piso -que es toda su
-## telegrafia visual- este en pantalla cuando empieza a contar.
-func test_it_commits_before_it_arms() -> void:
+## La espoleta se arma **mientras todavia viene rodeando**, no despues de
+## haberse puesto de frente.
+##
+## Estuvo al reves un tiempo, para que el anillo del piso quedara a la vista al
+## empezar la cuenta. El precio era que los ultimos 6m -toda la parte de la
+## aproximacion que el jugador ve- venian de cara, y el Bomber se leia como un
+## Rusher lento. El arquetipo pide llegar por la espalda; la cuenta se anuncia
+## con el sonido de la espoleta y el parpadeo del cuerpo, que no dependen de
+## estar mirandolo.
+func test_it_is_still_flanking_when_it_arms() -> void:
 	var bomber: Enemy = await _spawn(BOMBER, Vector3.ZERO)
-	assert_gte(bomber._approach_commit_distance(), bomber.get_fuse_arm_range(),
-		"deja de flanquear antes de entrar en rango de armado")
+	assert_lt(bomber._approach_commit_distance(), bomber.get_fuse_arm_range(),
+		"todavia rodea cuando entra en rango de armado")
 
 
 ## Dos cuentas regresivas a la vez son dos decisiones; tres no agregan ninguna,

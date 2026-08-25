@@ -78,6 +78,18 @@ func test_up_close_it_stops_circling_and_commits() -> void:
 		"pegado al jugador, va derecho a el y no a rodearlo")
 
 
+## Y sigue rodeando en la distancia a la que arma la espoleta. Antes commiteaba
+## justo ahi (`fuse_arm_range`, 6m) para que el anillo se viera de frente, y el
+## resultado era que toda la parte visible de la aproximacion venia de cara: el
+## Bomber se leia como un Rusher lento. Arma por atras, que es lo que el
+## arquetipo pide.
+func test_it_still_flanks_at_fuse_arming_range() -> void:
+	var bomber: Enemy = await _spawn(BOMBER, Vector3(0.0, 0.0, -6.0))
+	var approach: Vector3 = bomber.get_approach_position()
+	assert_gt(approach.z, 0.5,
+		"a la distancia de armado todavia apunta a la espalda (+Z)")
+
+
 # ------------------------------------------------ el Environmental, por el lado
 
 ## No de frente y no exactamente detrás: a un costado, que es desde donde un tiro

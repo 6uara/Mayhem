@@ -290,13 +290,15 @@ Three things came out of the behaviour pass
 ([PLAN_ENEMY_BEHAVIOR.md](../PLAN_ENEMY_BEHAVIOR.md) §2), and all three were
 arithmetic nobody had done rather than decisions anybody had made:
 
-- **It commits before it arms.** `_approach_commit_distance()` returns
-  `fuse_arm_range` for any archetype with `has_fuse`. Before that it returned
-  `max(attack_range × 1.8, 2.5)` = 2.88m for the Bomber, so at its 6m arming
-  range the back-bearing still weighed 0.78 of 0.85 — it lit the fuse from
-  *behind* the player, with its only visual tell (the floor ring) off screen. The
-  archetype's question is "where do I make it explode", and that question needs
-  you to see where it is.
+- **It arms while it is still flanking.** `_approach_commit_distance()` returns
+  the ordinary `max(attack_range × 1.8, 2.5)` = 2.88m for the Bomber, so at its
+  6m arming range the back-bearing still weighs most of its 1.0 and it lights the
+  fuse from *behind* the player. This was the other way around for a while — the
+  commit was pinned to `fuse_arm_range` so the floor ring would be on screen when
+  the count started — but the price was that the last 6m, the whole visible part
+  of the approach, came head-on, and the Bomber read as a slow Rusher. Coming
+  from behind is the archetype; the count is announced by the fuse sound and the
+  body flash, neither of which needs you to be looking at it.
 - **The blast falls off with distance**, from full damage at the centre to
   `Explosion.EDGE_DAMAGE_FRACTION` (0.35) at the ring. Flat damage made "I
   dodged" and "I nearly dodged" pay the same, and a border that means nothing

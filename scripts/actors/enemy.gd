@@ -629,15 +629,15 @@ func _approach_commit_distance() -> float:
 	var reach: float = data.attack_range if data != null else 2.0
 	if data != null and data.approach_bearing_weight > 0.0 and data.preferred_distance > 0.0:
 		return maxf(data.preferred_distance * 0.5, commit_floor())
-	# Un arquetipo con espoleta se compromete antes de armar, no despues.
+	# Un arquetipo con espoleta ya no se compromete antes de armar.
 	#
-	# El Bomber armaba a 6m con el rumbo por la espalda todavia al 78% de su peso,
-	# o sea que se armaba detras del jugador - y su telegrafia visual es un anillo
-	# en el piso, que detras no se ve. La pregunta del arquetipo es "donde lo hago
-	# explotar", y esa pregunta necesita que se vea donde esta: sin esto la
-	# pregunta real era "te acordaste de mirar atras", que es otra y peor.
-	if data != null and data.has_fuse:
-		return maxf(get_fuse_arm_range(), maxf(reach * 1.8, 2.5))
+	# Se probo al reves: el Bomber commiteaba a `fuse_arm_range` para que el
+	# anillo de la espoleta quedara a la vista del jugador al armarse. El costo
+	# fue que en los ultimos 6m -o sea, toda la parte de la aproximacion que se
+	# ve- venia de frente y se leia como un Rusher lento. El arquetipo pide lo
+	# contrario: la bomba llega por atras y armar por atras es parte de la
+	# amenaza. La telegrafia queda en el sonido de la espoleta y en el parpadeo
+	# del cuerpo, que no dependen de estar mirandolo.
 	return maxf(reach * 1.8, 2.5)
 
 
