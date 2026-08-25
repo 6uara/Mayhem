@@ -95,21 +95,56 @@ func test_fov_default_sits_inside_the_allowed_range() -> void:
 	assert_between(fov, Tokens.FOV_RANGE.x, Tokens.FOV_RANGE.y)
 
 
+## `SettingsManager` is an autoload that loaded this machine's `user://settings.cfg`
+## at boot, so anything it reads is whatever the person running the suite last set
+## in the options screen. These tests are about the **spec defaults**, so they put
+## every key they read back to its default first, and hand the machine's own
+## settings back when they are done.
+##
+## This is not hypothetical: the ADS test below failed on a dev box that had the
+## slider at 2.0, which is a legal position the settings screen offers.
+const _SENS_KEYS: Array[String] = [
+	"input/mouse_sensitivity",
+	"input/ads_sensitivity_multiplier",
+]
+
+var _saved_sens: Dictionary = {}
+
+
+func before_each() -> void:
+	for key: String in _SENS_KEYS:
+		_saved_sens[key] = SettingsManager.get_value(key)
+		SettingsManager.set_value(key, SettingsManager.DEFAULTS[key])
+
+
+func after_each() -> void:
+	for key: String in _saved_sens:
+		SettingsManager.set_value(key, _saved_sens[key])
+	_saved_sens.clear()
+
+
 ## The slider is the handoff's 0.1-10 scale, but the feel at its default position is
 ## pinned to 0.25 degrees per pixel - the value the project has used since Phase 0.
 func test_default_sensitivity_feels_like_the_original() -> void:
-	SettingsManager.set_value("input/mouse_sensitivity", Tokens.SENS_DEFAULT)
 	assert_almost_eq(SettingsManager.get_mouse_sensitivity(false),
 		SettingsManager.SENS_DEGREES_AT_DEFAULT, 0.0001,
 		"the slider default must feel like 0.25 degrees per pixel")
 
 
 func test_ads_sensitivity_scales_off_the_same_base() -> void:
-	SettingsManager.set_value("input/mouse_sensitivity", Tokens.SENS_DEFAULT)
 	var hip: float = SettingsManager.get_mouse_sensitivity(false)
 	var ads: float = SettingsManager.get_mouse_sensitivity(true)
 	assert_almost_eq(ads, hip * float(Tokens.ADS_MULT_DEFAULT), 0.0001)
-	assert_lt(ads, hip, "aiming slows the look, it never speeds it up")
+
+
+## Out of the box, aiming slows the look. The player may raise the multiplier past
+## 1.0 - the settings screen goes to 2.0 and that is deliberate - so this is a claim
+## about the default we ship, not an invariant of the setting.
+func test_aiming_slows_the_look_by_default() -> void:
+	assert_lt(float(Tokens.ADS_MULT_DEFAULT), 1.0,
+		"the shipped ADS multiplier must not speed the look up")
+	assert_lt(SettingsManager.get_mouse_sensitivity(true),
+		SettingsManager.get_mouse_sensitivity(false))
 
 
 # ------------------------------------------------- la perilla de trazadoras

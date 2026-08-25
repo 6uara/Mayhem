@@ -42,21 +42,51 @@ func test_no_enemy_brings_a_camera_or_a_light_into_the_arena() -> void:
 	assert_null(_find(enemy, "OmniLight3D"), "and no light either")
 
 
-## An archetype with no model still has to work - most of them do not have one
-## yet, and grey-boxing a new one has to keep working with a capsule and a colour.
+## The archetype these two use as "the one still in grey-box". It used to be the
+## Ranger, until the Ranger got its model and took both tests down with it - so
+## pick it from the data instead of naming one, and the tests follow the art
+## instead of dating against it.
+##
+## If every archetype ever has a model, these two skip rather than lie: the capsule
+## path still has to work for the next archetype somebody grey-boxes, but there
+## would be nothing shipped left to prove it with.
+const _ARCHETYPES: Array[String] = [
+	"rusher", "ranger", "flyer", "bomber",
+	"elite", "environmental", "healer", "summoner",
+]
+
+
+func _capsule_archetype() -> String:
+	for id: String in _ARCHETYPES:
+		var data: EnemyData = load("res://data/enemies/%s.tres" % id)
+		if data.model_scene == null:
+			return id
+	return ""
+
+
+## An archetype with no model still has to work - grey-boxing a new one has to keep
+## working with a capsule and a colour.
 func test_an_archetype_without_a_model_keeps_its_capsule() -> void:
-	var enemy: Enemy = await _spawn("ranger")
-	assert_null(enemy.data.model_scene, "no model on this one")
+	var id: String = _capsule_archetype()
+	if id == "":
+		pass_test("every shipped archetype wears a model now")
+		return
+	var enemy: Enemy = await _spawn(id)
+	assert_null(enemy.data.model_scene, "no model on %s" % id)
 	assert_true(enemy.mesh_instance.visible, "so the capsule is what is drawn")
 
 
-## The pool hands the same body to a different archetype all the time. A model
-## left behind from the last one would put a spider bot inside a ranger.
+## The pool hands the same body to a different archetype all the time. A model left
+## behind from the last one would put a spider bot inside a grey-box enemy.
 func test_a_pooled_body_swaps_its_model_with_its_archetype() -> void:
+	var id: String = _capsule_archetype()
+	if id == "":
+		pass_test("every shipped archetype wears a model now")
+		return
 	var enemy: Enemy = await _spawn("rusher")
 	assert_not_null(_find(enemy, "Skeleton3D"), "wearing the bot")
 
-	enemy.setup(load("res://data/enemies/ranger.tres"), Vector3.ZERO)
+	enemy.setup(load("res://data/enemies/%s.tres" % id), Vector3.ZERO)
 	await wait_physics_frames(2)
 	assert_null(_find(enemy, "Skeleton3D"), "the bot came off with the archetype")
 	assert_true(enemy.mesh_instance.visible, "and the capsule came back")
