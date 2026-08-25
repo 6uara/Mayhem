@@ -1,19 +1,22 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/muzzle_flash.gd" id="1_flash"]
+[ext_resource type="Texture2D" uid="uid://ds6lo41qthi8h" path="res://assets/particles/alpha/muzzle_01_a.png" id="2_muzzle"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_flash"]
 transparency = 1
+blend_mode = 1
 shading_mode = 0
 cull_mode = 2
 albedo_color = Color(1, 0.78, 0.35, 1)
+albedo_texture = ExtResource("2_muzzle")
 emission_enabled = true
 emission = Color(1, 0.75, 0.3, 1)
 emission_energy_multiplier = 4.0
 
 [sub_resource type="QuadMesh" id="Mesh_flash"]
 material = SubResource("Mat_flash")
-size = Vector2(0.12, 0.12)
+size = Vector2(0.16, 0.16)
 
 [node name="MuzzleFlash" type="Node3D"]
 script = ExtResource("1_flash")

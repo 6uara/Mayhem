@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/explosion.gd" id="1_explosion"]
+[ext_resource type="Texture2D" uid="uid://2hlk276bebmu" path="res://assets/predrawn/explosion_6x5.png" id="2_burst"]
 
 [sub_resource type="SphereMesh" id="Mesh_flash"]
 resource_local_to_scene = true
@@ -9,9 +10,45 @@ height = 2.0
 radial_segments = 16
 rings = 8
 
-[node name="Explosion" type="Node3D" node_paths=PackedStringArray("flash_mesh")]
+[sub_resource type="StandardMaterial3D" id="Mat_burst"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_color = Color(1, 0.85, 0.7, 1)
+albedo_texture = ExtResource("2_burst")
+billboard_mode = 3
+particles_anim_h_frames = 6
+particles_anim_v_frames = 5
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="Mesh_burst"]
+resource_local_to_scene = true
+material = SubResource("Mat_burst")
+size = Vector2(2, 2)
+
+[sub_resource type="ParticleProcessMaterial" id="Proc_burst"]
+resource_local_to_scene = true
+particle_flag_disable_z = false
+emission_shape = 0
+gravity = Vector3(0, 0, 0)
+anim_speed_min = 1.0
+anim_speed_max = 1.0
+
+[node name="Explosion" type="Node3D" node_paths=PackedStringArray("flash_mesh", "burst")]
 script = ExtResource("1_explosion")
 flash_mesh = NodePath("Flash")
+burst = NodePath("Burst")
 
 [node name="Flash" type="MeshInstance3D" parent="."]
 mesh = SubResource("Mesh_flash")
+
+[node name="Burst" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 1
+lifetime = 0.35
+one_shot = true
+explosiveness = 1.0
+local_coords = true
+process_material = SubResource("Proc_burst")
+draw_pass_1 = SubResource("Mesh_burst")

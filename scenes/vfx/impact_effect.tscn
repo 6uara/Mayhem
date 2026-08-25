@@ -1,16 +1,19 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/impact_effect.gd" id="1_impact"]
 [ext_resource type="Resource" path="res://data/surfaces/concrete.tres" id="2_concrete"]
+[ext_resource type="Texture2D" uid="uid://cgtak20coiqfl" path="res://assets/particles/alpha/spark_01_a.png" id="3_spark"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_spark"]
 transparency = 1
 shading_mode = 0
 albedo_color = Color(1, 0.75, 0.35, 1)
+albedo_texture = ExtResource("3_spark")
+billboard_mode = 3
 
 [sub_resource type="QuadMesh" id="Mesh_spark"]
 material = SubResource("Mat_spark")
-size = Vector2(0.03, 0.03)
+size = Vector2(0.06, 0.06)
 
 [sub_resource type="ParticleProcessMaterial" id="Proc_spark"]
 emission_shape = 1

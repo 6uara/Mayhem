@@ -32,6 +32,14 @@ const EDGE_DAMAGE_FRACTION: float = 0.35
 @export var flash_time: float = 0.35
 @export var flash_mesh: MeshInstance3D
 
+## El flipbook de fuego que va **encima** de la esfera, no en lugar de ella.
+##
+## La esfera es la ley: crece hasta `explosion_radius` y hasta ahí, porque es de
+## donde el jugador aprende cuánto abarca la próxima. Un billboard no puede
+## sostener esa promesa - se ve del mismo tamaño desde cualquier distancia y no
+## tiene volumen que leer. Así que el arte se suma y la medida se queda.
+@export var burst: GPUParticles3D
+
 var _time_left: float = 0.0
 var _material: StandardMaterial3D
 
@@ -74,6 +82,7 @@ func detonate(radius: float, damage: float, sound: AudioStream = null,
 	if flash_mesh != null:
 		flash_mesh.mesh = _flash_mesh_for(radius)
 		flash_mesh.scale = Vector3.ONE * 0.25
+	_fire_burst(radius)
 	_time_left = flash_time
 	if _material != null:
 		_material.albedo_color.a = 1.0
@@ -115,6 +124,8 @@ func _on_acquired() -> void:
 
 func _on_released() -> void:
 	_time_left = 0.0
+	if burst != null:
+		burst.emitting = false
 
 
 # Private
@@ -172,6 +183,27 @@ func _has_line_to(body: Node3D) -> bool:
 		global_position + Vector3.UP * 0.4, body.global_position + Vector3.UP * 0.8,
 		PhysicsLayers.WORLD)
 	return world.direct_space_state.intersect_ray(query).is_empty()
+
+
+## Lanza el flipbook al tamaño de esta explosión.
+##
+## El quad se duplica antes de tocarlo por la misma razón que la esfera: los
+## sub-recursos de un `.tscn` son compartidos entre instancias, y en algo que sale
+## de `ObjectPool` eso significa que el próximo Bomber le cambiaría el tamaño a la
+## explosión que todavía está en pantalla.
+func _fire_burst(radius: float) -> void:
+	if burst == null:
+		return
+	var quad := burst.draw_pass_1 as QuadMesh
+	if quad != null:
+		quad = quad.duplicate() as QuadMesh
+		# Un poco más ancho que la esfera: el fuego se desborda del volumen que
+		# hace daño, y esa diferencia es legible - el borde que importa sigue
+		# siendo el de la esfera.
+		quad.size = Vector2.ONE * radius * 2.4
+		burst.draw_pass_1 = quad
+	burst.lifetime = maxf(flash_time, 0.01)
+	burst.restart()
 
 
 func _flash_mesh_for(radius: float) -> Mesh:
