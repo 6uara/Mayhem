@@ -14,6 +14,7 @@ const CATALOG_PATH: String = "res://data/host/host_catalog.tres"
 const REQUIRED: Array[StringName] = [
 	&"wave_start", &"wave_cleared", &"first_blood", &"streak", &"elite_wave",
 	&"low_health", &"no_damage", &"too_slow", &"purchase", &"death", &"match_won",
+	&"crowd_drop",
 ]
 
 var _catalog: HostCatalog
@@ -169,3 +170,22 @@ func test_setting_the_same_presenter_again_is_a_no_op() -> void:
 	NarratorManager.set_presenter(&"subtitles_only")
 	assert_true(NarratorManager._voice_cache.has(&"death_01"),
 		"re-selecting the current presenter must not blow away the cache")
+
+
+func test_the_crowd_throwing_something_gets_a_line() -> void:
+	# El aviso es la mitad del drop: sin el, un gadget cae en algun lado de la
+	# arena y el jugador se entera cuando lo pisa.
+	# El director no es autoload: vive en game.tscn, asi que hay que traerlo.
+	add_child_autofree(HostDirector.new())
+	EventBus.crowd_drop_thrown.emit(&"stun_grenade", Vector3.ZERO)
+	assert_true(NarratorManager.is_speaking or not NarratorManager._queue.is_empty(),
+		"el Host tiene que nombrar el regalo")
+
+
+func test_the_gift_never_talks_over_a_warning() -> void:
+	# Si el Host esta avisando que te queda poca vida, el regalo puede esperar.
+	var drop: HostLineSet = _catalog.find(&"crowd_drop")
+	var low_health: HostLineSet = _catalog.find(&"low_health")
+	assert_not_null(drop)
+	assert_not_null(low_health)
+	assert_lt(drop.priority, low_health.priority)
