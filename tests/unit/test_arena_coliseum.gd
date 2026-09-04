@@ -145,3 +145,41 @@ func test_rebuilding_does_not_stack_two_coliseums() -> void:
 		if child.name.begins_with("Coliseum") and not child.is_queued_for_deletion():
 			bowls += 1
 	assert_eq(bowls, 1, "un solo cuenco")
+
+
+# El acabado
+
+func test_the_bowl_wears_the_same_panel_as_the_rest_of_the_game() -> void:
+	# Se reusa arena_glitch_panel en vez de escribir un shader propio: un coliseo
+	# con su propio look seria un segundo lenguaje visual para el mismo juego.
+	var shell: ArenaColiseum = _built(_shell())
+	var bowl := shell.get_node("Coliseum/Bowl") as MeshInstance3D
+	var material := bowl.material_override as ShaderMaterial
+	assert_not_null(material, "el cuenco va con el panel del proyecto")
+	assert_eq(material.shader.resource_path, ArenaColiseum.PANEL_SHADER)
+
+
+func test_there_is_a_lit_edge_per_walkway_plus_the_podium() -> void:
+	# El acabado cyberpunk no es geometria: es esta linea. Un filo por remate de
+	# pasillo, mas el del podio.
+	var shell: ArenaColiseum = _shell()
+	shell.tiers = 3
+	shell.setup(BOUNDS)
+	assert_eq(shell._trim_levels.size(), 3, "el podio y los dos pasillos")
+	assert_not_null(shell.get_node("Coliseum/Trim"))
+
+
+func test_the_lit_edge_does_not_fight_the_wall_it_lights() -> void:
+	# Dos caras en el mismo plano pelean por cada pixel y el filo titila.
+	var shell: ArenaColiseum = _built(_shell())
+	assert_gt(shell.trim_offset, 0.0)
+
+
+func test_the_house_gets_its_screens() -> void:
+	var shell: ArenaColiseum = _built(_shell())
+	var screens := shell.get_node("Coliseum/Screens")
+	assert_eq(screens.get_child_count(), shell.screens)
+	for child: Node in screens.get_children():
+		var mesh := child as MeshInstance3D
+		assert_gt(mesh.position.y, shell.get_rim_height(),
+			"las pantallas van sobre el ultimo anillo")

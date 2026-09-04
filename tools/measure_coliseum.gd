@@ -1,8 +1,11 @@
-@tool
-extends SceneTree
+extends Node
 ## Cuanto cuesta el coliseo: triangulos del cuenco y espectadores sembrados.
 ##
-##   godot --headless --script tools/measure_coliseum.gd
+##   godot --headless --path . tools/measure_coliseum.tscn
+##
+## Corre como escena y no con --script, a diferencia de measure_stands.gd: el
+## venue toca el grafo del jugador -la pared de energia pregunta donde esta- y
+## ese grafo depende de autoloads, que en modo --script no existen.
 ##
 ## El plan del venue anota que hay que medir esto y no suponerlo: el cuenco es
 ## una malla generada cuyo tamano depende de cuatro exports que se tocan a ojo, y
@@ -12,15 +15,15 @@ extends SceneTree
 const SHELL: String = "res://scenes/arena/shells/coliseum_shell.tscn"
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	for side: float in [48.0, 72.0, 96.0]:
 		_report(side)
-	quit()
+	get_tree().quit()
 
 
 func _report(side: float) -> void:
 	var shell := (load(SHELL) as PackedScene).instantiate() as ArenaColiseum
-	root.add_child(shell)
+	add_child(shell)
 	shell.setup(AABB(Vector3.ZERO, Vector3(side, 20.0, side)))
 
 	var bowl := shell.get_node("Coliseum/Bowl") as MeshInstance3D
@@ -37,5 +40,5 @@ func _report(side: float) -> void:
 	print("  altura grada: %6.1f m" % (
 		(shell.get_seat_rows()[shell.get_seat_rows().size() - 1]["path"]
 			as PackedVector3Array)[0].y))
+	remove_child(shell)
 	shell.queue_free()
-	root.remove_child(shell)

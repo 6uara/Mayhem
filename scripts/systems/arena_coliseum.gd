@@ -19,6 +19,8 @@ extends Node3D
 ## llegar hasta aca -para eso esta el limite de la arena- y un coliseo con
 ## colision por escalon serian miles de formas que nadie va a tocar nunca.
 
+const PANEL_SHADER: String = "res://assets/shaders/arena_glitch_panel.gdshader"
+
 @export_group("Planta")
 ## Puntos alrededor del ovalo. Sube el detalle de la curva y el costo, los dos
 ## de forma lineal.
@@ -61,9 +63,29 @@ extends Node3D
 @export_range(0.0, 0.1) var vomitorium_width: float = 0.022
 
 @export_group("Material")
-@export var concrete_color: Color = Color(0.29, 0.30, 0.34)
-@export var concrete_roughness: float = 0.9
-@export var mouth_color: Color = Color(0.03, 0.035, 0.05)
+@export var concrete_color: Color = Color(0.075, 0.08, 0.10)
+@export var concrete_roughness: float = 0.85
+@export var mouth_color: Color = Color(0.02, 0.025, 0.035)
+## La linea encendida del borde de cada pasillo y del dintel de cada boca de
+## tunel.
+##
+## El acabado cyberpunk de este venue no es geometria: es esta linea y el
+## enrejado del panel. Un coliseo de cemento con dos filos encendidos se lee
+## como futuro; el mismo coliseo con el doble de triangulos y sin luz, no.
+@export var trim_color: Color = Color(0.208, 0.878, 0.831)
+@export var trim_height: float = 0.22
+## Cuanto se despega el filo de la superficie que ilumina. Chico, pero no cero:
+## dos caras en el mismo plano pelean por cada pixel y el filo titila.
+@export var trim_offset: float = 0.06
+
+@export_group("Pantallas")
+## Las pantallas de la casa sobre el ultimo anillo. Ambar, porque el ambar es de
+## la casa: dinero, pickups, la voz del Host. Son lo que dice que detras de esto
+## hay una empresa.
+@export var screens: int = 10
+@export var screen_width: float = 14.0
+@export var screen_height: float = 5.0
+@export var screen_color: Color = Color(1.0, 0.69, 0.13)
 
 @export_group("Perimetro")
 ## El limite de la arena. Sigue siendo cuatro cajas sobre el rectangulo de juego:
@@ -96,6 +118,9 @@ var _seat_rows: Array[Dictionary] = []
 var _outer_reach: Vector2 = Vector2.ZERO
 ## La altura del ultimo escalon. Es donde apoya el techo.
 var _rim_height: float = 0.0
+## Los puntos del perfil que llevan un filo encendido: el remate del podio y el
+## borde de cada pasillo.
+var _trim_levels: Array[Vector2] = []
 
 
 func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
@@ -116,6 +141,7 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 	var axes: Vector2 = _base_axes(bounds)
 
 	_seat_rows = []
+	_trim_levels = []
 	_build_bowl(centre, floor_y, axes)
 	if build_pit_floor:
 		_build_pit_floor(centre, floor_y, axes)
@@ -190,6 +216,7 @@ func _build_bowl(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 
 	profile.push_back(Vector2(0.0, 0.0))
 	_step(profile, is_tread, Vector2(0.0, podium_height), false)
+	_trim_levels.push_back(profile[profile.size() - 1])
 
 	for tier: int in maxi(tiers, 1):
 		var top: Vector2 = profile[profile.size() - 1]
@@ -202,6 +229,10 @@ func _build_bowl(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 		# El ultimo anillo no lleva pasillo detras: no hay nada mas afuera.
 		if tier < maxi(tiers, 1) - 1:
 			var edge: Vector2 = profile[profile.size() - 1]
+			# El filo va en el remate de la contrahuella, no en el pasillo: uno
+			# es una cara vertical que se ve desde la arena, el otro es un piso
+			# que solo se ve desde arriba.
+			_trim_levels.push_back(edge)
 			_step(profile, is_tread, edge + Vector2(praecinctio_depth, 0.0), false)
 
 	var surface := SurfaceTool.new()
@@ -224,9 +255,11 @@ func _build_bowl(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = "Bowl"
 	mesh.mesh = surface.commit()
-	mesh.material_override = _concrete()
+	mesh.material_override = _panel()
 	_built.add_child(mesh)
 	_build_mouths(centre, floor_y, axes, profile)
+	_build_trim(centre, floor_y, axes)
+	_build_screens(centre, floor_y, axes, rim)
 
 
 func _step(profile: Array[Vector2], is_tread: Array[bool], to: Vector2,
@@ -303,6 +336,65 @@ func _build_mouths(centre: Vector3, floor_y: float, axes: Vector2,
 	_built.add_child(mesh)
 
 
+## Los filos encendidos: una banda fina sobre la cara vertical del remate del
+## podio y de cada pasillo.
+##
+## Geometria propia y no una banda pintada por el shader del cuenco, porque el
+## shader no sabe a que altura quedo cada remate - eso lo sabe el perfil, y el
+## perfil vive aca. Son dos anillos de quads por filo: mas barato que darle al
+## cuenco entero un shader que tenga que recibir esas alturas como uniforms.
+func _build_trim(centre: Vector3, floor_y: float, axes: Vector2) -> void:
+	if _trim_levels.is_empty():
+		return
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for level: Vector2 in _trim_levels:
+		# Corrido hacia la arena: la cara que ilumina mira para adentro, y dos
+		# caras en el mismo plano pelean por cada pixel.
+		var at := Vector2(level.x - trim_offset, level.y)
+		_bridge(surface,
+			_ring(centre, floor_y, axes, at - Vector2(0.0, trim_height)),
+			_ring(centre, floor_y, axes, at))
+
+	surface.generate_normals()
+	var mesh := MeshInstance3D.new()
+	mesh.name = "Trim"
+	mesh.mesh = surface.commit()
+	mesh.material_override = _glow(trim_color)
+	_built.add_child(mesh)
+
+
+## Las pantallas de la casa, sobre el ultimo anillo y mirando a la arena.
+func _build_screens(centre: Vector3, floor_y: float, axes: Vector2,
+		rim: Vector2) -> void:
+	if screens <= 0:
+		return
+	var container := Node3D.new()
+	container.name = "Screens"
+	_built.add_child(container)
+
+	var material: ShaderMaterial = _panel_material(screen_color, 0.9)
+	for index: int in screens:
+		var angle: float = TAU * (float(index) + 0.5) / float(screens)
+		var direction := Vector2(_superellipse(cos(angle)), _superellipse(sin(angle)))
+		var at := Vector3(
+			centre.x + direction.x * (axes.x + rim.x),
+			floor_y + rim.y + screen_height * 0.6,
+			centre.z + direction.y * (axes.y + rim.x))
+
+		var quad := QuadMesh.new()
+		quad.size = Vector2(screen_width, screen_height)
+		quad.material = material
+		var mesh := MeshInstance3D.new()
+		mesh.name = "Screen%d" % index
+		mesh.mesh = quad
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mesh.position = at
+		# Mirando al medio del estadio, que es lo unico que hay para mirar.
+		mesh.look_at_from_position(at, Vector3(centre.x, at.y, centre.z), Vector3.UP)
+		container.add_child(mesh)
+
+
 ## Un pedazo de anillo, entre dos fracciones de la vuelta.
 func _arc(centre: Vector3, floor_y: float, axes: Vector2, at: Vector2,
 		from: float, to: float) -> PackedVector3Array:
@@ -339,7 +431,7 @@ func _build_pit_floor(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 	var mesh := MeshInstance3D.new()
 	mesh.name = "PitFloor"
 	mesh.mesh = surface.commit()
-	mesh.material_override = _concrete()
+	mesh.material_override = _panel()
 	_built.add_child(mesh)
 
 
@@ -383,11 +475,40 @@ func _build_perimeter(bounds: AABB) -> void:
 		_walls.add_child(body)
 
 
-func _concrete() -> StandardMaterial3D:
+## El cemento del venue, con el enrejado de circuito del proyecto encima.
+##
+## Se reusa `arena_glitch_panel.gdshader` en vez de escribir uno: es el acabado
+## que ya tienen las piezas de arena, y un coliseo con su propio look seria un
+## segundo lenguaje visual para el mismo juego.
+func _panel() -> ShaderMaterial:
+	return _panel_material(trim_color, 1.2)
+
+
+func _panel_material(lines: Color, energy: float) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = load(PANEL_SHADER)
+	material.set_shader_parameter(&"base_color", concrete_color)
+	material.set_shader_parameter(&"line_color", lines)
+	material.set_shader_parameter(&"grid_scale", 0.12)
+	material.set_shader_parameter(&"line_width", 0.03)
+	material.set_shader_parameter(&"emission_energy", energy)
+	material.set_shader_parameter(&"glitch_strength", 0.35)
+	material.set_shader_parameter(&"glitch_speed", 1.2)
+	material.set_shader_parameter(&"scanline_speed", 0.25)
+	material.set_shader_parameter(&"roughness_value", concrete_roughness)
+	material.set_shader_parameter(&"metallic_value", 0.15)
+	material.set_shader_parameter(&"fresnel_power", 3.0)
+	material.set_shader_parameter(&"fresnel_strength", 0.8)
+	return material
+
+
+func _glow(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
-	material.albedo_color = concrete_color
-	material.roughness = concrete_roughness
-	material.metallic = 0.0
+	material.albedo_color = color
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 2.4
 	return material
 
 
