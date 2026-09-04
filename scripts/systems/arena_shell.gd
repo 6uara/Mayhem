@@ -52,6 +52,11 @@ extends Node3D
 ## navmesh that knows about them tries to path along them.
 @export var build_perimeter_walls: bool = true
 
+@export_group("Crowd")
+## El publico en las gradas. Se puebla con el mismo `bounds` con el que se
+## estira el cuenco, asi que sigue al venue en cualquier tamaño de arena.
+@export var crowd: CrowdStands
+
 @export_group("Material")
 @export var concrete_texture: Texture2D
 ## Metres per texture tile. Triplanar, so stretching the bowl does not smear the
@@ -113,6 +118,8 @@ func setup(bounds: AABB, theme: ArenaTheme = null) -> void:
 		_build_apron(bounds, Vector2(pit_size.x * fit.x, pit_size.y * fit.z), centre)
 	if build_perimeter_walls:
 		_build_perimeter(bounds)
+	if crowd != null:
+		crowd.populate(bounds, pit_margin)
 
 
 # Private

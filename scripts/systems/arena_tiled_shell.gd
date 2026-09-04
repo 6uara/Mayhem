@@ -38,6 +38,12 @@ extends Node3D
 @export var wall_thickness: float = 2.0
 @export var build_perimeter_walls: bool = true
 
+@export_group("Crowd")
+## El publico en las gradas. Toma el mismo `pit_margin` con el que se arma el
+## anillo, para que la primera fila caiga sobre el primer escalon y no sobre el
+## foso.
+@export var crowd: CrowdStands
+
 @export_group("Material")
 @export var concrete_texture: Texture2D
 @export var concrete_tiling: float = 0.25
@@ -77,6 +83,8 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 		_build_apron(bounds, centre, half, floor_y)
 	if build_perimeter_walls:
 		_build_perimeter(bounds, centre, floor_y)
+	if crowd != null:
+		crowd.populate(bounds, pit_margin)
 
 
 ## The box the assembled ring occupies. Exists for the tests and for anyone
