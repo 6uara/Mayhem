@@ -31,8 +31,22 @@ func _waves() -> Array[WaveData]:
 	return waves
 
 
-## Todo arquetipo con `.tres` propio tiene que aparecer en alguna ola. Es la
-## prueba que faltaba cuando el Bomber existía en el repo y no en el juego.
+## Arquetipos que existen en el repo y a propósito **no** se spawnean.
+##
+## El Elite sale del pool mientras se lo reworkea. Su problema no es de números:
+## es el único arquetipo cuya pregunta al jugador se superpone con la del Rusher
+## -viene de frente y pega fuerte- y el `CombatDirector` lo deja en evidencia,
+## porque pide el mismo puesto que el melee básico y no aporta un ángulo nuevo.
+## Las olas de élite mientras tanto son olas de masa.
+##
+## La lista es la excepción **nombrada**: sacar un arquetipo tiene que costar una
+## línea acá y no el silencio de un test que se dejó de correr.
+const BENCHED: Array[StringName] = [&"elite"]
+
+
+## Todo arquetipo con `.tres` propio tiene que aparecer en alguna ola, salvo los
+## que estén en el banco. Es la prueba que faltaba cuando el Bomber existía en el
+## repo y no en el juego.
 func test_every_archetype_is_actually_spawned_by_some_wave() -> void:
 	var spawned: Dictionary = {}
 	for wave: WaveData in _waves():
@@ -42,6 +56,10 @@ func test_every_archetype_is_actually_spawned_by_some_wave() -> void:
 
 	for path: String in _archetype_paths():
 		var data: EnemyData = load(path)
+		if BENCHED.has(data.id):
+			assert_false(spawned.has(data.id),
+				"%s está en el banco: si volvió al juego, sacalo de BENCHED" % data.id)
+			continue
 		assert_true(spawned.has(data.id),
 			"%s no aparece en ninguna oleada: está construido y el juego no lo usa" % data.id)
 
