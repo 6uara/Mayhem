@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HostCatalog" load_steps=14 format=3]
+[gd_resource type="Resource" script_class="HostCatalog" load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/host_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://scripts/resources/host_line_set.gd" id="2_set"]
@@ -75,6 +75,14 @@ tier = 0
 priority = 0
 category_cooldown = 40.0
 
+[sub_resource type="Resource" id="Set_crowd_drop"]
+script = ExtResource("2_set")
+id = &"crowd_drop"
+lines = Array[String](["Somebody in the stands likes you. Go get it.", "That came out of row two. Do not keep them waiting.", "A gift from the cheap seats. Earn it.", "The crowd is throwing things again. This one is useful.", "Row three is feeling generous. That will not last."])
+tier = 1
+priority = 1
+category_cooldown = 25.0
+
 [sub_resource type="Resource" id="Set_death"]
 script = ExtResource("2_set")
 id = &"death"
@@ -93,4 +101,4 @@ category_cooldown = 0.0
 
 [resource]
 script = ExtResource("1_catalog")
-sets = Array[Resource]([SubResource("Set_wave_start"), SubResource("Set_wave_cleared"), SubResource("Set_first_blood"), SubResource("Set_streak"), SubResource("Set_elite_wave"), SubResource("Set_low_health"), SubResource("Set_no_damage"), SubResource("Set_too_slow"), SubResource("Set_purchase"), SubResource("Set_death"), SubResource("Set_match_won")])
+sets = Array[Resource]([SubResource("Set_wave_start"), SubResource("Set_wave_cleared"), SubResource("Set_first_blood"), SubResource("Set_streak"), SubResource("Set_elite_wave"), SubResource("Set_low_health"), SubResource("Set_no_damage"), SubResource("Set_too_slow"), SubResource("Set_purchase"), SubResource("Set_crowd_drop"), SubResource("Set_death"), SubResource("Set_match_won")])

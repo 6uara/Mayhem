@@ -1,0 +1,65 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/crowd_drop_pickup.gd" id="1_drop"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/ammo_pickup.wav" id="2_pickup"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/world/land.wav" id="3_land"]
+
+[sub_resource type="SphereShape3D" id="Shape_grab"]
+radius = 1.3
+
+[sub_resource type="StandardMaterial3D" id="Mat_halo"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.69, 0.13, 0.45)
+emission_enabled = true
+emission = Color(1, 0.69, 0.13, 1)
+emission_energy_multiplier = 1.2
+
+[sub_resource type="TorusMesh" id="Mesh_halo"]
+material = SubResource("Mat_halo")
+inner_radius = 0.5
+outer_radius = 0.62
+rings = 20
+ring_segments = 6
+
+[sub_resource type="SphereMesh" id="Mesh_core"]
+radius = 0.3
+height = 0.6
+radial_segments = 12
+rings = 6
+
+[node name="CrowdDropPickup" type="Node3D" groups=["crowd_drop"] node_paths=PackedStringArray("hitbox", "core", "halo", "light")]
+script = ExtResource("1_drop")
+hit_mask = 1
+fuse_time = 0.0
+activate_sound = ExtResource("3_land")
+despawn_time = 22.0
+blink_lead = 5.0
+pickup_sound = ExtResource("2_pickup")
+hitbox = NodePath("Hitbox")
+core = NodePath("Core")
+halo = NodePath("Halo")
+light = NodePath("OmniLight3D")
+
+[node name="Hitbox" type="Area3D" parent="."]
+collision_layer = 128
+collision_mask = 2
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hitbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("Shape_grab")
+
+[node name="Halo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+mesh = SubResource("Mesh_halo")
+
+[node name="Core" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+mesh = SubResource("Mesh_core")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+light_color = Color(1, 0.69, 0.13, 1)
+light_energy = 2.2
+omni_range = 8.0

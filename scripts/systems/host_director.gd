@@ -29,6 +29,7 @@ func _ready() -> void:
 	EventBus.player_died.connect(_on_player_died)
 	EventBus.match_completed.connect(_on_match_completed.unbind(2))
 	EventBus.purchase_made.connect(_on_purchase_made.unbind(2))
+	EventBus.crowd_drop_thrown.connect(_on_crowd_drop_thrown.unbind(2))
 
 
 # Private
@@ -102,3 +103,11 @@ func _on_match_completed() -> void:
 
 func _on_purchase_made() -> void:
 	NarratorManager.say(&"purchase")
+
+
+## El publico tiro un gadget. Es FEEDBACK y no STATE a proposito: si el Host esta
+## avisando que te queda poca vida, el regalo puede esperar - y la prioridad es
+## exactamente el mecanismo con el que NarratorManager decide eso, asi que aca no
+## hay que chequear nada, solo nombrar la ocasion con el peso correcto.
+func _on_crowd_drop_thrown() -> void:
+	NarratorManager.say(&"crowd_drop")

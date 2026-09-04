@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ArenaTheme" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/arena_theme.gd" id="1_theme"]
+[ext_resource type="PackedScene" path="res://scenes/arena/shells/coliseum_shell.tscn" id="2_shell"]
+[ext_resource type="Environment" path="res://data/arena_themes/coliseum_env.tres" id="3_env"]
+
+; El coliseo generado. No tiene pozo que medir -las gradas se construyen al
+; tamano de cada arena- asi que pit_size/pit_center no aplican, igual que en el
+; tema tiled.
+[resource]
+script = ExtResource("1_theme")
+shell_scene = ExtResource("2_shell")
+environment = ExtResource("3_env")
+id = &"coliseum"
+display_name = "Coliseum"
+pit_size = Vector2(1, 1)
+pit_center = Vector2(0, 0)
+sun_rotation_degrees = Vector3(-62, 35, 0)
+sun_energy = 0.35
+sun_color = Color(0.62, 0.7, 1, 1)
+kill_plane_depth = 30.0
+kill_plane_margin = 200.0

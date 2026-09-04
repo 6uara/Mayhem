@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ShopCatalog" load_steps=27 format=3]
+[gd_resource type="Resource" script_class="ShopCatalog" load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/shop_catalog.gd" id="1_catalog"]
 [ext_resource type="Resource" path="res://data/weapons/rifle_ak.tres" id="2_rifle_ak"]
@@ -23,16 +23,12 @@
 [ext_resource type="Resource" path="res://data/upgrades/max_health.tres" id="21_max_health"]
 [ext_resource type="Resource" path="res://data/upgrades/damage_reduction.tres" id="22_damage_reduction"]
 [ext_resource type="Resource" path="res://data/upgrades/adrenaline.tres" id="23_adrenaline"]
-[ext_resource type="Resource" path="res://data/utilities/stun_grenade.tres" id="24_stun_grenade"]
-[ext_resource type="Resource" path="res://data/utilities/temp_wall.tres" id="25_temp_wall"]
-[ext_resource type="Resource" path="res://data/utilities/slow_field.tres" id="26_slow_field"]
 
 [resource]
 script = ExtResource("1_catalog")
 weapons = Array[Resource]([ExtResource("2_rifle_ak"), ExtResource("3_shotgun"), ExtResource("4_smg"), ExtResource("5_pistol")])
 weapon_prices = PackedInt32Array(0, 450, 380, 0)
 upgrades = Array[Resource]([ExtResource("6_dash_charge"), ExtResource("7_dash_cooldown"), ExtResource("8_move_speed"), ExtResource("9_jump_height"), ExtResource("10_air_control"), ExtResource("11_grapple_range"), ExtResource("12_grapple_cooldown"), ExtResource("13_magazine"), ExtResource("14_fire_rate"), ExtResource("15_recoil_control"), ExtResource("16_stability"), ExtResource("17_reload_speed"), ExtResource("18_ads_speed"), ExtResource("19_reserve_ammo"), ExtResource("20_damage"), ExtResource("21_max_health"), ExtResource("22_damage_reduction"), ExtResource("23_adrenaline")])
-utilities = Array[Resource]([ExtResource("24_stun_grenade"), ExtResource("25_temp_wall"), ExtResource("26_slow_field")])
 offers_per_visit = 4
 guarantee_one_per_category = true
 reroll_base_cost = 50

@@ -155,7 +155,24 @@ func test_utilities_start_empty_and_cannot_be_thrown() -> void:
 	assert_false(utility.can_throw(0), "nothing carried, nothing to throw")
 
 
-func test_buying_a_utility_adds_a_charge_up_to_its_maximum() -> void:
+func test_the_shop_never_offers_a_gadget_any_more() -> void:
+	# Los gadgets salieron del shop y pasaron a caer de las gradas: conseguirlos
+	# tiene que costar posicion y no plata. Mientras se pudieran comprar, el drop
+	# del publico era una alternativa peor a apretar un boton en un menu.
+	EconomyManager.currency = 100000
+	for _visit: int in 30:
+		_shop.roll_offers()
+		for offer: Dictionary in _shop.offers:
+			assert_true(int(offer["kind"]) == Shop.Kind.UPGRADE
+					or int(offer["kind"]) == Shop.Kind.WEAPON,
+				"el shop solo vende armas y mejoras")
+			assert_lt(_player.utility.find_slot(StringName(offer["id"])), 0,
+				"'%s' es un gadget y no puede estar en venta" % offer["id"])
+
+
+func test_a_charge_still_arrives_the_way_the_shop_used_to_give_it() -> void:
+	# `add_charge()` no cambio: lo que cambio es quien lo llama. Antes el shop,
+	# ahora el pickup que tira el publico.
 	var utility: UtilityComponent = _player.utility
 	var data: UtilityData = utility.get_slot_data(0)
 	for i: int in data.max_carried:

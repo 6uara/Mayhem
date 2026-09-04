@@ -14,3 +14,4 @@ cooldown = 8.0
 throw_force = 14.0
 effect_radius = 6.5
 effect_duration = 6.0
+accent_color = Color(0.7, 0.4, 1, 1)

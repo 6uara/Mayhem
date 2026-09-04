@@ -10,7 +10,6 @@ extends Resource
 @export var weapon_prices: PackedInt32Array = PackedInt32Array()
 
 @export var upgrades: Array[UpgradeData] = []
-@export var utilities: Array[UtilityData] = []
 
 @export_group("Offer")
 ## How many entries the shop offers per visit. Fewer than the catalogue holds, so
@@ -49,8 +48,3 @@ func find_upgrade(upgrade_id: StringName) -> UpgradeData:
 	return null
 
 
-func find_utility(utility_id: StringName) -> UtilityData:
-	for utility: UtilityData in utilities:
-		if utility != null and utility.id == utility_id:
-			return utility
-	return null
