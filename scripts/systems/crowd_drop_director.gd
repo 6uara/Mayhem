@@ -35,6 +35,19 @@ signal drop_thrown(utility_id: StringName, landing: Vector3)
 ## salir, seguirse y anticiparse, que es lo que le da al jugador la chance de
 ## estar ahi cuando toca el piso.
 @export var flight_time: float = 2.2
+## Altura minima desde la que se suelta, medida sobre el piso de la arena.
+##
+## Tiene que estar por encima del muro del perimetro, que es el cilindro
+## invisible de 14 metros con el que el venue impide que el jugador se caiga al
+## foso. El asiento esta afuera de ese muro y a un metro del suelo, asi que un
+## tiro que sale del asiento se estrella contra la cara de afuera y el gadget
+## queda colgado donde nadie lo puede levantar - es exactamente lo que pasaba.
+##
+## Lo que se levanta es la altura, no el lugar: el gadget sigue saliendo de las
+## coordenadas del asiento, por encima de la cabeza de quien lo tiro. Un brazo
+## que arroja algo por encima de una barrera de dos pisos es lo que se ve, y es
+## lo que de verdad tendria que pasar.
+@export var launch_height: float = 18.0
 
 var _seconds_left: float = 0.0
 var _is_running: bool = false
@@ -125,10 +138,16 @@ func _has_room_for(data: UtilityData, player: Player) -> bool:
 func _pick_origin(player: Player) -> Vector3:
 	if _crowd == null or not is_instance_valid(_crowd):
 		_crowd = get_tree().get_first_node_in_group(&"crowd") as CrowdStands
+	var seat: Vector3
 	if _crowd != null and _crowd.has_seats():
-		return _crowd.pick_seat()
-	var angle: float = _rng.randf() * TAU
-	return player.global_position + Vector3(cos(angle) * 24.0, 14.0, sin(angle) * 24.0)
+		seat = _crowd.pick_seat()
+	else:
+		var angle: float = _rng.randf() * TAU
+		seat = player.global_position + Vector3(cos(angle) * 24.0, 0.0, sin(angle) * 24.0)
+	# Por encima del muro del perimetro. Ver `launch_height`.
+	var floor_y: float = _arena_bounds().position.y
+	seat.y = maxf(seat.y, floor_y + launch_height)
+	return seat
 
 
 ## Un punto en la banda de distancia alrededor del jugador, recortado contra la
