@@ -78,10 +78,18 @@ extends Node3D
 
 ## El publico. Se le pasan las huellas medidas, no una estimacion.
 @export var crowd: CrowdStands
+## La ciudad de fondo. Se la siembra por fuera de donde llegan las gradas, asi
+## que tampoco tiene que adivinar nada.
+@export var skyline: CitySkyline
 
 var _built: Node3D
 var _walls: Node3D
 var _seat_rows: Array[Dictionary] = []
+## Hasta donde llega el borde de arriba de la tribuna. Lo necesita la ciudad
+## para ponerse detras, y cualquier cosa que venga despues -el techo- tambien.
+var _outer_reach: Vector2 = Vector2.ZERO
+## La altura del ultimo escalon. Es donde apoya el techo.
+var _rim_height: float = 0.0
 
 
 func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
@@ -109,6 +117,8 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 		_build_perimeter(bounds)
 	if crowd != null:
 		crowd.populate_rows(_seat_rows)
+	if skyline != null:
+		skyline.populate(centre, _outer_reach, floor_y)
 
 
 # Public API
@@ -118,6 +128,17 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 ## `CrowdStands.populate_rows()`.
 func get_seat_rows() -> Array[Dictionary]:
 	return _seat_rows
+
+
+## Los semiejes del borde de arriba de la tribuna: hasta donde llega el venue.
+func get_outer_reach() -> Vector2:
+	return _outer_reach
+
+
+## La altura del ultimo escalon, que es donde apoya cualquier cosa que vaya
+## arriba del cuenco.
+func get_rim_height() -> float:
+	return _rim_height
 
 
 ## Los semiejes del ovalo base, ya agrandados para que el rectangulo de juego
@@ -177,6 +198,10 @@ func _build_bowl(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 			_seat_rows.push_back({"path": _ring(centre, floor_y, axes,
 				(profile[i] + profile[i + 1]) * 0.5)})
 		previous = current
+
+	var rim: Vector2 = profile[profile.size() - 1]
+	_outer_reach = axes + Vector2.ONE * rim.x
+	_rim_height = floor_y + rim.y
 
 	surface.generate_normals()
 	var mesh := MeshInstance3D.new()
