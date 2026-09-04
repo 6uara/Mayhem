@@ -38,6 +38,8 @@ var _sample_seconds: float = 20.0
 ## Con el gatillo apretado durante la medicion.
 var _firing: bool = false
 var _holder: Node
+## Si ya se le pudo apagar el daño al jugador. Ver _make_player_invincible().
+var _invincible: bool = false
 var _frame: int = 0
 var _sampling: bool = false
 var _sample_time: float = 0.0
@@ -92,6 +94,7 @@ func _process(delta: float) -> bool:
 		return false
 
 	if _waiting_for_spawn:
+		_make_player_invincible()
 		_spawn_wait_time += delta
 		var current_second: int = int(_spawn_wait_time)
 		if current_second != _last_log_second:
@@ -175,14 +178,27 @@ func _bind_weapon() -> void:
 		push_warning("profile_elite_wave: no hay arma equipada, se mide sin disparar")
 
 
-func _make_player_invincible() -> void:
-	var player: Node = _game.get_node_or_null("Player")
-	if player == null:
-		push_warning("profile_elite_wave: no Player node, can't make it invincible")
-		return
-	var health: Node = player.get("health")
-	if health != null:
-		health.set("damage_taken_multiplier", 0.0)
+## Invulnerabilidad, reintentada hasta que exista el jugador.
+##
+## Buscado por grupo y no por ruta: al jugador lo instancia PlayerSpawnController
+## adentro de su contenedor cuando arranca el match -o sea, despues del settle-,
+## asi que `_game.get_node("Player")` no lo encontro nunca y esto no se aplico
+## jamas. La medicion terminaba siendo "cuanto tarda la oleada en matarlo": con 27
+## enemigos aguantaba lo bastante como para que no se notara, y con una oleada de
+## masa se muere antes de que empiece el muestreo, deja el arena vacia y el perfil
+## termina midiendo una escena sin enemigos.
+func _make_player_invincible() -> bool:
+	if _invincible:
+		return true
+	var players: Array[Node] = get_nodes_in_group(&"player")
+	if players.is_empty():
+		return false
+	var health: Node = players[0].get("health")
+	if health == null:
+		return false
+	health.set("damage_taken_multiplier", 0.0)
+	_invincible = true
+	return true
 
 
 func _force_wave_10() -> void:
