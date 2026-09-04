@@ -1,15 +1,17 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/arena_coliseum.gd" id="1_coliseum"]
 [ext_resource type="Script" path="res://scripts/systems/crowd_stands.gd" id="2_crowd"]
 [ext_resource type="Script" path="res://scripts/systems/city_skyline.gd" id="3_skyline"]
 [ext_resource type="Script" path="res://scripts/systems/energy_wall.gd" id="4_wall"]
+[ext_resource type="Script" path="res://scripts/systems/arena_roof.gd" id="5_roof"]
 
-[node name="ColiseumShell" type="Node3D" node_paths=PackedStringArray("crowd", "skyline", "energy_wall")]
+[node name="ColiseumShell" type="Node3D" node_paths=PackedStringArray("crowd", "skyline", "energy_wall", "roof")]
 script = ExtResource("1_coliseum")
 crowd = NodePath("Crowd")
 skyline = NodePath("Skyline")
 energy_wall = NodePath("EnergyWall")
+roof = NodePath("Roof")
 
 [node name="Crowd" type="MultiMeshInstance3D" parent="."]
 script = ExtResource("2_crowd")
@@ -19,3 +21,6 @@ script = ExtResource("3_skyline")
 
 [node name="EnergyWall" type="Node3D" parent="."]
 script = ExtResource("4_wall")
+
+[node name="Roof" type="Node3D" parent="."]
+script = ExtResource("5_roof")

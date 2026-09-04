@@ -84,6 +84,9 @@ extends Node3D
 ## El limite visible. No cambia lo que se choca -eso siguen siendo las cuatro
 ## cajas de `build_perimeter_walls`- sino lo que se ve al chocarlo.
 @export var energy_wall: EnergyWall
+## El techo. Apoya sobre el borde de arriba de la tribuna, asi que tampoco tiene
+## que adivinar cuanto mide el venue.
+@export var roof: ArenaRoof
 
 var _built: Node3D
 var _walls: Node3D
@@ -123,7 +126,15 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 	if skyline != null:
 		skyline.populate(centre, _outer_reach, floor_y)
 	if energy_wall != null:
-		energy_wall.height = wall_height
+		energy_wall.setup(bounds)
+	if roof != null:
+		roof.setup(bounds, _outer_reach, _rim_height)
+	if energy_wall != null:
+		# La pared llega hasta el techo, no hasta una altura suelta: entre las dos
+		# tiene que no quedar ni una junta por donde colarse, y el unico que sabe
+		# donde quedo el techo es el techo.
+		energy_wall.height = (roof.get_height() if roof != null else wall_height) \
+			- bounds.position.y
 		energy_wall.setup(bounds)
 
 
