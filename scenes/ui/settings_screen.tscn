@@ -1,85 +1,107 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://p4h755im45mu"]
 
-[ext_resource type="Script" path="res://scripts/ui/settings_screen.gd" id="1_settings"]
-[ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
-[ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="3_theme"]
+[ext_resource type="Script" uid="uid://bwr1xcjq1whij" path="res://scripts/ui/settings_screen.gd" id="1_settings"]
+[ext_resource type="Script" uid="uid://diy64audi15ki" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
+[ext_resource type="Theme" uid="uid://bs52imyfholid" path="res://ui/mayhem_theme.tres" id="3_theme"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = -1.0
+content_margin_top = -1.0
+content_margin_right = -1.0
+content_margin_bottom = -1.0
 script = ExtResource("2_chamfer")
 fill_color = Color(0.078, 0.086, 0.106, 1)
 fill_alpha = 0.97
 border_color = Color(0.173, 0.192, 0.251, 1)
-border_width = 1.0
 chamfer = 20.0
 rail_width = 3.0
 rail_color = Color(0.208, 0.878, 0.831, 1)
 rail_side = 3
 tick_length = 28.0
 tick_color = Color(0.208, 0.878, 0.831, 1)
-[node name="Settings" type="Control"]
+
+[node name="Settings" type="Control" unique_id=958072130]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme = ExtResource("3_theme")
 script = ExtResource("1_settings")
 
-[node name="Dim" type="ColorRect" parent="."]
-anchors_preset = 15
+[node name="Dim" type="ColorRect" parent="." unique_id=2112526813]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.027, 0.031, 0.043, 0.88)
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="Panel" type="PanelContainer" parent="." unique_id=1263688019]
+custom_minimum_size = Vector2(900, 660)
+layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -420.0
+offset_left = -450.0
 offset_top = -330.0
-offset_right = 420.0
+offset_right = 450.0
 offset_bottom = 330.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=678382935]
+layout_mode = 2
 theme_override_constants/margin_left = 36
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 36
 theme_override_constants/margin_bottom = 28
 
-[node name="Layout" type="VBoxContainer" parent="Panel/Margin"]
+[node name="Layout" type="VBoxContainer" parent="Panel/Margin" unique_id=339694369]
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Panel/Margin/Layout"]
-text = "OPTIONS"
+[node name="Title" type="Label" parent="Panel/Margin/Layout" unique_id=940139840]
+layout_mode = 2
 theme_override_font_sizes/font_size = 30
+text = "OPTIONS"
 
-[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/Layout"]
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/Layout" unique_id=206548425]
+layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Rows" type="VBoxContainer" parent="Panel/Margin/Layout/Scroll"]
+[node name="Rows" type="VBoxContainer" parent="Panel/Margin/Layout/Scroll" unique_id=1039203267]
+layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="Footer" type="HBoxContainer" parent="Panel/Margin/Layout"]
+[node name="Footer" type="HBoxContainer" parent="Panel/Margin/Layout" unique_id=1920441806]
+layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 2
 
-[node name="ResetHintsButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+[node name="ResetHintsButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=872554484]
 custom_minimum_size = Vector2(210, 44)
+layout_mode = 2
 text = "Reset tutorial hints"
 
-[node name="ResetButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+[node name="ResetButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=997966791]
 custom_minimum_size = Vector2(190, 44)
+layout_mode = 2
 text = "Reset to defaults"
 
-[node name="ApplyButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+[node name="ApplyButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=1641004820]
 custom_minimum_size = Vector2(170, 44)
+layout_mode = 2
 disabled = true
 text = "Apply changes"
 
-[node name="BackButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+[node name="BackButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=789658418]
 custom_minimum_size = Vector2(150, 44)
+layout_mode = 2
 text = "Back"
