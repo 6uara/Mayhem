@@ -47,12 +47,14 @@ settings del proyecto. Un solo camino de entrada para las tres cosas.
 **Sin abrir el editor** (es lo que corre en CI):
 
 ```
-godot --headless --path . -s tools/make_example_arena.gd
+godot --headless --path . -s tools/make_default_arena.gd
 ```
 
-Construye `data/arenas/example_pit.tres` manejando el mismo `PlacementModel` que
-maneja el dock, lo valida e imprime el conteo de piezas y una ruta A\* del spawn
-del jugador a un spawn enemigo. Si eso corre, el núcleo está sano.
+Construye `data/arenas/default_arena.tres` — *The Pit*, la única arena que
+viene con el juego — manejando el mismo `PlacementModel` que maneja el dock. La
+valida antes de guardar, falla si alguna pieza fue rechazada, e imprime piezas,
+celdas caminables, spawns y enlaces de navegación. Si eso corre, el núcleo está
+sano.
 
 Después, para jugarla:
 

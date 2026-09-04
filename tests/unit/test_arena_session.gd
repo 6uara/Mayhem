@@ -121,9 +121,9 @@ func test_every_size_preset_is_a_grid_the_editor_can_open() -> void:
 		assert_gt(size.z, 0)
 
 
-func test_saving_an_example_arena_writes_the_players_own_copy() -> void:
-	assert_true(ArenaSession.load_arena("res://data/arenas/example_pit.tres"),
-		"the shipped example is loadable")
+func test_saving_a_shipped_arena_writes_the_players_own_copy() -> void:
+	assert_true(ArenaSession.load_arena("res://data/arenas/default_arena.tres"),
+		"the shipped arena is loadable")
 	assert_eq(ArenaSession.save(), OK)
 	assert_true(ArenaSession.current_path.begins_with(ArenaSession.USER_DIR),
 		"SAVE never writes back into res://")

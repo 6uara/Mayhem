@@ -58,7 +58,7 @@ window/vsync/vsync_mode=0
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/MagicaVoxel_Importer_with_Extensions/plugin.cfg", "res://addons/beehave/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/mayhem_tools/plugin.cfg")
+enabled=PackedStringArray("res://addons/beehave/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/mayhem_tools/plugin.cfg")
 
 [input]
 
@@ -201,8 +201,6 @@ pause={
 
 [mayhem_tools]
 
-; Lo escribe el boton Play del dock y lo lee ArenaHost, solo en corridas desde
-; el editor. Vacio = la partida usa su arena default.
 playtest/arena_path=""
 
 [physics]

@@ -28,10 +28,6 @@ Present in the repository for development only, and excluded from release builds
 filter documented in [docs/EXPORT.md](docs/EXPORT.md). Listed for completeness:
 
 - **GUT** (Godot Unit Test) — MIT License, copyright (c) Butch Wesley. Test framework.
-- **MagicaVoxel Importer with Extensions 1.3.0** — MIT License, copyright (c) 2019 JohnCWakley.
-  Imports `.vox` models; an editor importer, so nothing of it runs in a build.
-  <https://github.com/JohnCWakley/godot-magicavoxel-importer> · full text:
-  `addons/MagicaVoxel_Importer_with_Extensions/LICENSE`
 - **Phantom Camera** — MIT License. Installed, currently unused.
 - **Debug Draw** — MIT License. Installed, currently unused.
 

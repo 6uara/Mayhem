@@ -10,20 +10,21 @@ func before_each() -> void:
 	add_child_autofree(_parent)
 
 
-func _example() -> ArenaData:
-	return ArenaIO.load_arena("res://data/arenas/example_pit.tres")
-
-
+## The one arena that ships. It is both the default a run happens in and the
+## example the tools are exercised against, so there is nothing to keep in sync.
 func _default() -> ArenaData:
 	return ArenaIO.load_arena("res://data/arenas/default_arena.tres")
 
 
 func test_the_example_arena_loads() -> void:
 	var runtime: ArenaRuntime = ArenaLoader.load_arena(
-		_example(), _parent, ArenaSession.catalog)
-	assert_not_null(runtime, "the shipped example has to stay playable")
-	assert_gt(runtime.geometry_root.get_child_count(), 100, "one node per placed piece")
-	assert_eq(runtime.spawn_doors_root.get_child_count(), 3, "one door per enemy spawn")
+		_default(), _parent, ArenaSession.catalog)
+	assert_not_null(runtime, "the arena every run happens in has to stay playable")
+	var arena: ArenaData = _default()
+	assert_eq(runtime.geometry_root.get_child_count(), arena.placements.size(),
+		"one node per placed piece")
+	assert_eq(runtime.spawn_doors_root.get_child_count(), arena.enemy_spawns.size(),
+		"one door per enemy spawn")
 
 
 func test_a_broken_arena_never_loads() -> void:
@@ -36,18 +37,20 @@ func test_a_broken_arena_never_loads() -> void:
 
 func test_shared_links_become_navigation_links() -> void:
 	var runtime: ArenaRuntime = ArenaLoader.load_arena(
-		_example(), _parent, ArenaSession.catalog)
+		_default(), _parent, ArenaSession.catalog)
 	var links: Node = runtime.get_node_or_null("NavigationLinks")
 	assert_not_null(links)
-	assert_eq(links.get_child_count(), 2,
-		"the example's jump link, both directions - and neither bounce pad")
+	var shared: int = GridGraph.build(_default(), ArenaSession.catalog).shared_links().size()
+	assert_eq(links.get_child_count(), shared,
+		"the jump links, both directions each - and none of the bounce pads")
+	assert_gt(shared, 0, "the arena has links the horde can use")
 	for child: Node in links.get_children():
 		assert_true(child is NavigationLink3D)
 
 
 func test_the_arena_carries_its_own_venue() -> void:
 	var runtime: ArenaRuntime = ArenaLoader.load_arena(
-		_example(), _parent, ArenaSession.catalog)
+		_default(), _parent, ArenaSession.catalog)
 	assert_not_null(runtime.get_node_or_null("WorldEnvironment"), "sky and ambient")
 	assert_not_null(runtime.get_node_or_null("Sun"), "a light of its own")
 	var kill: Node3D = runtime.get_node_or_null("KillZone") as Node3D
@@ -57,19 +60,19 @@ func test_the_arena_carries_its_own_venue() -> void:
 
 func test_spawns_land_on_the_surface_not_inside_it() -> void:
 	var runtime: ArenaRuntime = ArenaLoader.load_arena(
-		_example(), _parent, ArenaSession.catalog)
+		_default(), _parent, ArenaSession.catalog)
 	var spawn: Vector3 = runtime.get_player_spawn()
 	assert_gt(spawn.y, 0.0, "feet on top of the floor tile, not in it")
 	assert_lt(spawn.y, ArenaSession.catalog.cell_size.y, "and not floating a level up")
 
 
 func test_the_venue_frames_what_was_built_not_the_empty_grid() -> void:
-	var arena: ArenaData = _example()
+	var arena: ArenaData = _default()
 	var runtime: ArenaRuntime = ArenaLoader.load_arena(arena, _parent, ArenaSession.catalog)
 	var grid: AABB = runtime.get_bounds()
 	var content: AABB = runtime.get_content_bounds()
 	assert_lt(content.size.x, grid.size.x,
-		"the example fills half its grid, so the stands hug the half that exists")
+		"The Pit fills part of its grid, so the stands hug the part that exists")
 	assert_true(grid.encloses(content))
 
 
@@ -82,12 +85,17 @@ func test_an_empty_arena_falls_back_to_the_grid() -> void:
 	assert_eq(runtime.get_content_bounds(), runtime.get_bounds())
 
 
+## Venue-agnostic on purpose: which shell a theme names is the arena's business,
+## and the loader's job is only to instance it and hand it the size. Asking for
+## the tiled shell's node names here would break the day an arena picks the bowl.
 func test_the_shell_is_instanced_and_fitted() -> void:
 	var runtime: ArenaRuntime = ArenaLoader.load_arena(
-		_example(), _parent, ArenaSession.catalog)
+		_default(), _parent, ArenaSession.catalog)
 	var shell: Node = runtime.get_node_or_null("Shell")
 	assert_not_null(shell, "the theme's stands come in with the arena")
-	assert_not_null(shell.get_node_or_null("Perimeter"), "and they were told the size")
+	assert_gt(shell.get_child_count(), 0, "and setup() built something to its size")
+	var walls: Node = shell.find_child("Perimeter", true, false)
+	assert_not_null(walls, "including the wall that keeps the player off the edge")
 
 
 func test_the_default_arena_is_playable() -> void:
