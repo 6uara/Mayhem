@@ -7,7 +7,7 @@ seccion 10: sostener 60 FPS con una oleada elite completa (wave_10, 27 enemigos)
 
 `tools/profile_elite_wave.gd` ya hace la medicion real:
 
-    godot --path . -s tools/profile_elite_wave.gd -- 20
+	godot --path . -s tools/profile_elite_wave.gd -- 20
 
 Debe correr **con render real, nunca con `--headless`** (lo explica el propio
 script: headless saltea el renderer y solo mediria el costo de script/fisica,
@@ -127,7 +127,7 @@ considerablemente los fps". Confirmado y medido - no era una impresion.
 de un cuadro que tambien tiene 27 enemigos, particulas y disparos. Se agrego
 `tools/profile_damage_numbers.gd`, que saca todo lo demas y deja una variable.
 
-    godot --path . -s tools/profile_damage_numbers.gd -- [segundos] [hits/s] [off|hurt]
+	godot --path . -s tools/profile_damage_numbers.gd -- [segundos] [hits/s] [off|hurt]
 
 Tambien con render real, nunca headless: casi todo el costo es de renderer.
 

@@ -135,11 +135,11 @@ sobra tiempo — están al final, sección 9.
    SceneTree`, `func _init()`, invocación con `godot --headless -s`).
 2. El tool tiene que:
    - Recibir por argumento (o iterar un directorio convenido) los `.fbx`/`.glb`
-     de `assets/models/enemies/`.
+	 de `assets/models/enemies/`.
    - Instanciar la escena importada, extraer las `Mesh` y guardarlas como
-     `.res` en la ruta destino.
+	 `.res` en la ruta destino.
    - Loguear una línea por asset procesado y salir con código != 0 si algún
-     asset falla, para que sea usable desde CI.
+	 asset falla, para que sea usable desde CI.
 3. Documentar la invocación exacta en
    [11 Asset Pipeline.md](docs/Mayhem/11%20Asset%20Pipeline.md), sección
    *Weapon/enemy model import*, reemplazando la descripción del proceso
@@ -178,17 +178,17 @@ existente sin diferencias funcionales. Suite verde.
 2. Carga `res://data/host/host_catalog.tres`, itera los sets y por cada línea
    emite una fila con:
    - `line_id` — convención: `<set_id>_<índice base 1>`, p. ej.
-     `first_blood_01`. **Este id es el nombre de archivo esperado**, así que
-     tiene que ser estable: si se reordenan las líneas de un set, los archivos
-     ya grabados se desalinean. Anotá esa advertencia en el propio export.
+	 `first_blood_01`. **Este id es el nombre de archivo esperado**, así que
+	 tiene que ser estable: si se reordenan las líneas de un set, los archivos
+	 ya grabados se desalinean. Anotá esa advertencia en el propio export.
    - `set_id` (la ocasión), `tier`, `priority`.
    - El texto de la línea.
    - El nombre de archivo esperado: `<line_id>.ogg`.
 3. Salida en dos formatos, ambos a `docs/host_script/`:
    - `host_script.csv` — para pegar en una planilla y repartir.
    - `host_script.md` — checklist legible, agrupado por ocasión, con una
-     cabecera que explique al que graba: formato (`.ogg`), naming, y que el
-     tier `PUNCHLINE` se entrega con más énfasis que el `STANDARD`.
+	 cabecera que explique al que graba: formato (`.ogg`), naming, y que el
+	 tier `PUNCHLINE` se entrega con más énfasis que el `STANDARD`.
 4. Commitear la salida generada además del tool (el guion es un entregable que
    se manda por fuera del repo).
 
@@ -257,12 +257,12 @@ Dos supuestos del código actual se rompen:
   `stat_key` en `_cache`. Ese cache **se vuelve incorrecto** apenas el valor
   dependa del arma. Dos opciones; tomá la primera:
   - **(elegida)** `get_stat_from(stat_key, base_value)` gana `weapon_id`
-    opcional y **no cachea** cuando viene con scope — es el camino que ya usa
-    `WeaponComponent`, que pasa su propia base desde el `WeaponData`, y que ya
-    hoy no toca `_cache`.
+	opcional y **no cachea** cuando viene con scope — es el camino que ya usa
+	`WeaponComponent`, que pasa su propia base desde el `WeaponData`, y que ya
+	hoy no toca `_cache`.
   - Cachear por clave compuesta `stat_key + weapon_id`. Más rápido, más
-    superficie para bugs de invalidación. No la tomes salvo que perfilado
-    diga que hace falta.
+	superficie para bugs de invalidación. No la tomes salvo que perfilado
+	diga que hace falta.
 - En `WeaponComponent`, cada llamada que hoy resuelve un stat de arma
   (`magazine_size`, `fire_rate`, `reload_time`, `recoil_magnitude`,
   `spread_multiplier`, `ads_transition_time`, `reserve_ammo_max`,
@@ -353,30 +353,30 @@ comprar. Suite verde.
    arranque: **4** (hoy 6). Es tuning, se reajusta en la tanda G.
 2. **Reroll (nuevo):**
    - Campos nuevos en `ShopCatalog`, en el grupo `Offer`:
-     ```gdscript
-     ## Costo del primer reroll de una visita. 0 desactiva el reroll.
-     @export var reroll_base_cost: int = 50
-     ## Cuánto sube el costo por cada reroll dentro de la MISMA visita.
-     @export var reroll_cost_increment: int = 50
-     ```
+	 ```gdscript
+	 ## Costo del primer reroll de una visita. 0 desactiva el reroll.
+	 @export var reroll_base_cost: int = 50
+	 ## Cuánto sube el costo por cada reroll dentro de la MISMA visita.
+	 @export var reroll_cost_increment: int = 50
+	 ```
    - En [shop.gd](scripts/systems/shop.gd):
-     ```gdscript
-     signal reroll_cost_changed(cost: int)
+	 ```gdscript
+	 signal reroll_cost_changed(cost: int)
 
-     var _rerolls_this_visit: int = 0
+	 var _rerolls_this_visit: int = 0
 
-     func get_reroll_cost() -> int
-     func can_reroll() -> bool
-     func reroll() -> EconomyManager.PurchaseResult
-     ```
+	 func get_reroll_cost() -> int
+	 func can_reroll() -> bool
+	 func reroll() -> EconomyManager.PurchaseResult
+	 ```
    - `reroll()` valida fondos vía `EconomyManager.try_spend()` con un id
-     dedicado (p. ej. `&"shop_reroll"`), incrementa `_rerolls_this_visit`,
-     llama a `roll_offers()` y emite `reroll_cost_changed`. Si `try_spend`
-     falla, **no** se rerollea y suena `denied_sound`. La validación va acá,
-     nunca en la UI — es la regla que ya sigue `buy()`.
+	 dedicado (p. ej. `&"shop_reroll"`), incrementa `_rerolls_this_visit`,
+	 llama a `roll_offers()` y emite `reroll_cost_changed`. Si `try_spend`
+	 falla, **no** se rerollea y suena `denied_sound`. La validación va acá,
+	 nunca en la UI — es la regla que ya sigue `buy()`.
    - `_rerolls_this_visit` se resetea al abrir la tienda. Enganchalo donde ya
-     se llama a `roll_offers()` al abrir (buscá `EventBus.shop_opened` /
-     `roll_offers` en [match_director.gd](scripts/systems/match_director.gd)).
+	 se llama a `roll_offers()` al abrir (buscá `EventBus.shop_opened` /
+	 `roll_offers` en [match_director.gd](scripts/systems/match_director.gd)).
 3. **Decisión de diseño que el plan resuelve:** el reroll **respeta**
    `guarantee_one_per_category`. Razón: la garantía existe para que la mala
    suerte no encierre al jugador en una sola vía; un reroll que la ignora
@@ -413,12 +413,12 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 2. **Mecánicas a cubrir** (una por hint): mover, saltar, mantle, slide, dash,
    grapple, ADS, recargar, primera tienda.
    - Movimiento/salto/mantle/slide/dash: vienen de
-     [movement_component.gd](scripts/components/movement_component.gd)
-     (`state_changed`) y de `EventBus.dash_used`.
+	 [movement_component.gd](scripts/components/movement_component.gd)
+	 (`state_changed`) y de `EventBus.dash_used`.
    - Grapple: `EventBus.grapple_started`.
    - ADS y recarga: `EventBus.weapon_reloaded` existe; para ADS puede que
-     tengas que leer `WeaponComponent.ads_progress` o agregar una señal — si
-     agregás señal, va en `EventBus` con el grupo de weapon.
+	 tengas que leer `WeaponComponent.ads_progress` o agregar una señal — si
+	 agregás señal, va en `EventBus` con el grupo de weapon.
    - Primera tienda: `EventBus.shop_opened`.
 3. **Contenido como datos, no como literales.** Creá
    `scripts/resources/tutorial_hint.gd` (`id`, `text`, `duration`, y opcional
@@ -537,10 +537,10 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 4. **Tratamiento visual, con `Tokens`:**
    - Daño normal: color de texto base, tamaño base.
    - Headshot: color de acento + más grande. El headshot ya se diferencia en
-     hitstop y en hitmarker; que también se diferencie acá.
+	 hitstop y en hitmarker; que también se diferencie acá.
    - Animación: sube y hace fade en ~0.6 s con un `Tween`. Un jitter horizontal
-     chico por número evita que golpes simultáneos se apilen en la misma
-     columna ilegible.
+	 chico por número evita que golpes simultáneos se apilen en la misma
+	 columna ilegible.
 5. **Toggle en settings.** Los números de daño son divisivos y el menú de
    settings del proyecto es un argumento de portfolio. Agregá el toggle en
    [settings_manager.gd](scripts/autoload/settings_manager.gd) y
@@ -970,8 +970,8 @@ documentá qué falta y cuánto.
 2. **Todo cambio de balance es un `.tres`, nunca código.** Las palancas:
    - `data/waves/` — conteos por ola, `par_time`.
    - `data/economy/` — `EconomyConfig` (recompensas por arquetipo, bonus sin
-     daño, escalones de bonus de velocidad), `ShopCatalog` (precios,
-     `offers_per_visit`, costos de reroll de B2).
+	 daño, escalones de bonus de velocidad), `ShopCatalog` (precios,
+	 `offers_per_visit`, costos de reroll de B2).
    - `data/upgrades/` — magnitudes y `max_stacks`.
    - `data/enemies/` — vida, velocidad, daño, alcance, cooldown.
    - `data/weapons/` — daño, cadencia, cargador, falloff, patrones de recoil.
@@ -1010,25 +1010,25 @@ documentá qué falta y cuánto.
    y todo lo que el plan haya ido anotando.
 2. **Deudas ya identificadas que hay que cerrar acá:**
    - **Root-causear el test flaky** `test_the_navmesh_at_all`. Un test flaky
-     en CI degrada la confianza en toda la suite.
+	 en CI degrada la confianza en toda la suite.
    - **Cobertura faltante.** El doc de gaps está desactualizado en esto:
-     `GrappleComponent` y `BouncePad` **ya tienen** test commiteado
-     (`tests/unit/test_grapple_component.gd`, `test_bounce_pad.gd`) —
-     corregí el doc. Lo que sigue sin cubrir es **`StatsComponent`**, que es
-     el camino de lectura de *todos* los upgrades del juego y no tiene ni un
-     test; después de B1 es todavía más crítico. También `GameManager` y
-     `AudioPool`.
+	 `GrappleComponent` y `BouncePad` **ya tienen** test commiteado
+	 (`tests/unit/test_grapple_component.gd`, `test_bounce_pad.gd`) —
+	 corregí el doc. Lo que sigue sin cubrir es **`StatsComponent`**, que es
+	 el camino de lectura de *todos* los upgrades del juego y no tiene ni un
+	 test; después de B1 es todavía más crítico. También `GameManager` y
+	 `AudioPool`.
    - **Menú principal placeholder.** `main_menu.gd` sigue siendo `Control` y
-     `Button` planos, sin tema, sin `ChamferStyleBox`, mientras todo el resto
-     de la UI usa el sistema de tokens. Es la **primera pantalla que ve
-     cualquiera que abra el juego** y el primer frame del trailer de G8.
-     Rehacela.
+	 `Button` planos, sin tema, sin `ChamferStyleBox`, mientras todo el resto
+	 de la UI usa el sistema de tokens. Es la **primera pantalla que ve
+	 cualquiera que abra el juego** y el primer frame del trailer de G8.
+	 Rehacela.
    - **Drift de `Tokens.CROSSHAIR_COLORS`** (todavía tiene el verde hazard
-     viejo `#C6FF3D` cuando `Tokens.HAZARD` pasó a naranja lava `#FC3A00`).
+	 viejo `#C6FF3D` cuando `Tokens.HAZARD` pasó a naranja lava `#FC3A00`).
    - **Uniforms de shader hardcodeados** en `.tscn` en vez de derivados del
-     token en runtime — al menos dejá un test que atrape el drift.
+	 token en runtime — al menos dejá un test que atrape el drift.
    - **Housekeeping:** `assets/materials/Lava.tres` superseded,
-     `assets/shaders/vhs.gdshader` stub vacío. Confirmá y borrá.
+	 `assets/shaders/vhs.gdshader` stub vacío. Confirmá y borrá.
 3. Priorizá: crashes → progresión bloqueada → feel roto → cosmético.
 
 **Commits:** varios `fix(...)`.
@@ -1105,16 +1105,16 @@ D1 (arena) ──► D2 (lighting) ─┼──────► G2 (perf) ──�
 E1 (música) ──┐               │                          │
 E2 (voces) ───┼► E3 (mix) ────┤                          ▼
 F1 (enemigos) ────────────────┘                     G4 (balance)
-                                                         │
+														 │
 G1 (export) ──────────────────────────► G3              ▼
-                                                    G5 (playtest 2)
-                                                         │
-                                                         ▼
-                                                    G6 (bugs)
-                                                         │
-                                              ┌──────────┼──────────┐
-                                              ▼          ▼          ▼
-                                          G7 (build) G8 (trailer) G9 (case study)
+													G5 (playtest 2)
+														 │
+														 ▼
+													G6 (bugs)
+														 │
+											  ┌──────────┼──────────┐
+											  ▼          ▼          ▼
+										  G7 (build) G8 (trailer) G9 (case study)
 ```
 
 **Fuera de este grafo:** el viewmodel de primera persona, en

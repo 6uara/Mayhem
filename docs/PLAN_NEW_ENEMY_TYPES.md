@@ -397,7 +397,7 @@ worth**. El que va ganando se vuelve el más cazado.
 
 ```
 prioridad(objetivo) = distancia / (1 + peso * net_worth_normalizado)
-                      → se elige la prioridad más baja
+					  → se elige la prioridad más baja
 ```
 
 Esto resuelve solo el problema de esconderse detrás de los Gladiadores: si no

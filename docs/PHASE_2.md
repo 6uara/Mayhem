@@ -11,12 +11,12 @@ systems that make it judgeable.
   `player.gd` is reduced to look and weapon input, per the parent-child split in section 4.4.
 - **Slide** - momentum-preserving and exploitable, as specced:
   - One-time boost entering a slide from a run. **Not** paid again on bhop re-entry, so
-    crouch-spam is not a free accelerator - only real momentum sources are.
+	crouch-spam is not a free accelerator - only real momentum sources are.
   - Downhill: gravity projected on the floor plane feeds the slide (`slope_accel_scale`).
   - Slide-jump carries full horizontal speed into the air, and **air applies no drag, only
-    steering** - that pair is what makes bhop chaining work and is intended behavior.
+	steering** - that pair is what makes bhop chaining work and is intended behavior.
   - Landing with crouch held re-enters the slide at speed. Steering mid-slide is deliberately
-    weak: a slide is a commitment.
+	weak: a slide is a commitment.
 - **Dash** - Deadlock model, 2 charges, each regenerating independently on its own cooldown
   (`scripts/util/dash_charges.gd`, pure logic, unit tested). Burst follows input direction,
   works in air, and hands off `dash_exit_speed_fraction` of its speed on exit so dash -> slide

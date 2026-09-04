@@ -38,7 +38,6 @@ mesh = SubResource("Mesh_bomber")
 model_scene = ExtResource("10_model")
 model_scale = 0.6
 model_offset = Vector3(-0.031, 0.6, 0)
-model_yaw_degrees = 0.0
 body_color = Color(0.9608, 0.8784, 0, 1)
 collision_height = 1.0
 collision_radius = 0.7
