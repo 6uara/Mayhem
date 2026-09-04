@@ -1,3 +1,4 @@
+@tool
 class_name EconomyConfig
 extends Resource
 ## The single source of economy tuning. All payout numbers live in one .tres.

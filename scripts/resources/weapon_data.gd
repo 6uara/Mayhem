@@ -1,3 +1,4 @@
+@tool
 class_name WeaponData
 extends Resource
 ## Static definition of a weapon. All balance numbers live in the .tres instance.

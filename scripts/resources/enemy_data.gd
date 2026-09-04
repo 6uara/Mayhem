@@ -1,3 +1,4 @@
+@tool
 class_name EnemyData
 extends Resource
 ## Static definition of an enemy archetype. One enemy scene is shared by every

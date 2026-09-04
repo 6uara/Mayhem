@@ -1,3 +1,4 @@
+@tool
 class_name WaveData
 extends Resource
 ## Composition and pacing of a single wave.

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PieceDefinition" format=3 uid="uid://u5b22hx2pirx"]
+
+[ext_resource type="Script" uid="uid://c8u5kordo462g" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+[ext_resource type="PackedScene" path="res://scenes/arena/bounce_pad.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_piece")
+id = &"bounce_pad"
+display_name = "Bounce pad"
+scene = ExtResource("2_scene")
+support = 1
+link_offsets = Array[Vector3i]([Vector3i(0, 2, 0)])
+category = 4
+greybox_color = Color(0.21, 0.88, 0.83, 1)
