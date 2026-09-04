@@ -68,6 +68,51 @@ hacelo con el editor cerrado.
 código de salida). CI corre el comando headless en cada PR — ver
 `.github/workflows/tests.yml`.
 
+## El addon de GUT lleva un parche local
+
+`addons/gut/gut_plugin.gd` tiene una línea cambiada: el chequeo de versión que
+GUT hace contra github al abrir el proyecto está detrás de la setting
+`gut/check_for_updates`, que viene en `false`.
+
+Upstream sale a `api.github.com` una vez por día cuando el proyecto abre, con
+tres segundos de timeout, y cualquier tropiezo —una respuesta lenta, el rate
+limit de la API, un payload inesperado— termina en un `push_error` que Godot
+muestra como un cartel arriba del editor. La versión de GUT que importa acá es
+la que está vendoreada en el repo, así que el chequeo no aporta nada y el cartel
+sí molesta.
+
+**Al actualizar GUT hay que volver a aplicarlo**, o el cartel vuelve. Para
+chequear versiones a mano, poné la setting en `true` y reiniciá el editor.
+
+El cartel que sí conviene dejar es el otro: si la versión de GUT no sirve para la
+versión de Godot que estás corriendo, el plugin abre un diálogo antes de cargar.
+Ese avisa de algo real.
+
+## VS Code
+
+`.vscode/` está gitignoreado porque guarda rutas por máquina, así que estos
+archivos hay que crearlos en cada una. Lo que espera este proyecto:
+
+- **`tasks.json`** — tres tareas que llaman a `tools/run_tests.ps1` (toda la
+  suite, el script abierto, y reimportar antes de correr). `Ctrl+Shift+P` →
+  *Run Test Task*.
+- **`launch.json`** — configuraciones de `godot-tools` para correr el juego, la
+  escena abierta o el editor de arenas con el debugger de Godot enganchado, así
+  los breakpoints de GDScript paran en VS Code.
+- **`settings.json`** — puerto 6005 para el language server, y exclusiones de
+  `.godot/`, `builds/` y `LatestBuild/` para búsqueda y watchers.
+
+Del lado de Godot (Editor Settings, por máquina):
+
+- `text_editor/external/use_external_editor` en true, `exec_path` apuntando a
+  `Code.exe` y `exec_flags` en `{project} --goto "{file}:{line}:{col}"` — con las
+  comillas, o un proyecto en una ruta con espacios abre el archivo equivocado.
+- `network/language_server/remote_port` en 6005, que es lo que dice
+  `settings.json`. El autocompletado sólo funciona con el editor de Godot
+  abierto en el proyecto: el language server lo sirve el editor, no la extensión.
+- `godotTools.editorPath.godot4` va en las settings de usuario de VS Code, no en
+  las del workspace, porque es una ruta absoluta de esa máquina.
+
 ## Cuando la suite se pone roja sola
 
 Síntoma: quince o veinte tests en rojo de golpe, todos de `test_audio_pool` y

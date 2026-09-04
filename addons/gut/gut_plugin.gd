@@ -79,9 +79,16 @@ func _enter_tree():
 	# some number of days since we've downloaded it.
 	_check_for_update.visible = false
 	_bottom_panel.add_child(_check_for_update)
-	var days_since = _check_for_update.update_detector.get_days_since_last_fetch()
-	if(days_since >= 1):
-		_check_for_update.update_detector.check_for_update_with_fetch(true)
+	# MAYHEM patch (see docs/TESTING.md). Upstream checks github for a newer GUT
+	# once a day when the project opens, with a three second timeout, and every
+	# hiccup - a slow answer, a rate limit, an unexpected payload - lands as a
+	# push_error that Godot pops as a toast over the editor. The version that
+	# matters here is the one vendored in this repo, so the check is off unless
+	# `gut/check_for_updates` says otherwise. Re-apply this when GUT is updated.
+	if(bool(ProjectSettings.get_setting("gut/check_for_updates", false))):
+		var days_since = _check_for_update.update_detector.get_days_since_last_fetch()
+		if(days_since >= 1):
+			_check_for_update.update_detector.check_for_update_with_fetch(true)
 
 	_bottom_panel.set_interface(get_editor_interface())
 	_bottom_panel.set_plugin(self)

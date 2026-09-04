@@ -60,6 +60,10 @@ window/vsync/vsync_mode=0
 
 enabled=PackedStringArray("res://addons/beehave/plugin.cfg", "res://addons/gut/plugin.cfg", "res://addons/mayhem_tools/plugin.cfg")
 
+[gut]
+
+check_for_updates=false
+
 [input]
 
 move_forward={

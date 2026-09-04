@@ -28,6 +28,8 @@ Present in the repository for development only, and excluded from release builds
 filter documented in [docs/EXPORT.md](docs/EXPORT.md). Listed for completeness:
 
 - **GUT** (Godot Unit Test) — MIT License, copyright (c) Butch Wesley. Test framework.
+  Carries one local change: its daily version check against github is behind the
+  `gut/check_for_updates` project setting, off by default. See `docs/TESTING.md`.
 - **Phantom Camera** — MIT License. Installed, currently unused.
 - **Debug Draw** — MIT License. Installed, currently unused.
 
