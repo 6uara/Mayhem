@@ -1,6 +1,8 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=30 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/arena/greybox_arena.tscn" id="1_range"]
+[ext_resource type="Script" path="res://scripts/systems/arena_host.gd" id="1_arena_host"]
+[ext_resource type="Resource" path="res://data/arenas/default_arena.tres" id="1_default_arena"]
+[ext_resource type="Resource" path="res://data/arena_pieces/default_catalog.tres" id="1_catalog"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/systems/recoil_visualizer.gd" id="4_visualizer"]
@@ -44,7 +46,11 @@ mesh = SubResource("Mesh_point")
 
 [node name="Game" type="Node3D"]
 
-[node name="GreyboxArena" parent="." instance=ExtResource("1_range")]
+[node name="ArenaHost" type="Node3D" parent="." node_paths=PackedStringArray("player_spawn_controller")]
+script = ExtResource("1_arena_host")
+default_arena = ExtResource("1_default_arena")
+catalog = ExtResource("1_catalog")
+player_spawn_controller = NodePath("../PlayerSpawnController")
 
 [node name="Players" type="Node3D" parent="."]
 
