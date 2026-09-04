@@ -150,9 +150,11 @@ de luz sobre la arena y por donde se ve el cielo.
   decenas de piezas.
 - Colisión: **un solo plano** a la altura del techo. Igual que la pared, la
   colisión es simple aunque lo que se ve no lo sea.
-- Los haces de luz son conos con un shader aditivo, no luces reales: una
-  `SpotLight3D` con sombras por cada haz costaría más que todo el resto del
-  venue junto.
+- **Los haces de luz se construyeron y se sacaron.** En las referencias de
+  estadio funcionan porque ahí la cámara está quieta y mirando desde afuera;
+  desde adentro y en movimiento eran seis columnas claras cruzando el área de
+  juego, compitiendo con lo único que el jugador tiene que estar mirando. Es la
+  clase de cosa que sólo se decide jugándola.
 
 ## 4. El cielo
 
@@ -182,6 +184,13 @@ resultaron invisibles porque el venue los tapaba.
 4. **La pared de energía** con su onda al contacto.
 5. **El techo, el óculo y los haces.**
 6. **Los materiales cyberpunk**: bordes emisivos, marcos de vomitorio, pantallas.
+
+> **El panel del cuenco va congelado y tenue.** El shader del proyecto sabe
+> parpadear y barrer, y en una pieza de arena eso está bien porque se la mira de
+> reojo. Una tribuna de treinta y cinco metros ocupa medio campo de visión todo
+> el tiempo: cualquier cosa que se mueva ahí le roba la atención a la pelea. Las
+> pantallas sí se mueven — están lejos, arriba, y son la única cosa del venue
+> que tiene que llamar la atención.
 
 ## 6. Lo que hay que medir antes de creerlo
 

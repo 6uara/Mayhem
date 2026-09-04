@@ -8,9 +8,14 @@ extends Node3D
 ## decision siempre termina siendo un teletransporte o una muerte que el jugador
 ## no entiende. Cerrando, no hay ningun caso raro que explicar.
 ##
-## Que cierre no quiere decir que tape. El oculo del medio deja ver el cielo y es
-## por donde bajan los haces de luz, asi que el techo da el encierro sin cobrar
-## la noche que se acaba de construir.
+## Que cierre no quiere decir que tape: el oculo del medio deja ver el cielo, asi
+## que el techo da el encierro sin cobrar la noche que se acaba de construir.
+##
+## Hubo seis haces de luz bajando por el oculo hasta el piso. Se sacaron en el
+## playtest: en las referencias de estadio se ven bien porque ahi la camara esta
+## quieta y mirando desde afuera, pero desde adentro y en movimiento eran seis
+## columnas claras cruzando el area de juego, y competian con lo unico que el
+## jugador tiene que estar mirando.
 ##
 ## La colision es UNA caja plana sobre el area de juego. Igual que con la pared:
 ## lo que se ve puede ser todo lo complicado que haga falta, lo que se choca no.
@@ -30,16 +35,6 @@ extends Node3D
 ## Vigas radiales desde el anillo exterior hasta el borde del oculo.
 @export var trusses: int = 24
 @export var truss_width: float = 1.2
-
-@export_group("Haces")
-## Columnas de luz que bajan por el oculo hasta el piso de la arena. Son conos
-## con material aditivo, no luces: una SpotLight3D con sombras por cada haz
-## costaria mas que todo el resto del venue junto.
-@export var beams: int = 6
-@export var beam_top_radius: float = 2.2
-@export var beam_bottom_radius: float = 9.0
-@export var beam_color: Color = Color(0.55, 0.86, 1.0)
-@export_range(0.0, 1.0) var beam_opacity: float = 0.06
 
 @export_group("Material")
 @export var structure_color: Color = Color(0.10, 0.11, 0.15)
@@ -71,7 +66,6 @@ func setup(bounds: AABB, reach: Vector2, rim_height: float) -> void:
 
 	_build_canopy(centre, reach)
 	_build_trusses(centre, reach)
-	_build_beams(centre, bounds)
 	if build_ceiling_collision:
 		_build_ceiling(bounds)
 
@@ -153,39 +147,6 @@ func _build_trusses(centre: Vector3, reach: Vector2) -> void:
 	_built.add_child(mesh)
 
 
-## Los haces que bajan por el oculo. Conos aditivos: se ven contra el cielo
-## oscuro y no cuestan una sola sombra.
-func _build_beams(centre: Vector3, bounds: AABB) -> void:
-	if beams <= 0:
-		return
-	var container := Node3D.new()
-	container.name = "Beams"
-	_built.add_child(container)
-
-	var floor_y: float = bounds.position.y
-	var spread: float = minf(bounds.size.x, bounds.size.z) * 0.3
-	var material := _additive(beam_color, beam_opacity)
-	for index: int in beams:
-		var angle: float = TAU * float(index) / float(beams)
-		var cone := CylinderMesh.new()
-		cone.top_radius = beam_top_radius
-		cone.bottom_radius = beam_bottom_radius
-		cone.height = _height - oculus_drop - floor_y
-		cone.radial_segments = 12
-		cone.rings = 1
-		cone.material = material
-
-		var mesh := MeshInstance3D.new()
-		mesh.name = "Beam%d" % index
-		mesh.mesh = cone
-		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mesh.position = Vector3(
-			centre.x + cos(angle) * spread,
-			floor_y + cone.height * 0.5,
-			centre.z + sin(angle) * spread)
-		container.add_child(mesh)
-
-
 ## La tapa que para al jugador: una sola caja plana sobre el area de juego.
 func _build_ceiling(bounds: AABB) -> void:
 	if _ceiling != null:
@@ -255,19 +216,4 @@ func _solid(color: Color) -> StandardMaterial3D:
 	material.albedo_color = color
 	material.roughness = 0.85
 	material.metallic = 0.2
-	return material
-
-
-func _additive(color: Color, opacity: float) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.disable_receive_shadows = true
-	# Sin escribir profundidad: los haces se cruzan entre si y con la pared de
-	# energia, y cualquiera de los dos escribiendo profundidad recorta al otro.
-	material.no_depth_test = false
-	material.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-	material.albedo_color = Color(color.r, color.g, color.b, opacity)
 	return material

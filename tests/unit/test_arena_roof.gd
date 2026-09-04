@@ -53,25 +53,17 @@ func test_the_oculus_stays_open() -> void:
 	assert_lt(oculus.x, REACH.x, "el oculo es un hueco, no el techo entero")
 
 
-func test_the_beams_reach_the_floor() -> void:
-	# Un haz que se queda a mitad de camino se lee como un cono flotando.
+func test_nothing_hangs_down_into_the_arena() -> void:
+	# Hubo seis haces de luz bajando por el oculo. Se sacaron: desde adentro y en
+	# movimiento eran seis columnas claras cruzando el area de juego, y competian
+	# con lo unico que el jugador tiene que estar mirando.
 	var roof: ArenaRoof = _roof()
-	var beams := roof.get_node("Roof/Beams")
-	assert_eq(beams.get_child_count(), roof.beams)
-	for child: Node in beams.get_children():
+	for child: Node in roof.get_node("Roof").get_children():
 		var mesh := child as MeshInstance3D
-		var cone := mesh.mesh as CylinderMesh
-		var bottom: float = mesh.position.y - cone.height * 0.5
-		assert_almost_eq(bottom, BOUNDS.position.y, 0.01)
-
-
-func test_the_beams_cast_no_shadows() -> void:
-	# Son conos aditivos, no luces: una SpotLight3D con sombras por cada haz
-	# costaria mas que todo el resto del venue junto.
-	var roof: ArenaRoof = _roof()
-	for child: Node in roof.get_node("Roof/Beams").get_children():
-		assert_eq((child as MeshInstance3D).cast_shadow,
-			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+		if mesh == null:
+			continue
+		var lowest: float = (mesh.transform * mesh.mesh.get_aabb()).position.y
+		assert_gt(lowest, RIM, "%s cuelga por debajo del borde de la tribuna" % mesh.name)
 
 
 func test_the_venue_closes_the_gap_between_wall_and_roof() -> void:

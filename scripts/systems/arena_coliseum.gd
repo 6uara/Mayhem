@@ -373,7 +373,9 @@ func _build_screens(centre: Vector3, floor_y: float, axes: Vector2,
 	container.name = "Screens"
 	_built.add_child(container)
 
-	var material: ShaderMaterial = _panel_material(screen_color, 0.9)
+	# Las pantallas si se mueven, y a proposito: son pantallas, estan lejos y
+	# arriba, y son la unica cosa del venue que tiene que llamar la atencion.
+	var material: ShaderMaterial = _panel_material(screen_color, 0.9, 1.0)
 	for index: int in screens:
 		var angle: float = TAU * (float(index) + 0.5) / float(screens)
 		var direction := Vector2(_superellipse(cos(angle)), _superellipse(sin(angle)))
@@ -480,11 +482,22 @@ func _build_perimeter(bounds: AABB) -> void:
 ## Se reusa `arena_glitch_panel.gdshader` en vez de escribir uno: es el acabado
 ## que ya tienen las piezas de arena, y un coliseo con su propio look seria un
 ## segundo lenguaje visual para el mismo juego.
+## El cuenco va congelado y apagado.
+##
+## El panel del proyecto sabe parpadear y barrer, y en una pieza de arena eso
+## esta bueno porque la mira de reojo. Una tribuna de treinta y cinco metros
+## ocupa medio campo de vision todo el tiempo: cualquier cosa que se mueva ahi
+## le roba la atencion a la pelea, que es lo unico que el jugador tiene que
+## seguir. Queda el enrejado, quieto y tenue, como textura y no como efecto.
 func _panel() -> ShaderMaterial:
-	return _panel_material(trim_color, 1.2)
+	return _panel_material(trim_color, 0.3, 0.0)
 
 
-func _panel_material(lines: Color, energy: float) -> ShaderMaterial:
+## `animation` en 0 congela el panel: apaga los pulsos por celda y colapsa el
+## TIME de las dos animaciones, que es lo que deja un patron fijo en vez de un
+## efecto.
+func _panel_material(lines: Color, energy: float,
+		animation: float) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load(PANEL_SHADER)
 	material.set_shader_parameter(&"base_color", concrete_color)
@@ -492,13 +505,16 @@ func _panel_material(lines: Color, energy: float) -> ShaderMaterial:
 	material.set_shader_parameter(&"grid_scale", 0.12)
 	material.set_shader_parameter(&"line_width", 0.03)
 	material.set_shader_parameter(&"emission_energy", energy)
-	material.set_shader_parameter(&"glitch_strength", 0.35)
-	material.set_shader_parameter(&"glitch_speed", 1.2)
-	material.set_shader_parameter(&"scanline_speed", 0.25)
+	material.set_shader_parameter(&"glitch_strength", 0.35 * animation)
+	material.set_shader_parameter(&"glitch_speed", 1.2 * animation)
+	material.set_shader_parameter(&"scanline_speed", 0.25 * animation)
 	material.set_shader_parameter(&"roughness_value", concrete_roughness)
 	material.set_shader_parameter(&"metallic_value", 0.15)
 	material.set_shader_parameter(&"fresnel_power", 3.0)
-	material.set_shader_parameter(&"fresnel_strength", 0.8)
+	# El fresnel tambien enciende, y sobre una superficie curva de este tamano
+	# recorre la tribuna a medida que el jugador gira. Bajo, para que el brillo
+	# no sea otra cosa que se mueve.
+	material.set_shader_parameter(&"fresnel_strength", 0.3 * (0.4 + animation))
 	return material
 
 
