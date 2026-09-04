@@ -39,6 +39,7 @@ TutorialHintManager="*res://scripts/autoload/tutorial_hint_manager.gd"
 BalanceHub="*res://scripts/autoload/balance_hub.gd"
 ArenaSession="*res://scripts/autoload/arena_session.gd"
 DevConsole="*res://scripts/autoload/dev_console.gd"
+FeedbackManager="*res://scripts/autoload/feedback_manager.gd"
 BeehaveGlobalMetrics="*uid://c3ktl6ontsdt7"
 BeehaveGlobalDebugger="*uid://bl3ma400hpvsh"
 

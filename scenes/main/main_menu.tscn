@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4_settings"]
 [ext_resource type="PackedScene" path="res://scenes/ui/leaderboard_panel.tscn" id="5_lb"]
 [ext_resource type="PackedScene" path="res://scenes/ui/arena_select.tscn" id="6_arena_select"]
+[ext_resource type="PackedScene" path="res://scenes/ui/credits_panel.tscn" id="7_credits"]
+[ext_resource type="PackedScene" path="res://scenes/ui/feedback_panel.tscn" id="8_feedback"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
 resource_local_to_scene = false
@@ -118,6 +120,16 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Options"
 
+[node name="FeedbackButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=2136941499]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Send feedback"
+
+[node name="CreditsButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=1641186354]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Credits"
+
 [node name="QuitButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=319155051]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -146,6 +158,16 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Leaderboard" parent="." unique_id=1645247612 instance=ExtResource("5_lb")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Credits" parent="." unique_id=1758761541 instance=ExtResource("7_credits")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Feedback" parent="." unique_id=53039971 instance=ExtResource("8_feedback")]
 layout_mode = 1
 grow_horizontal = 2
 grow_vertical = 2

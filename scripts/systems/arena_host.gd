@@ -33,6 +33,9 @@ func _ready() -> void:
 	runtime = ArenaLoader.load_arena(arena, self, piece_catalog)
 	if runtime == null:
 		return
+	# Para que un reporte de feedback diga en que arena paso sin preguntarselo al
+	# jugador, que es la clase de dato que escrito a mano no llega nunca.
+	FeedbackManager.set_arena_name(arena.arena_name)
 	if player_spawn_controller != null:
 		player_spawn_controller.spawn_point = runtime.get_player_spawn()
 

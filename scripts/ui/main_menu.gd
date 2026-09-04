@@ -12,12 +12,16 @@ extends Control
 @onready var _create_arena_button: Button = $Root/Panel/Margin/Layout/CreateArenaButton
 @onready var _leaderboard_button: Button = $Root/Panel/Margin/Layout/LeaderboardButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
+@onready var _feedback_button: Button = $Root/Panel/Margin/Layout/FeedbackButton
+@onready var _credits_button: Button = $Root/Panel/Margin/Layout/CreditsButton
 @onready var _quit_button: Button = $Root/Panel/Margin/Layout/QuitButton
 @onready var _best: Label = $Root/Panel/Margin/Layout/BestRow/Value
 @onready var _footer: Label = $Root/Panel/Margin/Layout/Footer
 @onready var _settings: SettingsScreen = $Settings
 @onready var _leaderboard: LeaderboardPanel = $Leaderboard
 @onready var _arena_select: ArenaSelect = $ArenaSelect
+@onready var _credits: CreditsPanel = $Credits
+@onready var _feedback: FeedbackPanel = $Feedback
 
 
 func _ready() -> void:
@@ -26,10 +30,14 @@ func _ready() -> void:
 	_create_arena_button.pressed.connect(_on_create_arena_pressed)
 	_leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
+	_feedback_button.pressed.connect(_on_feedback_pressed)
+	_credits_button.pressed.connect(_on_credits_pressed)
 	_quit_button.pressed.connect(get_tree().quit)
 	_settings.closed.connect(_on_panel_closed)
 	_leaderboard.closed.connect(_on_panel_closed)
 	_arena_select.closed.connect(_on_panel_closed)
+	_credits.closed.connect(_on_panel_closed)
+	_feedback.closed.connect(_on_panel_closed)
 	_arena_select.arena_chosen.connect(_on_arena_chosen)
 	_refresh_best()
 	_set_footer()
@@ -84,6 +92,18 @@ func _on_leaderboard_pressed() -> void:
 func _on_options_pressed() -> void:
 	_root.visible = false
 	_settings.open()
+
+
+## Los creditos no son cortesia: las licencias MIT y OFL que usa el juego exigen
+## atribucion, y la pagina de Steam la pide. Este es el lugar donde se cumple.
+func _on_credits_pressed() -> void:
+	_root.visible = false
+	_credits.open()
+
+
+func _on_feedback_pressed() -> void:
+	_root.visible = false
+	_feedback.open()
 
 
 func _on_panel_closed() -> void:

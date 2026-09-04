@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FeedbackConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/feedback_config.gd" id="1_config"]
+
+; Sin URL todavia: el boton "Open form" no aparece hasta que haya un formulario
+; de verdad al que mandar a la gente. Poner la URL aca es todo lo que hace falta
+; para encenderlo, sin tocar codigo ni volver a exportar el ejecutable.
+[resource]
+script = ExtResource("1_config")
+form_url = ""
+categories = Array[String](["Bug", "Balance", "Idea", "Other"])

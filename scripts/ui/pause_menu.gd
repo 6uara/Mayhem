@@ -11,9 +11,11 @@ extends CanvasLayer
 @onready var _root: Control = $Root
 @onready var _resume_button: Button = $Root/Panel/Margin/Layout/ResumeButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
+@onready var _feedback_button: Button = $Root/Panel/Margin/Layout/FeedbackButton
 @onready var _editor_button: Button = $Root/Panel/Margin/Layout/EditorButton
 @onready var _menu_button: Button = $Root/Panel/Margin/Layout/MenuButton
 @onready var _settings: SettingsScreen = $Settings
+@onready var _feedback: FeedbackPanel = $Feedback
 
 
 func _ready() -> void:
@@ -22,9 +24,11 @@ func _ready() -> void:
 	_root.visible = false
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
+	_feedback_button.pressed.connect(_on_feedback_pressed)
 	_editor_button.pressed.connect(_on_editor_pressed)
 	_menu_button.pressed.connect(_on_menu_pressed)
 	_settings.closed.connect(_on_settings_closed)
+	_feedback.closed.connect(_on_settings_closed)
 	EventBus.game_paused.connect(_on_game_paused)
 
 
@@ -41,6 +45,8 @@ func _on_game_paused(paused: bool) -> void:
 	# leave the whole stack closed, or the next pause reopens onto a stale screen.
 	if _settings.visible:
 		_settings.close()
+	if _feedback.visible:
+		_feedback.close()
 
 
 func _on_resume_pressed() -> void:
@@ -50,6 +56,13 @@ func _on_resume_pressed() -> void:
 func _on_options_pressed() -> void:
 	_root.visible = false
 	_settings.open()
+
+
+## El momento en que algo molesta es durante la run, no despues: un reporte que
+## hay que acordarse de escribir al volver al menu no se escribe nunca.
+func _on_feedback_pressed() -> void:
+	_root.visible = false
+	_feedback.open()
 
 
 func _on_settings_closed() -> void:

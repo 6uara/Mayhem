@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/pause_menu.gd" id="1_pause"]
 [ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
 [ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="3_theme"]
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4_settings"]
+[ext_resource type="PackedScene" path="res://scenes/ui/feedback_panel.tscn" id="5_feedback"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
 script = ExtResource("2_chamfer")
@@ -71,6 +72,10 @@ text = "Resume"
 custom_minimum_size = Vector2(0, 48)
 text = "Options"
 
+[node name="FeedbackButton" type="Button" parent="Root/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 44)
+text = "Send feedback"
+
 [node name="EditorButton" type="Button" parent="Root/Panel/Margin/Layout"]
 custom_minimum_size = Vector2(0, 44)
 text = "Back to the editor"
@@ -80,3 +85,5 @@ custom_minimum_size = Vector2(0, 48)
 text = "Quit to menu"
 
 [node name="Settings" parent="." instance=ExtResource("4_settings")]
+
+[node name="Feedback" parent="." instance=ExtResource("5_feedback")]
