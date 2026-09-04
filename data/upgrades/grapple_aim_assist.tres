@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3 uid="uid://ckc3jdpd3bwb"]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"grapple_aim_assist"
+operation = 1
+value = 1.6
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"grapple_aim_assist"
+display_name = "Magnet Hook"
+description = "The grapple forgives a wider miss."
+cost = 180
+category = 0
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
+max_stacks = 2

@@ -6,6 +6,11 @@ extends StaticBody3D
 ## and the crosshair changes shape at the same moment, so the confirmation exists
 ## both in the world and on the HUD. Two places, one instant.
 
+## El grupo por el que la asistencia de apuntado del grapple encuentra anclas
+## que el rayo no toco. Una sola definicion: el .tscn declara el grupo, esto lo
+## nombra, y GrappleComponent lo lee de aca.
+const GROUP: StringName = &"grapple_anchor"
+
 @export var telegraph: TelegraphComponent
 
 var _player: Player
@@ -13,7 +18,7 @@ var _was_available: bool = false
 
 
 func _ready() -> void:
-	add_to_group(&"grapple_anchor")
+	add_to_group(GROUP)
 	if telegraph != null:
 		telegraph.state = TelegraphComponent.State.IDLE
 

@@ -148,3 +148,125 @@ func test_releasing_on_the_ground_charges_the_cooldown_immediately() -> void:
 	grapple.release()
 
 	assert_gt(grapple._cooldown_left, 0.0, "sin vuelo no hay encadenado que premiar")
+
+
+# ------------------------------------------------- asistencia de apuntado
+
+## Anclas de verdad, en el arbol y en la capa GRAPPLE_ANCHOR: la busqueda del
+## cono recorre el grupo y despues consulta el servidor de fisica por linea de
+## vista, asi que un doble no alcanza para probarla.
+## El collider va chico a proposito: lo que se prueba es el cono, y un ancla
+## gorda la engancha el raycast directo antes de que el cono llegue a opinar.
+func _make_anchor(at: Vector3) -> StaticBody3D:
+	var anchor := StaticBody3D.new()
+	anchor.collision_layer = PhysicsLayers.GRAPPLE_ANCHOR
+	anchor.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 0.1
+	shape.shape = sphere
+	anchor.add_child(shape)
+	add_child_autofree(anchor)
+	anchor.global_position = at
+	anchor.add_to_group(GrappleAnchor.GROUP)
+	return anchor
+
+
+## Una pared solida entre el jugador y lo que quiera enganchar.
+func _make_wall(at: Vector3, size: Vector3) -> StaticBody3D:
+	var wall := StaticBody3D.new()
+	wall.collision_layer = PhysicsLayers.WORLD
+	wall.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	wall.add_child(shape)
+	add_child_autofree(wall)
+	wall.global_position = at
+	return wall
+
+
+## `aim_node` mirando a -Z desde el origen, que es la orientacion que da un
+## `Node3D` recien creado sin rotar.
+func _aiming_grapple() -> GrappleComponent:
+	var aim := Node3D.new()
+	add_child_autofree(aim)
+	aim.global_position = Vector3.ZERO
+	_grapple.aim_node = aim
+	_body.global_position = Vector3.ZERO
+	return _grapple
+
+
+## El pedido: la reticula apenas afuera del ancla igual engancha.
+func test_an_anchor_just_off_the_reticle_is_still_grabbed() -> void:
+	var grapple: GrappleComponent = _aiming_grapple()
+	# ~2.9 grados de desvio a 20m, dentro de los 4 de base y fuera del collider.
+	_make_anchor(Vector3(1.0, 0.0, -20.0))
+	await wait_physics_frames(2)
+
+	assert_false(grapple._find_anchor().is_empty(),
+		"un desvio de tres grados tiene que perdonarse")
+
+
+## Y la otra mitad: la asistencia corrige el pixel, no apunta por el jugador.
+func test_an_anchor_well_outside_the_cone_is_not_grabbed() -> void:
+	var grapple: GrappleComponent = _aiming_grapple()
+	# ~26 grados: mirando claramente para otro lado.
+	_make_anchor(Vector3(10.0, 0.0, -20.0))
+	await wait_physics_frames(2)
+
+	assert_true(grapple._find_anchor().is_empty(),
+		"la asistencia no puede apuntar por el jugador")
+
+
+## La garantia que daba el raycast unico y no se puede perder.
+func test_the_cone_does_not_reach_through_a_wall() -> void:
+	var grapple: GrappleComponent = _aiming_grapple()
+	_make_anchor(Vector3(1.0, 0.0, -20.0))
+	_make_wall(Vector3(0.0, 0.0, -10.0), Vector3(20.0, 20.0, 1.0))
+	await wait_physics_frames(2)
+
+	assert_true(grapple._find_anchor().is_empty(),
+		"no se engancha a traves de una pared, apunte como apunte")
+
+
+## Con dos en el cono gana la mejor apuntada, no la mas cercana: la pregunta que
+## la asistencia contesta es "a cual estabas apuntando".
+func test_the_best_aimed_anchor_wins_over_the_closest_one() -> void:
+	var grapple: GrappleComponent = _aiming_grapple()
+	# 0.57 grados a veinte metros contra 3.3 a seis: las dos entran en el cono.
+	var aligned: StaticBody3D = _make_anchor(Vector3(0.2, 0.0, -20.0))
+	_make_anchor(Vector3(0.35, 0.0, -6.0))
+	await wait_physics_frames(2)
+
+	var hit: Dictionary = grapple._find_anchor()
+	assert_eq(hit.get("collider"), aligned,
+		"gana el menor angulo, no la distancia")
+
+
+## Fuera de rango no hay cono que valga.
+func test_the_cone_respects_max_range() -> void:
+	var grapple: GrappleComponent = _aiming_grapple()
+	grapple.max_range = 10.0
+	_make_anchor(Vector3(0.2, 0.0, -20.0))
+	await wait_physics_frames(2)
+
+	assert_true(grapple._find_anchor().is_empty(),
+		"el cono no puede estirar el alcance")
+
+
+## Sin StatsComponent - los stubs de los tests, y cualquier wiring a medias - el
+## componente tiene que caer en su propio export y no en cero.
+func test_aim_assist_falls_back_to_the_export_without_stats() -> void:
+	_grapple.stats = null
+	_grapple.aim_assist_degrees = 7.0
+	assert_almost_eq(_grapple.get_aim_assist_degrees(), 7.0, 0.001)
+
+
+## Las mejoras se apilan, el cono no crece para siempre.
+func test_aim_assist_is_capped() -> void:
+	_grapple.stats = null
+	_grapple.aim_assist_degrees = 999.0
+	assert_almost_eq(_grapple.get_aim_assist_degrees(),
+		GrappleComponent.MAX_AIM_ASSIST_DEGREES, 0.001)
