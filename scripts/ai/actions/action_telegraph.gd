@@ -10,6 +10,9 @@ extends ActionLeaf
 ## Scales the archetype's wind-up. Heavier follow-ups should telegraph longer.
 @export var windup_multiplier: float = 1.0
 
+## Trim on the wind-up cue. See the note where it is played.
+const WINDUP_VOLUME_DB: float = -6.0
+
 var _elapsed: float = 0.0
 var _sound_played: bool = false
 
@@ -34,8 +37,14 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		_sound_played = true
 		# TELEGRAPH y no el default del bus: la preparacion es la mitad sonora del
 		# aviso, y un aviso que se cae por saturacion es dano sin telegrafia.
+		#
+		# Los -6 dB no son gusto: los windup del juego miden -8 dBFS RMS, diez
+		# por encima de los sonidos de ataque y dieciseis por encima de los
+		# disparos. Con eso puesto el aviso sigue siendo el sonido mas fuerte
+		# que hace un enemigo, que es lo que tiene que ser, sin taparle el resto
+		# de la pelea al jugador.
 		AudioPool.play_3d(enemy.data.windup_sound, enemy.global_position,
-			AudioPool.BUS_ENEMIES, 0.0, 1.0, AudioPool.Priority.TELEGRAPH)
+			AudioPool.BUS_ENEMIES, WINDUP_VOLUME_DB, 1.0, AudioPool.Priority.TELEGRAPH)
 
 	var duration: float = maxf(enemy.data.attack_windup * windup_multiplier, 0.05)
 	_elapsed += get_physics_process_delta_time()

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MusicPlaylist" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/music_playlist.gd" id="1_playlist"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/Anthem_of_the_Week.mp3" id="2_menu"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/Dont_Forget_About_Us.mp3" id="3_over"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/A_New_Monstrosity.mp3" id="4_run"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/Johnny_Five.mp3" id="5_run"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/Through_the_Paces.mp3" id="6_run"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/Zebra_Freak.mp3" id="7_run"]
+
+; El reparto es una decision de gusto, no tecnica: mover un track de una lista a
+; otra es editar este archivo y nada mas. El menu lleva uno solo a proposito
+; -es una pantalla, no un lugar donde se pasa el rato- y la run lleva cuatro,
+; que se barajan sin repetir la anterior.
+[resource]
+script = ExtResource("1_playlist")
+menu_tracks = Array[AudioStream]([ExtResource("2_menu")])
+run_tracks = Array[AudioStream]([ExtResource("4_run"), ExtResource("5_run"), ExtResource("6_run"), ExtResource("7_run")])
+game_over_tracks = Array[AudioStream]([ExtResource("3_over")])
+bed_volume_db = -14.0
+crossfade_time = 1.5

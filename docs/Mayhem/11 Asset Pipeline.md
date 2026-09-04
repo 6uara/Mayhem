@@ -14,7 +14,7 @@ tags: [mayhem, assets, tooling]
 - `generate_placeholder_sfx.py` — synthesizes every placeholder sound
   (stdlib-only Python, fixed RNG seed, deterministic re-runs). See below.
 - `generate_placeholder_music.py` — same approach, three looping music beds
-  (`assets/audio/music/menu.wav` / `combat.wav` / `shop.wav`) for
+  (`assets/audio/music/*.mp3`, repartidos por fase en `data/audio/music_playlist.tres`) for
   `MusicManager` (see [[02 Autoloads#MusicManager]]).
 - `configure_audio_mix.gd` — writes `default_bus_layout.tres`: a first-pass
   per-bus gain hierarchy plus a Master limiter. Not a real mix — see

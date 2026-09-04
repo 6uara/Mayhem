@@ -240,3 +240,19 @@ func test_setting_bus_volume_while_ducked_does_not_undo_the_duck() -> void:
 		linear_to_db(0.5) + AudioPool.DUCK_AMOUNT_DB, 0.5)
 
 	AudioPool.pop_duck()
+
+
+func test_enemies_are_not_the_loudest_thing_in_the_mix() -> void:
+	# The enemy SFX are mastered hotter than the weapons (-18.6 dBFS RMS against
+	# -24.1), so at equal bus gain a rusher swinging drowns out the gun you are
+	# holding. The layout compensates; this pins that it stays compensated.
+	var enemies: float = AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Enemies"))
+	var weapons: float = AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Weapons"))
+	assert_lt(enemies, weapons, "the horde sits under the player's own gun")
+	assert_lt(enemies, 0.0, "and under the SFX bus it feeds")
+
+
+func test_music_sits_under_the_sound_effects() -> void:
+	var music: float = AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music"))
+	var sfx: float = AudioServer.get_bus_volume_db(AudioServer.get_bus_index("SFX"))
+	assert_lt(music, sfx, "the bed never competes with what the player has to hear")

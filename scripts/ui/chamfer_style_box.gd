@@ -1,3 +1,4 @@
+@tool
 class_name ChamferStyleBox
 extends StyleBox
 ## The panel look from the handoff: flat fill, thin border, one 45-degree cut on the
@@ -6,6 +7,12 @@ extends StyleBox
 ## Godot's StyleBoxFlat only offers rounded corners, and the style guide bans radius
 ## outright ("cut corners, never rounded"), so the panel is drawn by hand. It is still
 ## a StyleBox, so every Control themes with it normally.
+##
+## `@tool` because the editor draws styleboxes too - the theme preview, the
+## inspector, every panel in an open scene. Without it the script does not run
+## there, Godot falls back to the bare StyleBox, and every draw logs "Required
+## virtual method StyleBox::_draw must be overridden" while the panels render
+## as nothing. Only `_draw` runs here, so there is no editor side effect to fear.
 
 @export var fill_color: Color = Color("#14161C")
 @export var fill_alpha: float = 0.82
