@@ -43,7 +43,7 @@ func _ready() -> void:
 
 # Arenas
 
-func new_arena(grid_size: Vector3i = Vector3i(24, 8, 24)) -> ArenaData:
+func new_arena(grid_size: Vector3i = ArenaData.FIXED_SIZE) -> ArenaData:
 	var fresh := ArenaData.new()
 	fresh.arena_name = "New Arena"
 	fresh.grid_size = grid_size

@@ -72,3 +72,23 @@ func test_the_theme_survives_a_round_trip() -> void:
 	var arena: ArenaData = _arena()
 	arena.theme_id = &"stadium"
 	assert_eq(ArenaData.from_json(arena.to_json()).theme_id, &"stadium")
+
+
+## Las arenas guardadas cuando habia tres tamanos se abren en el unico que hay.
+## La grilla solo crece, asi que lo construido sigue exactamente donde estaba.
+func test_a_version_3_file_grows_into_the_fixed_size() -> void:
+	var legacy: Dictionary = {
+		"format_version": 3,
+		"arena_name": "Small One",
+		"grid_size": [16, 6, 16],
+		"has_player_spawn": true,
+		"player_spawn": [1, 0, 1],
+		"theme_id": "coliseum",
+		"placements": [{"piece_id": "floor_1x1", "cell": [15, 0, 15], "rotation": 0}],
+		"enemy_spawns": [],
+	}
+	var arena: ArenaData = ArenaData.from_dict(legacy)
+	assert_eq(arena.grid_size, ArenaData.FIXED_SIZE, "una sola grilla posible")
+	assert_eq(arena.placements[0].cell, Vector3i(15, 0, 15),
+		"crecer no mueve nada de lugar")
+	assert_eq(arena.theme_id, &"coliseum", "la migracion no toca lo demas")

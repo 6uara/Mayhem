@@ -233,7 +233,9 @@ func _build_header() -> void:
 	for preset_name: String in SIZE_PRESETS.keys():
 		_size_button.add_item(preset_name, index)
 		index += 1
-	_size_button.select(1)
+	_size_button.select(0)
+	# Un solo tamano: el control se queda para decir cual es, no para elegirlo.
+	_size_button.disabled = SIZE_PRESETS.size() <= 1
 	_size_button.item_selected.connect(_on_size_selected)
 	_size_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_row.add_child(_size_button)

@@ -207,6 +207,9 @@ func _build_top_bar() -> void:
 	for preset_name: String in ArenaData.SIZE_PRESETS.keys():
 		_size_button.add_item(preset_name, size_index)
 		size_index += 1
+	_size_button.select(0)
+	# Un solo tamano: el control se queda para decir cual es, no para elegirlo.
+	_size_button.disabled = ArenaData.SIZE_PRESETS.size() <= 1
 	_size_button.item_selected.connect(func(index: int) -> void:
 		size_changed.emit(ArenaData.SIZE_PRESETS.values()[index]))
 	row.add_child(_size_button)

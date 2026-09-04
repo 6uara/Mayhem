@@ -5,20 +5,25 @@ extends Resource
 ## anything about the other beyond this shape.
 
 ## Bumped whenever the on-disk shape changes; `_migrate` carries older files up.
-const CURRENT_FORMAT_VERSION: int = 3
+const CURRENT_FORMAT_VERSION: int = 4
 
-## The grid sizes an arena can have. Three presets rather than a free size: a
-## number nobody can picture buys nothing, and every size here is one the
-## validator's "too small" warning and the camera framing were tuned against.
+## El unico tamano que tiene una arena. Era una eleccion de tres presets y dejo
+## de serlo: una arena chica es una arena donde el grapple no llega a ningun
+## lado y donde la horda te acorrala en la wave cuatro, y el juego se balanceo
+## contra la grande. Un tamano fijo tambien es una cosa menos que validar, que
+## enmarcar y que explicarle a alguien que abre el editor por primera vez.
+const FIXED_SIZE: Vector3i = Vector3i(32, 8, 32)
+
+## Sigue siendo un diccionario, con una sola entrada, porque las dos interfaces
+## del editor lo listan y porque el dia que vuelva a haber mas de un tamano el
+## unico cambio es esta constante.
 const SIZE_PRESETS: Dictionary = {
-	"Small  16x6x16": Vector3i(16, 6, 16),
-	"Medium  24x8x24": Vector3i(24, 8, 24),
-	"Large  32x8x32": Vector3i(32, 8, 32),
+	"Large  32x8x32": FIXED_SIZE,
 }
 
 @export var format_version: int = CURRENT_FORMAT_VERSION
 @export var arena_name: String = ""
-@export var grid_size: Vector3i = Vector3i(32, 8, 32)
+@export var grid_size: Vector3i = FIXED_SIZE
 @export var placements: Array[PlacementEntry] = []
 @export var player_spawn: Vector3i = Vector3i.ZERO
 @export var has_player_spawn: bool = false
@@ -122,5 +127,11 @@ static func _migrate(data: Dictionary) -> Dictionary:
 		# v2 predates themes: everything made then was surrounded by nothing.
 		result["theme_id"] = result.get("theme_id", "default")
 		version = 3
+	if version < 4:
+		# v3 podia elegir entre tres tamanos. Las arenas guardadas entonces se
+		# abren en el unico que hay ahora: la grilla solo puede crecer, asi que
+		# nada queda fuera de bounds y lo que se construyo sigue donde estaba.
+		result["grid_size"] = [FIXED_SIZE.x, FIXED_SIZE.y, FIXED_SIZE.z]
+		version = 4
 	result["format_version"] = version
 	return result

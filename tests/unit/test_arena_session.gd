@@ -104,7 +104,7 @@ func test_shrinking_is_refused_while_a_piece_would_be_left_outside() -> void:
 	model.place(&"floor_1x1", Vector3i(20, 0, 20))
 	assert_false(ArenaSession.can_resize(Vector3i(16, 6, 16)))
 	assert_false(ArenaSession.resize(Vector3i(16, 6, 16)))
-	assert_eq(ArenaSession.arena.grid_size, Vector3i(24, 8, 24), "nothing changed")
+	assert_eq(ArenaSession.arena.grid_size, ArenaData.FIXED_SIZE, "nothing changed")
 
 
 func test_shrinking_is_allowed_once_the_outliers_are_gone() -> void:
@@ -112,6 +112,12 @@ func test_shrinking_is_allowed_once_the_outliers_are_gone() -> void:
 	model.place(&"floor_1x1", Vector3i(20, 0, 20))
 	model.erase_at(Vector3i(20, 0, 20))
 	assert_true(ArenaSession.resize(Vector3i(16, 6, 16)))
+
+
+## El tamano dejo de ser una eleccion: una arena nueva nace en el unico que hay.
+func test_a_new_arena_is_born_at_the_fixed_size() -> void:
+	ArenaSession.new_arena()
+	assert_eq(ArenaSession.arena.grid_size, ArenaData.FIXED_SIZE)
 
 
 func test_every_size_preset_is_a_grid_the_editor_can_open() -> void:

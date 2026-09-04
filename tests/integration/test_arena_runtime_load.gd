@@ -66,14 +66,33 @@ func test_spawns_land_on_the_surface_not_inside_it() -> void:
 	assert_lt(spawn.y, ArenaSession.catalog.cell_size.y, "and not floating a level up")
 
 
+## Una arena que ocupa un rincon de su grilla: lo que las gradas tienen que
+## enmarcar es lo construido y no el vacio de alrededor. La default dejo de
+## servir de ejemplo el dia que paso a llenar la grilla entera.
 func test_the_venue_frames_what_was_built_not_the_empty_grid() -> void:
-	var arena: ArenaData = _default()
-	var runtime: ArenaRuntime = ArenaLoader.load_arena(arena, _parent, ArenaSession.catalog)
+	var arena := ArenaData.new()
+	var model := PlacementModel.new(arena, ArenaSession.catalog)
+	for x: int in 4:
+		for z: int in 4:
+			model.place(&"floor_1x1", Vector3i(x, 0, z))
+	var runtime := ArenaRuntime.new()
+	autofree(runtime)
+	runtime.setup(arena, ArenaSession.catalog)
 	var grid: AABB = runtime.get_bounds()
 	var content: AABB = runtime.get_content_bounds()
-	assert_lt(content.size.x, grid.size.x,
-		"The Pit fills part of its grid, so the stands hug the part that exists")
+	assert_lt(content.size.x, grid.size.x, "las gradas abrazan lo que existe")
 	assert_true(grid.encloses(content))
+
+
+## Y la contraparte, que es el contrato nuevo de la arena que ships: el piso
+## llega hasta el borde de la grilla, asi que no hay margen muerto que enmarcar.
+func test_the_shipped_arena_fills_its_whole_grid() -> void:
+	var runtime: ArenaRuntime = ArenaLoader.load_arena(
+		_default(), _parent, ArenaSession.catalog)
+	var grid: AABB = runtime.get_bounds()
+	var content: AABB = runtime.get_content_bounds()
+	assert_almost_eq(content.size.x, grid.size.x, 0.01, "el piso llena la grilla")
+	assert_almost_eq(content.size.z, grid.size.z, 0.01)
 
 
 func test_an_empty_arena_falls_back_to_the_grid() -> void:
@@ -148,7 +167,7 @@ func test_ground_pieces_are_still_built_from_the_cell_floor() -> void:
 	var cell_height: float = ArenaSession.catalog.cell_size.y
 	for child: Node in runtime.geometry_root.get_children():
 		var node := child as Node3D
-		if node == null or not node.name.begins_with("floor_1x1"):
+		if node == null or not node.name.begins_with("floor_"):
 			continue
 		assert_almost_eq(fmod(node.position.y, cell_height), 0.0, 0.01,
 			"floor tiles keep sitting on the cell plane")
