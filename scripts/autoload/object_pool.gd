@@ -112,7 +112,13 @@ func _get_container(scene: PackedScene) -> Node:
 
 func _activate(instance: Node) -> void:
 	instance.remove_from_group(RELEASED_GROUP)
-	instance.process_mode = Node.PROCESS_MODE_INHERIT
+	# No PROCESS_MODE_INHERIT: el contenedor cuelga del pool, que es
+	# PROCESS_MODE_ALWAYS para poder pooler durante una pausa. Heredar eso dejaba a
+	# cada enemigo, proyectil y frasco activo corriendo igual con el arbol
+	# pausado - el jugador se congelaba y todo lo demas lo seguia matando.
+	# PAUSABLE es el modo normal de un nodo de juego: corre salvo que el arbol
+	# este pausado, sin importar que el ancestro este marcado ALWAYS.
+	instance.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if instance is Node3D:
 		(instance as Node3D).visible = true
 	if instance.has_method(&"_on_acquired"):
