@@ -9,6 +9,7 @@ extends Control
 
 @onready var _root: Control = $Root
 @onready var _play_button: Button = $Root/Panel/Margin/Layout/PlayButton
+@onready var _create_arena_button: Button = $Root/Panel/Margin/Layout/CreateArenaButton
 @onready var _leaderboard_button: Button = $Root/Panel/Margin/Layout/LeaderboardButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
 @onready var _quit_button: Button = $Root/Panel/Margin/Layout/QuitButton
@@ -16,16 +17,20 @@ extends Control
 @onready var _footer: Label = $Root/Panel/Margin/Layout/Footer
 @onready var _settings: SettingsScreen = $Settings
 @onready var _leaderboard: LeaderboardPanel = $Leaderboard
+@onready var _arena_select: ArenaSelect = $ArenaSelect
 
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_play_button.pressed.connect(_on_play_pressed)
+	_create_arena_button.pressed.connect(_on_create_arena_pressed)
 	_leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
 	_quit_button.pressed.connect(get_tree().quit)
 	_settings.closed.connect(_on_panel_closed)
 	_leaderboard.closed.connect(_on_panel_closed)
+	_arena_select.closed.connect(_on_panel_closed)
+	_arena_select.arena_chosen.connect(_on_arena_chosen)
 	_refresh_best()
 	_set_footer()
 	_play_button.grab_focus()
@@ -49,8 +54,26 @@ func _set_footer() -> void:
 	_footer.text = "v%s  -  (c) 2026 Juan Guaragnini.  All rights reserved." % version
 
 
+## With one arena installed, Play starts a run. With more than one - the game's
+## own plus anything the player built - it asks first, because picking the floor
+## is part of choosing the run.
 func _on_play_pressed() -> void:
+	if ArenaSession.list_playable().size() <= 1:
+		GameManager.restart_run()
+		return
+	_root.visible = false
+	_arena_select.open()
+
+
+func _on_arena_chosen(path: String) -> void:
+	ArenaSession.set_run_arena(path)
 	GameManager.restart_run()
+
+
+## The arena editor is a mode, not a settings panel: it takes the whole screen
+## and its own scene, so it goes through GameManager like a run does.
+func _on_create_arena_pressed() -> void:
+	ArenaSession.open_editor()
 
 
 func _on_leaderboard_pressed() -> void:

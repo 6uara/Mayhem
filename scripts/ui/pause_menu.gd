@@ -11,6 +11,7 @@ extends CanvasLayer
 @onready var _root: Control = $Root
 @onready var _resume_button: Button = $Root/Panel/Margin/Layout/ResumeButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
+@onready var _editor_button: Button = $Root/Panel/Margin/Layout/EditorButton
 @onready var _menu_button: Button = $Root/Panel/Margin/Layout/MenuButton
 @onready var _settings: SettingsScreen = $Settings
 
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_root.visible = false
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
+	_editor_button.pressed.connect(_on_editor_pressed)
 	_menu_button.pressed.connect(_on_menu_pressed)
 	_settings.closed.connect(_on_settings_closed)
 	EventBus.game_paused.connect(_on_game_paused)
@@ -30,6 +32,8 @@ func _ready() -> void:
 
 func _on_game_paused(paused: bool) -> void:
 	_root.visible = paused
+	# Only a playtest launched from the arena editor has an editor to go back to.
+	_editor_button.visible = ArenaSession.is_playtesting
 	if paused:
 		_resume_button.grab_focus()
 		return
@@ -51,6 +55,11 @@ func _on_options_pressed() -> void:
 func _on_settings_closed() -> void:
 	# Only come back to the pause panel if the match is in fact still paused.
 	_root.visible = GameManager.is_paused
+
+
+func _on_editor_pressed() -> void:
+	GameManager.set_paused(false)
+	ArenaSession.return_to_editor()
 
 
 func _on_menu_pressed() -> void:

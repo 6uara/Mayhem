@@ -106,6 +106,25 @@ func restart_run() -> void:
 	await _reveal()
 
 
+## Cambia a una escena que no es una partida - hoy el editor de arenas - con la
+## misma cobertura y la misma carga en hilo que el resto. Existe para que el
+## editor no tenga que reimplementar la transicion ni escribir `state` a mano.
+func open_scene(path: String, new_state: State = State.MENU) -> void:
+	var scene: PackedScene = await _prepare_scene(path)
+	clear_freezes()
+	is_paused = false
+	state = new_state
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var previous: Node = get_tree().current_scene
+	if scene == null:
+		await _reveal()
+		return
+	if get_tree().change_scene_to_packed(scene) != OK:
+		push_error("GameManager: no se pudo entrar a %s" % path)
+	await _await_scene_swap(previous)
+	await _reveal()
+
+
 func return_to_menu() -> void:
 	var scene: PackedScene = await _prepare_scene(MENU_SCENE_PATH)
 	clear_freezes()
