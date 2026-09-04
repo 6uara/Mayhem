@@ -119,4 +119,6 @@ deriving the scale from the ratio of these two, rather than hardcoding degrees
 directly, is what keeps them from silently diverging if the slider's default
 position ever changes). `HOST_LINE_COOLDOWN = 20.0` / `HOST_PUNCHLINE_PER_WAVE = 1`
 gate the Host narrator's pacing — see [[02 Autoloads#NarratorManager]].
-`LEADERBOARD_ENTRIES = 10` / `LEADERBOARD_PATH` back `SaveManager`.
+`LEADERBOARD_ENTRIES = 20` / `LEADERBOARD_PATH` back `SaveManager`. Eran diez
+hasta que las filas pasaron a llevar nombre: con varias personas turnandose en
+la misma maquina, diez lugares los llena el mejor de todos.

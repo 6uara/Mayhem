@@ -143,17 +143,26 @@ func _end_in_victory() -> void:
 	# it cannot start an eleventh wave on the way out.
 	_resume_from_break()
 	var score: int = _calculate_score(total_time)
-	SaveManager.submit_score(score, total_time, waves.size())
 	GameManager.state = GameManager.State.GAME_OVER
+	# El puntaje ya no se guarda desde aca: la run termino y quien la anota es la
+	# pantalla que primero le pregunta al jugador con que nombre.
+	EventBus.run_finished.emit(score, total_time, waves.size(), true)
 	EventBus.match_completed.emit(score, total_time)
 	match_state_changed.emit(false)
 
 
+## Morir tambien termina una run, y tambien deja un puntaje. Antes no dejaba
+## ninguno: solo se guardaba la victoria, asi que la tabla solo podia listar a
+## quien se hubiera pasado las diez waves - que en la practica es una tabla
+## vacia. Lo que se anota son las waves que efectivamente se limpiaron.
 func _on_player_died() -> void:
 	if not is_running:
 		return
+	var total_time: float = get_match_time()
 	is_running = false
 	_generation += 1
+	EventBus.run_finished.emit(_calculate_score(total_time), total_time,
+		maxi(WaveManager.current_index, 0), false)
 	match_state_changed.emit(false)
 
 

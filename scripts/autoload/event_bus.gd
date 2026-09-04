@@ -47,6 +47,13 @@ signal grapple_ended()
 signal wave_started(wave_index: int, config: WaveData)
 signal wave_completed(wave_index: int, duration: float, damage_taken: float)
 signal match_completed(score: int, total_time: float)
+## Una run termino, ganada o perdida, con todo lo que hay para anotar.
+##
+## `match_completed` sigue significando "ganaste las diez waves" y es lo que
+## escuchan el Host y la musica. Esto significa "se termino", que es la pregunta
+## que le importa a la tabla: una muerte en la wave siete tambien es una run, y
+## un leaderboard que solo anota partidas perfectas esta vacio para siempre.
+signal run_finished(score: int, total_time: float, waves_cleared: int, victory: bool)
 
 # Economy
 signal currency_changed(new_total: int)

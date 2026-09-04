@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/match_overlay.gd" id="1_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/ui/score_entry_panel.tscn" id="2_score_entry"]
 
 [node name="MatchOverlay" type="CanvasLayer"]
 layer = 2
@@ -56,3 +57,5 @@ text = "Restart"
 
 [node name="MenuButton" type="Button" parent="EndPanel/VBox"]
 text = "Main Menu"
+
+[node name="ScoreEntry" parent="." instance=ExtResource("2_score_entry")]

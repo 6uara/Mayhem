@@ -10,9 +10,11 @@ extends Control
 
 signal closed()
 
-const COLUMNS: Array[String] = ["#", "SCORE", "WAVES", "TIME", "DATE"]
-## Relative widths. Score and date carry the most, the rank the least.
-const WEIGHTS: Array[float] = [0.5, 1.4, 1.0, 1.0, 2.2]
+const COLUMNS: Array[String] = ["#", "NAME", "SCORE", "WAVES", "TIME", "DATE"]
+## Relative widths. Name, score and date carry the most, the rank the least.
+const WEIGHTS: Array[float] = [0.5, 1.8, 1.4, 1.0, 1.0, 2.2]
+## Indice de la columna del puntaje, que es la que va en la tipografia grande.
+const SCORE_COLUMN: int = 2
 
 @onready var _rows: VBoxContainer = $Panel/Margin/Layout/Scroll/Rows
 @onready var _empty: Label = $Panel/Margin/Layout/EmptyState
@@ -66,6 +68,7 @@ func _rebuild() -> void:
 		var entry: Dictionary = entries[index]
 		_rows.add_child(_make_row([
 			"%d" % (index + 1),
+			String(entry.get("name", SaveManager.DEFAULT_NAME)),
 			"%d" % int(entry.get("score", 0)),
 			"%d" % int(entry.get("waves", 0)),
 			_format_time(float(entry.get("time", 0.0))),
@@ -86,7 +89,7 @@ func _make_row(values: Array, is_header: bool) -> Control:
 		else:
 			# Monospace for the numbers, so ranks and scores line up down the column
 			# instead of dancing as digit counts change.
-			label.theme_type_variation = &"Keybind" if index != 1 else &"NumSecond"
+			label.theme_type_variation = &"Keybind" if index != SCORE_COLUMN 				else &"NumSecond"
 		row.add_child(label)
 	return row
 
