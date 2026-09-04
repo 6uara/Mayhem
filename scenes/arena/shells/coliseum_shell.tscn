@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/arena_coliseum.gd" id="1_coliseum"]
+[ext_resource type="Script" path="res://scripts/systems/crowd_stands.gd" id="2_crowd"]
+
+[node name="ColiseumShell" type="Node3D" node_paths=PackedStringArray("crowd")]
+script = ExtResource("1_coliseum")
+crowd = NodePath("Crowd")
+
+[node name="Crowd" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("2_crowd")

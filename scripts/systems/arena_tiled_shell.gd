@@ -101,7 +101,7 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 		_build_corners(centre, tier_half, corner_size, tier_y, tier)
 		_build_sides(centre, tier_half, stand_size, corner_size, tier_y, tier)
 	if crowd != null:
-		crowd.populate_rows(centre, _seat_rows(half, stand_size, floor_y))
+		crowd.populate_rows(_seat_rows(centre, half, stand_size, floor_y))
 	if build_apron:
 		_build_apron(bounds, centre, half, floor_y)
 	if build_perimeter_walls:
@@ -134,7 +134,7 @@ func get_ring_bounds() -> AABB:
 ## instanciada, asi que cambiar el modelo mueve a la gente con el. La version
 ## anterior las adivinaba con numeros a ojo, y el publico flotaba delante de la
 ## grada en vez de estar sentado en ella.
-func _seat_rows(half: Vector2, stand_size: Vector3,
+func _seat_rows(centre: Vector3, half: Vector2, stand_size: Vector3,
 		floor_y: float) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	var depth_step: float = stand_size.z * tier_depth_factor
@@ -146,10 +146,9 @@ func _seat_rows(half: Vector2, stand_size: Vector3,
 			# grada generica y no dice donde tiene cada escalon; lo que si dice
 			# -y es lo que importa- es donde empieza y donde termina la rampa.
 			var t: float = (float(row) + 0.5) / float(maxi(rows_per_tier, 1))
-			found.push_back({
-				"half": tier_half + Vector2.ONE * (depth_step * t),
-				"y": tier_y + stand_size.y * t,
-			})
+			found.push_back({"path": CrowdStands.rectangle_path(centre,
+				tier_half + Vector2.ONE * (depth_step * t),
+				tier_y + stand_size.y * t)})
 	return found
 
 

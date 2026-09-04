@@ -81,9 +81,9 @@ func test_measured_rows_put_everyone_exactly_where_they_were_told() -> void:
 	# El camino bueno: el shell mide sus propias gradas y le pasa las filas. La
 	# version anterior las adivinaba y la gente flotaba delante de la grada.
 	var crowd: CrowdStands = _crowd()
-	crowd.populate_rows(Vector3.ZERO, [
-		{"half": Vector2(40.0, 40.0), "y": 3.0},
-		{"half": Vector2(44.0, 44.0), "y": 7.5},
+	crowd.populate_rows([
+		{"path": CrowdStands.rectangle_path(Vector3.ZERO, Vector2(40.0, 40.0), 3.0)},
+		{"path": CrowdStands.rectangle_path(Vector3.ZERO, Vector2(44.0, 44.0), 7.5)},
 	])
 	var heights: Array[float] = []
 	for seat: Vector3 in _seats(crowd):
@@ -98,8 +98,10 @@ func test_the_wave_can_travel_because_everyone_knows_where_they_sit() -> void:
 	# El parametro 0..1 de la vuelta viaja en INSTANCE_CUSTOM.w y es lo unico que
 	# hace posible que un gesto recorra el estadio en vez de encenderlo entero.
 	var crowd: CrowdStands = _crowd()
-	crowd.populate_rows(Vector3.ZERO, [{"half": Vector2(40.0, 40.0), "y": 0.0}])
-	var ring: Array[Dictionary] = crowd._ring_positions(Vector2(40.0, 40.0))
+	var path: PackedVector3Array = CrowdStands.rectangle_path(
+		Vector3.ZERO, Vector2(40.0, 40.0), 0.0)
+	crowd.populate_rows([{"path": path}])
+	var ring: Array[Dictionary] = crowd._walk_path(path)
 	assert_gt(ring.size(), 100)
 	var previous: float = -1.0
 	for seat: Dictionary in ring:

@@ -69,38 +69,41 @@ func _ready() -> void:
 # Public API
 
 ## Siembra la tribuna sobre filas ya medidas. Cada fila es
-## `{"half": Vector2, "y": float}`: el rectangulo que recorre y a que altura.
+## `{"path": PackedVector3Array}`: el recorrido cerrado de la huella donde se
+## sienta esa fila, en el espacio del nodo.
 ##
-## Este es el camino bueno. Lo usa `ArenaTiledShell`, que es quien apila los
-## anillos y por lo tanto el unico que sabe donde quedaron los escalones. La
-## version anterior adivinaba esas alturas con numeros puestos a ojo, y el
-## resultado era gente flotando delante de la grada en vez de sentada en ella.
+## Un recorrido y no un rectangulo con una altura, porque el coliseo tiene las
+## gradas en ovalo y la tribuna no tiene por que saber que forma tienen. Quien
+## genera el escalon sabe exactamente por donde pasa su huella; lo unico que
+## hace falta es que lo diga, en vez de que aca se vuelva a deducir.
 ##
-## La semilla sale del centro de la arena y de cuantas filas hay, no del reloj:
-## la misma arena tiene siempre el mismo publico. Una multitud que se reordena en
-## cada carga se nota, y se nota como un bug.
-func populate_rows(centre: Vector3, rows: Array[Dictionary]) -> void:
+## Este es el camino bueno, y lo usa el shell. La version anterior estimaba las
+## alturas con numeros puestos a ojo, y como las "gradas" resultaron ser bloques
+## sin rampa, el publico terminaba flotando delante o enterrado adentro.
+##
+## La semilla sale de la forma de las filas, no del reloj: la misma arena tiene
+## siempre el mismo publico. Una multitud que se reordena en cada carga se nota,
+## y se nota como un bug.
+func populate_rows(rows: Array[Dictionary]) -> void:
 	_seats = PackedVector3Array()
 	_front_seat_count = 0
-	_rng.seed = hash(Vector3(centre.x, centre.z, float(rows.size())))
+	_rng.seed = hash(_seed_of(rows))
 
 	var transforms: Array[Transform3D] = []
 	var colors: PackedColorArray = PackedColorArray()
 	var customs: PackedColorArray = PackedColorArray()
 
 	for index: int in rows.size():
-		var half: Vector2 = rows[index]["half"]
-		var y: float = rows[index]["y"]
-		for seat: Dictionary in _ring_positions(half):
+		for seat: Dictionary in _walk_path(rows[index]["path"]):
 			if _rng.randf() > occupancy:
 				continue  # Un asiento vacio. La tribuna llena de punta a punta
 				# se lee como una pared, no como gente.
-			var offset: Vector2 = seat["position"]
+			var point: Vector3 = seat["position"]
 			var scale_y: float = 1.0 + _rng.randfn(0.0, height_jitter)
 			var position := Vector3(
-				centre.x + offset.x + _rng.randf_range(-jitter, jitter),
-				y,
-				centre.z + offset.y + _rng.randf_range(-jitter, jitter))
+				point.x + _rng.randf_range(-jitter, jitter),
+				point.y,
+				point.z + _rng.randf_range(-jitter, jitter))
 			# El quad se orienta solo hacia la camara, asi que la transformada
 			# solo lleva la escala: el shader lee de ella el ancho y el alto, y
 			# el origen de la instancia son los pies del espectador.
@@ -131,11 +134,25 @@ func populate(bounds: AABB, pit_margin: float) -> void:
 		bounds.size.z * 0.5 + pit_margin + fallback_first_row_offset)
 	var rows: Array[Dictionary] = []
 	for row: int in maxi(fallback_rows, 0):
-		rows.push_back({
-			"half": base_half + Vector2.ONE * (fallback_row_depth * float(row)),
-			"y": bounds.position.y + fallback_row_rise * float(row),
-		})
-	populate_rows(centre, rows)
+		var half: Vector2 = base_half + Vector2.ONE * (fallback_row_depth * float(row))
+		var y: float = bounds.position.y + fallback_row_rise * float(row)
+		rows.push_back({"path": rectangle_path(centre, half, y)})
+	populate_rows(rows)
+
+
+## El recorrido cerrado de un rectangulo, como los que come `populate_rows()`.
+##
+## Estatico porque lo usan tanto el respaldo de aca como cualquier shell que
+## tenga las gradas en rectangulo: la forma de la fila es cosa de quien la
+## genera, y esta es la mas simple de todas.
+static func rectangle_path(centre: Vector3, half: Vector2, y: float) -> PackedVector3Array:
+	return PackedVector3Array([
+		Vector3(centre.x - half.x, y, centre.z - half.y),
+		Vector3(centre.x + half.x, y, centre.z - half.y),
+		Vector3(centre.x + half.x, y, centre.z + half.y),
+		Vector3(centre.x - half.x, y, centre.z + half.y),
+		Vector3(centre.x - half.x, y, centre.z - half.y),
+	])
 
 
 ## Cuanto esta encendida la tribuna, de 0 a 1. Cada espectador tiene su propio
@@ -190,47 +207,56 @@ func get_seats() -> PackedVector3Array:
 
 # Private
 
-## Las posiciones de una fila, recorriendo el rectangulo de lado `half * 2`, con
-## el parametro 0..1 de cuanto lleva recorrido cada una.
+## Reparte asientos a lo largo de `path`, uno cada `seat_spacing` metros, con el
+## parametro 0..1 de cuanto lleva recorrido cada uno.
 ##
 ## Ese parametro es lo que hace posible la ola: para que un gesto viaje por la
 ## tribuna, cada espectador tiene que saber donde esta en la vuelta, y eso no se
-## puede reconstruir despues a partir de su posicion sin volver a resolver el
-## rectangulo. Sale gratis aca y no sale gratis en ningun otro lado.
+## puede reconstruir despues a partir de su posicion sin volver a resolver la
+## forma de la fila. Sale gratis aca y no sale gratis en ningun otro lado.
 ##
-## Rectangulo y no elipse: la arena es un rectangulo y las gradas del shell
-## tambien, asi que una fila curva dejaria a los de las esquinas en el aire.
-func _ring_positions(half: Vector2) -> Array[Dictionary]:
+## Reparte por longitud de arco y no por vertice: el ovalo del coliseo tiene los
+## puntos mas juntos en las puntas, y sembrar uno por vertice amontonaria gente
+## ahi y la dejaria rala en los lados largos.
+func _walk_path(path: PackedVector3Array) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
-	var side_x: float = half.x * 2.0
-	var side_z: float = half.y * 2.0
-	var perimeter: float = (side_x + side_z) * 2.0
-	if perimeter <= 0.0:
+	if path.size() < 2:
 		return found
-	var count: int = maxi(int(perimeter / maxf(seat_spacing, 0.1)), 4)
 
+	var lengths := PackedFloat32Array()
+	var total: float = 0.0
+	for i: int in path.size() - 1:
+		total += path[i].distance_to(path[i + 1])
+		lengths.push_back(total)
+	if total <= 0.0:
+		return found
+
+	var count: int = maxi(int(total / maxf(seat_spacing, 0.1)), 4)
+	var segment: int = 0
 	for i: int in count:
-		var travelled: float = (float(i) + 0.5) / float(count) * perimeter
+		var travelled: float = (float(i) + 0.5) / float(count) * total
+		while segment < lengths.size() - 1 and lengths[segment] < travelled:
+			segment += 1
+		var from_length: float = lengths[segment - 1] if segment > 0 else 0.0
+		var span: float = maxf(lengths[segment] - from_length, 0.0001)
 		found.push_back({
-			"position": _walk_rectangle(travelled, half, side_x, side_z),
-			"ring": travelled / perimeter,
+			"position": path[segment].lerp(
+				path[segment + 1], (travelled - from_length) / span),
+			"ring": travelled / total,
 		})
 	return found
 
 
-## El punto que queda a `distance` metros de una esquina, siguiendo el borde del
-## rectangulo.
-func _walk_rectangle(distance: float, half: Vector2, side_x: float,
-		side_z: float) -> Vector2:
-	if distance < side_x:
-		return Vector2(-half.x + distance, -half.y)
-	distance -= side_x
-	if distance < side_z:
-		return Vector2(half.x, -half.y + distance)
-	distance -= side_z
-	if distance < side_x:
-		return Vector2(half.x - distance, half.y)
-	return Vector2(-half.x, half.y - (distance - side_x))
+## La semilla del publico: la forma de las filas y nada mas. Dos cargas de la
+## misma arena dan las mismas filas, y por lo tanto la misma multitud.
+func _seed_of(rows: Array[Dictionary]) -> Vector3:
+	if rows.is_empty():
+		return Vector3.ZERO
+	var first: PackedVector3Array = rows[0]["path"]
+	var last: PackedVector3Array = rows[rows.size() - 1]["path"]
+	if first.is_empty() or last.is_empty():
+		return Vector3(float(rows.size()), 0.0, 0.0)
+	return Vector3(first[0].x + last[0].y, first[0].z, float(rows.size()))
 
 
 func _build_multimesh(transforms: Array[Transform3D], colors: PackedColorArray,

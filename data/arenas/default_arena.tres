@@ -2592,6 +2592,6 @@ placements = Array[ExtResource("2_4cxl0")]([SubResource("Resource_f2vkq"), SubRe
 player_spawn = Vector3i(8, 0, 12)
 has_player_spawn = true
 enemy_spawns = Array[ExtResource("1_n15yh")]([SubResource("Resource_eyhj2"), SubResource("Resource_oa2la"), SubResource("Resource_7hwnf"), SubResource("Resource_b2qtg"), SubResource("Resource_0nyjo"), SubResource("Resource_qjbep"), SubResource("Resource_c1fvd")])
-theme_id = &"tiled"
+theme_id = &"coliseum"
 author = "mayhem"
 created_at = "2026-09-04T01:54:04"
