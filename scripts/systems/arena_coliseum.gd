@@ -81,6 +81,9 @@ extends Node3D
 ## La ciudad de fondo. Se la siembra por fuera de donde llegan las gradas, asi
 ## que tampoco tiene que adivinar nada.
 @export var skyline: CitySkyline
+## El limite visible. No cambia lo que se choca -eso siguen siendo las cuatro
+## cajas de `build_perimeter_walls`- sino lo que se ve al chocarlo.
+@export var energy_wall: EnergyWall
 
 var _built: Node3D
 var _walls: Node3D
@@ -119,6 +122,9 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 		crowd.populate_rows(_seat_rows)
 	if skyline != null:
 		skyline.populate(centre, _outer_reach, floor_y)
+	if energy_wall != null:
+		energy_wall.height = wall_height
+		energy_wall.setup(bounds)
 
 
 # Public API
