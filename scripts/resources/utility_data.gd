@@ -6,6 +6,10 @@ extends Resource
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export var scene: PackedScene
+## Sin uso desde que los gadgets salieron del shop y pasaron a caer de las
+## gradas. Se deja porque los tres .tres lo tienen serializado y porque un
+## gadget vuelve a tener precio el dia que algo vuelva a venderlos; hoy no lo
+## lee nadie. Ver CrowdDropTable.
 @export var cost: int = 75
 @export var max_carried: int = 2
 @export var cooldown: float = 6.0

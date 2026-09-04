@@ -10,7 +10,11 @@ signal purchase_succeeded(offer: Dictionary)
 signal purchase_failed(offer: Dictionary, reason: EconomyManager.PurchaseResult)
 signal reroll_cost_changed(cost: int)
 
-enum Kind { UPGRADE, WEAPON, UTILITY }
+## Hubo un tercer valor, UTILITY. Los gadgets salieron del shop cuando pasaron a
+## caer de las gradas: conseguirlos tiene que costar posicion y no plata, y
+## mientras se pudieran comprar el drop del publico era una alternativa peor a
+## apretar un boton en un menu. Ver CrowdDropDirector.
+enum Kind { UPGRADE, WEAPON }
 
 @export var catalog: ShopCatalog
 @export var purchase_sound: AudioStream
@@ -33,8 +37,8 @@ func _ready() -> void:
 # Public API
 
 ## Rebuilds the offer list for a fresh shop visit and resets the reroll price.
-## Sold-out entries (max stacks, already-owned weapons, full utility slots) are
-## filtered before the player ever sees them.
+## Sold-out entries (max stacks, already-owned weapons) are filtered before the
+## player ever sees them.
 func roll_offers() -> void:
 	_rerolls_this_visit = 0
 	reroll_cost_changed.emit(get_reroll_cost())
@@ -133,8 +137,6 @@ func _execute(offer: Dictionary) -> EconomyManager.PurchaseResult:
 			return _buy_upgrade(offer)
 		Kind.WEAPON:
 			return _buy_weapon(offer)
-		Kind.UTILITY:
-			return _buy_utility(offer)
 	return EconomyManager.PurchaseResult.INVALID
 
 
@@ -159,28 +161,9 @@ func _buy_weapon(offer: Dictionary) -> EconomyManager.PurchaseResult:
 	return EconomyManager.PurchaseResult.OK
 
 
-func _buy_utility(offer: Dictionary) -> EconomyManager.PurchaseResult:
-	var utility: UtilityComponent = _get_utility()
-	if utility == null:
-		return EconomyManager.PurchaseResult.INVALID
-	var slot: int = utility.find_slot(offer["id"])
-	if slot < 0:
-		return EconomyManager.PurchaseResult.INVALID
-	var data: UtilityData = utility.get_slot_data(slot)
-	if utility.get_carried(slot) >= data.max_carried:
-		return EconomyManager.PurchaseResult.MAX_STACKS
-	var result: EconomyManager.PurchaseResult = EconomyManager.try_spend(
-		offer["id"], int(offer["cost"]))
-	if result != EconomyManager.PurchaseResult.OK:
-		return result
-	utility.add_charge(offer["id"])
-	return EconomyManager.PurchaseResult.OK
-
-
 func _build_pool() -> Array[Dictionary]:
 	var pool: Array[Dictionary] = []
 	var holder: WeaponHolder = _get_holder()
-	var utility: UtilityComponent = _get_utility()
 	var equipped_id: StringName = (
 		holder.current.data.id if holder != null and holder.current != null
 			and holder.current.data != null else &"")
@@ -220,18 +203,6 @@ func _build_pool() -> Array[Dictionary]:
 			"category": -1, "owned": 0, "max_stacks": 1,
 		})
 
-	for data: UtilityData in catalog.utilities:
-		if data == null or utility == null:
-			continue
-		var slot: int = utility.find_slot(data.id)
-		if slot < 0 or utility.get_carried(slot) >= data.max_carried:
-			continue
-		pool.push_back({
-			"kind": Kind.UTILITY, "id": data.id, "name": data.display_name,
-			"description": "Restock. Carry up to %d." % data.max_carried,
-			"cost": data.cost, "category": -1,
-			"owned": utility.get_carried(slot), "max_stacks": data.max_carried,
-		})
 	return pool
 
 
@@ -246,6 +217,3 @@ func _get_holder() -> WeaponHolder:
 	return player.weapon_holder if player != null else null
 
 
-func _get_utility() -> UtilityComponent:
-	var player: Player = _get_player()
-	return player.utility if player != null else null

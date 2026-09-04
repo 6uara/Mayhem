@@ -188,8 +188,6 @@ func _category_label(offer: Dictionary) -> String:
 	match int(offer["kind"]):
 		Shop.Kind.WEAPON:
 			return "WEAPON"
-		Shop.Kind.UTILITY:
-			return "UTILITY   carried %d/%d" % [int(offer["owned"]), int(offer["max_stacks"])]
 	var category: int = int(offer["category"])
 	var suffix: String = ""
 	if int(offer["max_stacks"]) > 1:

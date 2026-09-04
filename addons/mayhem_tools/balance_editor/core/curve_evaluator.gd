@@ -64,10 +64,9 @@ static func price_ladder(catalog: ShopCatalog) -> PackedInt32Array:
 		var cost: Variant = upgrade.get(&"cost") if upgrade != null else null
 		if cost != null:
 			prices.append(int(cost))
-	for utility: Variant in catalog.utilities:
-		var cost: Variant = utility.get(&"cost") if utility != null else null
-		if cost != null:
-			prices.append(int(cost))
+	# Los gadgets ya no estan en la escalera: salieron del shop cuando pasaron a
+	# caer de las gradas, y una escalera de precios que incluye cosas que no se
+	# venden dice que hace falta menos plata de la que hace falta.
 	var sortable: Array = []
 	for price: int in prices:
 		sortable.append(price)
