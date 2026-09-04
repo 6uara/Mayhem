@@ -197,12 +197,16 @@ var _approach_lane: float = 0.0
 ## descartables por segundo en una oleada llena, y es el mismo motivo por el que
 ## los links estan cacheados.
 ##
-## Es static, asi que sobrevive a la escena que la lleno: un enemigo que se va
-## sin pasar por el pool -queue_free, cambio de arena, ObjectPool.clear()- tiene
-## que sacarse solo, o la lista arrastra entradas muertas de run en run y cada
-## recalculo de separacion, para cada enemigo vivo, las vuelve a filtrar. De eso
-## se ocupa _exit_tree().
-static var _flock: Array[Enemy] = []
+## Vive en `CombatDirector` y no aca: la lista dejo de ser solo el insumo de la
+## separacion cuando aparecio el reparto de puestos, que necesita ver a todos a la
+## vez para decidir cualquier cosa. Este nombre queda como el acceso corto que ya
+## usaban `_find_target()` y la separacion.
+##
+## Un enemigo que se va sin pasar por el pool -queue_free, cambio de arena,
+## ObjectPool.clear()- tiene que darse de baja solo, o el director arrastra
+## entradas muertas de run en run. De eso se ocupa _exit_tree().
+static func _flock() -> Array[Enemy]:
+	return CombatDirector.get_active_enemies()
 ## Empujon acumulado de los vecinos, recalculado a intervalos.
 var _separation: Vector3 = Vector3.ZERO
 var _separation_timer: float = 0.0
@@ -235,10 +239,10 @@ func _ready() -> void:
 		head_hitbox.hit_taken.connect(_on_hit_taken)
 
 
-## Deja la lista de vivos: el que se va del arbol no vuelve por el pool, y una
-## lista static no se vacia sola entre escenas. Ver `_flock`.
+## Deja la lista de vivos: el que se va del arbol no vuelve por el pool, y el
+## registro del director no se vacia solo entre escenas. Ver `_flock()`.
 func _exit_tree() -> void:
-	_flock.erase(self)
+	CombatDirector.unregister(self)
 
 
 func _physics_process(delta: float) -> void:
@@ -396,8 +400,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_rebuild_behavior_tree()
 
 	is_active = true
-	if not _flock.has(self):
-		_flock.append(self)
+	CombatDirector.register(self)
 	AudioPool.play_3d(data.spawn_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -409,8 +412,9 @@ func _on_released() -> void:
 	is_active = false
 	is_moving = false
 	# Un cuerpo que volvio al pool vive debajo del piso. Si siguiera en la lista,
-	# empujaria a los vivos desde ahi abajo.
-	_flock.erase(self)
+	# empujaria a los vivos desde ahi abajo - y seguiria ocupando un puesto del
+	# reparto y, si estaba saltando cuando lo mataron, tambien su ficha de ataque.
+	CombatDirector.unregister(self)
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
 
@@ -422,7 +426,7 @@ func _on_released() -> void:
 ## get_nodes_in_group() arma un Array nuevo en cada llamada. Solo para leer: el
 ## alta y la baja son de setup() y _on_released().
 static func get_active_enemies() -> Array[Enemy]:
-	return _flock
+	return CombatDirector.get_active_enemies()
 
 
 # Public API - used by the AI leaves
@@ -491,7 +495,7 @@ func _find_target() -> Node3D:
 		if best != null:
 			best_distance = global_position.distance_squared_to(best.global_position)
 
-	for other: Enemy in _flock:
+	for other: Enemy in _flock():
 		if other == self or not other.is_active:
 			continue
 		if not Factions.are_hostile(mine, other.get_faction()):
@@ -566,8 +570,13 @@ func _bearing_position(target: Vector3, distance: float, blend: float) -> Vector
 	if facing.length_squared() < 0.01:
 		return target
 
-	var degrees: float = data.approach_bearing_degrees
-	if data.approach_bearing_mirrors and _approach_lane < 0.0:
+	# El puesto lo reparte el director, que es el unico que puede ver que otro ya
+	# esta ocupando ese angulo. El numero del `.tres` sobrevive como respaldo -ver
+	# CombatDirector.bearing_for()- y el espejo se aplica solo cuando el arquetipo
+	# usa ese respaldo, porque un puesto repartido ya viene con el lado elegido.
+	var degrees: float = CombatDirector.bearing_for(self)
+	var is_assigned: bool = CombatDirector.has_bearing(self)
+	if data.approach_bearing_mirrors and _approach_lane < 0.0 and not is_assigned:
 		degrees = -degrees
 	# Desde donde mira el jugador, girando alrededor de su eje vertical. A 180
 	# grados el punto cae exactamente detras suyo.
@@ -1423,24 +1432,11 @@ func _begin_jump(link: JumpLink = null) -> void:
 ## requiere pasarle la velocidad al agente y esperar su callback, y nadie lo
 ## hacia nunca. El agente calculaba evitacion todos los frames para que el
 ## resultado se tirara a la basura.
+## El empujon de los vecinos. La cuenta es del director, que la resuelve contra
+## una grilla espacial: mirar a la horda entera desde cada enemigo era N^2 por
+## ciclo, y el punto de todo esto es que N crezca.
 func _compute_separation() -> Vector3:
-	var push := Vector3.ZERO
-	for other: Enemy in _flock:
-		if other == self or not is_instance_valid(other) or not other.is_active:
-			continue
-		var offset: Vector3 = global_position - other.global_position
-		offset.y = 0.0
-		var distance: float = offset.length()
-		if distance >= SEPARATION_RADIUS:
-			continue
-		if distance < 0.01:
-			# Exactamente encimados: no hay direccion que sacar del vector, asi
-			# que se desempata con algo estable pero distinto por enemigo.
-			var angle: float = float(get_instance_id() % 360) * TAU / 360.0
-			push += Vector3(cos(angle), 0.0, sin(angle))
-			continue
-		push += offset / distance * (1.0 - distance / SEPARATION_RADIUS)
-	return push
+	return CombatDirector.separation_for(self)
 
 
 ## Watches for the enemy being told to move while covering no ground, and hops the

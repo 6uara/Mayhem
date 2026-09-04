@@ -101,6 +101,14 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	# tiene que terminar en el piso o el frasco explota a la altura de la cintura
 	# y el charco aparece flotando por encima del suelo que dice negar.
 	var target: Vector3 = _predicted_spot(enemy, is_snare)
+	if not CombatDirector.claim_hazard(target):
+		# Otro Environmental ya reservo ese pedazo de piso. Dos charcos en el
+		# mismo metro no niegan el doble de terreno, niegan el mismo dos veces y
+		# le cobran al jugador una sola decision. Telegrafia igual y espera su
+		# cadencia, como cuando el arena esta saturada.
+		ObjectPool.release(flask)
+		enemy.start_attack_cooldown()
+		return SUCCESS
 	if is_snare and _overlaps_a_pool(target, live):
 		# Un charco de atrapado encima de uno de ácido es 35% de velocidad adentro
 		# de algo que quema, con una sola salida que puede no estar disponible: la
@@ -143,6 +151,14 @@ func _predicted_spot(enemy: Enemy, is_snare: bool = false) -> Vector3:
 	var lead: float = snare_lead_fraction if is_snare else lead_fraction
 	if lead <= 0.0:
 		return here
+	# La prediccion la resuelve el director, con el snapshot que toma una vez por
+	# frame. No es solo ahorro: dos Environmental que la calculan cada uno por su
+	# lado la resuelven con velocidades de frames distintos, y despues el reparto
+	# de piso de abajo no puede saber si apuntaron al mismo lugar o a dos.
+	if CombatDirector.has_target():
+		return CombatDirector.predicted_position(maxf(flight_time, 0.1), lead)
+	# Sin director -el primer frame de la ola, o un test que instancia la hoja
+	# sola- la cuenta se hace aca. Es la misma.
 	var velocity: Vector3 = enemy.get_target_velocity()
 	velocity.y = 0.0
 	return here + velocity * maxf(flight_time, 0.1) * lead

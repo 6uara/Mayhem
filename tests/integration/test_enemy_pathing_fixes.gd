@@ -124,9 +124,15 @@ func test_the_push_grows_as_they_close_in() -> void:
 	var two: Enemy = await _make_enemy()
 	one.global_position = Vector3.ZERO
 
+	# Un frame entre mover y medir: los vecinos los resuelve CombatDirector contra
+	# una grilla que se rearma a intervalos (CombatDirector.GRID_INTERVAL), asi
+	# que teletransportar un cuerpo y preguntar en la misma linea contesta por las
+	# posiciones anteriores. En juego nadie se teletransporta.
 	two.global_position = Vector3(1.9, 0.0, 0.0)
+	await wait_physics_frames(4)
 	var far_push: float = one._compute_separation().length()
 	two.global_position = Vector3(0.3, 0.0, 0.0)
+	await wait_physics_frames(4)
 	var near_push: float = one._compute_separation().length()
 
 	assert_gt(near_push, far_push, "pisarse empuja mas que rozarse")
@@ -147,6 +153,7 @@ func test_a_body_back_in_the_pool_stops_pushing() -> void:
 	var two: Enemy = await _make_enemy()
 	one.global_position = Vector3.ZERO
 	two.global_position = Vector3(0.5, 0.0, 0.0)
+	await wait_physics_frames(4)
 	assert_gt(one._compute_separation().length(), 0.0, "vivo, empuja")
 
 	two._on_released()
