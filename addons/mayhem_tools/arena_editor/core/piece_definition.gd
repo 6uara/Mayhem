@@ -72,6 +72,17 @@ enum Support {
 @export var greybox_color: Color = Color(0.55, 0.55, 0.58)
 ## Fraction of the cell the greybox box fills on each axis.
 @export var greybox_extents: Vector3 = Vector3(1.0, 1.0, 1.0)
+## Color del filete emisivo que bordea la cara superior de la pieza cuando esta
+## elevada. Cyan del coliseo por defecto, para que lea como parte del lugar.
+@export var edge_color: Color = Color(0.25, 0.85, 1.0)
+## Energia de ese filete. Cero lo apaga, que es lo correcto para todo lo que no
+## se pisa.
+##
+## Es geometria emisiva, no una luz: la agarra el glow del environment y no
+## cuesta nada en el presupuesto de luces, que es exactamente lo que hacia falta
+## en una arena de noche donde las plataformas grises desaparecian contra el
+## piso gris.
+@export var edge_energy: float = 0.0
 
 
 ## Ground pieces are what you stand on; body pieces are what stands on them.

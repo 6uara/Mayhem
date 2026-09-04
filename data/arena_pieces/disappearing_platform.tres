@@ -17,3 +17,5 @@ connects_levels = false
 link_offsets = Array[Vector3i]([])
 category = 3
 greybox_color = Color(0.45, 0.55, 0.62, 1)
+edge_color = Color(1, 0.45, 0.85, 1)
+edge_energy = 2.2

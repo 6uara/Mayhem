@@ -38,7 +38,10 @@ static func _build_geometry(runtime: ArenaRuntime, data: ArenaData,
 		var piece: PieceDefinition = catalog.get_piece(entry.piece_id)
 		if piece == null:
 			continue
-		var node: Node3D = PieceMeshBuilder.build(piece, catalog)
+		# Elevado es una propiedad de donde se puso, no de la pieza: el mismo
+		# bloque de piso es el suelo en el nivel 0 y una pasarela en el 1, y solo
+		# la pasarela necesita que se le vea el borde de noche.
+		var node: Node3D = PieceMeshBuilder.build(piece, catalog, true, entry.cell.y > 0)
 		if node == null:
 			continue
 		node.name = "%s_%d_%d_%d" % [piece.id, entry.cell.x, entry.cell.y, entry.cell.z]

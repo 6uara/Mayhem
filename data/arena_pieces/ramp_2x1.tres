@@ -13,3 +13,5 @@ connects_levels = true
 category = 1
 greybox_color = Color(0.72, 0.62, 0.35, 1)
 greybox_extents = Vector3(1, 0.5, 1)
+edge_color = Color(1, 0.45, 0.85, 1)
+edge_energy = 2.0
