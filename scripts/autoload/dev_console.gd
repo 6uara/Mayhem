@@ -15,6 +15,7 @@ const OUTPUT_LIMIT: int = 200
 const OPEN_HEIGHT: float = 0.45  ## fraction of the viewport
 ## Freeze reason, so the console pausing the game cannot fight the pause menu.
 const FREEZE_REASON: StringName = &"dev_console"
+const CROWD_DROP_SCENE: PackedScene = preload("res://scenes/arena/crowd_drop_pickup.tscn")
 
 var _commands: Dictionary = {}
 var _history: PackedStringArray = PackedStringArray()
@@ -92,6 +93,7 @@ func _register_commands() -> void:
 	_add("wave", "<index>", "Jump to a wave (1-based).", _cmd_wave)
 	_add("kill_all", "", "Kill every living enemy.", _cmd_kill_all)
 	_add("spawn", "<enemy_id> [count]", "Spawn enemies in front of the player.", _cmd_spawn)
+	_add("drop", "[utility_id]", "Have the crowd throw a gadget at the player.", _cmd_drop)
 	_add("upgrade", "<upgrade_id> [stacks]", "Grant an upgrade to the player.", _cmd_upgrade)
 	_add("upgrades", "", "List owned bonuses, as the O panel shows them.", _cmd_upgrades)
 	_add("clear_upgrades", "", "Drop every owned bonus.", _cmd_clear_upgrades)
@@ -170,6 +172,39 @@ func _cmd_spawn(args: PackedStringArray) -> String:
 		if WaveManager.spawn_summoned(data, player.global_position + offset) != null:
 			spawned += 1
 	return "spawned %d %s" % [spawned, data.id]
+
+
+## Tira un gadget desde arriba, como lo va a hacer el publico. Sin argumento
+## elige uno de los tres al azar, que es como se ve en partida.
+##
+## Es la unica forma de ver caer un drop sin esperar al director: el arco, el
+## aterrizaje y el levantarlo son tres cosas que solo se juzgan mirandolas.
+func _cmd_drop(args: PackedStringArray) -> String:
+	var player := _player() as Player
+	if player == null or player.utility == null:
+		return "no player in the scene"
+
+	var slot: int = -1
+	if args.is_empty():
+		slot = randi() % UtilityComponent.SLOT_COUNT
+	else:
+		slot = player.utility.find_slot(StringName(args[0].to_lower()))
+		if slot < 0:
+			return "no utility slot for '%s'" % args[0]
+	var data: UtilityData = player.utility.get_slot_data(slot)
+	if data == null:
+		return "slot %d has no utility" % (slot + 1)
+
+	var pickup := ObjectPool.acquire(CROWD_DROP_SCENE) as CrowdDropPickup
+	if pickup == null:
+		return "crowd_drop_pickup.tscn is not a CrowdDropPickup"
+	# Un asiento imaginario: lejos, arriba y en una direccion al azar, para que el
+	# arco se parezca al que va a salir de la tribuna de verdad.
+	var angle: float = randf() * TAU
+	var from: Vector3 = player.global_position 		+ Vector3(cos(angle) * 22.0, 12.0, sin(angle) * 22.0)
+	var landing: Vector3 = player.global_position 		+ Vector3(randf_range(-5.0, 5.0), 0.0, randf_range(-5.0, 5.0))
+	pickup.throw_from_stands(from, CrowdDropPickup.arc_to(from, landing, 1.6), data)
+	return "the crowd throws a %s" % data.display_name
 
 
 func _cmd_upgrade(args: PackedStringArray) -> String:

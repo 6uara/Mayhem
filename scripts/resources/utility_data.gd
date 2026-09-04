@@ -12,3 +12,14 @@ extends Resource
 @export var throw_force: float = 14.0
 @export var effect_radius: float = 5.0
 @export var effect_duration: float = 3.0
+
+## El color con el que se lee este gadget cuando esta tirado en la arena.
+##
+## Existe porque los gadgets dejaron de comprarse y pasaron a caer de las
+## gradas: el jugador ve una cosa lejos y tiene que decidir si vale la pena
+## cruzar la arena por ella antes de llegar. Si las tres se ven iguales, esa
+## decision no se puede tomar y el pickup se vuelve una sorpresa.
+##
+## El ambar de `Tokens.WORLD_PICKUP` sigue siendo el marco -toda la casa es
+## ambar-, asi que esto tiñe el nucleo y no el halo.
+@export var accent_color: Color = Color(1.0, 0.69, 0.13)
