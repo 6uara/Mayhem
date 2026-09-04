@@ -30,6 +30,21 @@ extends Node3D
 ## together - so the steps keep their proportions; only the length is fitted
 ## afterwards, and by construction that factor is close to 1.
 @export var section_scale: float = 3.0
+## Anillos apilados uno sobre otro, cada uno mas afuera y mas arriba que el
+## anterior.
+##
+## Un solo anillo de 12 metros alrededor de una arena de 70 se lee como un
+## paredon con escalones, no como un estadio: desde el piso se ve el cielo justo
+## arriba del borde. Apilando gradas la tribuna trepa hasta taparlo, que es lo
+## que hace que el lugar encierre y que el publico este *sobre* la pelea en vez
+## de al lado.
+@export var tiers: int = 3
+## Cuanto se corre hacia afuera cada anillo, como fraccion de su propia
+## profundidad. Por debajo de 1 las gradas se pisan y la tribuna sale mas
+## empinada; en 1 la inclinacion es la del modelo repetida.
+@export_range(0.3, 1.5) var tier_depth_factor: float = 0.72
+## Filas de espectadores sobre la rampa de cada anillo.
+@export var rows_per_tier: int = 4
 @export var build_apron: bool = true
 @export var apron_height: float = 0.75
 
@@ -77,14 +92,20 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 	var half := Vector2(
 		bounds.size.x * 0.5 + pit_margin, bounds.size.z * 0.5 + pit_margin)
 
-	_build_corners(centre, half, corner_size, floor_y)
-	_build_sides(centre, half, stand_size, corner_size, floor_y)
+	# De adentro hacia afuera: cada anillo apoya sobre el de adentro y se corre
+	# hacia atras, que es como se construye una tribuna de verdad.
+	for tier: int in maxi(tiers, 1):
+		var step: float = stand_size.z * tier_depth_factor * float(tier)
+		var tier_half: Vector2 = half + Vector2.ONE * step
+		var tier_y: float = floor_y + stand_size.y * float(tier)
+		_build_corners(centre, tier_half, corner_size, tier_y, tier)
+		_build_sides(centre, tier_half, stand_size, corner_size, tier_y, tier)
+	if crowd != null:
+		crowd.populate_rows(centre, _seat_rows(half, stand_size, floor_y))
 	if build_apron:
 		_build_apron(bounds, centre, half, floor_y)
 	if build_perimeter_walls:
 		_build_perimeter(bounds, centre, floor_y)
-	if crowd != null:
-		crowd.populate(bounds, pit_margin)
 
 
 ## The box the assembled ring occupies. Exists for the tests and for anyone
@@ -106,8 +127,34 @@ func get_ring_bounds() -> AABB:
 
 # Private
 
+## Las filas de asientos de toda la tribuna, para que quien siembre el publico no
+## tenga que adivinar donde estan los escalones.
+##
+## Es el shell el que sabe esto y nadie mas: las medidas salen de la seccion
+## instanciada, asi que cambiar el modelo mueve a la gente con el. La version
+## anterior las adivinaba con numeros a ojo, y el publico flotaba delante de la
+## grada en vez de estar sentado en ella.
+func _seat_rows(half: Vector2, stand_size: Vector3,
+		floor_y: float) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	var depth_step: float = stand_size.z * tier_depth_factor
+	for tier: int in maxi(tiers, 1):
+		var tier_half: Vector2 = half + Vector2.ONE * (depth_step * float(tier))
+		var tier_y: float = floor_y + stand_size.y * float(tier)
+		for row: int in maxi(rows_per_tier, 1):
+			# Repartidas parejo sobre la rampa del anillo. La seccion es una
+			# grada generica y no dice donde tiene cada escalon; lo que si dice
+			# -y es lo que importa- es donde empieza y donde termina la rampa.
+			var t: float = (float(row) + 0.5) / float(maxi(rows_per_tier, 1))
+			found.push_back({
+				"half": tier_half + Vector2.ONE * (depth_step * t),
+				"y": tier_y + stand_size.y * t,
+			})
+	return found
+
+
 func _build_corners(centre: Vector3, half: Vector2, corner_size: Vector3,
-		floor_y: float) -> void:
+		floor_y: float, tier: int = 0) -> void:
 	var corners: Array[Vector2] = [
 		Vector2(-1.0, -1.0), Vector2(1.0, -1.0), Vector2(1.0, 1.0), Vector2(-1.0, 1.0),
 	]
@@ -120,7 +167,7 @@ func _build_corners(centre: Vector3, half: Vector2, corner_size: Vector3,
 				centre.z + (half.y if sign_xz.y > 0.0 else -half.y - corner_size.z)),
 			Vector3(corner_size.x, corner_size.y, corner_size.z))
 		var node: Node3D = corner_section.instantiate() as Node3D
-		node.name = "Corner%d" % index
+		node.name = "Corner%d_%d" % [tier, index]
 		_built.add_child(node)
 		# Quarter turns so each copy faces the middle.
 		node.rotation.y = deg_to_rad(-90.0 * index)
@@ -131,7 +178,7 @@ func _build_corners(centre: Vector3, half: Vector2, corner_size: Vector3,
 ## box, at the ends, so the two meet without a seam and without arithmetic that
 ## has to agree between them.
 func _build_sides(centre: Vector3, half: Vector2, stand_size: Vector3,
-		_corner_size: Vector3, floor_y: float) -> void:
+		_corner_size: Vector3, floor_y: float, tier: int = 0) -> void:
 	# Along X (north and south), then along Z (west and east).
 	var runs: Array[Dictionary] = [
 		{"axis": "x", "sign": -1.0, "length": half.x * 2.0},
@@ -152,7 +199,7 @@ func _build_sides(centre: Vector3, half: Vector2, stand_size: Vector3,
 		var piece_length: float = span / float(count)
 		for step: int in count:
 			var node: Node3D = stand_section.instantiate() as Node3D
-			node.name = "Stand%d_%d" % [index, step]
+			node.name = "Stand%d_%d_%d" % [tier, index, step]
 			_built.add_child(node)
 			var target := AABB(Vector3.ZERO, Vector3.ZERO)
 			if along_x:

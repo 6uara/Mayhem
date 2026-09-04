@@ -1,44 +1,47 @@
 class_name CrowdStands
 extends MultiMeshInstance3D
-## El publico en las gradas. Placeholder: son capsulas y se ven como capsulas.
+## El publico en las gradas.
 ##
 ## Existe por dos razones a la vez. La primera es que un estadio vacio contradice
 ## todo lo que el Host viene diciendo - habla todo el tiempo de una multitud que
-## no esta. La segunda es que el publico va a dejar de ser decorado: es de estos
-## asientos que salen los gadgets que caen a la arena, y `pick_seat()` es la
-## puerta por la que el director de drops pregunta desde donde tirar.
+## no esta. La segunda es que el publico no es decorado: es de estos asientos que
+## salen los gadgets que caen a la arena, y `pick_seat()` es la puerta por la que
+## el director de drops pregunta desde donde tirar.
 ##
-## Un solo MultiMesh para mil y pico de espectadores, y el idle vive en el
-## vertex shader (`crowd_idle.gdshader`). No hay un Node3D por espectador y no
-## hay `_process()`: el publico tiene que costar lo mismo con cien que con dos
-## mil, porque nadie lo va a mirar de cerca.
+## Un solo MultiMesh de quads y toda la silueta dibujada en el shader
+## (`crowd_impostor.gdshader`), sin textura y sin un Node3D por espectador. La
+## regla es que la tribuna cueste lo mismo con mil que con diez mil, porque un
+## coliseo lleno es mucha gente y ninguno se mira de cerca.
+##
+## Este nodo no decide nada: siembra asientos y expone las perillas -el
+## entusiasmo, la ola, los celulares- para que `CrowdMoodDirector` las mueva. Que
+## el publico se levante es una decision sobre el ritmo de la partida, y esas no
+## viven en el nodo que dibuja.
 
-const SHADER_PATH: String = "res://assets/shaders/crowd_idle.gdshader"
+const SHADER_PATH: String = "res://assets/shaders/crowd_impostor.gdshader"
 
 @export_group("Gradas")
-## Filas de asientos, contadas desde el borde del foso hacia afuera.
-@export var rows: int = 5
+## Solo se usan cuando nadie le pasa las filas de verdad. El shell tiled se las
+## pasa medidas de su propia grada (`populate_rows()`); esto es el respaldo para
+## un shell que no sepa hacerlo, y el camino que usan los tests.
+@export var fallback_rows: int = 5
+@export var fallback_row_depth: float = 1.8
+@export var fallback_row_rise: float = 1.1
+@export var fallback_first_row_offset: float = 1.5
+
 ## Metros entre dos espectadores de la misma fila.
-@export var seat_spacing: float = 1.35
-## Cuanto se aleja cada fila de la arena respecto de la anterior.
-@export var row_depth: float = 1.8
-## Y cuanto sube. Los dos juntos son la pendiente de la tribuna, y tienen que
-## seguir a la del modelo de gradas o el publico flota sobre los escalones.
-@export var row_rise: float = 1.1
-## Metros entre la primera fila y el borde del foso. El foso ya esta corrido por
-## el `pit_margin` del shell; esto es lo que se suma encima.
-@export var first_row_offset: float = 1.5
+@export var seat_spacing: float = 1.15
 ## Fraccion de asientos ocupados. Por debajo de 1 la tribuna tiene huecos, que es
 ## lo que la hace leerse como gente y no como una textura.
-@export_range(0.0, 1.0) var occupancy: float = 0.86
+@export_range(0.0, 1.0) var occupancy: float = 0.88
 
 @export_group("Espectador")
-@export var seat_height: float = 1.5
-@export var seat_radius: float = 0.28
+@export var seat_height: float = 1.75
+@export var seat_width: float = 0.9
 ## Desorden lateral y de profundidad, para que las filas no queden a escuadra.
-@export var jitter: float = 0.28
+@export var jitter: float = 0.22
 ## Variacion de altura entre espectadores.
-@export var height_jitter: float = 0.18
+@export var height_jitter: float = 0.1
 
 @export_group("Color")
 ## Gris apagado a proposito. El ambar es de la casa - dinero, pickups, el Host -
@@ -48,14 +51,15 @@ const SHADER_PATH: String = "res://assets/shaders/crowd_idle.gdshader"
 
 ## Posicion de cada asiento en el espacio del nodo, en orden de fila.
 ##
-## Local y no mundial a proposito: `populate()` corre desde el `setup()` del
-## shell, y un shell puede estar armandose antes de entrar al arbol - ahi
-## `to_global()` no tiene transformada que aplicar y devuelve basura. La
-## conversion se hace en `pick_seat()`, que siempre se pregunta en partida.
+## Local y no mundial a proposito: la siembra corre desde el `setup()` del shell,
+## y un shell puede estar armandose antes de entrar al arbol - ahi `to_global()`
+## no tiene transformada que aplicar y devuelve basura. La conversion se hace en
+## `pick_seat()`, que siempre se pregunta en partida.
 var _seats: PackedVector3Array = PackedVector3Array()
 ## Cuantos asientos entraron en las dos primeras filas: los drops salen de ahi.
 var _front_seat_count: int = 0
 var _rng := RandomNumberGenerator.new()
+var _material: ShaderMaterial
 
 
 func _ready() -> void:
@@ -64,53 +68,91 @@ func _ready() -> void:
 
 # Public API
 
-## Siembra la tribuna alrededor de `bounds`, el footprint real de la arena que
-## `ArenaRuntime` le pasa al shell. `pit_margin` es el del shell, para que la
-## primera fila caiga donde termina el foso y no encima de el.
+## Siembra la tribuna sobre filas ya medidas. Cada fila es
+## `{"half": Vector2, "y": float}`: el rectangulo que recorre y a que altura.
 ##
-## La semilla sale del tamaño de la arena, no del reloj: la misma arena tiene
-## siempre el mismo publico. Una multitud que se reordena en cada carga se nota,
-## y se nota como un bug.
-func populate(bounds: AABB, pit_margin: float) -> void:
+## Este es el camino bueno. Lo usa `ArenaTiledShell`, que es quien apila los
+## anillos y por lo tanto el unico que sabe donde quedaron los escalones. La
+## version anterior adivinaba esas alturas con numeros puestos a ojo, y el
+## resultado era gente flotando delante de la grada en vez de sentada en ella.
+##
+## La semilla sale del centro de la arena y de cuantas filas hay, no del reloj:
+## la misma arena tiene siempre el mismo publico. Una multitud que se reordena en
+## cada carga se nota, y se nota como un bug.
+func populate_rows(centre: Vector3, rows: Array[Dictionary]) -> void:
 	_seats = PackedVector3Array()
 	_front_seat_count = 0
-	_rng.seed = hash(Vector3(bounds.size.x, bounds.size.z, float(rows)))
-
-	var centre: Vector3 = bounds.position + bounds.size * 0.5
-	var floor_y: float = bounds.position.y
-	var base_half := Vector2(
-		bounds.size.x * 0.5 + pit_margin + first_row_offset,
-		bounds.size.z * 0.5 + pit_margin + first_row_offset)
+	_rng.seed = hash(Vector3(centre.x, centre.z, float(rows.size())))
 
 	var transforms: Array[Transform3D] = []
 	var colors: PackedColorArray = PackedColorArray()
 	var customs: PackedColorArray = PackedColorArray()
 
-	for row: int in maxi(rows, 0):
-		var half: Vector2 = base_half + Vector2.ONE * (row_depth * float(row))
-		var y: float = floor_y + row_rise * float(row)
-		for seat: Vector2 in _ring_positions(half):
+	for index: int in rows.size():
+		var half: Vector2 = rows[index]["half"]
+		var y: float = rows[index]["y"]
+		for seat: Dictionary in _ring_positions(half):
 			if _rng.randf() > occupancy:
 				continue  # Un asiento vacio. La tribuna llena de punta a punta
 				# se lee como una pared, no como gente.
+			var offset: Vector2 = seat["position"]
 			var scale_y: float = 1.0 + _rng.randfn(0.0, height_jitter)
 			var position := Vector3(
-				centre.x + seat.x + _rng.randf_range(-jitter, jitter),
-				y + seat_height * scale_y * 0.5,
-				centre.z + seat.y + _rng.randf_range(-jitter, jitter))
-			var basis := Basis()
-			basis = basis.scaled(Vector3(1.0, scale_y, 1.0))
-			# Mirando a la arena, que es lo unico que el publico vino a ver.
-			basis = Basis(Vector3.UP, atan2(-seat.x, -seat.y)) * basis
+				centre.x + offset.x + _rng.randf_range(-jitter, jitter),
+				y,
+				centre.z + offset.y + _rng.randf_range(-jitter, jitter))
+			# El quad se orienta solo hacia la camara, asi que la transformada
+			# solo lleva la escala: el shader lee de ella el ancho y el alto, y
+			# el origen de la instancia son los pies del espectador.
+			var basis := Basis().scaled(
+				Vector3(seat_width, seat_height * scale_y, 1.0))
 			transforms.push_back(Transform3D(basis, position))
 			colors.push_back(tint_dark.lerp(tint_light, _rng.randf()))
-			# x: desfase del bob. y: su ritmo. Ver crowd_idle.gdshader.
-			customs.push_back(Color(_rng.randf(), _rng.randf(), 0.0, 0.0))
+			customs.push_back(Color(
+				_rng.randf(),          # desfase propio
+				_rng.randf(),          # ritmo propio
+				_rng.randf(),          # pancarta / celular / nada
+				float(seat["ring"])))  # por donde va dando la vuelta, 0..1
 			_seats.push_back(position)
-			if row < 2:
+			if index < 2:
 				_front_seat_count += 1
 
 	_build_multimesh(transforms, colors, customs)
+
+
+## Siembra la tribuna alrededor de `bounds` inventando las filas.
+##
+## Respaldo para un shell que no mide sus gradas. `pit_margin` es el del shell,
+## para que la primera fila caiga donde termina el foso y no encima de el.
+func populate(bounds: AABB, pit_margin: float) -> void:
+	var centre: Vector3 = bounds.position + bounds.size * 0.5
+	var base_half := Vector2(
+		bounds.size.x * 0.5 + pit_margin + fallback_first_row_offset,
+		bounds.size.z * 0.5 + pit_margin + fallback_first_row_offset)
+	var rows: Array[Dictionary] = []
+	for row: int in maxi(fallback_rows, 0):
+		rows.push_back({
+			"half": base_half + Vector2.ONE * (fallback_row_depth * float(row)),
+			"y": bounds.position.y + fallback_row_rise * float(row),
+		})
+	populate_rows(centre, rows)
+
+
+## Cuanto esta encendida la tribuna, de 0 a 1. Cada espectador tiene su propio
+## umbral, asi que subirlo levanta gente de a pedazos y no de golpe.
+func set_excitement(value: float) -> void:
+	_set_parameter(&"excitement", clampf(value, 0.0, 1.0))
+
+
+## Donde esta la cresta de la ola dando la vuelta al estadio, de 0 a 1. Fuera de
+## ese rango no hay ola, y en -1 se apaga.
+func set_wave_position(value: float) -> void:
+	_set_parameter(&"wave_position", value)
+
+
+## Que fraccion de la tribuna tiene el celular prendido.
+func set_phone_share(value: float) -> void:
+	_set_parameter(&"phone_share", clampf(value, 0.0, 1.0))
 
 
 ## Un asiento al azar de las dos primeras filas, en coordenadas mundiales.
@@ -148,37 +190,55 @@ func get_seats() -> PackedVector3Array:
 
 # Private
 
-## Las posiciones de una fila, recorriendo el rectangulo de lado `half * 2`.
+## Las posiciones de una fila, recorriendo el rectangulo de lado `half * 2`, con
+## el parametro 0..1 de cuanto lleva recorrido cada una.
+##
+## Ese parametro es lo que hace posible la ola: para que un gesto viaje por la
+## tribuna, cada espectador tiene que saber donde esta en la vuelta, y eso no se
+## puede reconstruir despues a partir de su posicion sin volver a resolver el
+## rectangulo. Sale gratis aca y no sale gratis en ningun otro lado.
 ##
 ## Rectangulo y no elipse: la arena es un rectangulo y las gradas del shell
-## tambien, asi que una fila curva dejaria a los espectadores de las esquinas
-## colgando en el aire.
-func _ring_positions(half: Vector2) -> Array[Vector2]:
-	var found: Array[Vector2] = []
-	var spacing: float = maxf(seat_spacing, 0.1)
-	var count_x: int = maxi(int(half.x * 2.0 / spacing), 1)
-	var count_z: int = maxi(int(half.y * 2.0 / spacing), 1)
-	var step_x: float = half.x * 2.0 / float(count_x)
-	var step_z: float = half.y * 2.0 / float(count_z)
+## tambien, asi que una fila curva dejaria a los de las esquinas en el aire.
+func _ring_positions(half: Vector2) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	var side_x: float = half.x * 2.0
+	var side_z: float = half.y * 2.0
+	var perimeter: float = (side_x + side_z) * 2.0
+	if perimeter <= 0.0:
+		return found
+	var count: int = maxi(int(perimeter / maxf(seat_spacing, 0.1)), 4)
 
-	for i: int in count_x:
-		var x: float = -half.x + step_x * (float(i) + 0.5)
-		found.push_back(Vector2(x, -half.y))
-		found.push_back(Vector2(x, half.y))
-	for i: int in count_z:
-		var z: float = -half.y + step_z * (float(i) + 0.5)
-		found.push_back(Vector2(-half.x, z))
-		found.push_back(Vector2(half.x, z))
+	for i: int in count:
+		var travelled: float = (float(i) + 0.5) / float(count) * perimeter
+		found.push_back({
+			"position": _walk_rectangle(travelled, half, side_x, side_z),
+			"ring": travelled / perimeter,
+		})
 	return found
+
+
+## El punto que queda a `distance` metros de una esquina, siguiendo el borde del
+## rectangulo.
+func _walk_rectangle(distance: float, half: Vector2, side_x: float,
+		side_z: float) -> Vector2:
+	if distance < side_x:
+		return Vector2(-half.x + distance, -half.y)
+	distance -= side_x
+	if distance < side_z:
+		return Vector2(half.x, -half.y + distance)
+	distance -= side_z
+	if distance < side_x:
+		return Vector2(half.x - distance, half.y)
+	return Vector2(-half.x, half.y - (distance - side_x))
 
 
 func _build_multimesh(transforms: Array[Transform3D], colors: PackedColorArray,
 		customs: PackedColorArray) -> void:
-	var mesh := CapsuleMesh.new()
-	mesh.radius = seat_radius
-	mesh.height = seat_height
-	mesh.radial_segments = 6
-	mesh.rings = 2
+	# Un quad de lado 1: el ancho y el alto reales viajan en la escala de cada
+	# instancia, y el shader los lee de ahi.
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2.ONE
 	mesh.material = _crowd_material()
 
 	var mm := MultiMesh.new()
@@ -192,12 +252,17 @@ func _build_multimesh(transforms: Array[Transform3D], colors: PackedColorArray,
 		mm.set_instance_color(i, colors[i])
 		mm.set_instance_custom_data(i, customs[i])
 	multimesh = mm
-	# El bob mueve los vertices y Godot no lo sabe: sin margen, un espectador en
-	# el borde de la caja parpadea cuando el culling decide que ya no esta.
-	custom_aabb = mm.get_aabb().grow(1.0)
+	# El shader mueve los vertices y Godot no lo sabe: sin margen, un espectador
+	# que salta en el borde de la caja parpadea cuando el culling lo descarta.
+	custom_aabb = mm.get_aabb().grow(3.0)
 
 
 func _crowd_material() -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = load(SHADER_PATH)
-	return material
+	if _material == null:
+		_material = ShaderMaterial.new()
+		_material.shader = load(SHADER_PATH)
+	return _material
+
+
+func _set_parameter(parameter: StringName, value: Variant) -> void:
+	_crowd_material().set_shader_parameter(parameter, value)

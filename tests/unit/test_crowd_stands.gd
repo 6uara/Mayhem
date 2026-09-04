@@ -71,10 +71,42 @@ func test_the_stands_climb_away_from_the_arena() -> void:
 	var floor_y: float = BOUNDS.position.y
 	var highest: float = floor_y
 	for seat: Vector3 in _seats(crowd):
-		assert_gt(seat.y, floor_y, "nadie por debajo del piso de la arena")
+		assert_gte(seat.y, floor_y, "nadie por debajo del piso de la arena")
 		highest = maxf(highest, seat.y)
-	assert_gt(highest, floor_y + crowd.row_rise,
+	assert_gt(highest, floor_y + crowd.fallback_row_rise,
 		"la ultima fila esta mas arriba que la primera")
+
+
+func test_measured_rows_put_everyone_exactly_where_they_were_told() -> void:
+	# El camino bueno: el shell mide sus propias gradas y le pasa las filas. La
+	# version anterior las adivinaba y la gente flotaba delante de la grada.
+	var crowd: CrowdStands = _crowd()
+	crowd.populate_rows(Vector3.ZERO, [
+		{"half": Vector2(40.0, 40.0), "y": 3.0},
+		{"half": Vector2(44.0, 44.0), "y": 7.5},
+	])
+	var heights: Array[float] = []
+	for seat: Vector3 in _seats(crowd):
+		if not heights.has(seat.y):
+			heights.append(seat.y)
+	heights.sort()
+	assert_eq(heights, [3.0, 7.5] as Array[float],
+		"nadie se sienta a una altura que no le dieron")
+
+
+func test_the_wave_can_travel_because_everyone_knows_where_they_sit() -> void:
+	# El parametro 0..1 de la vuelta viaja en INSTANCE_CUSTOM.w y es lo unico que
+	# hace posible que un gesto recorra el estadio en vez de encenderlo entero.
+	var crowd: CrowdStands = _crowd()
+	crowd.populate_rows(Vector3.ZERO, [{"half": Vector2(40.0, 40.0), "y": 0.0}])
+	var ring: Array[Dictionary] = crowd._ring_positions(Vector2(40.0, 40.0))
+	assert_gt(ring.size(), 100)
+	var previous: float = -1.0
+	for seat: Dictionary in ring:
+		var value: float = seat["ring"]
+		assert_between(value, 0.0, 1.0)
+		assert_gt(value, previous, "la vuelta avanza siempre para el mismo lado")
+		previous = value
 
 
 func test_drops_come_from_a_seat_in_the_front_rows() -> void:
@@ -82,7 +114,7 @@ func test_drops_come_from_a_seat_in_the_front_rows() -> void:
 	crowd.populate(BOUNDS, PIT_MARGIN)
 	var seats: PackedVector3Array = _seats(crowd)
 	# Solo las dos primeras filas: es de donde un brazo llega a la arena.
-	var front_ceiling: float = BOUNDS.position.y + crowd.row_rise * 2.0
+	var front_ceiling: float = BOUNDS.position.y + crowd.fallback_row_rise * 2.0
 	for i: int in 40:
 		var seat: Vector3 = crowd.pick_seat()
 		assert_true(seats.has(seat), "%v no es un asiento de esta tribuna" % seat)
@@ -94,7 +126,7 @@ func test_an_empty_crowd_answers_instead_of_crashing() -> void:
 	# Quien pregunta tiene que chequear has_seats(), pero una tribuna vacia no
 	# puede ser la causa de que se caiga un director de drops.
 	var crowd: CrowdStands = _crowd()
-	crowd.rows = 0
+	crowd.fallback_rows = 0
 	crowd.populate(BOUNDS, PIT_MARGIN)
 	assert_false(crowd.has_seats())
 	assert_eq(crowd.pick_seat(), Vector3.ZERO)
