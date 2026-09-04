@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="0_theme"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
@@ -12,6 +12,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_headshot.wav" id="10_hit_head"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui/hitmarker_kill.wav" id="11_hit_kill"]
 [ext_resource type="Script" path="res://scripts/ui/speed_lines_overlay.gd" id="12_speedlines"]
+[ext_resource type="Script" path="res://scripts/ui/bonus_panel.gd" id="14_bonus"]
 [ext_resource type="Shader" path="res://assets/shaders/speed_lines.gdshader" id="13_speedlines_shader"]
 
 [sub_resource type="Gradient" id="Grad_vignette"]
@@ -321,6 +322,20 @@ size_flags_horizontal = 8
 [node name="WeaponList" type="VBoxContainer" parent="Root/WeaponCluster"]
 theme_override_constants/separation = 6
 alignment = 2
+
+[node name="BonusPanel" type="Control" parent="Root"]
+anchors_preset = 4
+anchor_left = 0
+anchor_top = 0.5
+anchor_right = 0
+anchor_bottom = 0.5
+offset_left = 48.0
+offset_top = -120.0
+offset_right = 356.0
+offset_bottom = 120.0
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("14_bonus")
 
 [node name="SubtitleBox" type="PanelContainer" parent="Root"]
 theme_type_variation = &"SubtitlePanel"

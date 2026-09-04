@@ -115,6 +115,27 @@ func get_owned() -> Array[UpgradeData]:
 	return result
 
 
+## Every purchase with the context the UI needs to describe it: the upgrade, how
+## many stacks, which weapon it is scoped to (empty for global ones), and the
+## seconds left when it is temporary.
+##
+## `get_owned()` collapses the scope away, which is fine for gameplay queries and
+## wrong for a panel that has to say "Magazine x2 (SMG)".
+func get_owned_entries() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for key: StringName in _owned:
+		var data: UpgradeData = _owned[key]
+		var scoped: bool = data.category == UpgradeData.Category.WEAPON
+		var parts: PackedStringArray = String(key).split("::")
+		result.push_back({
+			"data": data,
+			"stacks": int(_stacks[key]),
+			"weapon_id": StringName(parts[1]) if scoped and parts.size() > 1 else &"",
+			"remaining": float(_temporary_remaining.get(key, 0.0)),
+		})
+	return result
+
+
 ## Seconds left on a temporary upgrade, or 0.0 if it is not active/temporary.
 func get_temporary_remaining(id: StringName, weapon_id: StringName = &"") -> float:
 	return float(_temporary_remaining.get(_key(id, weapon_id), 0.0))
