@@ -54,6 +54,12 @@ signal purchase_made(item_id: StringName, cost: int)
 signal shop_opened()
 signal shop_closed()
 
+# Crowd
+## El publico tiro un gadget a la arena. `landing` es donde va a caer, no donde
+## esta: quien escuche esto -el Host, el HUD- tiene que poder señalar el lugar
+## antes de que el objeto llegue, o el aviso llega tarde.
+signal crowd_drop_thrown(utility_id: StringName, landing: Vector3)
+
 # Match state
 signal game_state_changed(new_state: int)
 ## Pause is not a game state - it can interrupt any of them and leaves the run

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CrowdDropTable" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crowd_drop_table.gd" id="1_table"]
+[ext_resource type="Resource" path="res://data/utilities/stun_grenade.tres" id="2_stun"]
+[ext_resource type="Resource" path="res://data/utilities/temp_wall.tres" id="3_wall"]
+[ext_resource type="Resource" path="res://data/utilities/slow_field.tres" id="4_slow"]
+
+[resource]
+script = ExtResource("1_table")
+utilities = Array[Resource]([ExtResource("2_stun"), ExtResource("3_wall"), ExtResource("4_slow")])
+weights = PackedFloat32Array(2, 1, 1)
+min_interval = 18.0
+max_interval = 34.0
+interval_step_per_wave = 1.4
+min_interval_floor = 8.0
+opening_delay = 12.0

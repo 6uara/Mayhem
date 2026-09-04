@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/arena_host.gd" id="1_arena_host"]
 [ext_resource type="Resource" path="res://data/arenas/default_arena.tres" id="1_default_arena"]
@@ -13,6 +13,9 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/shop_screen.tscn" id="9_shop"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="10_pause"]
 [ext_resource type="Script" path="res://scripts/systems/host_director.gd" id="11_host"]
+[ext_resource type="Script" path="res://scripts/systems/crowd_drop_director.gd" id="11_crowd"]
+[ext_resource type="Resource" path="res://data/crowd_drop_table.tres" id="11_crowd_table"]
+[ext_resource type="PackedScene" path="res://scenes/arena/crowd_drop_pickup.tscn" id="11_crowd_drop"]
 [ext_resource type="Script" path="res://scripts/systems/hitstop_controller.gd" id="12_hitstop"]
 [ext_resource type="Script" path="res://scripts/systems/damage_number_spawner.gd" id="13_dmg_numbers"]
 [ext_resource type="Script" path="res://scripts/systems/player_spawn_controller.gd" id="17_spawn_ctrl"]
@@ -87,6 +90,12 @@ shop_screen = NodePath("../ShopScreen")
 
 [node name="HostDirector" type="Node" parent="."]
 script = ExtResource("11_host")
+
+[node name="CrowdDropDirector" type="Node" parent="." node_paths=PackedStringArray("arena_host")]
+script = ExtResource("11_crowd")
+table = ExtResource("11_crowd_table")
+drop_scene = ExtResource("11_crowd_drop")
+arena_host = NodePath("../ArenaHost")
 
 [node name="HitstopController" type="Node" parent="."]
 script = ExtResource("12_hitstop")
