@@ -71,6 +71,10 @@ text = "Resume"
 custom_minimum_size = Vector2(0, 48)
 text = "Options"
 
+[node name="EditorButton" type="Button" parent="Root/Panel/Margin/Layout"]
+custom_minimum_size = Vector2(0, 44)
+text = "Back to the editor"
+
 [node name="MenuButton" type="Button" parent="Root/Panel/Margin/Layout"]
 custom_minimum_size = Vector2(0, 48)
 text = "Quit to menu"

@@ -1,3 +1,4 @@
+@tool
 class_name UpgradeData
 extends Resource
 ## A purchasable upgrade. Every effect must be expressible as StatModifiers.

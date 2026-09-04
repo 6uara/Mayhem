@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+
+[resource]
+script = ExtResource("1_piece")
+id = &"wall_corner"
+display_name = "Wall corner"
+footprint = Array[Vector3i]([Vector3i(0, 0, 0), Vector3i(1, 0, 0), Vector3i(0, 0, 1)])
+walkable_cells = Array[Vector3i]([])
+blocks_navigation = true
+connects_levels = false
+category = 2
+greybox_color = Color(0.34, 0.35, 0.4, 1)
+greybox_extents = Vector3(1, 1, 0.25)

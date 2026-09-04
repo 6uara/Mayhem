@@ -1,43 +1,53 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://bojfe3xwiy8p0"]
 
-[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
-[ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
-[ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="3_theme"]
+[ext_resource type="Script" uid="uid://4w5yb177f3es" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://diy64audi15ki" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
+[ext_resource type="Theme" uid="uid://bs52imyfholid" path="res://ui/mayhem_theme.tres" id="3_theme"]
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4_settings"]
 [ext_resource type="PackedScene" path="res://scenes/ui/leaderboard_panel.tscn" id="5_lb"]
+[ext_resource type="PackedScene" path="res://scenes/ui/arena_select.tscn" id="6_arena_select"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = -1.0
+content_margin_top = -1.0
+content_margin_right = -1.0
+content_margin_bottom = -1.0
 script = ExtResource("2_chamfer")
 fill_color = Color(0.078, 0.086, 0.106, 1)
 fill_alpha = 0.95
 border_color = Color(0.173, 0.192, 0.251, 1)
-border_width = 1.0
 chamfer = 20.0
 rail_width = 3.0
 rail_color = Color(0.208, 0.878, 0.831, 1)
 rail_side = 3
 tick_length = 28.0
 tick_color = Color(0.208, 0.878, 0.831, 1)
-[node name="MainMenu" type="Control"]
+
+[node name="MainMenu" type="Control" unique_id=334112370]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme = ExtResource("3_theme")
 script = ExtResource("1_menu")
 
-[node name="Root" type="Control" parent="."]
-anchors_preset = 15
+[node name="Root" type="Control" parent="." unique_id=88092070]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="Background" type="ColorRect" parent="Root"]
-anchors_preset = 15
+[node name="Background" type="ColorRect" parent="Root" unique_id=176551190]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.027, 0.031, 0.043, 1)
 
-[node name="Panel" type="PanelContainer" parent="Root"]
-anchors_preset = 4
+[node name="Panel" type="PanelContainer" parent="Root" unique_id=161839494]
+layout_mode = 0
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 110.0
@@ -46,66 +56,96 @@ offset_right = 530.0
 offset_bottom = 262.0
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
-[node name="Margin" type="MarginContainer" parent="Root/Panel"]
+[node name="Margin" type="MarginContainer" parent="Root/Panel" unique_id=1028146737]
+layout_mode = 2
 theme_override_constants/margin_left = 36
 theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 36
 theme_override_constants/margin_bottom = 32
 
-[node name="Layout" type="VBoxContainer" parent="Root/Panel/Margin"]
+[node name="Layout" type="VBoxContainer" parent="Root/Panel/Margin" unique_id=1809188375]
+layout_mode = 2
 theme_override_constants/separation = 14
 alignment = 1
 
-[node name="Title" type="Label" parent="Root/Panel/Margin/Layout"]
+[node name="Title" type="Label" parent="Root/Panel/Margin/Layout" unique_id=2081717953]
+layout_mode = 2
 theme_type_variation = &"Announce"
 text = "MAYHEM"
 
-[node name="Tagline" type="Label" parent="Root/Panel/Margin/Layout"]
+[node name="Tagline" type="Label" parent="Root/Panel/Margin/Layout" unique_id=1064141532]
+layout_mode = 2
 theme_type_variation = &"HUDLabel"
 text = "TEN WAVES. ONE RUN. NO SAVES."
 
-[node name="BestRow" type="HBoxContainer" parent="Root/Panel/Margin/Layout"]
+[node name="BestRow" type="HBoxContainer" parent="Root/Panel/Margin/Layout" unique_id=192157696]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Label" type="Label" parent="Root/Panel/Margin/Layout/BestRow"]
+[node name="Label" type="Label" parent="Root/Panel/Margin/Layout/BestRow" unique_id=1119811546]
+layout_mode = 2
 theme_type_variation = &"HUDLabel"
 text = "BEST"
 vertical_alignment = 1
 
-[node name="Value" type="Label" parent="Root/Panel/Margin/Layout/BestRow"]
+[node name="Value" type="Label" parent="Root/Panel/Margin/Layout/BestRow" unique_id=271859264]
+layout_mode = 2
 theme_type_variation = &"NumCluster"
 theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
 text = "-"
 
-[node name="Spacer" type="Control" parent="Root/Panel/Margin/Layout"]
+[node name="Spacer" type="Control" parent="Root/Panel/Margin/Layout" unique_id=2135568065]
 custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
 
-[node name="PlayButton" type="Button" parent="Root/Panel/Margin/Layout"]
+[node name="PlayButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=240581368]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 text = "Play"
 
-[node name="LeaderboardButton" type="Button" parent="Root/Panel/Margin/Layout"]
+[node name="CreateArenaButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=599094322]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Create arena"
+
+[node name="LeaderboardButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=803373435]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 text = "Best runs"
 
-[node name="OptionsButton" type="Button" parent="Root/Panel/Margin/Layout"]
+[node name="OptionsButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=1809799044]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 text = "Options"
 
-[node name="QuitButton" type="Button" parent="Root/Panel/Margin/Layout"]
+[node name="QuitButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=319155051]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 text = "Quit"
 
-[node name="FooterSpacer" type="Control" parent="Root/Panel/Margin/Layout"]
+[node name="FooterSpacer" type="Control" parent="Root/Panel/Margin/Layout" unique_id=1783167980]
 custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
 
-[node name="Footer" type="Label" parent="Root/Panel/Margin/Layout"]
+[node name="Footer" type="Label" parent="Root/Panel/Margin/Layout" unique_id=1049776079]
+layout_mode = 2
 theme_type_variation = &"HUDLabel"
 theme_override_colors/font_color = Color(0.271, 0.298, 0.376, 1)
+text = "v0.0.0"
 horizontal_alignment = 1
 autowrap_mode = 2
-text = "v0.0.0"
 
-[node name="Settings" parent="." instance=ExtResource("4_settings")]
+[node name="Settings" parent="." unique_id=269595302 instance=ExtResource("4_settings")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Leaderboard" parent="." instance=ExtResource("5_lb")]
+[node name="ArenaSelect" parent="." unique_id=1380140603 instance=ExtResource("6_arena_select")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Leaderboard" parent="." unique_id=1645247612 instance=ExtResource("5_lb")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2

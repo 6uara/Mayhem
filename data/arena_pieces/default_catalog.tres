@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="PieceCatalog" load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/piece_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/arena_pieces/floor_1x1.tres" id="2_floor_1x1"]
+[ext_resource type="Resource" path="res://data/arena_pieces/floor_2x2.tres" id="3_floor_2x2"]
+[ext_resource type="Resource" path="res://data/arena_pieces/floor_3x3.tres" id="4_floor_3x3"]
+[ext_resource type="Resource" path="res://data/arena_pieces/ramp_1x1.tres" id="5_ramp_1x1"]
+[ext_resource type="Resource" path="res://data/arena_pieces/ramp_2x1.tres" id="6_ramp_2x1"]
+[ext_resource type="Resource" path="res://data/arena_pieces/wall_1x1.tres" id="7_wall_1x1"]
+[ext_resource type="Resource" path="res://data/arena_pieces/wall_2x1.tres" id="8_wall_2x1"]
+[ext_resource type="Resource" path="res://data/arena_pieces/wall_corner.tres" id="9_wall_corner"]
+[ext_resource type="Resource" path="res://data/arena_pieces/platform_2x2.tres" id="10_platform_2x2"]
+[ext_resource type="Resource" path="res://data/arena_pieces/catwalk_1x3.tres" id="11_catwalk_1x3"]
+[ext_resource type="Resource" path="res://data/arena_pieces/pillar_1x1.tres" id="12_pillar_1x1"]
+[ext_resource type="Resource" path="res://data/arena_pieces/cover_low.tres" id="13_cover_low"]
+[ext_resource type="Resource" path="res://data/arena_pieces/bounce_pad.tres" id="14_bounce_pad"]
+[ext_resource type="Resource" path="res://data/arena_pieces/jump_link.tres" id="15_jump_link"]
+[ext_resource type="Resource" path="res://data/arena_pieces/zip_line.tres" id="16_zip_line"]
+[ext_resource type="Resource" path="res://data/arena_pieces/grapple_anchor.tres" id="17_grapple_anchor"]
+[ext_resource type="Resource" path="res://data/arena_pieces/moving_platform.tres" id="18_moving_platform"]
+[ext_resource type="Resource" path="res://data/arena_pieces/hazard_zone.tres" id="19_hazard_zone"]
+[ext_resource type="Resource" path="res://data/arena_pieces/ammo_pickup.tres" id="20_ammo_pickup"]
+[ext_resource type="Resource" path="res://data/arena_pieces/disappearing_platform.tres" id="21_disappearing_platform"]
+[ext_resource type="Resource" path="res://data/arena_pieces/snare_zone.tres" id="22_snare_zone"]
+
+[resource]
+script = ExtResource("1_catalog")
+cell_size = Vector3(4, 3, 4)
+pieces = Array[Resource]([ExtResource("2_floor_1x1"), ExtResource("3_floor_2x2"), ExtResource("4_floor_3x3"), ExtResource("5_ramp_1x1"), ExtResource("6_ramp_2x1"), ExtResource("7_wall_1x1"), ExtResource("8_wall_2x1"), ExtResource("9_wall_corner"), ExtResource("10_platform_2x2"), ExtResource("11_catwalk_1x3"), ExtResource("12_pillar_1x1"), ExtResource("13_cover_low"), ExtResource("14_bounce_pad"), ExtResource("15_jump_link"), ExtResource("16_zip_line"), ExtResource("17_grapple_anchor"), ExtResource("18_moving_platform"), ExtResource("19_hazard_zone"), ExtResource("20_ammo_pickup"), ExtResource("21_disappearing_platform"), ExtResource("22_snare_zone")])

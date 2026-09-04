@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PieceDefinition" format=3 uid="uid://b2sgv7gxpv26h"]
+
+[ext_resource type="Script" uid="uid://c8u5kordo462g" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+[ext_resource type="PackedScene" path="res://scenes/arena/ammo_pickup.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_piece")
+id = &"ammo_pickup"
+display_name = "Ammo crate"
+scene = ExtResource("2_scene")
+support = 1
+category = 4
+greybox_color = Color(0.99, 0.69, 0.13, 1)

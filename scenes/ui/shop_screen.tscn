@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/shop_screen.gd" id="1_shop"]
 [ext_resource type="Script" path="res://scripts/systems/shop.gd" id="2_shop_logic"]
 [ext_resource type="Resource" path="res://data/economy/shop_catalog.tres" id="3_catalog"]
 [ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="4_theme"]
 [ext_resource type="Script" path="res://scripts/ui/chamfer_style_box.gd" id="5_chamfer"]
+[ext_resource type="Script" path="res://scripts/ui/bonus_list.gd" id="6_bonus_list"]
 
 [sub_resource type="StyleBox" id="StyleBox_frame"]
 script = ExtResource("5_chamfer")
@@ -85,6 +86,19 @@ theme_override_font_sizes/font_size = 16
 [node name="Cards" type="HBoxContainer" parent="Root/Panel/VBox"]
 size_flags_vertical = 3
 theme_override_constants/separation = 16
+
+[node name="ActiveBonuses" type="VBoxContainer" parent="Root/Panel/VBox"]
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Root/Panel/VBox/ActiveBonuses"]
+theme_type_variation = &"HUDLabel"
+text = "ACTIVE BONUSES"
+theme_override_colors/font_color = Color(0.541, 0.565, 0.639, 1)
+
+[node name="List" type="VBoxContainer" parent="Root/Panel/VBox/ActiveBonuses"]
+script = ExtResource("6_bonus_list")
+show_empty_categories = true
+horizontal = true
 
 [node name="RerollRow" type="HBoxContainer" parent="Root/Panel/VBox"]
 theme_override_constants/separation = 12

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ArenaTheme" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/arena_theme.gd" id="1_theme"]
+[ext_resource type="PackedScene" path="res://scenes/arena/shells/tiled_shell.tscn" id="2_shell"]
+
+; Gradas armadas repitiendo secciones. No tiene pozo que medir: el anillo se
+; construye al tamano de la arena, asi que pit_size/pit_center no aplican y el
+; editor no avisa de estiramiento porque no hay ninguno.
+[resource]
+script = ExtResource("1_theme")
+shell_scene = ExtResource("2_shell")
+id = &"tiled"
+display_name = "Stands (tiled)"
+pit_size = Vector2(1, 1)
+pit_center = Vector2(0, 0)
+sun_rotation_degrees = Vector3(-45, -30, 0)
+sun_energy = 1.1
+kill_plane_depth = 30.0
+kill_plane_margin = 200.0

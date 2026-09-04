@@ -1,3 +1,4 @@
+@tool
 class_name UtilityData
 extends Resource
 ## A throwable/deployable utility (stun grenade, temporary wall, slow field).

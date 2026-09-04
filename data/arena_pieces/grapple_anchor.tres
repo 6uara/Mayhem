@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PieceDefinition" format=3 uid="uid://bdmnntn26pr8a"]
+
+[ext_resource type="Script" uid="uid://c8u5kordo462g" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+[ext_resource type="PackedScene" path="res://scenes/arena/grapple_anchor.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_piece")
+id = &"grapple_anchor"
+display_name = "Grapple anchor"
+scene = ExtResource("2_scene")
+support = 2
+min_level = 2
+category = 4
+greybox_color = Color(0.9, 0.6, 0.95, 1)

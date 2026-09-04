@@ -1,0 +1,12 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/arena_tiled_shell.gd" id="1_tiled"]
+[ext_resource type="PackedScene" path="res://assets/models/arena/SingleStand.blend" id="2_stand"]
+[ext_resource type="PackedScene" path="res://assets/models/arena/CornerStand.blend" id="3_corner"]
+[ext_resource type="Texture2D" path="res://assets/textures/CONCRETE_smooth_slab_2x1_1.png" id="4_concrete"]
+
+[node name="TiledShell" type="Node3D"]
+script = ExtResource("1_tiled")
+stand_section = ExtResource("2_stand")
+corner_section = ExtResource("3_corner")
+concrete_texture = ExtResource("4_concrete")

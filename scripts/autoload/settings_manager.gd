@@ -15,6 +15,9 @@ const DEFAULTS: Dictionary = {
 	## cooldowns y el ritmo de las oleadas; el otro existe porque no todos leen
 	## una granada como algo que se tira sin mirar. Ver UtilityComponent.
 	"input/gadget_quick_cast": true,
+	## The arena editor shows its controls the first time and never again on its
+	## own. Persisted so "never again" survives closing the game.
+	"editor/help_seen": false,
 	"video/fov": 104.0,
 	"video/fullscreen": true,
 	"video/vsync": false,

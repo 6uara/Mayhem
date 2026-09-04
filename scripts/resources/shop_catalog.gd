@@ -1,3 +1,4 @@
+@tool
 class_name ShopCatalog
 extends Resource
 ## Everything buyable, and the prices. One resource so the whole shop can be

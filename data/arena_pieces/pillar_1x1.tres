@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PieceDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+
+[resource]
+script = ExtResource("1_piece")
+id = &"pillar_1x1"
+display_name = "Pillar"
+footprint = Array[Vector3i]([Vector3i(0, 0, 0)])
+walkable_cells = Array[Vector3i]([])
+blocks_navigation = true
+connects_levels = false
+category = 4
+greybox_color = Color(0.28, 0.29, 0.33, 1)
+greybox_extents = Vector3(0.4, 1, 0.4)

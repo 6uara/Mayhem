@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="PieceDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+[ext_resource type="PackedScene" path="res://scenes/arena/disappearing_platform.tscn" id="2_scene"]
+
+; Pisable, pero no la ve el flood fill como piso estable: si la ruta unica pasa por aca,
+; el validador te va a marcar la region como aislada, y esta bien que lo haga.
+[resource]
+script = ExtResource("1_piece")
+id = &"disappearing_platform"
+display_name = "Blinking platform"
+scene = ExtResource("2_scene")
+footprint = Array[Vector3i]([Vector3i(0, 0, 0)])
+walkable_cells = Array[Vector3i]([Vector3i(0, 0, 0)])
+blocks_navigation = false
+connects_levels = false
+link_offsets = Array[Vector3i]([])
+category = 3
+greybox_color = Color(0.45, 0.55, 0.62, 1)

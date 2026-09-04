@@ -1,3 +1,4 @@
+@tool
 class_name SpawnGroup
 extends Resource
 ## One batch of enemies emitted from a set of spawn doors during a wave.
