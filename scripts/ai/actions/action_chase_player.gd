@@ -44,7 +44,16 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		# paths to one point walks in single file, y ahora tambien el puesto que
 		# le reparte el CombatDirector.
 		var wanted: Vector3 = enemy.get_approach_position()
-		if _worth_repathing(enemy, wanted) and CombatDirector.request_repath():
+		# Al jugador subido a una plataforma que el navmesh no conecta no se llega,
+		# y ningun carril de aproximacion lo arregla: el destino cae en otra isla,
+		# el agente rutea hasta el borde de la propia y el enemigo se queda ahi
+		# empujando contra lo que tenga delante. Cuando `_steer()` ya lo declaro
+		# inalcanzable, el destino pasa a ser el punto mas cercano al que se puede
+		# llegar de verdad - o sea que el enemigo espera abajo y lo sigue por
+		# abajo, que es lo que hace cualquiera que no puede subir.
+		if not enemy.refresh_target_reachability():
+			wanted = enemy.closest_reachable_point(enemy.get_target_position())
+		if _worth_repathing(enemy, wanted) and CombatDirector.request_repath(enemy):
 			enemy.set_move_target(wanted)
 	enemy.face_target(get_physics_process_delta_time())
 	return RUNNING

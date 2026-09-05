@@ -23,6 +23,7 @@ script = ExtResource("3_sequence")
 [node name="InRange" type="Node" parent="Root/ShootBranch"]
 script = ExtResource("4_in_range")
 range_multiplier = 1.0
+require_line_of_sight = true
 
 [node name="AttackReady" type="Node" parent="Root/ShootBranch"]
 script = ExtResource("5_ready")

@@ -155,6 +155,59 @@ func test_the_repath_budget_runs_out_and_comes_back() -> void:
 	assert_true(CombatDirector.request_repath(), "al frame siguiente hay turno de nuevo")
 
 
+## El cupo se repartia por orden de llegada, y ese orden es el del arbol de
+## escena: siempre el mismo. Con la horda pidiendo mas caminos de los que entran
+## en un frame, los ultimos del arbol podian no conseguir turno nunca.
+func test_whoever_was_denied_a_turn_gets_it_first_next_frame() -> void:
+	var starved := Enemy.new()
+	starved.data = load("res://data/enemies/rusher.tres")
+	starved.is_active = true
+	add_child_autofree(starved)
+	CombatDirector.register(starved)
+
+	# Los de mas arriba en el arbol se llevan el cupo entero, y el ultimo se queda
+	# sin turno. Es el frame que antes se repetia igual toda la ola.
+	for i: int in CombatDirector.REPATH_BUDGET_PER_FRAME:
+		CombatDirector.request_repath()
+	assert_false(CombatDirector.request_repath(starved), "este frame no le toco")
+
+	await wait_physics_frames(1)
+	# Los mismos de arriba vuelven a pedir primero, y ahora uno de sus turnos esta
+	# reservado para el que quedo debiendo.
+	var granted: int = 0
+	for i: int in CombatDirector.REPATH_BUDGET_PER_FRAME:
+		if CombatDirector.request_repath():
+			granted += 1
+	assert_eq(granted, CombatDirector.REPATH_BUDGET_PER_FRAME - 1,
+		"al resto le queda el cupo menos lo reservado")
+	assert_true(CombatDirector.request_repath(starved),
+		"y el que se quedo sin turno lo cobra igual, aunque pida ultimo")
+
+
+## La reserva no puede sobrevivir al que la genero: un enemigo que dejo de pedir
+## caminos -murio, dejo de perseguir- estaria guardando cupo para siempre.
+func test_a_debt_nobody_comes_to_collect_does_not_reserve_forever() -> void:
+	var quitter := Enemy.new()
+	quitter.data = load("res://data/enemies/rusher.tres")
+	quitter.is_active = true
+	add_child_autofree(quitter)
+	CombatDirector.register(quitter)
+
+	for i: int in CombatDirector.REPATH_BUDGET_PER_FRAME:
+		CombatDirector.request_repath()
+	assert_false(CombatDirector.request_repath(quitter), "queda debiendole un turno")
+
+	# Pasada la ventana de prioridad sin que lo cobre, el cupo vuelve a ser de
+	# todos. Ver REPATH_DEBT_FRAMES.
+	await wait_physics_frames(CombatDirector.REPATH_DEBT_FRAMES + 2)
+	var granted: int = 0
+	for i: int in CombatDirector.REPATH_BUDGET_PER_FRAME:
+		if CombatDirector.request_repath():
+			granted += 1
+	assert_eq(granted, CombatDirector.REPATH_BUDGET_PER_FRAME,
+		"el cupo vuelve a estar entero")
+
+
 # Reparto de piso
 
 func test_two_throwers_cannot_claim_the_same_ground() -> void:

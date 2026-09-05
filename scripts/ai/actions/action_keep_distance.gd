@@ -36,22 +36,37 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	var distance: float = enemy.get_distance_to_target()
 	enemy.face_target(get_physics_process_delta_time())
 
+	# Estar a la distancia justa no sirve de nada si hay una columna en el medio.
+	# Este SUCCESS era el que dejaba al tirador plantado detras de una pared el
+	# resto de la ola: devolvia "ya estoy donde quiero", el selector no llegaba
+	# nunca a la rama de acercarse, y nadie lo movia de ahi. Sin vision la
+	# distancia preferida deja de ser el objetivo y lo que se busca es el angulo.
+	if not enemy.has_line_of_sight_to_target():
+		return _reposition(enemy, enemy.get_target_position())
+
 	if absf(distance - preferred) <= tolerance:
 		enemy.stop_moving()
 		return SUCCESS
 
+	var player_position: Vector3 = enemy.get_target_position()
+	var away: Vector3 = enemy.global_position - player_position
+	away.y = 0.0
+	if away.length_squared() < 0.01:
+		away = Vector3.FORWARD
+	return _reposition(enemy, player_position + away.normalized() * preferred)
+
+
+## Camina hacia `wanted` respetando el intervalo, la tolerancia y el presupuesto de
+## repath. Es el cuerpo que comparten el kiteo y el destrabe por falta de vision, y
+## esta aparte para que los dos paguen los mismos frenos: sin eso el tirador ciego
+## pediria un camino nuevo todos los frames.
+func _reposition(enemy: Enemy, wanted: Vector3) -> int:
 	_repath_timer -= get_physics_process_delta_time()
 	if _repath_timer <= 0.0:
 		_repath_timer = repath_interval
-		var player_position: Vector3 = enemy.get_target_position()
-		var away: Vector3 = enemy.global_position - player_position
-		away.y = 0.0
-		if away.length_squared() < 0.01:
-			away = Vector3.FORWARD
-		var wanted: Vector3 = player_position + away.normalized() * preferred
 		var moved: float = wanted.distance_squared_to(enemy.move_target)
 		if (not enemy.is_moving or moved > repath_tolerance * repath_tolerance) \
-				and CombatDirector.request_repath():
+				and CombatDirector.request_repath(enemy):
 			enemy.set_move_target(wanted)
 	return RUNNING
 

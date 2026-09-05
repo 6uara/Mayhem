@@ -108,6 +108,11 @@ func test_two_crowded_enemies_push_apart() -> void:
 	var two: Enemy = await _make_enemy()
 	one.global_position = Vector3.ZERO
 	two.global_position = Vector3(0.4, 0.0, 0.0)
+	# El mismo frame de gracia que se explica en el test de abajo: los vecinos
+	# salen de una grilla que el director rearma a intervalos, y preguntar antes
+	# de que la rearme una vez contesta que no hay nadie. Faltaba solo aca, y por
+	# eso este test pasaba o no segun que hubiera corrido antes.
+	await wait_physics_frames(4)
 
 	var push_one: Vector3 = one._compute_separation()
 	var push_two: Vector3 = two._compute_separation()

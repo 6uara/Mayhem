@@ -34,6 +34,37 @@ const DETOUR_DEGREES: float = 62.0
 const LINK_BLOCK_TIME: float = 4.0
 ## Cerca de la salida de un link como para contar el cruce por bueno.
 const LINK_ARRIVAL: float = 1.5
+## Cuanto se espera el aterrizaje de un salto antes de dejar de esperarlo.
+##
+## Un salto que no aterriza nunca -se cayo del arena, lo empujaron, lo aturdieron
+## a mitad del arco- dejaba la marca puesta para siempre, y el proximo aterrizaje
+## de este cuerpo, minutos y saltos despues, se juzgaba contra un origen viejo:
+## un salto bueno cobraba el castigo de otro que nadie vio terminar. Vencido el
+## plazo, el salto no se juzga - no se castiga, se olvida.
+const JUMP_PENDING_TIMEOUT: float = 4.0
+## Cuanto puede estar atascado un enemigo antes de que el salto y el paso dejen de
+## ser respuesta y haya que sacarlo de ahi a la fuerza.
+##
+## El salto y el paso de escalon atienden el atasco que tiene forma de obstaculo.
+## El que no la tiene -una esquina de dos paredes, un hueco entre dos cajas donde
+## entro y no sale, una costura del bake- no lo atiende nadie, y ahi el enemigo se
+## queda todo lo que dure la ola tirando rayos contra algo que no va a saltar
+## nunca. Esto es el ultimo escalon: pasado este tiempo se lo empuja a un punto
+## navegable de verdad, aunque sea a un metro.
+const STUCK_WARP_TIME: float = 6.0
+## Antes del empujon se prueba lo barato: rodear. Es el mismo rodeo que arma un
+## salto fallido, disparado por el reloj en vez de por un aterrizaje.
+const STUCK_DETOUR_TIME: float = 2.0
+## Hasta donde se busca piso navegable al destrabar por reloj, y de a cuanto. Corto
+## a proposito: cuatro metros hacia el objetivo se leen como que se destrabo, y
+## veinte se leerian como que aparecio de la nada.
+const WARP_SAMPLES: int = 4
+const WARP_STEP: float = 1.0
+## Cuanto tiene que estar un volador con algo adelante antes de dejar de subir y
+## probar por el costado. Subir es la primera respuesta y casi siempre alcanza;
+## bajo un techo no alcanza nunca, y ahi el volador queda temblando contra el
+## rincon porque nadie le ofrece otra salida.
+const FLIGHT_BLOCKED_TIME: float = 0.8
 
 # Separacion (la unica regla de boids que este juego quiere)
 #
@@ -169,6 +200,14 @@ var _has_detonated: bool = false
 var _tether_target: Enemy
 var _stuck_time: float = 0.0
 var _jump_cooldown_left: float = 0.0
+## El objetivo esta en una isla del navmesh a la que no se llega caminando -
+## arriba de una plataforma, del otro lado de un hueco sin link-. Lo escribe
+## `refresh_target_reachability()` -y tambien `_steer()`, cuando el agente termina
+## un camino que no llego- y lo leen las hojas, que es lo que les permite dejar de
+## perseguir algo a lo que no se puede llegar en vez de insistir toda la ola.
+var _target_unreachable: bool = false
+## Cuanto lleva un volador con algo adelante. Ver FLIGHT_BLOCKED_TIME.
+var _flight_blocked_time: float = 0.0
 var _last_position: Vector3
 ## Set while crossing a NavigationLink3D under our own ballistic arc.
 var _link_target: Vector3 = Vector3.ZERO
@@ -177,15 +216,23 @@ var _is_traversing_link: bool = false
 var _jump_origin: Vector3 = Vector3.ZERO
 ## True between a jump starting and its landing being judged.
 var _jump_pending: bool = false
+## Cuanto lleva esperando ese aterrizaje. Ver JUMP_PENDING_TIMEOUT.
+var _jump_pending_time: float = 0.0
 ## Was the enemy on the floor last frame? The landing is the transition.
 var _was_on_floor: bool = true
 ## Seconds left of walking sideways to get out of whatever the jump could not
 ## clear, and which way. The side alternates so a failed detour tries the other.
 var _detour_time: float = 0.0
 var _detour_sign: float = 1.0
-## The link that just failed, and how long it stays off the table.
-var _blocked_link: JumpLink
-var _blocked_link_time: float = 0.0
+## Los links que acaban de rebotar a este enemigo, y cuanto le queda a cada uno
+## fuera de la mesa.
+##
+## Era un solo slot, y con eso alcanzaba mientras hubiera un link por rincon. Dos
+## links contiguos que fallan uno detras del otro se pisaban el slot: el segundo
+## borraba al primero, el primero volvia a estar disponible al instante, y el
+## enemigo alternaba entre los dos para siempre - el mismo pogo que el bloqueo
+## existe para cortar, con un paso intermedio.
+var _blocked_links: Dictionary = {}
 ## The link this jump was launched at, kept until the landing is judged.
 var _last_link: JumpLink
 ## This enemy's lane, -1 to 1: which side of the direct line it approaches on,
@@ -258,9 +305,7 @@ func _physics_process(delta: float) -> void:
 	_detour_time = maxf(_detour_time - delta, 0.0)
 	_separation_timer = maxf(_separation_timer - delta, 0.0)
 	_leap_recovery_left = maxf(_leap_recovery_left - delta, 0.0)
-	_blocked_link_time = maxf(_blocked_link_time - delta, 0.0)
-	if _blocked_link_time <= 0.0:
-		_blocked_link = null
+	_expire_blocked_links(delta)
 
 
 	if is_flying():
@@ -325,7 +370,7 @@ func _physics_process(delta: float) -> void:
 		# termino valio la pena y la otra destraba a quien se atasco contra una
 		# pared caminando. Un volador no salta y no se atasca - sube.
 		return
-	_judge_landing()
+	_judge_landing(delta)
 	_check_obstruction(delta)
 
 
@@ -365,10 +410,13 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_leap_recovery_left = 0.0
 	_stuck_time = 0.0
 	_jump_cooldown_left = 0.0
+	_target_unreachable = false
+	_flight_blocked_time = 0.0
 	_last_position = spawn_position
 	_is_traversing_link = false
 	_link_target = spawn_position
 	_jump_pending = false
+	_jump_pending_time = 0.0
 	_was_on_floor = true
 	_approach_lane = randf_range(-1.0, 1.0)
 	# Pooleado: el cuerpo puede volver como otro arquetipo y hasta como otra
@@ -380,8 +428,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	# despues descansaban juntos: el promedio no lo nota, el peor frame si.
 	_separation_timer = randf() * SEPARATION_INTERVAL
 	_detour_time = 0.0
-	_blocked_link = null
-	_blocked_link_time = 0.0
+	_blocked_links.clear()
 	_last_link = null
 	_navmesh_latched = false
 	_cache_links()
@@ -784,7 +831,14 @@ func start_leap() -> bool:
 	var offset: Vector3 = target - global_position
 	velocity = Vector3(offset.x, 0.0, offset.z) / time
 	velocity.y = offset.y / time + 0.5 * GRAVITY * time
-	_begin_jump()
+	# No pasa por `_begin_jump()` a proposito, y eso es un cambio: un salto de
+	# ataque no es un salto de navegacion y no se juzga con la misma vara. La vara
+	# de `_judge_landing()` es cuanto terreno cubrio el salto, y un salto encima de
+	# alguien que esta a un metro cubre menos que el minimo - o sea que el ataque
+	# que **acerto** se registraba como un salto fallido y se cobraba tres segundos
+	# sin poder saltar mas un rodeo, justo despues de haber hecho las cosas bien.
+	# El exito de este salto se mide por contacto, y de eso se ocupa
+	# `_check_leap_contact()`.
 	return true
 
 
@@ -1064,12 +1118,39 @@ func _steer(delta: float) -> void:
 			# quedo del otro lado de algo. El objetivo, en cambio, esta parado en
 			# piso valido por definicion, asi que se vuelve a apuntar ahi y se
 			# reintenta. Si el inalcanzable ya era el objetivo -esta arriba de una
-			# plataforma-, no hay nada mejor que hacer y se frena, que es donde el
-			# salto de obstaculo sigue siendo la salida.
+			# plataforma-, se camina hasta lo mas cerca que se pueda llegar.
 			var anchor: Vector3 = get_target_position()
 			if move_target.distance_squared_to(anchor) > 1.0:
 				set_move_target(anchor)
 				return
+			# El objetivo mismo es inalcanzable: esta arriba de una plataforma, o
+			# del otro lado de un hueco que ningun link cruza. Frenar aca y no
+			# hacer nada mas era el peor de los dos finales posibles: `is_moving`
+			# quedaba en true, `_check_obstruction()` lo leia como atascado, y el
+			# enemigo se pasaba la ola saltando en el lugar cada tres segundos -
+			# porque el rodeo que arma el salto fallido se aplica mas abajo en
+			# esta misma funcion, despues del `return`, asi que no llegaba nunca.
+			#
+			# Lo que corresponde es admitirlo: se camina hasta lo mas cerca que se
+			# puede llegar, y ahi se declara llegado. Un enemigo parado abajo de la
+			# plataforma esperando al jugador se lee como que lo esta esperando; el
+			# que salta contra la pared se lee como un bug.
+			_target_unreachable = true
+			var reachable: Vector3 = closest_reachable_point(anchor)
+			if global_position.distance_squared_to(reachable) \
+					> NAV_ARRIVAL_TOLERANCE * NAV_ARRIVAL_TOLERANCE \
+					and move_target.distance_squared_to(reachable) > 1.0:
+				set_move_target(reachable)
+				return
+			_stop_horizontal(delta)
+			return
+		else:
+			# Llego. El agente da el camino por terminado dentro de su
+			# `target_desired_distance`, y ese ultimo metro no se camina a mano:
+			# empujarlo era lo que dejaba a un enemigo apoyado contra la pared que
+			# tiene entre el y un destino que ya alcanzo, sin avanzar, hasta que
+			# `_check_obstruction()` lo leia como atascado y lo mandaba a saltar.
+			# La orden se cumplio; la proxima la da la hoja cuando repathee.
 			_stop_horizontal(delta)
 			return
 
@@ -1131,13 +1212,29 @@ func _fly(delta: float) -> void:
 	if _separation != Vector3.ZERO:
 		direction = (direction + _separation * SEPARATION_WEIGHT).normalized()
 
-	# Algo adelante: subir. Es la unica esquiva que un volador tiene garantizada -
-	# rodear lo puede meter en un rincon, y arriba siempre hay salida salvo bajo
-	# techo, que es el caso que _flight_target_height() ya atiende. Pisa la
-	# correccion de altura de este frame a proposito: la pared es mas urgente que
-	# la altura de crucero, y en cuanto la pasa vuelve sola.
+	# Algo adelante: subir. Es la primera esquiva y casi siempre la unica que hace
+	# falta - arriba hay salida salvo bajo techo. Pisa la correccion de altura de
+	# este frame a proposito: la pared es mas urgente que la altura de crucero, y
+	# en cuanto la pasa vuelve sola.
 	if _blocked_ahead(direction):
+		_flight_blocked_time += delta
 		velocity.y = maxf(velocity.y, data.flight_climb_speed)
+		# Salvo que subir no este funcionando. Bajo una galeria el techo lo empuja
+		# hacia abajo -eso lo resuelve _flight_target_height()- y la pared lo
+		# empuja hacia arriba, y entre las dos el volador se queda temblando contra
+		# el rincon el resto de la ola: es el mismo atasco que el de a pie, sin
+		# ninguna de sus salidas, porque un volador no salta ni pisa escalones. La
+		# respuesta es la misma que abajo: irse por el costado, alternando de lado
+		# para no insistir contra la misma esquina.
+		if _flight_blocked_time >= FLIGHT_BLOCKED_TIME and _detour_time <= 0.0:
+			_detour_sign = -_detour_sign
+			_detour_time = DETOUR_TIME
+	else:
+		_flight_blocked_time = 0.0
+
+	if _detour_time > 0.0:
+		direction = direction.rotated(Vector3.UP,
+			deg_to_rad(DETOUR_DEGREES) * _detour_sign).normalized()
 
 	var speed: float = get_move_speed()
 	velocity.x = move_toward(velocity.x, direction.x * speed, 30.0 * delta)
@@ -1283,6 +1380,72 @@ func playable_spawn(spawn_position: Vector3) -> Vector3:
 	return spawn_position
 
 
+## Lo mas cerca de `to` que este enemigo puede llegar caminando.
+##
+## Cuando el destino esta en otra isla del navmesh, el camino que devuelve el
+## servidor no llega: termina en el borde de la isla propia, y ese ultimo punto es
+## exactamente donde conviene pararse a esperar. Sin navmesh, o sin camino, la
+## respuesta es "donde estoy", que es la unica verdad disponible.
+func closest_reachable_point(to: Vector3) -> Vector3:
+	if agent == null or not _has_navmesh():
+		return to
+	var map: RID = agent.get_navigation_map()
+	if not map.is_valid():
+		return to
+	var path: PackedVector3Array = NavigationServer3D.map_get_path(map, global_position, to, true)
+	if path.is_empty():
+		return global_position
+	return path[path.size() - 1]
+
+
+## Si el objetivo esta en una isla del navmesh a la que no se llega caminando.
+##
+## Publico porque las hojas lo necesitan: perseguir algo inalcanzable es la unica
+## orden que ninguna cantidad de steering puede cumplir, y una hoja que no puede
+## enterarse la repite hasta que termina la ola.
+func is_target_unreachable() -> bool:
+	return _target_unreachable
+
+
+## Le vuelve a preguntar al navmesh si al objetivo se llega caminando, y deja la
+## respuesta en el latch que lee `is_target_unreachable()`.
+##
+## Se pregunta con un camino y no con `NavigationAgent3D.is_target_reachable()`,
+## que fue el primer intento y no alcanza: esa bandera solo dice algo una vez que
+## el agente **termino** de navegar, y un enemigo empujando contra la plataforma
+## sobre la que esta el jugador no termina nunca - se queda a mitad de un camino
+## que no puede completar, que es justo el estado que habia que detectar.
+##
+## Se mide contra el objetivo y no contra el destino de aproximacion: el carril y
+## el rumbo empujan ese destino un par de metros afuera del navmesh a cada rato, y
+## eso no es un objetivo inalcanzable, es un punto que ya sabe corregir
+## `navigable_position()`. Lo que decide es si al jugador se le puede llegar.
+##
+## La llaman las hojas al repathear, o sea al mismo ritmo y bajo el mismo
+## presupuesto que un camino nuevo, porque cuesta lo mismo que uno.
+func refresh_target_reachability() -> bool:
+	if agent == null or not _has_navmesh():
+		_target_unreachable = false
+		return true
+	var map: RID = agent.get_navigation_map()
+	if not map.is_valid() or get_target() == null:
+		_target_unreachable = false
+		return true
+	_target_unreachable = not _can_reach(map, global_position, get_target_position())
+	return not _target_unreachable
+
+
+## Si desde aca se ve al objetivo. Ver `_can_see()`: no es percepcion, es lo que
+## separa un disparo de un disparo contra una columna.
+func has_line_of_sight_to_target() -> bool:
+	if data == null:
+		return false
+	var target: Node3D = get_target()
+	if target == null:
+		return false
+	return _can_see(target)
+
+
 ## Si desde `from` se puede caminar hasta `to`, o sea si estan en la misma isla.
 func _can_reach(map: RID, from: Vector3, to: Vector3) -> bool:
 	var path: PackedVector3Array = NavigationServer3D.map_get_path(map, from, to, true)
@@ -1370,10 +1533,16 @@ func _flight_target_height() -> float:
 ## jump is put away for a few seconds, the link that refused it is left alone,
 ## and the enemy walks sideways instead - which is what gets it off the corner it
 ## is caught on.
-func _judge_landing() -> void:
+func _judge_landing(delta: float) -> void:
 	var grounded: bool = is_on_floor()
 	var just_landed: bool = grounded and not _was_on_floor
 	_was_on_floor = grounded
+	if _jump_pending:
+		_jump_pending_time += delta
+		if _jump_pending_time >= JUMP_PENDING_TIMEOUT:
+			# Nadie vio aterrizar esto. Ver JUMP_PENDING_TIMEOUT.
+			_jump_pending = false
+			_last_link = null
 	if not just_landed or not _jump_pending:
 		return
 	_jump_pending = false
@@ -1405,8 +1574,7 @@ func _note_jump_result(travelled: float, reached_target: bool = false) -> void:
 	if _is_traversing_link:
 		_is_traversing_link = false
 	if _last_link != null:
-		_blocked_link = _last_link
-		_blocked_link_time = LINK_BLOCK_TIME
+		_blocked_links[_last_link] = LINK_BLOCK_TIME
 		_last_link = null
 
 
@@ -1414,6 +1582,7 @@ func _note_jump_result(travelled: float, reached_target: bool = false) -> void:
 func _begin_jump(link: JumpLink = null) -> void:
 	_jump_origin = global_position
 	_jump_pending = true
+	_jump_pending_time = 0.0
 	_was_on_floor = true
 	_last_link = link
 
@@ -1453,7 +1622,11 @@ func _check_obstruction(delta: float) -> void:
 
 	var wants_to_move: bool = is_moving and not is_staggered()
 	var making_progress: bool = travelled / maxf(delta, 0.0001) > STUCK_SPEED
-	if not wants_to_move or making_progress or not is_on_floor():
+	# Llegar no es atascarse. Un enemigo parado en su destino esta quieto y tiene
+	# `is_moving` en true hasta que la hoja le de la proxima orden, y sin esta
+	# guarda esa espera se leia como estar trabado: el que llego a un destino con
+	# una pared al lado terminaba saltandola por haber hecho las cosas bien.
+	if not wants_to_move or making_progress or not is_on_floor() or _has_arrived():
 		_stuck_time = 0.0
 		return
 
@@ -1464,10 +1637,96 @@ func _check_obstruction(delta: float) -> void:
 		return
 
 	_stuck_time += delta
-	if _stuck_time < STUCK_TIME or _jump_cooldown_left > 0.0:
+	# El ultimo escalon, y el unico que no depende de que el atasco tenga forma de
+	# algo saltable. Ver STUCK_WARP_TIME.
+	if _stuck_time >= STUCK_WARP_TIME:
+		_force_unstick()
+		return
+	if _stuck_time < STUCK_TIME:
+		return
+	# El rodeo es mas barato que el salto y no necesita que haya nada enfrente, asi
+	# que se prueba primero y en cuanto el atasco deja de ser momentaneo. El salto
+	# sigue siendo la respuesta al obstaculo con forma de obstaculo.
+	if _stuck_time >= STUCK_DETOUR_TIME and _detour_time <= 0.0:
+		_detour_sign = -_detour_sign
+		_detour_time = DETOUR_TIME
+	if _jump_cooldown_left > 0.0:
 		return
 	if _try_jump_obstacle():
 		_stuck_time = 0.0
+
+
+## Si el camino se termino, con o sin navmesh. La pregunta que separa "quieto
+## porque no puede avanzar" de "quieto porque ya esta donde lo mandaron".
+func _has_arrived() -> bool:
+	if agent != null and _has_navmesh():
+		return agent.is_navigation_finished()
+	return Vector2(global_position.x - move_target.x,
+		global_position.z - move_target.z).length_squared() < 0.04
+
+
+## Saca al enemigo de un atasco que ni el paso ni el salto pudieron resolver.
+##
+## Es la red de ultimo recurso, y por eso es la mas bruta: se lo mueve al punto
+## navegable mas cercano en direccion al objetivo. No es un teletransporte a otro
+## lado del arena - se camina el segmento de a un metro y se toma el primero que
+## el navmesh acepte, que en la practica es un empujon de uno o dos metros -,
+## porque un enemigo que aparece de golpe lejos de donde estaba es peor bug que el
+## que arregla.
+##
+## Si no encuentra nada, lo unico que queda es soltar la orden: un enemigo que
+## deja de tener destino vuelve a pedirlo por el arbol al frame siguiente, y ese
+## destino nuevo puede ser alcanzable aunque el viejo no lo fuera.
+func _force_unstick() -> void:
+	_stuck_time = 0.0
+	_jump_cooldown_left = 0.0
+	_blocked_links.clear()
+	_detour_sign = -_detour_sign
+	_detour_time = DETOUR_TIME
+
+	var anchor: Vector3 = get_target_position()
+	var inward: Vector3 = anchor - global_position
+	inward.y = 0.0
+	if agent == null or not _has_navmesh() or inward.length_squared() < 0.01:
+		is_moving = false
+		return
+	var map: RID = agent.get_navigation_map()
+	if not map.is_valid():
+		is_moving = false
+		return
+
+	inward = inward.normalized()
+	var best: Vector3 = Vector3.ZERO
+	var found: bool = false
+	for step: int in range(1, WARP_SAMPLES + 1):
+		var motion: Vector3 = inward * (float(step) * WARP_STEP)
+		# El empujon no atraviesa nada. Sin esto el destrabe se comia el problema
+		# que venia a resolver y lo cambiaba por otro peor: un enemigo aparecido
+		# adentro de una caja -que sale despedido hacia arriba- o del otro lado de
+		# la pared contra la que estaba trabado, o sea al lado del jugador. Se
+		# prueba con el cuerpo propio, no con un rayo, porque lo que tiene que
+		# entrar es el cuerpo.
+		if test_move(global_transform, motion):
+			break
+		# La altura la resuelve la gravedad, igual que en playable_spawn(): subirlo
+		# o bajarlo a mano es meterlo adentro del piso o dejarlo cayendo.
+		var candidate: Vector3 = global_position + motion
+		if _off_mesh_by(map, candidate) > NAV_SNAP_TOLERANCE:
+			continue
+		if not _can_reach(map, candidate, anchor):
+			continue
+		best = candidate
+		found = true
+
+	if not found:
+		# No hay a donde. Lo unico que queda es soltar la orden: un enemigo sin
+		# destino vuelve a pedirlo por el arbol al frame siguiente, y el nuevo
+		# puede ser alcanzable aunque el viejo no lo fuera.
+		is_moving = false
+		return
+	global_position = best
+	_last_position = global_position
+	set_move_target(anchor)
 
 
 ## Rides out a link crossing. The arc was solved at launch, so nothing steers here -
@@ -1541,17 +1800,53 @@ func _find_link_ahead() -> JumpLink:
 		# The one that just bounced this enemy off a railing is off the table for
 		# a few seconds. Without this the pathfinder keeps offering the same
 		# crossing and the enemy keeps taking it, which is the pogo.
-		if link == _blocked_link:
+		if _blocked_links.has(link):
 			continue
 		var distance: float = global_position.distance_to(_nearest_end(link))
 		if distance > data.collision_radius + 1.6 or distance >= best_distance:
 			continue
 		var exit: Vector3 = link.get_exit_for(global_position)
-		if exit.distance_to(move_target) >= global_position.distance_to(move_target):
+		# El camino manda. Un link por el que el pathfinder ya ruteo se cruza,
+		# aunque la cuenta de abajo diga que es un rodeo - y a veces lo dice: el
+		# destino que ve esta funcion es el corregido por `navigable_position()`,
+		# que acerca al enemigo cualquier punto que caiga fuera del navmesh, y eso
+		# puede haberlo dejado de **este** lado del hueco que el link cruza. Con
+		# eso el enemigo rechazaba el unico link que su propio camino le pedia
+		# tomar, y se quedaba caminando hasta el borde y parado ahi.
+		if not _path_routes_through(exit) \
+				and exit.distance_to(move_target) >= global_position.distance_to(move_target):
 			continue  # the far side is no closer to the goal, so jumping is a detour
 		best = link
 		best_distance = distance
 	return best
+
+
+## Si el proximo punto del camino es la salida de este link, o sea si el
+## pathfinder ya decidio cruzarlo.
+##
+## Un camino que atraviesa un NavigationLink3D incluye sus dos puntas como puntos
+## del camino, asi que parado en la punta de aca el proximo punto es la de alla.
+## Es la respuesta de quien sabe, y por eso pisa a la heuristica de distancias.
+func _path_routes_through(exit: Vector3) -> bool:
+	if agent == null or not _has_navmesh() or agent.is_navigation_finished():
+		return false
+	return agent.get_next_path_position().distance_to(exit) <= LINK_ARRIVAL
+
+
+## Descuenta el bloqueo de cada link y saca a los que ya cumplieron. Un link que
+## dejo de existir -cambio de arena, `queue_free`- se va por la misma puerta.
+func _expire_blocked_links(delta: float) -> void:
+	if _blocked_links.is_empty():
+		return
+	for link: Variant in _blocked_links.keys():
+		if not is_instance_valid(link):
+			_blocked_links.erase(link)
+			continue
+		var left: float = float(_blocked_links[link]) - delta
+		if left <= 0.0:
+			_blocked_links.erase(link)
+		else:
+			_blocked_links[link] = left
 
 
 func _nearest_end(link: JumpLink) -> Vector3:

@@ -25,6 +25,18 @@ extends ConditionLeaf
 ## cualquiera de los dos numeros.
 @export var use_fuse_range: bool = false
 @export var invert: bool = false
+## Ademas de la distancia, exige ver al objetivo.
+##
+## La distancia sola abria la rama de disparo contra una columna: el tirador se
+## plantaba a su distancia preferida, telegrafiaba y disparaba a la pared el resto
+## de la ola, porque `ActionKeepDistance` devolvia SUCCESS -esta a la distancia
+## que queria- y el selector no llegaba nunca a la rama de acercarse. Desde
+## afuera eso es un enemigo trabado, y encima uno que gasta el aviso sonoro del
+## telegrafo sin que haya nada que esquivar.
+##
+## No es percepcion: el enemigo sigue sabiendo siempre donde esta el jugador
+## (CLAUDE.md 5.3). Es la diferencia entre poder pegarle y no poder.
+@export var require_line_of_sight: bool = false
 
 
 func tick(actor: Node, _blackboard: Blackboard) -> int:
@@ -39,6 +51,8 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 	var limit: float = absolute_range if absolute_range > 0.0 \
 		else base_range * range_multiplier
 	var in_range: bool = enemy.get_distance_to_target() <= limit
+	if in_range and require_line_of_sight and not enemy.has_line_of_sight_to_target():
+		in_range = false
 	if invert:
 		in_range = not in_range
 	return SUCCESS if in_range else FAILURE

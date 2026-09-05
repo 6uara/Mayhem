@@ -92,6 +92,9 @@ const ATTACK_TOKENS: Dictionary = {
 	Role.INFILTRATOR: 2,
 }
 
+## Cuantos frames le dura la prioridad al que se quedo sin turno de repath.
+const REPATH_DEBT_FRAMES: int = 4
+
 ## Cuantos enemigos pueden pedirle un camino nuevo al navmesh en un mismo frame
 ## de fisica. Un repath es una consulta al NavigationServer y es la parte cara de
 ## `set_move_target`; con cuarenta enemigos a 5 repaths por segundo son 200
@@ -135,6 +138,16 @@ var _hazards: Array[Dictionary] = []
 var _reassign_timer: float = 0.0
 var _grid_timer: float = 0.0
 var _repaths_left: int = REPATH_BUDGET_PER_FRAME
+## instance_id -> cuantos frames le queda de prioridad al que se quedo sin turno.
+##
+## No un solo frame: el que pide caminos lo hace a intervalos, no todos los
+## frames, y una prioridad que vence en el frame siguiente casi nunca lo
+## encuentra pidiendo. Tampoco para siempre - una deuda que nadie viene a cobrar
+## -el enemigo dejo de perseguir, o murio- estaria reservando cupo el resto de la
+## partida. Ver `request_repath()`.
+var _repath_debt: Dictionary = {}
+## Cuantos turnos de este frame estan reservados para ellos.
+var _repath_reserved: int = 0
 
 
 func _ready() -> void:
@@ -145,6 +158,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_repaths_left = REPATH_BUDGET_PER_FRAME
+	# Se reserva de entrada, antes de que nadie pida: si se esperara a que el
+	# acreedor pida, los primeros del arbol ya se habrian llevado el cupo entero y
+	# la deuda no serviria de nada.
+	_expire_repath_debt()
 	if _enemies.is_empty():
 		return
 	_prune()
@@ -178,6 +195,7 @@ func unregister(enemy: Enemy) -> void:
 	_enemies.erase(enemy)
 	release_attack_token(enemy)
 	_bearings.erase(enemy.get_instance_id())
+	_repath_debt.erase(enemy.get_instance_id())
 
 
 ## Los enemigos vivos, sin pasar por el arbol - `get_nodes_in_group()` arma un
@@ -194,6 +212,8 @@ func reset() -> void:
 	_grid.clear()
 	_tokens.clear()
 	_token_holders.clear()
+	_repath_debt.clear()
+	_repath_reserved = 0
 	_hazards.clear()
 	_target = null
 	_reassign_timer = 0.0
@@ -358,9 +378,29 @@ func release_attack_token(enemy: Enemy) -> void:
 
 ## Turno para pedirle un camino nuevo al navmesh este frame. El que no lo consigue
 ## reintenta al siguiente. Ver `REPATH_BUDGET_PER_FRAME`.
-func request_repath() -> bool:
-	if _repaths_left <= 0:
+##
+## Con el enemigo puesto, el turno ademas es justo. Sin el, el cupo se repartia
+## por orden de llegada, y ese orden es el del arbol de escena: siempre el mismo.
+## Con la horda pidiendo mas caminos de los que entran en un frame, los ultimos
+## del arbol podian no conseguir turno nunca y quedarse caminando hacia un destino
+## viejo toda la ola - un enemigo que va a donde el jugador estaba, que es otra
+## forma de verse roto.
+##
+## Lo que arregla eso: al que se le niega el turno se le anota la deuda, y al
+## frame siguiente el cupo se le reserva. El tope por frame no cambia; lo unico
+## que cambia es quien entra primero.
+func request_repath(enemy: Enemy = null) -> bool:
+	var id: int = enemy.get_instance_id() if enemy != null else 0
+	var owed: bool = id != 0 and _repath_debt.has(id)
+	# El que no debe nada solo puede usar lo que sobra despues de lo reservado.
+	var available: int = _repaths_left if owed else _repaths_left - _repath_reserved
+	if available <= 0:
+		if id != 0:
+			_repath_debt[id] = REPATH_DEBT_FRAMES
 		return false
+	if owed:
+		_repath_debt.erase(id)
+		_repath_reserved = maxi(_repath_reserved - 1, 0)
 	_repaths_left -= 1
 	return true
 
@@ -421,6 +461,20 @@ func get_target_velocity() -> Vector3:
 
 ## Saca los liberados y los que volvieron al pool sin avisar. Un objeto liberado
 ## compara **igual** a null, asi que la guarda tiene que ser `is_instance_valid`.
+## Envejece las prioridades de repath y reserva el cupo de este frame para las que
+## siguen vivas. La reserva se hace de entrada, antes de que nadie pida: esperar a
+## que el acreedor pida seria tarde, porque los primeros del arbol ya se habrian
+## llevado el cupo entero.
+func _expire_repath_debt() -> void:
+	for id: Variant in _repath_debt.keys():
+		var left: int = int(_repath_debt[id]) - 1
+		if left <= 0:
+			_repath_debt.erase(id)
+		else:
+			_repath_debt[id] = left
+	_repath_reserved = mini(_repath_debt.size(), REPATH_BUDGET_PER_FRAME)
+
+
 func _prune() -> void:
 	var alive: Array[Enemy] = []
 	for i: int in _enemies.size():
