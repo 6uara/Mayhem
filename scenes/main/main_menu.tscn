@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/arena_select.tscn" id="6_arena_select"]
 [ext_resource type="PackedScene" path="res://scenes/ui/credits_panel.tscn" id="7_credits"]
 [ext_resource type="PackedScene" path="res://scenes/ui/feedback_panel.tscn" id="8_feedback"]
+[ext_resource type="PackedScene" path="res://scenes/ui/menu_backdrop.tscn" id="9_backdrop"]
+[ext_resource type="Texture2D" path="res://assets/ui/mayhem_logo.png" id="10_logo"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
 resource_local_to_scene = false
@@ -37,6 +39,8 @@ grow_vertical = 2
 theme = ExtResource("3_theme")
 script = ExtResource("1_menu")
 
+[node name="Backdrop" parent="." instance=ExtResource("9_backdrop")]
+
 [node name="Root" type="Control" parent="." unique_id=88092070]
 anchors_preset = 0
 anchor_right = 1.0
@@ -46,7 +50,7 @@ anchor_bottom = 1.0
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.027, 0.031, 0.043, 1)
+color = Color(0.027, 0.031, 0.043, 0.35)
 
 [node name="Panel" type="PanelContainer" parent="Root" unique_id=161839494]
 layout_mode = 0
@@ -70,10 +74,12 @@ layout_mode = 2
 theme_override_constants/separation = 14
 alignment = 1
 
-[node name="Title" type="Label" parent="Root/Panel/Margin/Layout" unique_id=2081717953]
+[node name="Logo" type="TextureRect" parent="Root/Panel/Margin/Layout" unique_id=2081717953]
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-theme_type_variation = &"Announce"
-text = "MAYHEM"
+texture = ExtResource("10_logo")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Tagline" type="Label" parent="Root/Panel/Margin/Layout" unique_id=1064141532]
 layout_mode = 2

@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/menu_backdrop.gd" id="1_backdrop"]
+[ext_resource type="Script" uid="uid://bby85y30n46rm" path="res://scripts/systems/city_skyline.gd" id="2_skyline"]
+[ext_resource type="Environment" path="res://data/arena_themes/coliseum_env.tres" id="3_env"]
+
+[node name="MenuBackdrop" type="Node3D" node_paths=PackedStringArray("skyline", "camera")]
+script = ExtResource("1_backdrop")
+skyline = NodePath("Skyline")
+camera = NodePath("Camera")
+
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = ExtResource("3_env")
+
+[node name="Camera" type="Camera3D" parent="."]
+
+[node name="Skyline" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("2_skyline")
