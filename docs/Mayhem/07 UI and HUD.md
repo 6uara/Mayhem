@@ -134,6 +134,51 @@ Credits / Quit, plus a `Footer` with version and copyright. Every panel
 `FeedbackPanel`) follows the same shape: instanced as a child, `open()` /
 `close()` / a `closed` signal, `_root.visible = false` when hidden.
 
+The title is the actual wordmark (`assets/ui/mayhem_logo.png`, a `TextureRect`
+in the panel's layout) rather than a Label spelling "MAYHEM" — see
+[[11 Asset Pipeline#Brand art]] for why that file is derived rather than the one
+shipped in `assets/Logo_And_Banner/`.
+
+### Menu backdrop
+
+`scripts/ui/menu_backdrop.gd` + `scenes/ui/menu_backdrop.tscn` — the night city
+behind the menu. It is **the arena's own `CitySkyline`**, same script and same
+`city_block.gdshader` (see [[08 VFX and Shaders]]), seeded with no coliseum in
+the middle and viewed from inside the ring, under the coliseum's own
+`Environment`. Writing a second city for the menu would mean the front page
+stops promising the place the player is about to enter the moment either one
+changes.
+
+It renders as plain 3D behind the `Control`, with no `SubViewport`: Godot draws
+the 3D world and then canvas items on top of it, so the menu sits over the city
+without paying for an intermediate texture. Two consequences, both pinned by
+`tests/integration/test_menu_backdrop.gd` because both fail silently — the menu
+opens, nothing errors, and the background is simply black:
+
+- **`Root/Background` must not be opaque.** It went from a solid fill to a
+  0.35-alpha scrim; at alpha 1 it builds the whole city and then paints over it.
+- **The camera must look outward.** It orbits the centre — spinning in place
+  gives no parallax at all and reads as a painted panorama — and faces along its
+  own radius. Facing inward frames the empty clearing, which is sky and nothing
+  else. It also stays inside that clearing, because the inside of a skyline box
+  is not a view.
+
+The towers are seeded centred on the floor, i.e. half-sunk: in the arena the
+stands hide that half and here nothing does, so the camera pitches up a few
+degrees and keeps the bases out of frame. Cheaper and steadier than inventing a
+ground plane for a city that has never had one. `clearing` is the knob that sets
+how far the skyline reads — too small and the camera is *inside* the city, a
+wall of windows with no sky.
+
+`tools/capture_menu.tscn` takes a screenshot of the finished menu
+(`godot --path . --resolution 1600x900 tools/capture_menu.tscn -- shot.png`,
+with real rendering — headless captures nothing). It earned its place
+immediately: the suite passed green while the wordmark rendered at zero height,
+because "the node exists and has a texture" is not the same claim as "it is
+visible". `test_the_wordmark_actually_takes_up_room_on_screen` covers that
+specific hole now, but a menu is a picture and some of its failures only show up
+in one.
+
 ## Leaderboard
 
 `SaveManager` persists up to `MAX_ENTRIES = 20` scores in

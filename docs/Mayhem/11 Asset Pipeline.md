@@ -90,6 +90,33 @@ Output paths: `assets/audio/sfx/weapons/`, `assets/audio/sfx/world/`,
 `assets/audio/sfx/enemies/` (per-archetype, pitched), `assets/audio/sfx/impacts/`,
 `assets/audio/sfx/ui/`.
 
+## Brand art
+
+`assets/Logo_And_Banner/` holds the brand as delivered: wordmark
+(`mayhem-logo-dark` / `-light`, 2400×840), store banner, cover and icon. These
+are **store assets and stay untouched** — the banner in particular is a page
+mockup, complete with a "SCREENSHOT / KEY ART" placeholder box and marketing
+copy, so it is not something to put in front of a player.
+
+`tools/make_menu_logo.py` derives `assets/ui/mayhem_logo.png` from the dark
+wordmark, and exists for one reason: **the delivered logo has no alpha at all**
+— it is a white wordmark baked onto a flat navy field, which over the menu's 3D
+city would be a navy rectangle sitting on the skyline. The tool recovers the
+transparency the file never had, then crops to the ink (the original is mostly
+margin).
+
+It does not key by luminance, which is the usual shortcut and would wash out the
+light-blue accent and grey down the wordmark — a saturated ink reads as
+"partially covered" to a luminance test. Instead it pulls the flat palette out of
+a histogram (navy, white, accent blue) and, for each pixel, solves which ink best
+explains it as a blend against the navy: that recovers the coverage *and*
+restores each ink to full strength, so antialiased edges come out clean. The
+histogram has a distance floor because the navy is not perfectly flat — it
+carries a soft gradient that otherwise registers as a third "ink" and ghosts
+across the whole image.
+
+Regenerate with `python tools/make_menu_logo.py`. See [[07 UI and HUD#Main menu]].
+
 ## Noise textures
 
 `assets/textures/Noise128x128/` — eighteen categories (Cracks, Craters, Gabor,
