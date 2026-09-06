@@ -37,7 +37,7 @@ const SNARE_GRACE: float = 0.9
 ## Apex under `gravity` alone is jump_velocity^2 / (2*gravity) - 1.33m at the
 ## default. Raised from 5.5 (a 0.63m apex, barely a hop) because a jump that
 ## doesn't clear a knee-height ledge reads as a movement bug, not restraint.
-@export var jump_velocity: float = 8.0
+@export var jump_velocity: float = 12.0
 @export var gravity: float = 24.0
 
 @export_group("Air")
