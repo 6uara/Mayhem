@@ -1,10 +1,15 @@
 shader_type spatial;
 render_mode blend_mix, cull_back, diffuse_burley, specular_schlick_ggx;
-// Molten rock: a dark crust with glowing cracks that drift, not a flat coloured
-// disc. Two copies of the same noise texture scroll at different speeds and
-// blend together - one texture alone repeats in an obviously loopable way, two
-// drifting against each other almost never lines up, which is what makes it read
-// as something flowing rather than a texture sliding.
+// A dark surface with glowing veins that drift, not a flat coloured disc. Two
+// copies of the same noise texture scroll at different speeds and blend
+// together - one texture alone repeats in an obviously loopable way, two
+// drifting against each other almost never lines up, which is what makes it
+// read as something flowing rather than a texture sliding.
+//
+// Colour-agnostic on purpose: `crust_color`/`glow_color` are what make this
+// acid (`hazard_zone.tscn` - arena traps and the Elite's slam, dark green with
+// a toxic-green glow) versus the snare flask's own dark-red molten look
+// (`snare_zone.tscn`) - same shader, two skins.
 
 uniform sampler2D noise_texture : hint_default_white, repeat_enable, filter_linear_mipmap;
 uniform vec4 crust_color : source_color = vec4(0.05, 0.03, 0.02, 1.0);
