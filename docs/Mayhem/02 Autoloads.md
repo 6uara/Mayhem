@@ -23,6 +23,10 @@ globals):
 | `WaveManager` | `wave_manager.gd` | Wave sequencing, enemy spawn scheduling |
 | `NarratorManager` | `narrator_manager.gd` | Host VO lines, subtitle queue |
 | `TutorialHintManager` | `tutorial_hint_manager.gd` | First-time-mechanic HUD hints |
+| `BalanceHub` | `balance_hub.gd` | Editor-only live reload of balance `.tres` files |
+| `ArenaSession` | `arena_session.gd` | The arena being built/played and its `user://` round trip |
+| `DevConsole` | `dev_console.gd` | Debug-build in-game console |
+| `FeedbackManager` | `feedback_manager.gd` | Player feedback reports: save / copy / open form |
 | `BeehaveGlobalMetrics` / `BeehaveGlobalDebugger` | addon | Beehave's own (not ours) |
 
 ## EventBus
@@ -298,3 +302,44 @@ scene (and its `MovementComponent`) is recreated every run.
 `TutorialHint.action`, read live from `InputMap` — a remapped key is never
 wrong. Hints with no single key to name (movement, the shop) leave `action`
 empty and skip substitution.
+
+## BalanceHub
+
+`scripts/autoload/balance_hub.gd`. Editor-only: watches `res://data/economy`
+and `res://data/enemies` every `POLL_INTERVAL = 0.5s` and reloads any changed
+`.tres` with `CACHE_MODE_REPLACE`, so a value tweaked in the Balance Editor
+lands in the running match without a restart — every system already holding
+that resource keeps its reference and just sees new numbers. An exported
+build has no writable resource files to watch, so this does nothing there.
+
+## ArenaSession
+
+`scripts/autoload/arena_session.gd`. Owns the arena currently being built or
+played and where it lives: `res://data/arena_pieces/default_catalog.tres` for
+the piece catalog, `user://arenas` for player-made arenas, `res://data/arenas`
+for shipped ones (`default_arena.tres`, authored at the single fixed size —
+see [[06 Waves and Economy#Arena]]). It is the one object that knows both the
+arena-editor addon and the game scene, since neither of those knows the other
+exists: `new_arena()`, `save()`/`load()`, and the round trip out to a
+playtest via `GAME_SCENE` and back to `EDITOR_SCENE`.
+
+## DevConsole
+
+`scripts/autoload/dev_console.gd`. Debug builds only, a `CanvasLayer` toggled
+open at `OPEN_HEIGHT = 0.45` of the viewport. Commands are data
+(`_commands: Dictionary`, name → `{args, help, handler}`) that call straight
+into systems that already exist — the console owns no gameplay rules of its
+own, so it can't drift from what it's testing. Freezes the tree under its own
+`FREEZE_REASON` so it doesn't fight the pause menu's own freeze.
+
+## FeedbackManager
+
+`scripts/autoload/feedback_manager.gd`. Writes one JSON file per report to
+`user://feedback/feedback_<timestamp>.json`: the player's text, a category,
+and automatic context (version, arena, wave, score, session time, OS,
+resolution, GPU, average FPS) — the context is what makes a report useful,
+since nobody writes that by hand. Reads `FeedbackConfig`
+(`data/feedback/feedback_config.tres`) for the external form URL, which ships
+empty until there's a form to point at (see [[07 UI and HUD#Feedback panel]]).
+Nothing leaves the machine on its own: save writes the file, copy puts the
+report on the clipboard, and opening the form is a separate, explicit button.

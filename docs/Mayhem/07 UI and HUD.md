@@ -128,15 +128,57 @@ hit that way than by resetting every system by hand.
 
 ## Main menu
 
-`scripts/ui/main_menu.gd` — **explicitly marked as a placeholder** in its own
-top-of-file comment (`"Placeholder menu so GameManager's scene transitions have
-somewhere to land."`). It has not been rebuilt to match the rest of the visual
-identity pass. See [[12 Known Issues and Gaps]].
+`scripts/ui/main_menu.gd` — Play / Create Arena / Leaderboard / Options /
+Credits / Quit, plus a `Footer` with version and copyright. Every panel
+(`SettingsScreen`, `LeaderboardPanel`, `ArenaSelect`, `CreditsPanel`,
+`FeedbackPanel`) follows the same shape: instanced as a child, `open()` /
+`close()` / a `closed` signal, `_root.visible = false` when hidden.
 
 ## Leaderboard
 
-`SaveManager` (autoload) persists scores, but **no screen currently displays
-them**. See [[12 Known Issues and Gaps]].
+`SaveManager` persists up to `MAX_ENTRIES = 20` scores in
+`user://leaderboard.json` (`score`, `time`, `waves`, `date`, `name`), and
+`LeaderboardPanel` (`scripts/ui/leaderboard_panel.gd`) shows them from the main
+menu, columns `["#", "NAME", "SCORE", "WAVES", "TIME", "DATE"]`. **Losing a run
+now submits a score too** — `MatchDirector` emits `EventBus.run_finished` on
+both the victory and the game-over path, so a leaderboard that only ever
+recorded a clean 10-wave clear doesn't stay empty forever; `match_completed`
+keeps meaning the same thing it always did for the Host and the music.
+
+Local names, no backend: `MatchOverlay._show_end()` opens `ScoreEntryPanel`
+instead of `MatchDirector` calling `submit_score()` directly — it lists
+previously-used names from `SaveManager.get_profiles()` (`user://profiles.json`,
+separate file from the leaderboard itself) with the last one preselected, or a
+plain text field the first time, validated 3–12 alphanumeric-and-space
+characters. "Skip" still submits, as `"PLAYER"` — a lost score annoys more than
+an anonymous row does. If a global leaderboard is ever wanted, `submit_score()`
+stays the single entry point, so a Steam Leaderboards call (target is Steam
+via GodotSteam) would be one added call, not a rewrite.
+
+## Credits panel
+
+`scripts/ui/credits_panel.gd` + `scenes/ui/credits_panel.tscn`, opened from a
+"CREDITS" button between Options and Quit, same `open()`/`close()`/`closed`
+pattern and `ui_cancel` handling as `LeaderboardPanel`. Content comes from a
+data constant (`SECTIONS`, same idea as `SettingsScreen.SCHEMA`) rather than
+text authored in the `.tscn` — authorship, tools (Godot, Beehave, GUT,
+phantom_camera, debug_draw), fonts (IBM Plex, Archivo), audio and third-party
+assets, kept in sync with [THIRD_PARTY.md](../THIRD_PARTY.md) by construction:
+adding an attribution is adding one line to `SECTIONS`.
+
+## Feedback panel
+
+`scripts/ui/feedback_panel.gd` + `scenes/ui/feedback_panel.tscn`, opened from
+the main menu and from the pause menu (see [[02 Autoloads#FeedbackManager]] for
+what gets written and why the context matters more than the text). A
+`TextEdit` body, an `OptionButton` category (Bug / Balance / Idea / Otro), and
+three actions: **Guardar** writes the report to `user://feedback/` and
+confirms the path on screen; **Copiar** puts the text plus the formatted
+context on the clipboard (`DisplayServer.clipboard_set()`), ready to paste
+into an issue; **Abrir formulario** calls `OS.shell_open()` on the URL in
+`FeedbackConfig` — hidden entirely while that URL is empty, since there's no
+form to send anyone to yet. A line in the panel states exactly what gets
+included and that nothing is sent without the player choosing to.
 
 ## Scene transitions
 

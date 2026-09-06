@@ -103,8 +103,24 @@ dash→slide chains worth learning.
 
 `GrappleComponent` (separate component, `scripts/components/grapple_component.gd`)
 — `try_fire()` / `release()` / `get_pull_velocity()`. `MovementComponent._tick_grappling()`
-just calls into it and exits on release or on jump/re-fire. **No test coverage** —
-see [[12 Known Issues and Gaps]].
+just calls into it and exits on release or on jump/re-fire. Covered by
+`tests/unit/test_grapple_component.gd`.
+
+**Aim assist.** `_find_anchor()` tries a single raycast from `aim_node` first —
+a direct hit always wins — and only if that misses does it fall back to
+scanning the `&"grapple_anchor"` group: discard anchors outside
+`get_max_range()`, discard anything behind the aim (`dot <= 0`), discard
+anything past `get_aim_assist_degrees()` from the forward vector, then among
+what's left pick the **smallest angle** (what the player is looking at, not
+what's nearest) and confirm line of sight with a second raycast against
+`PhysicsLayers.WORLD` — the assist can never grapple through a wall, which is
+the one guarantee the old single-raycast version gave for free. Both paths
+return the same `{position, collider}` shape, so `try_fire()` doesn't care
+which one answered. `aim_assist_degrees: float = 4.0` is an `@export` read
+through `get_aim_assist_degrees()` (same pattern as `get_cooldown()` /
+`get_max_range()`), stat-scaled by `StatsComponent.GRAPPLE_AIM_ASSIST` via the
+**Magnet Hook** upgrade (`data/upgrades/grapple_aim_assist.tres`, ×1.6, 2
+stacks: 4° → 6.4° → 10.2°).
 
 ## CameraFeelComponent
 

@@ -45,19 +45,19 @@ pass.
 
 ## Needs a human at the editor, not more unattended passes
 
-- **Arena dressing/geometry pass** (backlog tanda D1) — un-started on purpose.
-  Turning greybox into a dressed level is a visual-judgment task (does this
-  read as a space, does the new geometry kill sightlines/flow) that has no
-  meaningful unattended version; the safe thing to automate would just be
-  guessing. See [[08 VFX and Shaders#Arena glow]] for what *did* ship
-  unattended this pass (glow) and why that one was safe to guess at (it
-  completes an already-decided, documented convention rather than choosing
-  new geometry or color).
-- **Lighting pass beyond glow** (tanda D2) — same reasoning. Glow shipped
-  because it's mechanical completion of shader uniforms that already existed
-  for this purpose; key/fill lighting, shadow baking decisions, and a
-  per-zone "can I actually see the enemy here" check all need a person
-  looking at the rendered arena.
+- ~~**Arena dressing/geometry pass** (backlog tanda D1)~~ — **done.** The arena
+  is a generated coliseum, not the old `greybox_arena.tscn` block: a night
+  cyberpunk theme, a crowd in the stands that reads as people and throws
+  gadgets, an energy wall, a roof/oculus with light beams, and a city behind
+  it. Fixed at a single 32×8×32 size — see [[06 Waves and Economy#Arena]].
+- ~~**Lighting pass beyond glow** (tanda D2)~~ — **mostly done, at zero light
+  cost.** Platforms were unreadable at night (mate albedo against ambient
+  0.85/sun 0.35 — a contrast problem, not a missing-light one): fixed with an
+  emissive edge on `PieceDefinition` (`edge_color`/`edge_energy`, geometry the
+  environment's own glow already picks up) plus higher-contrast, lower-roughness
+  albedo on transitable pieces. No `OmniLight3D` per platform was needed —
+  see [PLAN_QOL_SHIP.md §2](../PLAN_QOL_SHIP.md) for the before/after and why
+  the lights option stayed off the table.
 - **Real audio mix** (tanda E3) — `tools/configure_audio_mix.gd` set a
   first-pass gain hierarchy (VO/Weapons highest priority down to UI lowest,
   see the tool's own docstring for the exact table) plus a Master limiter so
@@ -95,19 +95,29 @@ themed, reads `SaveManager.get_entries()`, opens from the main menu's
 `LeaderboardButton`, and shows the player's best score on the front page
 (`BestRow/Value`) — all covered by
 `tests/integration/test_main_menu_and_leaderboard.gd`, which was already
-passing before this doc got corrected (backlog tanda G6).
+passing before this doc got corrected (backlog tanda G6). Since then it also
+gained a player name per entry and a row for a losing run — see
+[[07 UI and HUD#Leaderboard]]. Main menu also stopped being a placeholder:
+Credits and Feedback panels shipped, see [[07 UI and HUD#Credits panel]] and
+[[07 UI and HUD#Feedback panel]].
 
 ## Minor drift
 
 - ~~`Tokens.CROSSHAIR_COLORS`~~ — fixed (backlog tanda G6): the stale preset
   swapped for `HAZARD` itself, so it can't drift again the same way.
 - **Shader `tint`/`glow_color` uniforms are set once, at `.tscn` authoring
-  time**, matching `Tokens.HAZARD` / `Tokens.SPAWN` by hand rather than being
-  derived from the token live at runtime (see
-  [[08 VFX and Shaders#Color law tie-in]]). If either token changes again, the
-  lava and portal shaders need a manual update to follow — there's no test
+  time**, by hand rather than derived from the token live at runtime (see
+  [[08 VFX and Shaders#Color law tie-in]]). If `Tokens.SPAWN` changes again,
+  the portal shader needs a manual update to follow — there's no test
   currently catching that specific drift, unlike the Elite/hazard coupling
   which *is* tested.
+
+  ⚠ **The hazard pool's green is not an instance of this.** `hazard_zone.tscn`
+  glows `#C6FF3D` while `Tokens.HAZARD` is `#FC3A00`, on purpose — the pool is
+  acid, the token is the danger language around it, and the telegraph on that
+  same pool still runs in the token's orange. Do not "fix" it back into
+  matching: the reasoning is in
+  [[09 Design Tokens and Color Law#Accent colors and their shapes]].
 - **`data/surfaces/metal.tres` reuses `impact_world.wav`** — no metal-specific
   impact sample has been recorded yet, so metal currently sounds identical to
   concrete despite looking different (see
@@ -140,13 +150,17 @@ passing before this doc got corrected (backlog tanda G6).
 
 ## Planeado, sin empezar (ramas nice-to-have)
 
+El multijugador se sacó del todo (commit `95f563c`): el target es Steam,
+solo-un-jugador, y no hay tareas de red pendientes ni planeadas.
+
 Trabajo deliberadamente fuera del alcance de la entrega, con rama y plan ya
 armados para que arrancar no cueste una sesión de arqueología:
 
-- **`feat/coop-p2p`** — cooperativo P2P.
-- **`feat/new-enemy-types`** — Bomber, Ranged Flyer, Environmental y
-  Gladiadores (una tercera facción que pelea contra el jugador *y* contra la
-  horda). El plan está en
+- **`feat/new-enemy-types`** — de este plan, Bomber, Ranged Flyer y
+  Environmental ya se mergearon a `develop` (ver
+  [[05 Enemies and AI]]). Lo único que sigue en su propia rama son los
+  **Gladiadores** (una tercera facción que pelea contra el jugador *y* contra
+  la horda). El plan está en
   [PLAN_NEW_ENEMY_TYPES.md](../PLAN_NEW_ENEMY_TYPES.md).
 
   De ese plan vale la pena traer acá los cuatro bloqueos que encontró, porque son

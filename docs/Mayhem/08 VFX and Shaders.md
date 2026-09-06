@@ -23,15 +23,25 @@ uniform sheen.
 
 ## `lava_pool.gdshader`
 
-Drives the hazard pool decal (`scenes/arena/hazard_zone.tscn`). Two copies of a
-crack-noise texture (`assets/textures/Noise128x128/Cracks/`) scroll at different
-speeds and multiply together — one texture alone loops obviously; two drifting
-against each other almost never realign, which is what reads as flowing molten
-rock rather than a sliding image. Crust color (dark) mixes toward glow color
-(bright) based on where the multiplied noise crosses `crack_threshold`.
+Drives the hazard pool decal (`scenes/arena/hazard_zone.tscn`) and the snare
+pool (`scenes/arena/snare_zone.tscn`). Two copies of a crack-noise texture
+(`assets/textures/Noise128x128/Cracks/`) scroll at different speeds and multiply
+together — one texture alone loops obviously; two drifting against each other
+almost never realign, which is what reads as something flowing rather than a
+sliding image. Crust color (dark) mixes toward glow color (bright) based on
+where the multiplied noise crosses `crack_threshold`.
 
 Uniforms: `noise_texture`, `crust_color`, `glow_color`, `glow_energy`,
 `crack_threshold`, `flow_speed`, `roughness_value`.
+
+**Colour-agnostic, and now carrying two skins.** The file is still named for
+the molten look it was written for, but nothing in it is: the palette is
+entirely in the two colour uniforms. `hazard_zone.tscn` is **acid** — dark
+green crust, `#C6FF3D` glow, `roughness_value = 0.3` so it reads wet rather
+than igneous — and `snare_zone.tscn` keeps the original dark-red molten
+parameters. Retinting a pool is a `.tscn` parameter change, never a shader
+edit. See [[09 Design Tokens and Color Law#Accent colors and their shapes]] for
+why the acid green does *not* pull `Tokens.HAZARD` with it.
 
 ## `portal_spawn.gdshader`
 
@@ -157,11 +167,16 @@ from screenshake, so it doesn't ride along with that toggle.
 
 ## Color law tie-in
 
-`glow_color` on the lava shader and `tint` on the portal shader are set to match
-`Tokens.HAZARD` and `Tokens.SPAWN` respectively at the `.tscn` authoring level
-(not derived live from the token at runtime — a known minor gap, see
-[[12 Known Issues and Gaps]]). See [[09 Design Tokens and Color Law]] for what
-those tokens mean and why they can't be reused for anything else.
+`tint` on the portal shader is set to match `Tokens.SPAWN` at the `.tscn`
+authoring level (not derived live from the token at runtime — a known minor
+gap, see [[12 Known Issues and Gaps]]). See [[09 Design Tokens and Color Law]]
+for what those tokens mean and why they can't be reused for anything else.
+
+The hazard pool's `glow_color` used to be the same arrangement against
+`Tokens.HAZARD`, and **deliberately is not any more**: the pool is acid green
+while the token stays lava orange. That is a decision, not drift — the token
+drives the whole hazard *language* (telegraph WARNING/ACTIVE, the elite-wave
+stripe, hazard chevrons, power-ups), and the pool is one surface inside it.
 
 ## Arena glow
 

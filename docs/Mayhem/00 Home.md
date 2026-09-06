@@ -13,7 +13,7 @@ the repo root's `docs/` folder, which this vault does not replace.
 ## Map
 
 - [[01 Architecture]] — the shape of the codebase: layers, composition, data-driven design
-- [[02 Autoloads]] — the 11 global singletons and what each owns
+- [[02 Autoloads]] — the global singletons and what each owns
 - [[03 Player and Movement]] — first-person controller, movement feel, camera
 - [[04 Weapons and Combat]] — WeaponData/WeaponComponent, projectiles, recoil, health
 - [[05 Enemies and AI]] — archetypes, Beehave behavior trees, navigation

@@ -40,16 +40,35 @@ Color is never the only signal — each accent has a companion shape
 | `HAZARD` | `#FC3A00` | traps, elite waves, power-ups | triangle |
 | `HEAL` | `#8AF0C4` | healing VFX only — **never UI** | — |
 
-`HAZARD` was **acid green (`#C6FF3D`) until this session** — changed to lava
-orange when the hazard pool got a real molten-rock shader material (see
+`HAZARD` was **acid green (`#C6FF3D`)** originally — changed to lava orange when
+the hazard pool got a real molten-rock shader material (see
 [[08 VFX and Shaders#lava_pool.gdshader]]) and it made more sense for the token
 to match what the material actually renders than to fight it. This was a
 deliberate, discussed change (not a silent recolor): the Elite enemy archetype's
 `body_color`, `ENEMY_ELITE`, and `GLOW_HAZARD` all moved with it, because they
 were already deliberately coupled to `HAZARD` for the elite-wave HUD stripe.
-`ENEMY` (`#FF3B54`, crimson-pink) stays visually distinct from the new
+`ENEMY` (`#FF3B54`, crimson-pink) stays visually distinct from the
 `HAZARD` orange on purpose — "this attacks you" and "this burns you" need to
 read as different threats.
+
+**The pool went back to acid green; the token did not follow.** The hazard
+decal is now dark green with a `#C6FF3D` glow — the same green the token used
+to be — while `HAZARD` stays `#FC3A00`. The original rationale ("let the token
+match what the material renders") is deliberately not applied in reverse, and
+it is worth being explicit about why, because on its face this looks like the
+drift the paragraph above exists to prevent:
+
+- The token is not the pool's colour, it is the **meaning** "this will hurt
+  you", and it is spent on the telegraph's WARNING/ACTIVE states, the
+  elite-wave stripe, the hazard chevrons and the power-up shape. Pulling it
+  green to follow one decal would repaint all of that.
+- The pool keeps the token where it counts: its `TelegraphComponent` still
+  warns and arms in `HAZARD` orange (see [[07 UI and HUD#TelegraphComponent]]).
+  The green is the *substance* in the pool; the orange is still the game
+  saying "danger", and it is the orange that carries the 0.6s promise.
+- `Meaning.HAZARD` in `TelegraphComponent` was already commented "acid", from
+  back when the token was green. The word outlived the colour and now
+  describes the material again.
 
 **Known drift**: `CROSSHAIR_COLORS` (a preset list for a settings-screen
 crosshair color picker) still contains the literal `Color("#C6FF3D")` — the
