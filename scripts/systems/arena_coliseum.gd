@@ -20,6 +20,11 @@ extends Node3D
 ## colision por escalon serian miles de formas que nadie va a tocar nunca.
 
 const PANEL_SHADER: String = "res://assets/shaders/arena_glitch_panel.gdshader"
+## Cuanto mas abajo que el piso de la arena va el piso del foso. Lo suficiente
+## para no pelearse por el mismo plano con las piezas -el disco corre por debajo
+## de toda la arena, no solo del anillo- y poco, porque cada centimetro de esto
+## es alto de faldon que hay que tapar.
+const PIT_DROP: float = 0.5
 
 @export_group("Planta")
 ## Puntos alrededor del ovalo. Sube el detalle de la curva y el costo, los dos
@@ -417,17 +422,43 @@ func _arc(centre: Vector3, floor_y: float, axes: Vector2, at: Vector2,
 ##
 ## Un disco entero y no un anillo, porque a diferencia de un rectangulo dentro de
 ## otro rectangulo, aca las esquinas del area de juego tocan la curva y un anillo
-## dejaria cuatro cunas sin tapar. Va medio metro mas abajo que el piso de las
-## piezas, asi que no puede pelearse con ellas por el mismo plano.
+## dejaria cuatro cunas sin tapar.
+##
+## El foso tapaba mal por dos motivos distintos, y hacia falta arreglar los dos
+## para que dejara de verse la ciudad a traves de el:
+##
+## 1. **El abanico estaba al reves.** Va en sentido horario visto desde arriba
+##    -`rim[i]` antes que `rim[i + 1]`- porque Godot toma la cara horaria como la
+##    de adelante. Al reves, el disco existe pero mira para abajo: el material
+##    del venue es `cull_back`, la GPU lo descarta desde arriba, y el piso no se
+##    dibuja. Es la clase de error que no se ve en el arbol de escenas ni en el
+##    conteo de triangulos - el mesh esta, entero, y aun asi no esta.
+## 2. **Faltaba el faldon.** El disco va `PIT_DROP` mas abajo que el podio, y esa
+##    franja no tenia ninguna cara.
+##
+## El primero se lo come `test_the_pit_floor_is_drawn_facing_up`; el segundo,
+## `test_nothing_can_see_through_the_lip_of_the_pit`.
 func _build_pit_floor(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rim: PackedVector3Array = _ring(centre, floor_y - 0.5, axes, Vector2.ZERO)
-	var middle := Vector3(centre.x, floor_y - 0.5, centre.z)
+	var pit_y: float = floor_y - PIT_DROP
+	var rim: PackedVector3Array = _ring(centre, pit_y, axes, Vector2.ZERO)
+	var middle := Vector3(centre.x, pit_y, centre.z)
 	for i: int in rim.size() - 1:
 		surface.add_vertex(middle)
-		surface.add_vertex(rim[i + 1])
 		surface.add_vertex(rim[i])
+		surface.add_vertex(rim[i + 1])
+	# Y el faldon que sube del borde del disco al pie del podio.
+	#
+	# El disco esta `PIT_DROP` mas abajo que el podio, asi que entre los dos
+	# quedaba una franja de medio metro sin una sola cara: una ranura al cielo
+	# justo en el borde de afuera del foso. No hace falta un angulo raro para
+	# encontrarla -bajar la mirada unos doce grados desde el borde de la arena
+	# ya apunta ahi- y lo que se ve por la ranura es la ciudad de fondo.
+	#
+	# Va en el mismo `SurfaceTool` que el disco: es el mismo piso, y separarlo en
+	# otra malla solo agregaria una junta mas donde puede volver a abrirse.
+	_bridge(surface, rim, _ring(centre, floor_y, axes, Vector2.ZERO))
 	surface.generate_normals()
 
 	var mesh := MeshInstance3D.new()

@@ -175,6 +175,66 @@ func test_the_lit_edge_does_not_fight_the_wall_it_lights() -> void:
 	assert_gt(shell.trim_offset, 0.0)
 
 
+func test_the_pit_has_a_floor_and_it_covers_the_gap() -> void:
+	# Entre el borde de la arena y el pie del podio hay un anillo de piso. Sin el,
+	# ese anillo es un agujero al cielo.
+	var shell: ArenaColiseum = _built(_shell())
+	var floor_mesh := shell.get_node_or_null("Coliseum/PitFloor") as MeshInstance3D
+	assert_not_null(floor_mesh, "el foso necesita piso")
+	var vertices: PackedVector3Array = floor_mesh.mesh.surface_get_arrays(
+		0)[Mesh.ARRAY_VERTEX] as PackedVector3Array
+	# Llega hasta el pie del podio, que es donde arranca el cuenco.
+	var reach: float = 0.0
+	for vertex: Vector3 in vertices:
+		reach = maxf(reach, absf(vertex.x - (BOUNDS.position.x + BOUNDS.size.x * 0.5)))
+	assert_gt(reach, BOUNDS.size.x * 0.5,
+		"el piso tiene que pasar el borde de la arena, no morir en el")
+
+
+func test_nothing_can_see_through_the_lip_of_the_pit() -> void:
+	# El disco va mas abajo que el podio para no pelearse con las piezas de la
+	# arena, y esa diferencia de altura es una ranura al cielo en el borde de
+	# afuera si nadie la tapa. Bajar la mirada unos grados desde el borde de la
+	# arena ya apunta ahi, asi que no es un caso raro: es *el* caso.
+	var shell: ArenaColiseum = _built(_shell())
+	var floor_mesh := shell.get_node("Coliseum/PitFloor") as MeshInstance3D
+	var box: AABB = floor_mesh.mesh.get_aabb()
+	assert_almost_eq(box.position.y + box.size.y, BOUNDS.position.y, 0.01,
+		"el piso del foso tiene que llegar hasta el pie del podio")
+	assert_almost_eq(box.size.y, ArenaColiseum.PIT_DROP, 0.01,
+		"del disco al pie del podio, sin dejar franja")
+
+
+func test_the_pit_floor_is_drawn_facing_up() -> void:
+	# El bug que hacia ver la ciudad de fondo al mirar el foso: el disco estaba,
+	# entero y del tamano correcto, pero armado al reves. Godot toma la cara
+	# horaria como la de adelante y el material del venue es `cull_back`, asi que
+	# un abanico invertido se descarta al dibujar y el piso deja pasar el cielo.
+	#
+	# Se mide sobre los triangulos y no sobre el atributo NORMAL a proposito: la
+	# GPU descarta por el orden de los vertices, que es justo lo que se rompio.
+	var shell: ArenaColiseum = _built(_shell())
+	var floor_mesh := shell.get_node("Coliseum/PitFloor") as MeshInstance3D
+	var vertices: PackedVector3Array = floor_mesh.mesh.surface_get_arrays(
+		0)[Mesh.ARRAY_VERTEX] as PackedVector3Array
+	assert_gt(vertices.size(), 0, "el piso no tiene triangulos")
+	var flat: int = 0
+	for i: int in range(0, vertices.size(), 3):
+		var a: Vector3 = vertices[i]
+		var b: Vector3 = vertices[i + 1]
+		var c: Vector3 = vertices[i + 2]
+		# Solo el disco. El faldon del borde es vertical a proposito, y su cara
+		# la cubre test_nothing_can_see_through_the_lip_of_the_pit.
+		if not (is_equal_approx(a.y, b.y) and is_equal_approx(b.y, c.y)):
+			continue
+		flat += 1
+		# La misma cuenta que hace Godot para la cara de adelante.
+		var facing: Vector3 = (a - c).cross(a - b)
+		assert_gt(facing.y, 0.0,
+			"el triangulo que arranca en el vertice %d mira para abajo" % i)
+	assert_gt(flat, 0, "no quedo un solo triangulo horizontal que revisar")
+
+
 func test_the_house_gets_its_screens() -> void:
 	var shell: ArenaColiseum = _built(_shell())
 	var screens := shell.get_node("Coliseum/Screens")
