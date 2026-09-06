@@ -3,13 +3,13 @@
 [ext_resource type="Script" uid="uid://4w5yb177f3es" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 [ext_resource type="Script" uid="uid://diy64audi15ki" path="res://scripts/ui/chamfer_style_box.gd" id="2_chamfer"]
 [ext_resource type="Theme" uid="uid://bs52imyfholid" path="res://ui/mayhem_theme.tres" id="3_theme"]
-[ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4_settings"]
+[ext_resource type="PackedScene" uid="uid://p4h755im45mu" path="res://scenes/ui/settings_screen.tscn" id="4_settings"]
 [ext_resource type="PackedScene" path="res://scenes/ui/leaderboard_panel.tscn" id="5_lb"]
 [ext_resource type="PackedScene" path="res://scenes/ui/arena_select.tscn" id="6_arena_select"]
 [ext_resource type="PackedScene" path="res://scenes/ui/credits_panel.tscn" id="7_credits"]
 [ext_resource type="PackedScene" path="res://scenes/ui/feedback_panel.tscn" id="8_feedback"]
 [ext_resource type="PackedScene" path="res://scenes/ui/menu_backdrop.tscn" id="9_backdrop"]
-[ext_resource type="Texture2D" path="res://assets/ui/mayhem_logo.png" id="10_logo"]
+[ext_resource type="Texture2D" uid="uid://bhemlg625qkxq" path="res://assets/ui/mayhem_logo.png" id="10_logo"]
 
 [sub_resource type="StyleBox" id="StyleBox_panel"]
 resource_local_to_scene = false
@@ -39,7 +39,7 @@ grow_vertical = 2
 theme = ExtResource("3_theme")
 script = ExtResource("1_menu")
 
-[node name="Backdrop" parent="." instance=ExtResource("9_backdrop")]
+[node name="Backdrop" parent="." unique_id=590621148 instance=ExtResource("9_backdrop")]
 
 [node name="Root" type="Control" parent="." unique_id=88092070]
 anchors_preset = 0
@@ -53,13 +53,15 @@ anchor_bottom = 1.0
 color = Color(0.027, 0.031, 0.043, 0.35)
 
 [node name="Panel" type="PanelContainer" parent="Root" unique_id=161839494]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 110.0
-offset_top = -262.0
+offset_top = -382.0
 offset_right = 530.0
-offset_bottom = 262.0
+offset_bottom = 390.0
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBox_panel")
 
 [node name="Margin" type="MarginContainer" parent="Root/Panel" unique_id=1028146737]
@@ -155,8 +157,6 @@ autowrap_mode = 2
 
 [node name="Settings" parent="." unique_id=269595302 instance=ExtResource("4_settings")]
 layout_mode = 1
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="ArenaSelect" parent="." unique_id=1380140603 instance=ExtResource("6_arena_select")]
 layout_mode = 1
