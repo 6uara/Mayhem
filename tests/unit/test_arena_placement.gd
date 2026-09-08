@@ -327,3 +327,65 @@ func test_edits_after_a_stroke_undo_on_their_own_again() -> void:
 	model.place(&"floor", Vector3i(1, 0, 0))
 	model.undo()
 	assert_eq(model.arena.placements.size(), 1, "only the edit outside the stroke went back")
+
+
+func test_a_piece_with_a_cap_stops_being_placeable_at_it() -> void:
+	var model: PlacementModel = _model()
+	model.catalog.get_piece(&"floor").max_instances = 2
+	assert_true(model.place(&"floor", Vector3i(0, 0, 0)))
+	assert_true(model.place(&"floor", Vector3i(1, 0, 0)))
+	assert_eq(model.refusal_for(&"floor", Vector3i(2, 0, 0)), &"piece_limit")
+	assert_eq(model.arena.placements.size(), 2)
+
+
+func test_erasing_gives_a_capped_piece_back() -> void:
+	var model: PlacementModel = _model()
+	model.catalog.get_piece(&"floor").max_instances = 1
+	model.place(&"floor", Vector3i(0, 0, 0))
+	model.erase_at(Vector3i(0, 0, 0))
+	assert_true(model.place(&"floor", Vector3i(3, 0, 3)), "the cap counts what is placed now")
+
+
+func test_a_cap_of_zero_is_no_cap() -> void:
+	var model: PlacementModel = _model()
+	for x: int in 8:
+		assert_true(model.place(&"floor", Vector3i(x, 0, 0)))
+
+
+func test_moving_a_capped_piece_is_not_placing_another_one() -> void:
+	var model: PlacementModel = _model()
+	model.catalog.get_piece(&"floor").max_instances = 1
+	model.place(&"floor", Vector3i(0, 0, 0))
+	assert_eq(model.move_to(Vector3i(0, 0, 0), Vector3i(4, 0, 4)), &"",
+		"la pieza sale del conteo antes de que se pruebe el destino")
+
+
+func test_counts_by_piece_matches_counting_one_by_one() -> void:
+	var model: PlacementModel = _model()
+	model.place(&"floor", Vector3i(0, 0, 0))
+	model.place(&"floor", Vector3i(1, 0, 0))
+	model.place(&"long", Vector3i(3, 0, 3))
+	assert_eq(model.counts_by_piece(), {&"floor": 2, &"long": 1})
+	assert_eq(model.count_of(&"floor"), 2)
+
+
+func test_every_capped_piece_fits_the_arenas_that_ship() -> void:
+	var catalog: PieceCatalog = load(ArenaSession.CATALOG_PATH) as PieceCatalog
+	for path: String in ["res://data/arenas/default_arena.tres"]:
+		var arena: ArenaData = ArenaIO.load_arena(path)
+		var model := PlacementModel.new(arena, catalog)
+		for piece: PieceDefinition in catalog.pieces:
+			if piece == null or piece.max_instances <= 0:
+				continue
+			assert_lte(model.count_of(piece.id), piece.max_instances,
+				"%s: un tope que el contenido propio del juego rompe es un tope mal puesto"
+					% piece.id)
+
+
+func test_the_anchor_tooltip_says_where_it_can_go() -> void:
+	var piece: PieceDefinition = (load(ArenaSession.CATALOG_PATH) as PieceCatalog) \
+		.get_piece(&"grapple_anchor")
+	var text: String = piece.tooltip()
+	assert_string_contains(text, "level 2", "el tooltip explica el nivel minimo")
+	assert_string_contains(text, "no floor", "y que va en una celda vacia")
+	assert_string_contains(text, "12", "y cuantas entran")

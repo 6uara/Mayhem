@@ -9,5 +9,7 @@ id = &"snare_zone"
 display_name = "Snare field"
 scene = ExtResource("2_scene")
 support = 1
+max_instances = 6
+hint = "Slows whatever walks through it."
 category = 4
 greybox_color = Color(0.6, 0.4, 0.8, 1)

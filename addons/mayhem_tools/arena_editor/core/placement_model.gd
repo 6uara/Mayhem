@@ -41,6 +41,8 @@ func refusal_for(piece_id: StringName, cell: Vector3i, rotation: int = 0,
 	var piece: PieceDefinition = _piece(piece_id)
 	if piece == null:
 		return &"unknown_piece"
+	if piece.max_instances > 0 and count_of(piece_id) >= piece.max_instances:
+		return &"piece_limit"
 	var footprint: Array[Vector3i] = piece.get_footprint(rotation)
 	for offset: Vector3i in footprint:
 		var target: Vector3i = cell + offset
@@ -94,6 +96,26 @@ func get_entry_at(cell: Vector3i, ground: Variant = null) -> PlacementEntry:
 			if entry.cell + offset == cell:
 				return entry
 	return null
+
+
+## Cuantas de `piece_id` hay puestas. Lo pregunta el tope de la pieza y lo
+## pregunta la paleta para apagar el boton antes de que el click sea un rechazo.
+func count_of(piece_id: StringName) -> int:
+	var total: int = 0
+	for entry: PlacementEntry in arena.placements:
+		if entry.piece_id == piece_id:
+			total += 1
+	return total
+
+
+## Lo puesto de cada pieza, en un solo recorrido. La paleta lo pide entera cada
+## vez que la arena cambia, y llamar count_of() por boton seria recorrer las
+## placements una vez por pieza del catalogo.
+func counts_by_piece() -> Dictionary:
+	var counts: Dictionary = {}
+	for entry: PlacementEntry in arena.placements:
+		counts[entry.piece_id] = int(counts.get(entry.piece_id, 0)) + 1
+	return counts
 
 
 func is_occupied(cell: Vector3i, ground: Variant = null) -> bool:

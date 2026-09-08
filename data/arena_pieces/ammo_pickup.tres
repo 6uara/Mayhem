@@ -9,5 +9,7 @@ id = &"ammo_pickup"
 display_name = "Ammo crate"
 scene = ExtResource("2_scene")
 support = 1
+max_instances = 16
+hint = "Refills the weapon that picks it up."
 category = 4
 greybox_color = Color(0.99, 0.69, 0.13, 1)

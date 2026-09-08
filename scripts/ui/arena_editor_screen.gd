@@ -20,6 +20,7 @@ const REFUSAL_TEXT: Dictionary = {
 	&"needs_empty": "That one hangs in the air: put it in a cell with no floor.",
 	&"too_low": "That one has to go higher up.",
 	&"unknown_piece": "That piece is not in the catalog.",
+	&"piece_limit": "That is as many of those as an arena takes.",
 	&"nothing_there": "There is nothing there to move.",
 }
 ## Las herramientas que se pintan arrastrando. Los spawns y el mover son
@@ -345,6 +346,7 @@ func _on_model_changed() -> void:
 	# El resaltado sobrevive al rebuild, asi que se revalida aca: si lo que
 	# marcaba acaba de borrarse, el marco tiene que irse con la pieza.
 	_update_ghost()
+	_hud.set_piece_counts(model.counts_by_piece())
 	_hud.show_issues(ArenaSession.validate())
 	_hud.set_venue_fit(_venue_fit_text())
 

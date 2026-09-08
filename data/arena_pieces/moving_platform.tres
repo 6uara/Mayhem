@@ -9,5 +9,7 @@ id = &"moving_platform"
 display_name = "Moving platform"
 scene = ExtResource("2_scene")
 support = 1
+max_instances = 6
+hint = "Carries whoever is standing on it along its path."
 category = 4
 greybox_color = Color(0.6, 0.65, 0.72, 1)

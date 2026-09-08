@@ -132,6 +132,22 @@ func select_tool(tool_mode: int) -> void:
 		_tool_buttons[index].button_pressed = index == tool_mode
 
 
+## Cuantas de cada pieza hay puestas. Los botones con tope muestran el contador
+## y se apagan al llegar: enterarte del limite recien cuando el click te lo
+## niega es enterarte tarde.
+func set_piece_counts(counts: Dictionary) -> void:
+	if _catalog == null:
+		return
+	for index: int in _piece_buttons.size():
+		var piece: PieceDefinition = _catalog.get_piece(_piece_ids[index])
+		if piece == null or piece.max_instances <= 0:
+			continue
+		var placed: int = int(counts.get(piece.id, 0))
+		var button: Button = _piece_buttons[index]
+		button.text = "%s  %d/%d" % [piece.display_name.to_upper(), placed, piece.max_instances]
+		button.disabled = placed >= piece.max_instances
+
+
 func select_piece(piece_id: StringName) -> void:
 	for index: int in _piece_buttons.size():
 		_piece_buttons[index].button_pressed = _piece_ids[index] == piece_id
@@ -359,8 +375,7 @@ func _rebuild_palette() -> void:
 		button.focus_mode = Control.FOCUS_NONE
 		button.custom_minimum_size = Vector2(132.0, 64.0)
 		button.text = piece.display_name.to_upper()
-		button.tooltip_text = "%s - %s" % [
-			piece.id, PieceDefinition.Category.keys()[int(piece.category)].capitalize()]
+		button.tooltip_text = piece.tooltip()
 		button.add_theme_color_override("font_color", piece.greybox_color.lightened(0.35))
 		var captured: StringName = piece.id
 		button.pressed.connect(func() -> void: piece_selected.emit(captured))

@@ -10,5 +10,7 @@ display_name = "Grapple anchor"
 scene = ExtResource("2_scene")
 support = 2
 min_level = 2
+max_instances = 12
+hint = "Shoot it with the grapple to swing across. It only goes in an empty cell over your head - an anchor you can walk up to is a step, not a move."
 category = 4
 greybox_color = Color(0.9, 0.6, 0.95, 1)

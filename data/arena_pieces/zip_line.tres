@@ -10,5 +10,7 @@ display_name = "Zip line"
 scene = ExtResource("2_scene")
 support = 1
 link_offsets = Array[Vector3i]([Vector3i(0, -2, 5)])
+max_instances = 4
+hint = "A one-way ride across the arena. Look at it and interact to mount."
 category = 4
 greybox_color = Color(0.21, 0.88, 0.83, 1)

@@ -46,6 +46,15 @@ enum Support {
 ## anchor uses it to stay high enough that grappling to it is a move rather than
 ## a step.
 @export var min_level: int = 0
+## Cuantas de estas entran en una arena. Cero es sin tope, que es lo correcto
+## para el piso, las paredes y todo lo que se pone a puñados.
+##
+## Los interactuables son otra cosa: una arena con cuarenta bounce pads no es
+## una arena dificil, es una arena que dejo de ser legible, y una con un ancla
+## de grapple cada dos celdas convierte el gancho en caminar. El tope vive en el
+## .tres de cada pieza y no en el editor, por la misma razon que el resto del
+## catalogo: subirlo o bajarlo es tunear, no programar.
+@export var max_instances: int = 0
 
 @export_group("Traversal links")
 ## Cells this piece connects its own cell to, beyond the four neighbours - a
@@ -67,6 +76,10 @@ enum Support {
 @export var link_is_one_way: bool = true
 
 @export_group("Presentation")
+## Lo que la pieza no puede explicar sola. El resto del tooltip - donde apoya,
+## desde que nivel, cuantas entran - se arma de los campos de arriba, asi que
+## aca va unicamente para que sirve.
+@export_multiline var hint: String = ""
 @export var category: Category = Category.FLOOR
 @export var icon: Texture2D
 @export var greybox_color: Color = Color(0.55, 0.55, 0.58)
@@ -83,6 +96,25 @@ enum Support {
 ## en una arena de noche donde las plataformas grises desaparecian contra el
 ## piso gris.
 @export var edge_energy: float = 0.0
+
+
+## Lo que hay que saber antes de apretar el boton de la paleta, armado de la
+## definicion misma: una regla que se escribe a mano en el tooltip es una regla
+## que queda vieja el dia que alguien edita el .tres.
+func tooltip() -> String:
+	var lines: Array[String] = [display_name]
+	if hint != "":
+		lines.append(hint)
+	match support:
+		Support.FLOOR:
+			lines.append("Needs a flat floor tile in the same cell - not a ramp.")
+		Support.EMPTY:
+			lines.append("Hangs in the air: it goes in a cell with no floor.")
+	if min_level > 0:
+		lines.append("Only from level %d up." % min_level)
+	if max_instances > 0:
+		lines.append("Up to %d per arena." % max_instances)
+	return "\n".join(lines)
 
 
 ## Ground pieces are what you stand on; body pieces are what stands on them.

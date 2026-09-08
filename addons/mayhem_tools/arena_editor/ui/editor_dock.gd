@@ -22,6 +22,7 @@ const REFUSAL_TEXT: Dictionary = {
 	&"needs_empty": "That one hangs in the air: put it in a cell with no floor.",
 	&"too_low": "That one has to go higher up.",
 	&"unknown_piece": "That piece is not in the catalog.",
+	&"piece_limit": "That is as many of those as an arena takes.",
 	&"nothing_there": "There is nothing there to move.",
 }
 ## Shared with the in-game editor: one list of grid sizes, two front ends.

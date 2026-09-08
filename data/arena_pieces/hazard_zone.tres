@@ -9,5 +9,7 @@ id = &"hazard_zone"
 display_name = "Hazard pool"
 scene = ExtResource("2_scene")
 support = 1
+max_instances = 8
+hint = "Hurts whatever stands in it."
 category = 4
 greybox_color = Color(0.99, 0.23, 0, 1)

@@ -12,5 +12,7 @@ support = 1
 link_offsets = Array[Vector3i]([Vector3i(0, 1, 2)])
 link_players_only = false
 link_is_one_way = false
+max_instances = 6
+hint = "Marks a gap both the player and the enemies can cross."
 category = 4
 greybox_color = Color(0.55, 0.75, 0.95, 1)
