@@ -247,8 +247,12 @@ func _tick_weapon() -> void:
 		return
 	_reticle.set_spread(_weapon.get_current_spread(), _player.camera.fov)
 	_reticle.ads_progress = _weapon.ads_progress
-	if _player.grapple != null:
-		_reticle.is_anchor_available = _player.grapple.is_anchor_in_range
+	# Una zip line montable prende la misma reticula que un ancla: las dos dicen
+	# lo mismo - "el boton hace algo aca" - y dos estados distintos para eso
+	# serian dos cosas que aprender por una sola decision.
+	_reticle.is_anchor_available = \
+		(_player.grapple != null and _player.grapple.is_anchor_in_range) \
+		or _player.is_zip_line_in_range
 
 
 func _tick_movement() -> void:

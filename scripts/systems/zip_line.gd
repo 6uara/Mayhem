@@ -9,6 +9,10 @@ extends Node3D
 signal ride_started()
 signal ride_finished()
 
+## Como las encuentra la asistencia de apuntado del jugador, igual que
+## `GrappleAnchor.GROUP` para las anclas.
+const GROUP: StringName = &"zip_line"
+
 @export var end_point: Node3D
 @export var speed: float = 16.0
 ## Fraction of ride speed kept on dismount - the same momentum handoff as the dash.
@@ -29,7 +33,7 @@ var _arrow_progress: float = 0.0
 
 
 func _ready() -> void:
-	add_to_group(&"zip_line")
+	add_to_group(GROUP)
 	if telegraph != null:
 		telegraph.state = TelegraphComponent.State.AVAILABLE
 	_fit_cable()
@@ -37,7 +41,13 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_animate_arrow(delta)
-	if not is_occupied or _rider == null or not is_instance_valid(_rider):
+	if not is_occupied:
+		return
+	# Un pasajero que se fue del arbol a mitad del viaje - al pool, a otra escena,
+	# a la muerte - dejaba la linea ocupada para siempre y nadie la podia volver
+	# a usar en toda la partida. Soltar es lo unico que puede pasar aca.
+	if _rider == null or not is_instance_valid(_rider):
+		_release()
 		return
 
 	var length: float = _length()
@@ -55,8 +65,21 @@ func _physics_process(delta: float) -> void:
 
 # Public API
 
+## Si esta linea acepta a alguien ahora mismo. La pregunta se contesta aca y no
+## en quien se quiere subir, que es lo que deja que la reticula y el intento de
+## montar coincidan siempre en vez de tener cada uno su propia copia de la regla.
+func can_mount() -> bool:
+	return not is_occupied and end_point != null
+
+
+## Donde se agarra: el extremo de salida. Un cable de veinte metros no se
+## engancha por el medio, se engancha por donde arranca.
+func mount_point() -> Vector3:
+	return global_position
+
+
 func try_mount(rider: CharacterBody3D) -> bool:
-	if is_occupied or end_point == null or rider == null:
+	if not can_mount() or rider == null:
 		return false
 	is_occupied = true
 	_rider = rider
