@@ -107,6 +107,8 @@ func _handle_keys(event: InputEvent) -> bool:
 			_set_tool(int(ArenaPalettePanel.Tool.ERASE))
 		KEY_H:
 			_hud.toggle_help()
+		KEY_ESCAPE:
+			return _hud.close_modals()
 		_:
 			return false
 	return true
@@ -117,9 +119,8 @@ func _connect_hud() -> void:
 	_hud.piece_selected.connect(_select_piece)
 	_hud.level_changed.connect(_set_level)
 	_hud.rotate_pressed.connect(_rotate)
-	_hud.name_changed.connect(func(text: String) -> void: ArenaSession.arena.arena_name = text)
 	_hud.new_pressed.connect(_on_new)
-	_hud.save_pressed.connect(_on_save)
+	_hud.save_requested.connect(_on_save)
 	_hud.load_requested.connect(_on_load_requested)
 	_hud.play_pressed.connect(_on_play)
 	_hud.exit_pressed.connect(_on_exit)
@@ -304,8 +305,9 @@ func _on_new() -> void:
 
 ## Saving an unfinished arena is allowed - the player has to be able to stop for
 ## the night mid-build. Only Play insists on a valid one.
-func _on_save() -> void:
-	var error: Error = ArenaSession.save()
+func _on_save(arena_name: String) -> void:
+	ArenaSession.arena.arena_name = arena_name
+	var error: Error = ArenaSession.save(ArenaSession.path_for_name(arena_name))
 	if error == OK:
 		_hud.set_status("Saved to %s" % ArenaSession.current_path.get_file())
 	else:

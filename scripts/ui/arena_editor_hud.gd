@@ -11,9 +11,10 @@ signal tool_changed(tool_mode: int)
 signal piece_selected(piece_id: StringName)
 signal level_changed(level: int)
 signal rotate_pressed()
-signal name_changed(arena_name: String)
 signal new_pressed()
-signal save_pressed()
+## El nombre viaja con el pedido de guardado: es lo unico que lo pide, y es lo
+## que saca el campo de texto de la barra.
+signal save_requested(arena_name: String)
 signal load_requested(path: String)
 signal play_pressed()
 signal exit_pressed()
@@ -41,13 +42,17 @@ const HELP_ROWS: Array[Array] = [
 	["Q / E", "Down / up one level"],
 	["Z", "Undo the last edit"],
 	["H", "Show or hide this panel"],
+	["Esc", "Close any open panel"],
 ]
 
 var _catalog: PieceCatalog
 var _tool_buttons: Array[Button] = []
 var _piece_buttons: Array[Button] = []
 var _piece_ids: Array[StringName] = []
-var _name_edit: LineEdit
+var _name_label: Label
+var _save_panel: PanelContainer
+var _save_name_edit: LineEdit
+var _arena_name: String = ""
 var _level_label: Label
 var _rotation_label: Label
 var _status: Label
@@ -73,6 +78,7 @@ func _ready() -> void:
 	_build_issue_panel()
 	_build_palette()
 	_build_load_panel()
+	_build_save_panel()
 	_build_help_panel()
 
 
@@ -82,8 +88,9 @@ func set_catalog(catalog: PieceCatalog) -> void:
 
 
 func set_arena_name(arena_name: String) -> void:
-	if _name_edit != null and _name_edit.text != arena_name:
-		_name_edit.text = arena_name
+	_arena_name = arena_name
+	if _name_label != null:
+		_name_label.text = arena_name if arena_name.strip_edges() != "" else "Untitled"
 
 
 func set_grid_size(grid_size: Vector3i) -> void:
@@ -169,14 +176,30 @@ func set_help_visible(shown: bool) -> void:
 	_help_panel.visible = shown
 
 
+## Cualquier campo de texto con el foco se come las teclas del editor. Se
+## pregunta por el foco del viewport y no por un LineEdit en particular: el bug
+## que esto arregla fue exactamente un campo que nadie se acordo de listar aca.
 func is_typing() -> bool:
-	return _name_edit != null and _name_edit.has_focus()
+	if not is_inside_tree():
+		return false
+	return get_viewport().gui_get_focus_owner() is LineEdit
 
 
 ## Anything that swallows clicks and keys, so the screen knows not to build a
 ## piece under an open panel.
 func is_modal_open() -> bool:
-	return (_load_panel != null and _load_panel.visible) 		or (_help_panel != null and _help_panel.visible)
+	return (_load_panel != null and _load_panel.visible) 		or (_save_panel != null and _save_panel.visible) 		or (_help_panel != null and _help_panel.visible)
+
+
+## Cierra lo que este abierto y devuelve true si habia algo. Es lo que hace ESC:
+## ningun panel del editor puede ser una trampa de la que no se sale.
+func close_modals() -> bool:
+	if not is_modal_open():
+		return false
+	close_load_panel()
+	close_save_panel()
+	set_help_visible(false)
+	return true
 
 
 # Private
@@ -195,11 +218,15 @@ func _build_top_bar() -> void:
 	row.add_theme_constant_override("separation", 8)
 	bar.add_child(row)
 
-	_name_edit = LineEdit.new()
-	_name_edit.custom_minimum_size = Vector2(180.0, 0.0)
-	_name_edit.placeholder_text = "arena name"
-	_name_edit.text_changed.connect(func(text: String) -> void: name_changed.emit(text))
-	row.add_child(_name_edit)
+	# Un label, no un campo: el nombre se pide al guardar. Un LineEdit aca se
+	# quedaba con el foco del teclado para siempre y dejaba el mapa muerto.
+	_name_label = Label.new()
+	_name_label.theme_type_variation = &"HUDLabel"
+	_name_label.custom_minimum_size = Vector2(180.0, 0.0)
+	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_name_label.text = "Untitled"
+	_name_label.add_theme_color_override("font_color", Tokens.TEXT)
+	row.add_child(_name_label)
 
 	_size_button = OptionButton.new()
 	_size_button.focus_mode = Control.FOCUS_NONE
@@ -246,7 +273,7 @@ func _build_top_bar() -> void:
 	row.add_child(spacer)
 
 	row.add_child(_action("NEW", func() -> void: new_pressed.emit()))
-	row.add_child(_action("SAVE", func() -> void: save_pressed.emit()))
+	row.add_child(_action("SAVE", open_save_panel))
 	row.add_child(_action("LOAD", func() -> void: load_requested.emit("")))
 	_play_button = _action("PLAY", func() -> void: play_pressed.emit())
 	row.add_child(_play_button)
@@ -411,6 +438,64 @@ func _disarm_delete() -> void:
 	_delete_armed = false
 	if _delete_button != null:
 		_delete_button.text = "DELETE"
+
+
+## Guardar es el unico momento en que el nombre importa, asi que es el unico
+## momento en que se pregunta - y se pregunta en un panel que se cierra, no en un
+## campo que queda abierto en la barra.
+func _build_save_panel() -> void:
+	_save_panel = PanelContainer.new()
+	_save_panel.theme_type_variation = &"HUDPanel"
+	_save_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_save_panel.offset_left = -220.0
+	_save_panel.offset_right = 220.0
+	_save_panel.offset_top = -90.0
+	_save_panel.offset_bottom = 90.0
+	_save_panel.visible = false
+	add_child(_save_panel)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	_save_panel.add_child(column)
+	var title := Label.new()
+	title.theme_type_variation = &"HUDLabel"
+	title.text = "NAME YOUR ARENA"
+	title.add_theme_color_override("font_color", Tokens.PLAYER)
+	column.add_child(title)
+
+	_save_name_edit = LineEdit.new()
+	_save_name_edit.placeholder_text = "arena name"
+	_save_name_edit.text_submitted.connect(func(_text: String) -> void: _confirm_save())
+	column.add_child(_save_name_edit)
+
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	buttons.add_child(_action("SAVE", _confirm_save))
+	buttons.add_child(_action("CANCEL", close_save_panel))
+	column.add_child(buttons)
+
+
+func open_save_panel() -> void:
+	_save_name_edit.text = _arena_name
+	_save_panel.visible = true
+	_save_name_edit.grab_focus()
+	_save_name_edit.select_all()
+
+
+## Soltar el foco al cerrar no es cosmetico: un LineEdit invisible que se quedo
+## con el teclado es el mismo bug de nuevo, sin el campo a la vista para notarlo.
+func close_save_panel() -> void:
+	_save_panel.visible = false
+	_save_name_edit.release_focus()
+
+
+func _confirm_save() -> void:
+	var typed: String = _save_name_edit.text.strip_edges()
+	if typed == "":
+		return
+	close_save_panel()
+	set_arena_name(typed)
+	save_requested.emit(typed)
 
 
 func _build_help_panel() -> void:
