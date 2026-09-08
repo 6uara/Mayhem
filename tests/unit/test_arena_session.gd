@@ -30,11 +30,30 @@ func test_the_catalog_loads() -> void:
 	assert_gt(ArenaSession.catalog.pieces.size(), 9, "the catalog ships 10-15 pieces")
 
 
-func test_a_new_arena_is_empty_and_unsaved() -> void:
+func test_a_new_arena_starts_floored_and_unsaved() -> void:
 	var arena: ArenaData = ArenaSession.new_arena()
-	assert_eq(arena.placements.size(), 0)
-	assert_false(arena.has_player_spawn)
+	assert_gt(arena.placements.size(), 0, "el nivel 0 nace embaldosado")
+	assert_false(arena.has_player_spawn, "el piso viene puesto, los spawns no")
 	assert_eq(ArenaSession.current_path, "")
+
+
+func test_the_starting_floor_covers_the_whole_level_zero() -> void:
+	var arena: ArenaData = ArenaSession.new_arena()
+	var model := PlacementModel.new(arena, ArenaSession.catalog)
+	for x: int in arena.grid_size.x:
+		for z: int in arena.grid_size.z:
+			if not model.has_flat_ground(Vector3i(x, 0, z)):
+				fail_test("la celda %d,0,%d quedo sin piso" % [x, z])
+				return
+	assert_true(true)
+
+
+func test_the_starting_floor_uses_the_big_tiles() -> void:
+	var arena: ArenaData = ArenaSession.new_arena()
+	var cells: int = arena.grid_size.x * arena.grid_size.z
+	assert_lt(arena.placements.size(), cells / 4,
+		"embaldosar con la pieza de una celda serian %d entradas" % cells)
+
 
 
 func test_saving_names_the_file_after_the_arena() -> void:
@@ -99,7 +118,14 @@ func test_the_grid_can_grow_freely() -> void:
 	assert_eq(ArenaSession.arena.grid_size, Vector3i(32, 8, 32))
 
 
+## Estos dos casos son sobre una pieza suelta cerca del borde. El piso que trae
+## la arena nueva llega hasta la esquina y taparia justo lo que quieren mirar.
+func _empty_the_arena() -> void:
+	ArenaSession.arena.placements.clear()
+
+
 func test_shrinking_is_refused_while_a_piece_would_be_left_outside() -> void:
+	_empty_the_arena()
 	var model := PlacementModel.new(ArenaSession.arena, ArenaSession.catalog)
 	model.place(&"floor_1x1", Vector3i(20, 0, 20))
 	assert_false(ArenaSession.can_resize(Vector3i(16, 6, 16)))
@@ -108,6 +134,7 @@ func test_shrinking_is_refused_while_a_piece_would_be_left_outside() -> void:
 
 
 func test_shrinking_is_allowed_once_the_outliers_are_gone() -> void:
+	_empty_the_arena()
 	var model := PlacementModel.new(ArenaSession.arena, ArenaSession.catalog)
 	model.place(&"floor_1x1", Vector3i(20, 0, 20))
 	model.erase_at(Vector3i(20, 0, 20))

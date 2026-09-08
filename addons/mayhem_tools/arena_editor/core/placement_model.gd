@@ -251,6 +251,79 @@ func move_to(from: Vector3i, to: Vector3i, rotation: Variant = null,
 	return &""
 
 
+## Cubre de piso todas las celdas libres de `level` y devuelve cuantas piezas
+## puso. Prueba primero las baldosas grandes: llenar 32x32 con la de una celda
+## son mil entradas en el archivo y mil nodos en el preview, contra ciento pico
+## si se usan las de 3x3 donde entran.
+##
+## Es codicioso y no optimo - el sobrante de un lado queda embaldosado con
+## piezas chicas - y esta bien que lo sea: el resultado se ve igual y quien
+## construye va a borrar la mitad de esto en el primer minuto.
+##
+## No pasa por `refusal_for` a proposito. Esa funcion pregunta por la ocupacion
+## recorriendo todas las placements, una vez por celda del footprint, y con mil
+## celdas contra cien piezas eso son millones de comparaciones en el unico
+## momento en que el jugador esta esperando que abra el editor. Las unicas
+## reglas que aplican a una baldosa de piso sobre un nivel vacio son el borde de
+## la grilla y que la celda este libre, y las dos se contestan con este set.
+func fill_floor(level: int = 0) -> int:
+	if catalog == null:
+		return 0
+	var tiles: Array[PieceDefinition] = _floor_tiles()
+	if tiles.is_empty():
+		return 0
+	var taken: Dictionary = {}
+	for entry: PlacementEntry in arena.placements:
+		var piece: PieceDefinition = _piece(entry.piece_id)
+		if piece == null or not piece.is_ground():
+			continue
+		for offset: Vector3i in piece.get_footprint(entry.rotation):
+			taken[entry.cell + offset] = true
+
+	# El estado previo se guarda antes de embaldosar nada: un snapshot tomado
+	# despues seria una foto del piso ya puesto, y Z no devolveria nada.
+	var before: Dictionary = arena.to_dict()
+	var placed: int = 0
+	for x: int in arena.grid_size.x:
+		for z: int in arena.grid_size.z:
+			var cell := Vector3i(x, level, z)
+			if taken.has(cell):
+				continue
+			for tile: PieceDefinition in tiles:
+				var footprint: Array[Vector3i] = tile.get_footprint(0)
+				if not _fits(footprint, cell, taken):
+					continue
+				for offset: Vector3i in footprint:
+					taken[cell + offset] = true
+				arena.placements.append(PlacementEntry.make(tile.id, cell, 0))
+				placed += 1
+				break
+	if placed == 0:
+		return 0
+	if not _in_stroke:
+		_undo_snapshot = before
+		_has_undo = true
+	changed.emit()
+	return placed
+
+
+## Las piezas de piso llano del catalogo, de la que mas cubre a la que menos.
+## Las rampas quedan afuera: un piso base de rampas no es un piso.
+func _floor_tiles() -> Array[PieceDefinition]:
+	var tiles: Array[PieceDefinition] = []
+	for piece: PieceDefinition in catalog.pieces:
+		if piece == null or piece.connects_levels:
+			continue
+		if piece.category != PieceDefinition.Category.FLOOR:
+			continue
+		if piece.max_instances > 0:
+			continue
+		tiles.append(piece)
+	tiles.sort_custom(func(a: PieceDefinition, b: PieceDefinition) -> bool:
+		return a.footprint.size() > b.footprint.size())
+	return tiles
+
+
 func build_graph() -> GridGraph:
 	return GridGraph.build(arena, catalog)
 
@@ -271,6 +344,14 @@ func undo() -> bool:
 
 
 # Private
+
+func _fits(footprint: Array[Vector3i], cell: Vector3i, taken: Dictionary) -> bool:
+	for offset: Vector3i in footprint:
+		var target: Vector3i = cell + offset
+		if not arena.is_in_bounds(target) or taken.has(target):
+			return false
+	return true
+
 
 func _piece(piece_id: StringName) -> PieceDefinition:
 	if catalog == null:

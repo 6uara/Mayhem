@@ -43,11 +43,17 @@ func _ready() -> void:
 
 # Arenas
 
+## La arena nueva nace con el nivel 0 embaldosado. Abrir el editor y encontrar
+## una grilla de alambre flotando en el vacio no le dice a nadie que hacer, y
+## poner mil baldosas a mano antes de empezar a diseniar era el primer trabajo
+## que el editor le pedia a todo el mundo. El piso es borrable como cualquier
+## otra pieza: los pozos y los vacios se hacen sacando, no poniendo.
 func new_arena(grid_size: Vector3i = ArenaData.FIXED_SIZE) -> ArenaData:
 	var fresh := ArenaData.new()
 	fresh.arena_name = "New Arena"
 	fresh.grid_size = grid_size
 	fresh.created_at = Time.get_datetime_string_from_system(true)
+	PlacementModel.new(fresh, catalog).fill_floor(0)
 	arena = fresh
 	current_path = ""
 	arena_changed.emit()

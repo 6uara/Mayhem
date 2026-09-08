@@ -48,6 +48,9 @@ var _painted_cells: Dictionary = {}
 ## Celda de la pieza levantada con MOVE, si hay una en la mano.
 var _move_origin: Vector3i = Vector3i.ZERO
 var _has_move_origin: bool = false
+## La arena tal como la encontro esta sesion del editor. Con lo que hay que
+## comparar para saber si alguien construyo algo - ver `_on_exit`.
+var _baseline: Dictionary = {}
 
 
 func _ready() -> void:
@@ -68,6 +71,7 @@ func _ready() -> void:
 	if not ArenaSession.catalog.pieces.is_empty():
 		_select_piece(ArenaSession.catalog.pieces[0].id)
 	_camera.frame_grid(ArenaSession.arena.grid_size, ArenaSession.catalog.cell_size)
+	_baseline = model.arena.to_dict()
 	_on_model_changed()
 
 
@@ -425,6 +429,7 @@ func _on_delete_requested(path: String) -> void:
 
 func _on_new() -> void:
 	model.arena = ArenaSession.new_arena()
+	_baseline = model.arena.to_dict()
 	_hud.set_arena_name(model.arena.arena_name)
 	_hud.set_grid_size(model.arena.grid_size)
 	_camera.frame_grid(model.arena.grid_size, ArenaSession.catalog.cell_size)
@@ -451,6 +456,7 @@ func _on_load_requested(path: String) -> void:
 		_hud.set_status("Could not open %s" % path.get_file())
 		return
 	model.arena = ArenaSession.arena
+	_baseline = model.arena.to_dict()
 	_hud.set_arena_name(model.arena.arena_name)
 	_hud.set_grid_size(model.arena.grid_size)
 	_hud.set_theme_id(model.arena.theme_id)
@@ -470,8 +476,12 @@ func _on_play() -> void:
 ## Leaving saves what was built, but an untouched arena is not work: writing
 ## "new_arena.tres" every time someone opens the editor and backs out would fill
 ## the folder with files nobody made.
+##
+## "Sin tocar" se mide contra el estado con el que se abrio y no contra la lista
+## de piezas vacia: desde que la arena nueva nace con el piso puesto, no hay
+## ningun momento en que no haya piezas.
 func _on_exit() -> void:
-	if not model.arena.placements.is_empty() or ArenaSession.current_path != "":
+	if model.arena.to_dict() != _baseline or ArenaSession.current_path != "":
 		ArenaSession.save()
 	GameManager.return_to_menu()
 
