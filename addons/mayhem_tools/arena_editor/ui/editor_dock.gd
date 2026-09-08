@@ -22,6 +22,7 @@ const REFUSAL_TEXT: Dictionary = {
 	&"needs_empty": "That one hangs in the air: put it in a cell with no floor.",
 	&"too_low": "That one has to go higher up.",
 	&"unknown_piece": "That piece is not in the catalog.",
+	&"nothing_there": "There is nothing there to move.",
 }
 ## Shared with the in-game editor: one list of grid sizes, two front ends.
 const SIZE_PRESETS: Dictionary = ArenaData.SIZE_PRESETS
@@ -51,6 +52,9 @@ var _build_toggle: CheckButton
 var _save_dialog: EditorFileDialog
 var _load_dialog: EditorFileDialog
 var _export_dialog: EditorFileDialog
+## Celda de la pieza levantada con la herramienta Move, si hay una en la mano.
+var _move_origin: Vector3i = Vector3i.ZERO
+var _has_move_origin: bool = false
 
 
 func _ready() -> void:
@@ -132,7 +136,29 @@ func apply_tool_at(cell: Vector3i) -> bool:
 			if model.get_enemy_spawn_at(cell) != null:
 				return model.remove_enemy_spawn(cell)
 			return model.add_enemy_spawn(cell)
+		ArenaPalettePanel.Tool.MOVE:
+			return _apply_move_at(cell)
 	return false
+
+
+## Mover, en el dock, con los mismos dos clicks que el editor in-game: el
+## primero levanta la pieza y el segundo la baja. La pieza en la mano vive aca
+## y no en el modelo, porque es estado de la interfaz y no de la arena.
+func _apply_move_at(cell: Vector3i) -> bool:
+	if not _has_move_origin:
+		if model.get_entry_at(cell) == null:
+			_set_status("Nothing to move there.")
+			return false
+		_move_origin = cell
+		_has_move_origin = true
+		_set_status("Picked it up. Click where it goes.")
+		return false
+	var refusal: StringName = model.move_to(_move_origin, cell, pending_rotation)
+	if refusal != &"":
+		_set_status(REFUSAL_TEXT.get(refusal, "That piece cannot go there."))
+		return false
+	_has_move_origin = false
+	return true
 
 
 ## Asks the model rather than re-deriving the rules: the ghost used to check both

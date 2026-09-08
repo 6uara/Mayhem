@@ -20,7 +20,13 @@ const REFUSAL_TEXT: Dictionary = {
 	&"needs_empty": "That one hangs in the air: put it in a cell with no floor.",
 	&"too_low": "That one has to go higher up.",
 	&"unknown_piece": "That piece is not in the catalog.",
+	&"nothing_there": "There is nothing there to move.",
 }
+## Las herramientas que se pintan arrastrando. Los spawns y el mover son
+## acciones de un click: repetirlas por celda mientras el mouse se mueve solo
+## produce ediciones que nadie pidio.
+const PAINTABLE_TOOLS: Array = [
+	ArenaPalettePanel.Tool.PLACE, ArenaPalettePanel.Tool.ERASE]
 
 @onready var _camera: ArenaEditorCamera = $Camera
 @onready var _preview: ArenaPreview = $Preview
@@ -34,6 +40,13 @@ var level: int = 0
 
 var _hover_cell: Vector3i = Vector3i.ZERO
 var _press_position: Vector2 = Vector2.ZERO
+## Boton izquierdo apretado sobre el mapa con una herramienta que se pinta.
+var _painting: bool = false
+## Celdas ya tocadas por el trazo en curso, como set.
+var _painted_cells: Dictionary = {}
+## Celda de la pieza levantada con MOVE, si hay una en la mano.
+var _move_origin: Vector3i = Vector3i.ZERO
+var _has_move_origin: bool = false
 
 
 func _ready() -> void:
@@ -70,6 +83,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	var motion := event as InputEventMouseMotion
 	if motion != null:
 		_update_hover(motion.position)
+		if _painting:
+			_paint(_hover_cell)
 		return
 
 	var button := event as InputEventMouseButton
@@ -77,6 +92,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if button.pressed:
 		_press_position = button.position
+		_update_hover(button.position)
+		# Construir y borrar arrancan al apretar y siguen mientras el mouse se
+		# arrastre: pedir un click por celda para llenar un piso de 32x32 es
+		# pedir mil clicks.
+		if tool_mode in PAINTABLE_TOOLS:
+			_begin_stroke()
+		return
+	if _painting:
+		_end_stroke()
 		return
 	# Released: a drag that orbited the camera must not also place a piece.
 	if button.position.distance_to(_press_position) > CLICK_DRAG_SLOP:
@@ -92,7 +116,7 @@ func _handle_keys(event: InputEvent) -> bool:
 	if key == null or not key.pressed or key.echo:
 		return false
 	match key.keycode:
-		KEY_1, KEY_2, KEY_3, KEY_4:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
 			_set_tool(key.keycode - KEY_1)
 		KEY_R:
 			_rotate()
@@ -108,10 +132,45 @@ func _handle_keys(event: InputEvent) -> bool:
 		KEY_H:
 			_hud.toggle_help()
 		KEY_ESCAPE:
-			return _hud.close_modals()
+			return _on_escape()
 		_:
 			return false
 	return true
+
+
+## ESC deshace de a uno los estados en los que el editor te tiene atrapado:
+## primero el panel abierto, despues la pieza que quedo en la mano.
+func _on_escape() -> bool:
+	if _hud.close_modals():
+		return true
+	if _has_move_origin:
+		_cancel_move()
+		_hud.set_status("Move cancelled.")
+		return true
+	return false
+
+
+## Un trazo entero cuenta como una sola edicion para el undo: arrastrar veinte
+## celdas y apretar Z tiene que devolver las veinte, no la ultima.
+func _begin_stroke() -> void:
+	_painting = true
+	_painted_cells.clear()
+	model.begin_stroke()
+	_paint(_hover_cell)
+
+
+func _end_stroke() -> void:
+	_painting = false
+	model.end_stroke()
+
+
+## Una vez por celda. Volver a pasar por encima sin soltar el boton no reintenta
+## nada, que es lo que evita repetir el mismo rechazo en el status a cada pixel.
+func _paint(cell: Vector3i) -> void:
+	if _painted_cells.has(cell):
+		return
+	_painted_cells[cell] = true
+	_apply_tool(cell)
 
 
 func _connect_hud() -> void:
@@ -154,10 +213,39 @@ func _update_hover(screen_position: Vector2) -> void:
 
 
 func _update_ghost() -> void:
-	if tool_mode != ArenaPalettePanel.Tool.PLACE or selected_piece == &"":
+	match tool_mode:
+		ArenaPalettePanel.Tool.ERASE:
+			# Borrar no tiene ghost que mostrar, tiene una victima que marcar.
+			_preview.hide_ghost()
+			_preview.show_piece_highlight(_hover_cell, ArenaGizmos.ERASE_HIGHLIGHT)
+		ArenaPalettePanel.Tool.MOVE:
+			_update_move_ghost()
+		ArenaPalettePanel.Tool.PLACE:
+			_preview.hide_highlight()
+			if selected_piece == &"":
+				_preview.hide_ghost()
+				return
+			_preview.show_ghost(selected_piece, _hover_cell, pending_rotation, _can_place())
+		_:
+			_preview.hide_highlight()
+			_preview.hide_ghost()
+
+
+## Sin nada en la mano marca lo que un click levantaria; con una pieza levantada
+## deja el origen marcado y pone el ghost donde caeria, pintado con la respuesta
+## real del modelo en vez de con una regla copiada aca.
+func _update_move_ghost() -> void:
+	if not _has_move_origin:
+		_preview.hide_ghost()
+		_preview.show_piece_highlight(_hover_cell, ArenaGizmos.MOVE_HIGHLIGHT)
+		return
+	_preview.show_piece_highlight(_move_origin, ArenaGizmos.MOVE_HIGHLIGHT)
+	var entry: PlacementEntry = model.get_entry_at(_move_origin)
+	if entry == null:
 		_preview.hide_ghost()
 		return
-	_preview.show_ghost(selected_piece, _hover_cell, pending_rotation, _can_place())
+	var fits: bool = model.move_to(_move_origin, _hover_cell, pending_rotation, true) == &""
+	_preview.show_ghost(entry.piece_id, _hover_cell, pending_rotation, fits)
 
 
 ## One source of truth for "can this go here": the model. The ghost asking the
@@ -185,9 +273,45 @@ func _apply_tool(cell: Vector3i) -> void:
 				model.remove_enemy_spawn(cell)
 			else:
 				model.add_enemy_spawn(cell)
+		ArenaPalettePanel.Tool.MOVE:
+			_apply_move(cell)
+
+
+## Levantar con el primer click y soltar con el segundo, en vez de arrastrar: el
+## destino puede estar en otro nivel, al que se llega con Q/E entre los dos
+## clicks, y una rotacion con R en el medio es medio movimiento de todos modos.
+func _apply_move(cell: Vector3i) -> void:
+	if not _has_move_origin:
+		var entry: PlacementEntry = model.get_entry_at(cell)
+		if entry == null:
+			_hud.set_status("Nothing to move there.")
+			return
+		_move_origin = cell
+		_has_move_origin = true
+		# La pieza se levanta con el giro que ya tenia, asi que R sigue desde ahi
+		# en vez de enderezarla de golpe al soltarla.
+		pending_rotation = entry.rotation
+		_hud.set_rotation_steps(pending_rotation)
+		_hud.set_status("Picked it up. Click where it goes - R rotates, Esc puts it back.")
+		_update_ghost()
+		return
+	var refusal: StringName = model.move_to(_move_origin, cell, pending_rotation)
+	if refusal != &"":
+		_hud.set_status(REFUSAL_TEXT.get(refusal, "That piece cannot go there."))
+		return
+	_cancel_move()
+	_hud.set_status("Moved.")
+
+
+func _cancel_move() -> void:
+	_has_move_origin = false
+	_update_ghost()
 
 
 func _set_tool(new_tool: int) -> void:
+	# Cambiar de herramienta con una pieza en la mano la deja donde estaba.
+	if _has_move_origin and new_tool != int(ArenaPalettePanel.Tool.MOVE):
+		_has_move_origin = false
 	tool_mode = new_tool as ArenaPalettePanel.Tool
 	_hud.select_tool(new_tool)
 	_update_ghost()
@@ -218,6 +342,9 @@ func _rotate() -> void:
 func _on_model_changed() -> void:
 	ArenaSession.arena = model.arena
 	_preview.rebuild()
+	# El resaltado sobrevive al rebuild, asi que se revalida aca: si lo que
+	# marcaba acaba de borrarse, el marco tiene que irse con la pieza.
+	_update_ghost()
 	_hud.show_issues(ArenaSession.validate())
 	_hud.set_venue_fit(_venue_fit_text())
 

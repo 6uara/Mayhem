@@ -260,3 +260,70 @@ func test_two_anchors_still_cannot_share_a_cell() -> void:
 	var model: PlacementModel = _interactable_model()
 	model.place(&"anchor", Vector3i(2, 2, 2))
 	assert_eq(model.refusal_for(&"anchor", Vector3i(2, 2, 2)), &"cell_taken")
+
+
+func test_moving_a_piece_leaves_its_old_cell_empty() -> void:
+	var model: PlacementModel = _model()
+	model.place(&"floor", Vector3i(1, 0, 1))
+	assert_eq(model.move_to(Vector3i(1, 0, 1), Vector3i(4, 0, 4)), &"")
+	assert_null(model.get_entry_at(Vector3i(1, 0, 1)))
+	assert_eq(model.arena.placements.size(), 1, "moving is not copying")
+	assert_eq(model.arena.placements[0].cell, Vector3i(4, 0, 4))
+
+
+func test_a_piece_can_move_onto_cells_it_already_covers() -> void:
+	var model: PlacementModel = _model()
+	model.place(&"long", Vector3i(2, 0, 2))
+	assert_eq(model.move_to(Vector3i(2, 0, 2), Vector3i(3, 0, 2)), &"",
+		"the overlap is with itself, and it is about to stop being there")
+
+
+func test_a_refused_move_puts_the_piece_back() -> void:
+	var model: PlacementModel = _model()
+	model.place(&"floor", Vector3i(1, 0, 1))
+	model.place(&"floor", Vector3i(2, 0, 2))
+	assert_eq(model.move_to(Vector3i(1, 0, 1), Vector3i(2, 0, 2)), &"cell_taken")
+	assert_not_null(model.get_entry_at(Vector3i(1, 0, 1)), "it never left")
+	assert_eq(model.arena.placements.size(), 2)
+
+
+func test_moving_nothing_says_so() -> void:
+	var model: PlacementModel = _model()
+	assert_eq(model.move_to(Vector3i(1, 0, 1), Vector3i(2, 0, 2)), &"nothing_there")
+
+
+func test_a_dry_move_answers_without_moving() -> void:
+	var model: PlacementModel = _model()
+	model.place(&"floor", Vector3i(1, 0, 1))
+	assert_eq(model.move_to(Vector3i(1, 0, 1), Vector3i(4, 0, 4), null, true), &"")
+	assert_not_null(model.get_entry_at(Vector3i(1, 0, 1)), "the dry run left it alone")
+
+
+func test_a_refused_move_does_not_spend_the_undo() -> void:
+	var model: PlacementModel = _model()
+	model.place(&"floor", Vector3i(1, 0, 1))
+	model.place(&"floor", Vector3i(2, 0, 2))
+	model.undo()
+	assert_eq(model.move_to(Vector3i(1, 0, 1), Vector3i(9, 0, 9)), &"out_of_bounds")
+	assert_false(model.can_undo(), "a move that never happened is not an edit")
+
+
+func test_a_stroke_undoes_as_one_edit() -> void:
+	var model: PlacementModel = _model()
+	model.begin_stroke()
+	for x: int in 5:
+		model.place(&"floor", Vector3i(x, 0, 0))
+	model.end_stroke()
+	assert_eq(model.arena.placements.size(), 5)
+	assert_true(model.undo())
+	assert_eq(model.arena.placements.size(), 0, "the whole drag comes back at once")
+
+
+func test_edits_after_a_stroke_undo_on_their_own_again() -> void:
+	var model: PlacementModel = _model()
+	model.begin_stroke()
+	model.place(&"floor", Vector3i(0, 0, 0))
+	model.end_stroke()
+	model.place(&"floor", Vector3i(1, 0, 0))
+	model.undo()
+	assert_eq(model.arena.placements.size(), 1, "only the edit outside the stroke went back")

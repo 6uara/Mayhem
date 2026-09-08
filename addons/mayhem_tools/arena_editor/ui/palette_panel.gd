@@ -8,9 +8,12 @@ signal piece_selected(piece_id: StringName)
 signal tool_changed(tool_mode: int)
 signal level_changed(level: int)
 
-enum Tool { PLACE, ERASE, PLAYER_SPAWN, ENEMY_SPAWN }
+## MOVE va al final a proposito: el orden es el de las teclas 1-5 del editor
+## in-game y el indice viaja en `tool_changed`, asi que reordenar cambiaria el
+## significado de cualquier atajo que alguien ya tenga en los dedos.
+enum Tool { PLACE, ERASE, PLAYER_SPAWN, ENEMY_SPAWN, MOVE }
 
-const TOOL_NAMES: Array[String] = ["Place", "Erase", "Player spawn", "Enemy spawn"]
+const TOOL_NAMES: Array[String] = ["Place", "Erase", "Player spawn", "Enemy spawn", "Move"]
 
 var _tool_button: OptionButton
 var _level_spin: SpinBox

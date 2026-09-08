@@ -27,17 +27,19 @@ signal venue_changed(theme_id: StringName)
 
 ## Short on purpose: the whole bar has to fit at 1600 wide with the size picker
 ## and the file buttons beside it.
-const TOOL_NAMES: Array[String] = ["BUILD", "ERASE", "PLAYER", "ENEMY"]
-const TOOL_KEYS: Array[String] = ["1", "2", "3", "4"]
+const TOOL_NAMES: Array[String] = ["BUILD", "ERASE", "PLAYER", "ENEMY", "MOVE"]
+const TOOL_KEYS: Array[String] = ["1", "2", "3", "4", "5"]
 ## Seconds a pressed DELETE waits for the second press before it forgets.
 const DELETE_CONFIRM_TIME: float = 3.0
 ## The controls panel, as the player reads them.
 const HELP_ROWS: Array[Array] = [
 	["Left click", "Use the selected tool on the cell"],
+	["Left drag", "Keep building or erasing across the cells you pass"],
 	["Right drag", "Orbit the camera"],
 	["WASD", "Pan"],
 	["Mouse wheel", "Zoom"],
-	["1 2 3 4", "Build / Erase / Player spawn / Enemy spawn"],
+	["1 2 3 4 5", "Build / Erase / Player spawn / Enemy spawn / Move"],
+	["Move", "Click a piece to pick it up, click again to drop it"],
 	["R", "Rotate the piece 90 degrees"],
 	["Q / E", "Down / up one level"],
 	["Z", "Undo the last edit"],

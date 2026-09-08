@@ -16,6 +16,8 @@ var _ghost: Node3D
 var _ghost_piece_id: StringName = &""
 var _ghost_rotation: int = -1
 var _ghost_valid: bool = true
+var _highlight: Node3D
+var _highlight_key: Array = []
 
 
 func _ready() -> void:
@@ -71,6 +73,44 @@ func show_ghost(piece_id: StringName, cell: Vector3i, rotation: int, valid: bool
 	var lift: float = 0.0 if piece.is_ground() else model.build_graph().surface_offset(cell)
 	_ghost.position = model.catalog.cell_to_world(cell) + Vector3(0.0, lift, 0.0)
 	_ghost.rotation.y = deg_to_rad(-90.0 * rotation)
+
+
+## Marca la pieza que cubre `cell` - lo que un click de borrar o de mover se va
+## a llevar. Se dibuja el footprint entero y no solo la celda apuntada: una
+## rampa de dos celdas se borra completa, y el resaltado tiene que decirlo.
+func show_piece_highlight(cell: Vector3i, color: Color) -> void:
+	if model == null or model.catalog == null:
+		hide_highlight()
+		return
+	var entry: PlacementEntry = model.get_entry_at(cell, false)
+	if entry == null:
+		entry = model.get_entry_at(cell, true)
+	if entry == null:
+		hide_highlight()
+		return
+	var piece: PieceDefinition = model.catalog.get_piece(entry.piece_id)
+	if piece == null:
+		hide_highlight()
+		return
+	var key: Array = [entry.cell, entry.rotation, entry.piece_id, color]
+	if _highlight != null and _highlight_key == key:
+		return
+	hide_highlight()
+	_highlight = Node3D.new()
+	_highlight_key = key
+	for offset: Vector3i in piece.get_footprint(entry.rotation):
+		var outline: MeshInstance3D = ArenaGizmos.build_cell_outline(
+			color, model.catalog.cell_size)
+		outline.position = model.catalog.cell_to_world(entry.cell + offset)
+		_highlight.add_child(outline)
+	add_child(_highlight)
+
+
+func hide_highlight() -> void:
+	if _highlight != null:
+		_highlight.queue_free()
+		_highlight = null
+		_highlight_key = []
 
 
 func hide_ghost() -> void:

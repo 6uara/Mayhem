@@ -15,6 +15,10 @@ var catalog: PieceCatalog
 ## Single-level undo, as scoped in the handoff. Multi-level is out of v1.
 var _undo_snapshot: Dictionary = {}
 var _has_undo: bool = false
+## Dentro de un trazo el snapshot se toma una sola vez, al principio. Sin esto,
+## pintar veinte celdas arrastrando el mouse deja un undo que solo devuelve la
+## ultima: cada edicion pisaba el snapshot de la anterior.
+var _in_stroke: bool = false
 
 
 func _init(arena: ArenaData = null, catalog: PieceCatalog = null) -> void:
@@ -172,6 +176,59 @@ func remove_enemy_spawn(cell: Vector3i) -> bool:
 	return true
 
 
+## Todo lo que se edite hasta `end_stroke` cuenta como una sola accion para el
+## undo. Anidar no tiene sentido y llamar dos veces seguidas es inofensivo.
+func begin_stroke() -> void:
+	if _in_stroke:
+		return
+	_snapshot()
+	_in_stroke = true
+
+
+func end_stroke() -> void:
+	_in_stroke = false
+
+
+## Levanta la pieza que cubre `from` y la baja en `to`, opcionalmente girada.
+## Si el destino la rechaza no se pierde nada: la pieza vuelve donde estaba y se
+## devuelve el codigo de rechazo, que es la misma frase que ya sabe decir la UI.
+##
+## `dry_run` responde "entraria" sin mover nada, que es lo que necesita el ghost
+## para no mentir: preguntarle a `refusal_for` directamente daria "cell_taken"
+## contra la propia pieza cada vez que el destino se solapa con el origen.
+##
+## Mover es sacar y poner, pero tiene que ser atomico: una pieza no puede quedar
+## en el limbo porque el destino estaba ocupado, y menos todavia por su propia
+## celda de origen, que es el caso mas comun de todos.
+func move_to(from: Vector3i, to: Vector3i, rotation: Variant = null,
+		dry_run: bool = false) -> StringName:
+	var entry: PlacementEntry = get_entry_at(from, false)
+	if entry == null:
+		entry = get_entry_at(from, true)
+	if entry == null:
+		return &"nothing_there"
+	var new_rotation: int = entry.rotation if rotation == null else posmod(int(rotation), 4)
+	# El estado previo se guarda antes de tocar nada y se confirma solo si el
+	# movimiento sale: un rechazo no tiene que gastar el unico undo que hay.
+	# El ghost llama a esto en cada celda que pasa el mouse: serializar la arena
+	# entera para un undo que no va a existir no es gratis.
+	var before: Dictionary = {} if dry_run else arena.to_dict()
+	var index: int = arena.placements.find(entry)
+	arena.placements.remove_at(index)
+	var refusal: StringName = refusal_for(entry.piece_id, to, new_rotation, true)
+	if refusal != &"" or dry_run:
+		arena.placements.insert(index, entry)
+		return refusal
+	entry.cell = to
+	entry.rotation = new_rotation
+	arena.placements.insert(index, entry)
+	if not _in_stroke:
+		_undo_snapshot = before
+		_has_undo = true
+	changed.emit()
+	return &""
+
+
 func build_graph() -> GridGraph:
 	return GridGraph.build(arena, catalog)
 
@@ -186,6 +243,7 @@ func undo() -> bool:
 		return false
 	arena = ArenaData.from_dict(_undo_snapshot)
 	_has_undo = false
+	_in_stroke = false
 	changed.emit()
 	return true
 
@@ -199,5 +257,7 @@ func _piece(piece_id: StringName) -> PieceDefinition:
 
 
 func _snapshot() -> void:
+	if _in_stroke:
+		return
 	_undo_snapshot = arena.to_dict()
 	_has_undo = true
