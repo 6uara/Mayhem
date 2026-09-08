@@ -48,6 +48,7 @@ var _live: Array[DamageNumber] = []
 
 func _ready() -> void:
 	EventBus.damage_dealt.connect(_on_damage_dealt)
+	EventBus.healed.connect(_on_healed)
 	# El primer tiroteo no tiene por que pagar la instanciacion de todo el tope.
 	if damage_number_scene != null:
 		ObjectPool.prewarm(damage_number_scene, max_live_numbers)
@@ -76,6 +77,28 @@ func _on_damage_dealt(target: Node, amount: float, is_headshot: bool) -> void:
 	number.call(&"play_at", target_3d.global_position + Vector3.UP * height_offset,
 		amount, is_headshot)
 	_open[target_3d] = {"number": number, "at": _now()}
+	_live.append(number)
+
+
+## La curacion sube por el mismo pool y con el mismo tope que el daño: es un
+## numero flotante mas, y el presupuesto que existe es para todos.
+##
+## No se agrega con `add_damage` sobre un numero abierto - un +12 verde sumado
+## a un 240 rojo no es ningun numero - asi que una curacion sobre un objetivo
+## que ya tiene un numero arriba pide el suyo.
+func _on_healed(target: Node, amount: float) -> void:
+	if amount <= 0.0 or damage_number_scene == null:
+		return
+	if not bool(SettingsManager.get_value("hud/damage_numbers", true)):
+		return
+	var target_3d: Node3D = target as Node3D
+	if target_3d == null or _live_count() >= max_live_numbers:
+		return
+	var number: Node = ObjectPool.acquire(damage_number_scene)
+	if number == null or not number.has_method(&"play_heal_at"):
+		return
+	number.call(&"play_heal_at",
+		target_3d.global_position + Vector3.UP * height_offset, amount)
 	_live.append(number)
 
 

@@ -111,6 +111,10 @@ const NAV_ARRIVAL_TOLERANCE: float = 2.0
 
 const STAGGER_TIME: float = 0.18
 const FLASH_TIME: float = 0.08
+## Mas largo que el flash de daño, y a proposito: un golpe es un instante y una
+## curacion es un estado que cambio. A 0.08 el destello verde se perdia entre
+## los destellos de las balas que le estaban pegando al mismo enemigo.
+const HEAL_FLASH_TIME: float = 0.35
 const GRAVITY: float = 24.0
 
 ## Cuanto se le suma al radio del enemigo para decidir que un salto toco al
@@ -279,6 +283,7 @@ func _ready() -> void:
 	add_to_group(&"enemy")
 	if health != null:
 		health.damaged.connect(_on_damaged)
+		health.healed.connect(_on_healed)
 		health.died.connect(_on_died)
 	if body_hitbox != null:
 		body_hitbox.hit_taken.connect(_on_hit_taken)
@@ -2094,14 +2099,19 @@ func _collect_model_meshes(node: Node) -> void:
 ## One knob for "this enemy is lit up", whichever way it is being drawn: the
 ## emission on a capsule, the overlay on a model. Hit flashes and attack
 ## wind-ups both go through here, so neither has to know which it is looking at.
-func _set_glow(amount: float) -> void:
+## `tint` existe para la curacion: es el mismo canal de destello, en verde. El
+## color se pasa por llamada en vez de guardarse porque el estado de "de que
+## color esta prendido" ya lo lleva _flash_timer, y dos estados para una cosa
+## es como quedan enemigos verdes para siempre.
+func _set_glow(amount: float, tint: Color = flash_color) -> void:
 	# Ceiling of 1.2 rather than 1.0: the hit flash deliberately overshoots the
 	# brightest wind-up, and 1.2 * 2.5 is the 3.0 the capsule flash has always
 	# used. The overlay cannot go past opaque, so it clamps a step earlier.
 	var level: float = clampf(amount, 0.0, 1.2)
 	if _glow_material != null:
-		_glow_material.albedo_color = Color(flash_color, minf(level, 1.0) * 0.8)
+		_glow_material.albedo_color = Color(tint, minf(level, 1.0) * 0.8)
 	if _material != null:
+		_material.emission = tint
 		_material.emission_energy_multiplier = level * 2.5
 
 
@@ -2242,6 +2252,20 @@ func _on_hit_taken(_amount: float, _is_headshot: bool, hit_position: Vector3) ->
 
 func _on_damaged(_amount: float, _remaining: float) -> void:
 	pass
+
+
+## Curarse tiene que leerse desde afuera igual que recibir un golpe. Sin esto un
+## Healer trabajando es un enemigo que deja de morirse sin que nada lo diga, y
+## la respuesta correcta - matar al Healer primero - depende de que se note.
+##
+## Cuelga de `health.healed` y no de `heal_nearby_allies` para que valga para
+## toda curacion que le llegue a este cuerpo, venga de donde venga.
+func _on_healed(amount: float, _remaining: float) -> void:
+	if amount <= 0.0 or not is_active:
+		return
+	_flash_timer = HEAL_FLASH_TIME
+	_set_glow(1.0, Tokens.HEAL)
+	EventBus.healed.emit(self, amount)
 
 
 func _on_died() -> void:

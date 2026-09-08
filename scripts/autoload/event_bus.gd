@@ -4,6 +4,10 @@ extends Node
 
 # Combat
 signal damage_dealt(target: Node, amount: float, is_headshot: bool)
+## Alguien recupero vida. Lo emite quien la recibio y no quien la dio: lo que
+## hay que mostrar es la unidad que se curo, y el Healer puede estar curando a
+## tres a la vez desde atras de una columna.
+signal healed(target: Node, amount: float)
 signal enemy_killed(enemy_type: StringName, position: Vector3, reward: int)
 signal player_damaged(amount: float, remaining: float)
 signal player_died()

@@ -59,6 +59,15 @@ func play_at(hit_position: Vector3, amount: float, is_headshot: bool) -> void:
 	_is_playing = true
 
 
+## Lo mismo, en verde y con signo. Comparte todo el resto - la subida, el
+## desvanecido, el pool - porque es la misma cosa diciendo lo contrario, y el
+## verde de Tokens.HEAL existe justamente para esto y para nada de la UI.
+func play_heal_at(heal_position: Vector3, amount: float) -> void:
+	play_at(heal_position, amount, false)
+	_label.text = "+%d" % maxi(roundi(_shown), 0)
+	_label.modulate = Color(Tokens.HEAL, 1.0)
+
+
 ## Suma un golpe al numero que ya esta arriba de este objetivo en vez de pedir
 ## otro. Ver DamageNumberSpawner: es lo que evita que una escopeta pinte ocho
 ## Label3D en el mismo cuarto de segundo, y de paso se lee mejor - un 240 dice

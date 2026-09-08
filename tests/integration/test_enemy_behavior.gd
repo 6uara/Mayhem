@@ -277,3 +277,28 @@ func test_a_dodged_leap_deals_no_damage_and_leaves_the_enemy_recovering() -> voi
 	assert_false(_enemy.is_leaping(), "aterrizo")
 	assert_true(_enemy.is_recovering(),
 		"y queda vulnerable un momento: ese es el premio por esquivar")
+
+
+## Un Healer trabajando tiene que verse. La respuesta correcta del jugador -
+## matar al Healer antes que al resto - depende enteramente de que se note que
+## alguien esta curando, y hasta ahora no se notaba nada.
+func test_getting_healed_lights_the_unit_up_in_green() -> void:
+	_enemy.health.apply_damage(30.0)
+	_enemy._set_glow(0.0)
+	_enemy.health.heal(20.0)
+	assert_gt(_enemy._glow_level(), 0.0, "el que se curo queda prendido")
+	assert_gt(_enemy._flash_timer, Enemy.FLASH_TIME,
+		"y por mas tiempo que un balazo, porque es un estado y no un instante")
+
+
+func test_a_heal_that_healed_nothing_shows_nothing() -> void:
+	_enemy._set_glow(0.0)
+	_enemy.health.heal(20.0)
+	assert_eq(_enemy._glow_level(), 0.0, "estaba con la vida llena: no paso nada")
+
+
+func test_a_heal_is_announced_for_whoever_draws_it() -> void:
+	watch_signals(EventBus)
+	_enemy.health.apply_damage(30.0)
+	_enemy.health.heal(12.0)
+	assert_signal_emitted_with_parameters(EventBus, "healed", [_enemy, 12.0])
