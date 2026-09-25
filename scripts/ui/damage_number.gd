@@ -31,6 +31,12 @@ const FADE_START_FRACTION: float = 0.35
 const FONT_SIZE: int = 48
 ## Cuanto mas grande se ve un headshot. Escala, no tamaño de fuente.
 const HEADSHOT_SCALE: float = 1.35
+## Lo mismo para el numero de plata: la kill tiene que leerse por encima del
+## ultimo golpe que la causo.
+const REWARD_SCALE: float = 1.2
+## Metros que el numero de plata arranca por encima del de daño, para no
+## superponerse con el que todavia esta subiendo sobre el mismo cuerpo.
+const REWARD_EXTRA_HEIGHT: float = 0.55
 
 @onready var _label: Label3D = $Label3D
 
@@ -66,6 +72,21 @@ func play_heal_at(heal_position: Vector3, amount: float) -> void:
 	play_at(heal_position, amount, false)
 	_label.text = "+%d" % maxi(roundi(_shown), 0)
 	_label.modulate = Color(Tokens.HEAL, 1.0)
+
+
+## La plata que dejo una kill, en el ambar de REWARD y con el signo de moneda.
+##
+## Comparte el pool, la subida y el desvanecido con el numero de daño porque es
+## el mismo objeto diciendo otra cosa - y sube un poco mas alto a proposito: en
+## el instante de morir un enemigo suele haber todavia un numero de daño arriba
+## suyo, y los dos en la misma altura se pisan.
+func play_reward_at(reward_position: Vector3, amount: int) -> void:
+	play_at(reward_position, float(amount), false)
+	_label.text = "+$%d" % maxi(amount, 0)
+	_label.modulate = Color(Tokens.REWARD, 1.0)
+	scale = Vector3.ONE * REWARD_SCALE
+	_base_y += REWARD_EXTRA_HEIGHT
+	global_position.y = _base_y
 
 
 ## Suma un golpe al numero que ya esta arriba de este objetivo en vez de pedir

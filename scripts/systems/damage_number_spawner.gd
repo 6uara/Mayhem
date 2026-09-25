@@ -49,6 +49,7 @@ var _live: Array[DamageNumber] = []
 func _ready() -> void:
 	EventBus.damage_dealt.connect(_on_damage_dealt)
 	EventBus.healed.connect(_on_healed)
+	EventBus.kill_payout.connect(_on_kill_payout)
 	# El primer tiroteo no tiene por que pagar la instanciacion de todo el tope.
 	if damage_number_scene != null:
 		ObjectPool.prewarm(damage_number_scene, max_live_numbers)
@@ -102,7 +103,44 @@ func _on_healed(target: Node, amount: float) -> void:
 	_live.append(number)
 
 
+## La plata que dejo la kill, sobre el cuerpo, recompensa y bono en un solo
+## numero.
+##
+## Entra en el mismo tope de `max_live_numbers` que el daño - el presupuesto de
+## framerate es para todos los numeros flotantes, no uno por tipo-, pero se
+## cuela por encima de el cuando hace falta: una kill es exactamente el momento
+## en que el tope esta lleno de numeros de daño sobre el enemigo que acaba de
+## morir, y perder justo ahi el unico numero que dice cuanto cobraste seria
+## quedarse sin la informacion en el unico instante en que importa. Se libera el
+## mas viejo para hacerle lugar.
+func _on_kill_payout(reward: int, _bonus_ids: Array, bonus_total: int,
+		position: Vector3) -> void:
+	var total: int = reward + bonus_total
+	if total <= 0 or damage_number_scene == null:
+		return
+	if not bool(SettingsManager.get_value("hud/damage_numbers", true)):
+		return
+	if _live_count() >= max_live_numbers:
+		_release_oldest()
+	var number: Node = ObjectPool.acquire(damage_number_scene)
+	if number == null or not number.has_method(&"play_reward_at"):
+		return
+	number.call(&"play_reward_at", position + Vector3.UP * height_offset, total)
+	_live.append(number)
+
+
 # Private
+
+## Saca de pantalla el numero vivo mas viejo, para que un numero mas importante
+## entre sin ampliar el presupuesto.
+func _release_oldest() -> void:
+	for i: int in _live.size():
+		var number: DamageNumber = _live[i]
+		if is_instance_valid(number) and number.is_playing():
+			ObjectPool.release(number)
+			_live.remove_at(i)
+			return
+
 
 ## El numero todavia abierto sobre este objetivo, o null. Limpia de paso la
 ## entrada cuando el numero ya se apago o el objetivo se fue: el diccionario no

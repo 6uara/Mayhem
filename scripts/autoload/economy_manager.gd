@@ -17,6 +17,11 @@ var currency: int = 0:
 
 ## Per-wave accumulators, reset by WaveManager at wave start.
 var _wave_kill_income: int = 0
+## Lo que se perdio por recibir golpes en esta oleada, en positivo. Se lleva
+## aparte del ingreso por kills para que la pantalla de fin de oleada pueda
+## mostrarlo como una fila propia - ver Tokens.INCOME_COLOR, que ya reserva un
+## color para "lost".
+var _wave_damage_loss: int = 0
 
 
 func _ready() -> void:
@@ -28,6 +33,8 @@ func _ready() -> void:
 	# Deliberately not enemy_killed: that one announces a death, kill_credited
 	# is the same event narrowed to "and this wallet gets it" - see EventBus.
 	EventBus.kill_credited.connect(_on_kill_credited)
+	EventBus.kill_payout.connect(_on_kill_payout)
+	EventBus.player_damaged.connect(_on_player_damaged.unbind(1))
 	EventBus.player_died.connect(reset)
 	reset()
 
@@ -37,14 +44,21 @@ func _ready() -> void:
 func reset() -> void:
 	currency = config.starting_currency
 	_wave_kill_income = 0
+	_wave_damage_loss = 0
 
 
 func begin_wave() -> void:
 	_wave_kill_income = 0
+	_wave_damage_loss = 0
 
 
 func get_wave_kill_income() -> int:
 	return _wave_kill_income
+
+
+## Lo perdido por daño en esta oleada, en positivo.
+func get_wave_damage_loss() -> int:
+	return _wave_damage_loss
 
 
 ## Awards the end-of-wave bonuses and returns the itemised breakdown so the
@@ -59,6 +73,7 @@ func award_wave_bonuses(wave: WaveData, duration: float, took_damage: bool) -> D
 		"speed_bonus": speed_bonus,
 		"no_damage_bonus": no_damage_bonus,
 		"completion_bonus": completion_bonus,
+		"damage_loss": _wave_damage_loss,
 	}
 
 
@@ -95,6 +110,39 @@ func try_spend(item_id: StringName, cost: int) -> PurchaseResult:
 
 
 # Private
+
+## El recargo por como se hizo la kill entra por el mismo camino que la
+## recompensa base -escalado y sumado al ingreso de la oleada- porque para la
+## economia es la misma plata: lo que cambia es por que se pago, y eso ya lo
+## cuenta quien emitio la señal.
+func _on_kill_payout(_reward: int, _bonus_ids: Array, bonus_total: int,
+		_position: Vector3) -> void:
+	var total: int = bonus_total
+	if total <= 0:
+		return
+	var scaled: int = _scale(total)
+	_wave_kill_income += scaled
+	currency += scaled
+
+
+## Recibir un golpe cuesta plata.
+##
+## Se cobra sobre el daño efectivamente aplicado, no sobre el nominal: una
+## reduccion de daño comprada en la tienda tiene que abaratar tambien esto, o
+## seria una mejora que protege la vida y no el bolsillo.
+##
+## Nunca se cobra mas de lo que hay: `currency` ya se clampea en cero, pero el
+## aviso tiene que decir lo que realmente se perdio o la HUD cantaria descuentos
+## imaginarios sobre una billetera vacia.
+func _on_player_damaged(amount: float) -> void:
+	var loss: int = config.get_damage_penalty(amount)
+	if loss <= 0 or currency <= 0:
+		return
+	loss = mini(loss, currency)
+	currency -= loss
+	_wave_damage_loss += loss
+	EventBus.currency_lost.emit(loss, &"damage")
+
 
 func _on_kill_credited(reward: int) -> void:
 	var scaled: int = _scale(reward)

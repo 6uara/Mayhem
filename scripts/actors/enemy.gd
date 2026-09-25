@@ -202,6 +202,11 @@ var _flight_height_override: float = -1.0
 var _has_detonated: bool = false
 ## Whoever the healer is currently helping, for the tether beam.
 var _tether_target: Enemy
+## Si el ultimo golpe que entro fue a la cabeza. Se anota aca y no viaja en
+## `health.apply_damage` porque el hitbox es lo unico que sabe en que zona pego,
+## y en el instante de morir esto es "fue un headshot" - que es lo que separa
+## una kill de un tiro con punteria.
+var _last_hit_headshot: bool = false
 var _stuck_time: float = 0.0
 var _jump_cooldown_left: float = 0.0
 ## El objetivo esta en una isla del navmesh a la que no se llega caminando -
@@ -410,6 +415,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_fuse_blink_time = 0.0
 	_flight_height_override = -1.0
 	_has_detonated = false
+	_last_hit_headshot = false
 	_is_leaping = false
 	_leap_hit_landed = false
 	_leap_recovery_left = 0.0
@@ -2232,7 +2238,8 @@ func _set_hitboxes_enabled(enabled: bool) -> void:
 			hitbox.collision_layer = PhysicsLayers.HITBOX if enabled else 0
 
 
-func _on_hit_taken(_amount: float, _is_headshot: bool, hit_position: Vector3) -> void:
+func _on_hit_taken(_amount: float, is_headshot: bool, hit_position: Vector3) -> void:
+	_last_hit_headshot = is_headshot
 	# Visible reaction to every hit is a gunplay-feel requirement (CLAUDE.md 5.3).
 	_flash_timer = FLASH_TIME
 	# Over the top of the wind-up glow on purpose: a hit landing has to read even
@@ -2293,6 +2300,10 @@ func _on_died() -> void:
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
 	if _killed_by_the_player():
 		EventBus.kill_credited.emit(data.reward_currency)
+		# Pegado a la anterior y no en su lugar: una paga, la otra describe. Ver
+		# EventBus.kill_scored.
+		EventBus.kill_scored.emit(data.id, global_position, _last_hit_headshot,
+			data.reward_currency)
 	ObjectPool.release(self)
 
 

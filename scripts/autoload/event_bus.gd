@@ -21,6 +21,30 @@ signal player_died()
 ## shooting. Paying off enemy_killed instead handed the host the whole arena's
 ## income and left the clients broke in front of the shop.
 signal kill_credited(reward: int)
+## La misma kill, con lo que hace falta para juzgarla y no solo para cobrarla.
+##
+## Va aparte de `kill_credited` en vez de ensancharla por el mismo criterio que
+## separo `kill_credited` de `enemy_killed`: cobrar y evaluar son dos preguntas,
+## y quien solo quiere la plata no tiene por que enterarse de donde cayo el
+## cuerpo ni de si fue a la cabeza. Se emite unicamente cuando la kill es del
+## jugador de esta maquina, pegada a `kill_credited`.
+signal kill_scored(enemy_type: StringName, position: Vector3, was_headshot: bool, reward: int)
+## La cuenta cerrada de una kill del jugador: lo que valia el cuerpo, los bonos
+## que se cumplieron por como se hizo y cuanto suman.
+##
+## Lo emite KillBonusTracker despues de juzgar la kill, siempre - tambien con
+## `bonus_ids` vacio y `bonus_total` en cero-, y es a proposito: quien muestra
+## la plata ganada necesita un solo evento que ya traiga el total, no dos que
+## lleguen en un orden que depende de quien se conecto antes.
+##
+## `bonus_total` viene **sin** escalar por `currency_multiplier`; lo escala
+## EconomyManager al acreditarlo, igual que la recompensa base.
+signal kill_payout(reward: int, bonus_ids: Array, bonus_total: int, position: Vector3)
+## Al jugador le costo plata algo que no fue una compra - hoy, recibir un golpe.
+##
+## `amount` es lo que efectivamente se perdio (nunca mas de lo que habia), asi
+## que un jugador en cero no dispara avisos de perdidas que no existieron.
+signal currency_lost(amount: int, reason: StringName)
 
 # Weapons
 signal weapon_fired(weapon_id: StringName)
