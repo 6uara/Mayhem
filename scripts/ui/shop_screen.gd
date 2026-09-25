@@ -9,6 +9,9 @@ extends CanvasLayer
 signal shop_closed()
 
 const CARD_MIN_WIDTH: int = 250
+## Alto del icono en la cabecera de una tarjeta. Mas grande que en la HUD: aca
+## hay tiempo para mirarlo y es lo primero que distingue una tarjeta de otra.
+const CARD_ICON_BOX: float = 28.0
 
 @export var shop: Shop
 ## Seconds the shop stays open before it closes itself.
@@ -142,10 +145,20 @@ func _make_card(offer: Dictionary) -> Control:
 	card.add_theme_constant_override(&"separation", 8)
 	margin.add_child(card)
 
+	# Icono y categoria en la misma fila: el icono dice **que** es de un vistazo
+	# y la etiqueta dice de que categoria, que son las dos preguntas que se hacen
+	# antes de leer el nombre.
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override(&"separation", 10)
+	var glyph: Control = _card_icon(offer)
+	if glyph != null:
+		header.add_child(glyph)
 	var tag := Label.new()
 	tag.theme_type_variation = &"HUDLabel"
 	tag.text = _category_label(offer)
-	card.add_child(tag)
+	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(tag)
+	card.add_child(header)
 
 	var title := Label.new()
 	title.text = String(offer["name"])
@@ -167,6 +180,44 @@ func _make_card(offer: Dictionary) -> Control:
 	button.set_meta(&"offer", offer)
 	card.add_child(button)
 	return panel
+
+
+## El icono de una oferta, o null si no hay ninguno para ella.
+##
+## Una mejora lo busca por convencion (`IconSet.upgrade(id)`, mismo id que el
+## `.tres`); un arma usa la geometria que `MayhemIcon` ya dibuja, que espeja el
+## viewmodel y por lo tanto enseña la silueta del arma antes de comprarla.
+func _card_icon(offer: Dictionary) -> Control:
+	var id := StringName(offer.get("id", &""))
+	if int(offer["kind"]) == Shop.Kind.WEAPON:
+		var weapon_icon := MayhemIcon.new()
+		weapon_icon.kind = _weapon_icon_kind(id)
+		weapon_icon.color = Tokens.TEXT
+		weapon_icon.custom_minimum_size = Vector2(CARD_ICON_BOX, CARD_ICON_BOX)
+		weapon_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		return weapon_icon if weapon_icon.kind != MayhemIcon.Kind.NONE else null
+	if not IconSet.has(IconSet.UPGRADE, id):
+		return null
+	return IconSet.make(IconSet.UPGRADE, id, _category_color(offer), CARD_ICON_BOX)
+
+
+func _weapon_icon_kind(weapon_id: StringName) -> MayhemIcon.Kind:
+	match weapon_id:
+		&"rifle_ak", &"rifle": return MayhemIcon.Kind.RIFLE
+		&"shotgun": return MayhemIcon.Kind.SHOTGUN
+		&"smg": return MayhemIcon.Kind.SMG
+		&"pistol": return MayhemIcon.Kind.PISTOL
+	return MayhemIcon.Kind.NONE
+
+
+## El color de la categoria, de Tokens y no de una copia local - ver
+## bonus_list.gd, que tenia la suya y no coincidia.
+func _category_color(offer: Dictionary) -> Color:
+	match int(offer.get("category", -1)):
+		UpgradeData.Category.MOBILITY: return Tokens.CATEGORY_COLOR["mobility"]
+		UpgradeData.Category.WEAPON: return Tokens.CATEGORY_COLOR["weapon"]
+		UpgradeData.Category.SURVIVABILITY: return Tokens.CATEGORY_COLOR["survivability"]
+	return Tokens.TEXT
 
 
 ## Flat dark chamfer panel, thin border - the affordable rail is added in

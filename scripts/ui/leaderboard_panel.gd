@@ -21,6 +21,9 @@ const TROPHY_COLUMN: int = 6
 ## run excepcional puede ganar ocho trofeos, y ocho fichas en una fila de tabla
 ## dejan de leerse como logros y pasan a ser ruido.
 const MAX_CHIPS: int = 4
+## Alto de la ficha de trofeo. Del alto de una fila de tabla: el trofeo acompaña
+## a la run, no compite con el puntaje.
+const CHIP_BOX: float = 22.0
 
 @onready var _rows: VBoxContainer = $Panel/Margin/Layout/Scroll/Rows
 @onready var _empty: Label = $Panel/Margin/Layout/EmptyState
@@ -121,14 +124,7 @@ func _make_trophies(trophy_ids: Array) -> Control:
 	var shown: int = mini(trophy_ids.size(), MAX_CHIPS)
 	for i: int in shown:
 		var id := StringName(trophy_ids[i])
-		var chip := Label.new()
-		chip.text = RunRecord.get_label(id)
-		chip.theme_type_variation = &"HUDLabel"
-		chip.add_theme_color_override(&"font_color", Tokens.REWARD)
-		# El que mira la tabla no tiene por que saber que significa CIRUJANO.
-		chip.tooltip_text = RunRecord.get_description(id)
-		chip.mouse_filter = Control.MOUSE_FILTER_PASS
-		box.add_child(chip)
+		box.add_child(_make_chip(id))
 
 	if trophy_ids.size() > shown:
 		var more := Label.new()
@@ -139,6 +135,28 @@ func _make_trophies(trophy_ids: Array) -> Control:
 		more.mouse_filter = Control.MOUSE_FILTER_PASS
 		box.add_child(more)
 	return box
+
+
+## Un trofeo: el icono si existe, y el nombre en texto si no.
+##
+## Los dos llevan el mismo tooltip, que es lo unico que explica que significa
+## CIRUJANO - y con icono hace mas falta que sin el, porque un dibujo chico no
+## se explica solo.
+func _make_chip(id: StringName) -> Control:
+	var icon: Texture2D = IconSet.trophy(id)
+	if icon != null:
+		var chip: MayhemIcon = IconSet.make(IconSet.TROPHY, id, Tokens.REWARD, CHIP_BOX)
+		chip.mouse_filter = Control.MOUSE_FILTER_PASS
+		chip.tooltip_text = "%s\n%s" % [RunRecord.get_label(id),
+			RunRecord.get_description(id)]
+		return chip
+	var label := Label.new()
+	label.text = RunRecord.get_label(id)
+	label.theme_type_variation = &"HUDLabel"
+	label.add_theme_color_override(&"font_color", Tokens.REWARD)
+	label.tooltip_text = RunRecord.get_description(id)
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	return label
 
 
 ## Todos los trofeos de la run, uno por linea. Es lo que el "+N" tiene que poder

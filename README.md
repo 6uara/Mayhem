@@ -35,6 +35,7 @@ the exclude filter that keeps tests, docs and unused addons out of shipping buil
 - [docs/EXPORT.md](docs/EXPORT.md) — export presets, feature tags, pre-release checklist
 - [docs/TESTING.md](docs/TESTING.md) — test suite layout and conventions
 - [docs/ADDONS.md](docs/ADDONS.md) — which addons are installed and why
+- [docs/HANDOFF_ICONOGRAPHY.md](docs/HANDOFF_ICONOGRAPHY.md) — the UI icon set: rules, what exists, what is missing
 
 ## Licence
 

@@ -19,10 +19,18 @@ const CATEGORY_TITLES: Dictionary = {
 	UpgradeData.Category.WEAPON: "WEAPON",
 	UpgradeData.Category.SURVIVABILITY: "SURVIVABILITY",
 }
+## Los colores de categoria salen de Tokens y no de una copia local.
+##
+## Esta lista tenia los suyos propios y dos de los tres no coincidian con
+## `Tokens.CATEGORY_COLOR`, que es la fuente declarada: arma iba en ambar en vez
+## de carmin, y supervivencia usaba `Tokens.HEAL` - un color que el propio
+## theme_tokens.gd marca como "healing VFX only, never UI". O sea que el panel
+## pintaba las categorias de dos maneras distintas segun donde las mirabas, y
+## una de ellas con un color prohibido.
 const CATEGORY_COLORS: Dictionary = {
-	UpgradeData.Category.MOBILITY: Tokens.PLAYER,
-	UpgradeData.Category.WEAPON: Tokens.REWARD,
-	UpgradeData.Category.SURVIVABILITY: Tokens.HEAL,
+	UpgradeData.Category.MOBILITY: Tokens.CATEGORY_COLOR["mobility"],
+	UpgradeData.Category.WEAPON: Tokens.CATEGORY_COLOR["weapon"],
+	UpgradeData.Category.SURVIVABILITY: Tokens.CATEGORY_COLOR["survivability"],
 }
 const CATEGORY_ICONS: Dictionary = {
 	UpgradeData.Category.MOBILITY: MayhemIcon.Kind.FRAME_MOBILITY,
@@ -31,6 +39,9 @@ const CATEGORY_ICONS: Dictionary = {
 }
 
 ## Shown instead of an empty column, so "nothing yet" never reads as "broken".
+## Alto del icono de una fila. Chico: la lista es una ojeada a lo que tenes, no
+## una vidriera.
+const ROW_ICON_BOX: float = 14.0
 const EMPTY_TEXT: String = "NO BONUSES YET"
 ## Categories with nothing in them are hidden by default; the shop shows them all
 ## so the three columns stay in the same place between visits.
@@ -134,9 +145,21 @@ func _build_row(entry: Dictionary) -> HBoxContainer:
 	row.add_theme_constant_override("separation", 8)
 	row.tooltip_text = data.description
 
+	# El icono propio de la mejora cuando existe; si no, la fila sigue siendo la
+	# de siempre, sangrada. `data.icon` gana sobre la convencion para la mejora
+	# que necesite uno que no se llame como ella.
+	var icon: Texture2D = data.icon if data.icon != null else IconSet.upgrade(data.id)
+	if icon != null:
+		var glyph := MayhemIcon.new()
+		glyph.texture = icon
+		glyph.color = CATEGORY_COLORS[data.category]
+		glyph.custom_minimum_size = Vector2(ROW_ICON_BOX, ROW_ICON_BOX)
+		glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(glyph)
+
 	var label := Label.new()
 	label.theme_type_variation = &"HUDLabel"
-	label.text = "  %s" % _row_text(entry)
+	label.text = _row_text(entry) if icon != null else "  %s" % _row_text(entry)
 	label.add_theme_color_override("font_color", Tokens.TEXT)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)

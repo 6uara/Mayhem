@@ -18,6 +18,11 @@ extends VBoxContainer
 ## Cuanto dura una fila antes de empezar a irse, y cuanto tarda en hacerlo.
 const ROW_HOLD: float = 1.30
 const ROW_FADE: float = 0.35
+## Alto del icono de cada fila. Del tamaño de la etiqueta que lo acompaña, no
+## del numero: el icono dice de que bono se trata, y lo que tiene que resaltar es
+## cuanto pago.
+const ICON_BOX: float = 18.0
+
 ## Cuantas filas pueden convivir. Cuatro entra en una racha larga sin tapar los
 ## power-ups que van abajo; la quinta empuja a la mas vieja.
 const MAX_ROWS: int = 4
@@ -48,22 +53,37 @@ func _on_kill_payout(_reward: int, bonus_ids: Array, bonus_total: int,
 	if bonus_ids.is_empty() or bonus_total <= 0:
 		return
 	var names: PackedStringArray = PackedStringArray()
+	var icons: Array[StringName] = []
 	for id: StringName in bonus_ids:
 		names.append(KillBonusTracker.get_label(id))
-	_push_row(" · ".join(names), "+%d" % bonus_total, Tokens.REWARD)
+		if IconSet.has(IconSet.BONUS, id):
+			icons.append(id)
+	_push_row(" · ".join(names), "+%d" % bonus_total, Tokens.REWARD,
+		IconSet.BONUS, icons)
 
 
 func _on_currency_lost(amount: int, _reason: StringName) -> void:
 	if amount <= 0:
 		return
-	_push_row("DAÑO", "-%d" % amount, Tokens.ENEMY)
+	_push_row("DAÑO", "-%d" % amount, Tokens.ENEMY,
+		IconSet.ECON, [&"currency_lost"] as Array[StringName])
 
 
-func _push_row(text: String, amount: String, tint: Color) -> void:
+## Una fila del feed: los iconos de lo que paso, que fue, y cuanto.
+##
+## Los iconos van adelante y no reemplazan al texto: el feed dura poco mas de un
+## segundo y el jugador esta disparando, asi que el icono es lo que se agarra de
+## reojo y el texto es lo que confirma si llego a mirarlo. Uno solo de los dos
+## seria peor que los dos.
+func _push_row(text: String, amount: String, tint: Color,
+		icon_group: StringName, icon_ids: Array[StringName]) -> void:
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.alignment = BoxContainer.ALIGNMENT_END
 	row.add_theme_constant_override(&"separation", 10)
+
+	for id: StringName in icon_ids:
+		row.add_child(IconSet.make(icon_group, id, tint, ICON_BOX))
 
 	var name_label := Label.new()
 	name_label.text = text

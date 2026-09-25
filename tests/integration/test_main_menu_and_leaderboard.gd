@@ -197,7 +197,23 @@ func test_the_table_shows_the_trophies_of_a_run() -> void:
 	var rows: VBoxContainer = _panel("Leaderboard/Panel/Margin/Layout/Scroll/Rows")
 	var chips: Control = rows.get_child(1).get_child(LeaderboardPanel.TROPHY_COLUMN)
 	assert_eq(chips.get_child_count(), 1, "una ficha por trofeo")
-	assert_eq((chips.get_child(0) as Label).text, RunRecord.get_label(RunRecord.CHAMPION))
+	var chip := chips.get_child(0) as MayhemIcon
+	assert_not_null(chip, "con icono dibujado, la ficha es el icono y no el texto")
+	assert_eq(chip.texture, IconSet.trophy(RunRecord.CHAMPION))
+	assert_string_contains(chip.tooltip_text, RunRecord.get_label(RunRecord.CHAMPION),
+		"el dibujo no se explica solo: el tooltip tiene que decir cual es")
+
+
+## Los doce trofeos tienen icono dibujado. Si uno se agrega sin su archivo, la
+## tabla lo muestra igual en texto - pero el set completo es lo que se entrego.
+func test_every_trophy_has_an_icon() -> void:
+	for id: StringName in RunRecord.TROPHY_INFO.keys():
+		assert_not_null(IconSet.trophy(id), "falta el icono de %s" % id)
+
+
+## Un id sin archivo no puede romper nada: la pantalla cae en el texto.
+func test_a_trophy_without_an_icon_falls_back_to_text() -> void:
+	assert_null(IconSet.trophy(&"no_existe"))
 
 
 ## Ocho fichas en una fila de tabla dejan de leerse como logros.
@@ -216,7 +232,9 @@ func test_too_many_trophies_collapse_into_a_count() -> void:
 	var chips: Control = rows.get_child(1).get_child(LeaderboardPanel.TROPHY_COLUMN)
 	assert_eq(chips.get_child_count(), LeaderboardPanel.MAX_CHIPS + 1,
 		"las que entran, mas el +N")
+	# El "+N" sigue siendo texto: es un conteo, no un trofeo.
 	var last := chips.get_child(LeaderboardPanel.MAX_CHIPS) as Label
+	assert_not_null(last)
 	assert_eq(last.text, "+%d" % (many.size() - LeaderboardPanel.MAX_CHIPS))
 
 
