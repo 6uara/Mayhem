@@ -33,6 +33,9 @@ extends Resource
 @export var bonus_double: int = 15
 @export var bonus_triple: int = 35
 @export var bonus_mayhem: int = 75
+## Matar al Healer mientras sostiene a la oleada. Caro a proposito: es la unica
+## decision de objetivo que el juego pide de verdad.
+@export var bonus_priority: int = 30
 
 @export_group("Damage penalty")
 ## Monedas perdidas por punto de daño recibido.
@@ -89,6 +92,7 @@ func get_kill_bonus(bonus_id: StringName) -> int:
 		&"double": return bonus_double
 		&"triple": return bonus_triple
 		&"mayhem": return bonus_mayhem
+		&"priority": return bonus_priority
 	return 0
 
 

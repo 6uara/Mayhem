@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/actors/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://scripts/components/health_component.gd" id="2_health"]
 [ext_resource type="Script" path="res://scripts/components/hitbox_component.gd" id="3_hitbox"]
+[ext_resource type="Script" path="res://scripts/components/healer_tether.gd" id="4_tether"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_body"]
 resource_local_to_scene = true
@@ -19,9 +20,6 @@ inner_radius = 0.42
 outer_radius = 0.6
 rings = 24
 
-[sub_resource type="BoxMesh" id="Mesh_tether"]
-size = Vector3(0.07, 0.07, 1)
-
 [sub_resource type="CylinderMesh" id="Mesh_fuse_ring"]
 resource_local_to_scene = true
 top_radius = 1.0
@@ -33,7 +31,7 @@ radial_segments = 24
 resource_local_to_scene = true
 radius = 0.25
 
-[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder", "halo", "tether", "fuse_ring")]
+[node name="Enemy" type="CharacterBody3D" groups=["enemy"] node_paths=PackedStringArray("health", "agent", "mesh_instance", "body_hitbox", "head_hitbox", "body_shape", "body_hitbox_shape", "head_hitbox_shape", "tree_holder", "halo", "healer_tether", "fuse_ring")]
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_enemy")
@@ -47,7 +45,7 @@ body_hitbox_shape = NodePath("BodyHitbox/CollisionShape3D")
 head_hitbox_shape = NodePath("HeadHitbox/CollisionShape3D")
 tree_holder = NodePath("BehaviorTree")
 halo = NodePath("Halo")
-tether = NodePath("Tether")
+healer_tether = NodePath("HealerTether")
 fuse_ring = NodePath("FuseRing")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
@@ -99,10 +97,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.55, 0)
 visible = false
 mesh = SubResource("Mesh_halo")
 
-[node name="Tether" type="MeshInstance3D" parent="."]
+[node name="HealerTether" type="Node3D" parent="."]
+script = ExtResource("4_tether")
 visible = false
-# The beam is scaled along -Z toward the heal target each frame.
-mesh = SubResource("Mesh_tether")
 
 [node name="FuseRing" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)

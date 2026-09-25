@@ -28,7 +28,7 @@ func test_every_bonus_id_has_a_price() -> void:
 			KillBonusTracker.BONUS_DASH, KillBonusTracker.BONUS_LONG_SHOT,
 			KillBonusTracker.BONUS_POINT_BLANK, KillBonusTracker.BONUS_LAST_ROUND,
 			KillBonusTracker.BONUS_DOUBLE, KillBonusTracker.BONUS_TRIPLE,
-			KillBonusTracker.BONUS_MAYHEM]:
+			KillBonusTracker.BONUS_MAYHEM, KillBonusTracker.BONUS_PRIORITY]:
 		assert_gt(config.get_kill_bonus(id), 0,
 			"%s no paga nada, asi que no es un bono" % id)
 

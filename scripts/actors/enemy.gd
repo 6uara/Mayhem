@@ -115,6 +115,11 @@ const FLASH_TIME: float = 0.08
 ## curacion es un estado que cambio. A 0.08 el destello verde se perdia entre
 ## los destellos de las balas que le estaban pegando al mismo enemigo.
 const HEAL_FLASH_TIME: float = 0.35
+## Lo que se oye al recibir cura. Constante y no un campo de EnemyData porque no
+## depende del arquetipo: que te devuelvan vida suena igual seas lo que seas, y
+## quien la recibe no tiene forma de conocer los datos del que se la dio.
+const HEAL_RECEIVED_SOUND: AudioStream = preload(
+	"res://assets/audio/sfx/enemies/heal_received.wav")
 const GRAVITY: float = 24.0
 
 ## Cuanto se le suma al radio del enemigo para decidir que un salto toco al
@@ -136,7 +141,9 @@ const LEAP_CONTACT_HEIGHT: float = 2.0
 @export var head_hitbox_shape: CollisionShape3D
 @export var tree_holder: Node
 @export var halo: MeshInstance3D
-@export var tether: MeshInstance3D
+## Los haces de cura del Healer. Ver HealerTether: reemplazo al haz unico que
+## habia antes, que solo mostraba a uno de los varios que el Healer sostiene.
+@export var healer_tether: HealerTether
 ## Anillo en el piso que dibuja el radio de la explosion mientras la espoleta
 ## cuenta. Solo lo usan los arquetipos con `EnemyData.has_fuse`.
 @export var fuse_ring: MeshInstance3D
@@ -200,8 +207,6 @@ var _flight_height_override: float = -1.0
 ## Una explosion por cuerpo. Sin esto la bomba que se mata a si misma al detonar
 ## vuelve a entrar por _on_died() y revienta dos veces.
 var _has_detonated: bool = false
-## Whoever the healer is currently helping, for the tether beam.
-var _tether_target: Enemy
 ## Si el ultimo golpe que entro fue a la cabeza. Se anota aca y no viaja en
 ## `health.apply_damage` porque el hitbox es lo unico que sabe en que zona pego,
 ## y en el instante de morir esto es "fue un headshot" - que es lo que separa
@@ -335,7 +340,6 @@ func _physics_process(delta: float) -> void:
 		# The ring reads as a marker, not as part of the body, so it turns on its
 		# own axis rather than following the enemy's facing.
 		halo.rotate_y(delta * 0.8)
-	_update_tether()
 
 	# Antes de cualquier rama de movimiento, y fuera de todas ellas. La cuenta
 	# corre igual si el bicho esta aturdido, saltando o quieto: una espoleta
@@ -475,6 +479,11 @@ func _on_released() -> void:
 	CombatDirector.unregister(self)
 	_set_hitboxes_enabled(false)
 	_clear_behavior_tree()
+	# Los haces son top_level, o sea que viven en coordenadas de mundo: un cuerpo
+	# que se va al pool debajo del piso los dejaria dibujados en el aire sobre la
+	# arena hasta que alguien los apague.
+	if healer_tether != null:
+		healer_tether.clear()
 
 
 ## Los enemigos en juego, sin pasar por el arbol.
@@ -1068,7 +1077,7 @@ func fire_projectile() -> void:
 func heal_nearby_allies() -> int:
 	if data == null:
 		return 0
-	var healed: int = 0
+	var patients: Array = []
 	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
 		var other := node as Enemy
 		if other == null or other == self or not other.is_active or other.health == null:
@@ -1080,10 +1089,17 @@ func heal_nearby_allies() -> int:
 		if other.health.current_health >= other.health.max_health:
 			continue
 		other.health.heal(data.heal_amount)
-		if _tether_target == null or not is_instance_valid(_tether_target) 				or other.health.get_health_fraction() < _tether_target.health.get_health_fraction():
-			_tether_target = other
-		healed += 1
-	return healed
+		patients.append(other)
+	if patients.is_empty():
+		return 0
+	# Del mas lastimado al menos, porque HealerTether dibuja los primeros y
+	# descarta el resto: si algo se pierde de vista, que sea el que menos
+	# justifica gastarle balas.
+	patients.sort_custom(func(a: Enemy, b: Enemy) -> bool:
+		return a.health.get_health_fraction() < b.health.get_health_fraction())
+	if healer_tether != null:
+		healer_tether.pulse(patients)
+	return patients.size()
 
 
 ## Plays the visual half of a wind-up telegraph.
@@ -2138,10 +2154,10 @@ func _apply_silhouette_markers() -> void:
 			halo.position.y = data.halo_height
 			halo.scale = Vector3.ONE * data.halo_radius
 			_tint(halo, data.body_color)
-	if tether != null:
-		tether.visible = false
-		_tint(tether, data.body_color)
-	_tether_target = null
+	if healer_tether != null:
+		# Arranca desde la cabeza y no desde el centro del cuerpo: el haz que sale
+		# del pecho queda tapado por el propio Healer cuando esta de frente.
+		healer_tether.configure(data.has_tether, data.head_offset * 0.9)
 
 
 func _tint(mesh: MeshInstance3D, tint: Color) -> void:
@@ -2152,25 +2168,6 @@ func _tint(mesh: MeshInstance3D, tint: Color) -> void:
 	material.emission_energy_multiplier = 1.4
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mesh.material_override = material
-
-
-## Beam from the healer to its target, redrawn each frame it is active. Breaking
-## line of sight is not simulated: the tether simply follows whoever is being healed.
-func _update_tether() -> void:
-	if tether == null or not data.has_tether:
-		return
-	if _tether_target == null or not is_instance_valid(_tether_target) 			or not _tether_target.is_active:
-		tether.visible = false
-		return
-	var to_target: Vector3 = _tether_target.global_position - global_position
-	var length: float = to_target.length()
-	if length < 0.1:
-		tether.visible = false
-		return
-	tether.visible = true
-	tether.global_position = global_position + Vector3.UP * data.head_offset * 0.8
-	tether.look_at(_tether_target.global_position + Vector3.UP, Vector3.UP)
-	tether.scale = Vector3(1.0, 1.0, length)
 
 
 func _apply_collision() -> void:
@@ -2272,6 +2269,13 @@ func _on_healed(amount: float, _remaining: float) -> void:
 		return
 	_flash_timer = HEAL_FLASH_TIME
 	_set_glow(1.0, Tokens.HEAL)
+	# Suena en el cuerpo que se curo, no en el Healer.
+	#
+	# El pulso del Healer ya sonaba, pero sale de donde esta el Healer - que es
+	# justo el que se esconde detras de una columna a veinte metros. Lo que el
+	# jugador necesita oir es que el enemigo que **tiene enfrente** acaba de
+	# recuperar vida, y eso solo se localiza si suena ahi.
+	AudioPool.play_3d(HEAL_RECEIVED_SOUND, global_position, AudioPool.BUS_ENEMIES)
 	EventBus.healed.emit(self, amount)
 
 

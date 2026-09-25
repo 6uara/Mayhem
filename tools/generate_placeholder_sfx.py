@@ -331,6 +331,24 @@ def heal_pulse() -> list[float]:
     )
 
 
+def heal_received() -> list[float]:
+    """Que la cura *entre*, oido desde el cuerpo que la recibe.
+
+    Es el par de `heal_pulse`, que es el Healer lanzandola, y tiene que sonar
+    distinto porque contesta otra pregunta: uno dice "hay un Healer trabajando",
+    este dice "a ESE le acaban de devolver la vida". Sin el, un Healer que cura
+    detras de una columna es un enemigo que deja de morirse en silencio.
+
+    Corto, agudo y limpio -dos notas que suben, sin ruido- por dos razones: se
+    localiza de oido, que es lo que hace falta para mirar al que se curo, y
+    varios a la vez no se empastan como se empastaria un colchon largo.
+    """
+    return _mix(
+        (_tone(ms(150), 880.0, 0.004, 0.28, 0.42, sweep=1.35), 0),
+        (_tone(ms(190), 1320.0, 0.006, 0.3, 0.26, sweep=1.25), ms(45)),
+    )
+
+
 def utility_throw(rng: random.Random) -> list[float]:
     return _mix(
         (_lowpass(_noise(ms(90), 0.01, 0.16, 0.5, rng), 1800.0), 0),
@@ -521,6 +539,8 @@ def main() -> None:
         _write("enemies/%s_death.wav" % name, enemy_death(rng, pitch))
         _write("enemies/%s_attack.wav" % name, enemy_attack(rng, pitch))
     _write("enemies/healer_pulse.wav", heal_pulse())
+    # Sin rng, igual que heal_pulse: agregarlo aca no le corre el ruido a nada.
+    _write("enemies/heal_received.wav", heal_received())
     # El Bomber sale del bucle de arriba, con su propio stream de RNG.
     #
     # No es capricho: `rng` es una sola secuencia compartida, asi que meter un

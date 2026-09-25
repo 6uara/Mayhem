@@ -23,6 +23,7 @@ bonus_last_round = 20
 bonus_double = 15
 bonus_triple = 35
 bonus_mayhem = 75
+bonus_priority = 30
 currency_loss_per_damage = 1.0
 currency_loss_max_per_hit = 40
 currency_multiplier = 1.0
