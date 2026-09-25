@@ -141,3 +141,23 @@ las dos puntas: tiene la arena en mano, la carpeta del jugador, y el viaje de id
 y vuelta al playtest. PLAY guarda, valida y entra a la partida real de MAYHEM en
 esa arena; el menú de pausa muestra **Back to the editor** solamente durante ese
 playtest, y volver no pierde nada porque la arena nunca salió de memoria.
+
+## Capturas de pantalla — `tools/capture_hud.tscn`
+
+Saca una foto de la HUD en combate sin tener que jugar hasta que se den las
+condiciones:
+
+```
+godot --path . --resolution 1920x1080 tools/capture_hud.tscn -- hud.png
+```
+
+Muestra el **peor caso**, no un momento típico: subtítulo del Host, aviso de
+oleada, feed de recargos, vida baja, munición baja y las tres ranuras de utilidad
+ocupadas, todo junto. Si el encuadre aguanta esto, aguanta cualquier partida.
+
+Con render de verdad, no `--headless`: en headless el servidor es un dummy y la
+captura sale vacía. `tools/capture_menu.tscn` hace lo mismo con el menú.
+
+**Por qué existe:** los tests de `test_hud_layout.gd` prueban que nada se
+superpone, pero no que algo se lea bien. Un cartel encima de la barra de par pasa
+los dos tipos de control salvo el de mirar la pantalla.

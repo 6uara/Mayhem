@@ -92,8 +92,22 @@ $gutArgs = @("--headless", "--path", $projectRoot, "-s", "addons/gut/gut_cmdln.g
 if ($Script) { $gutArgs += @("-gtest=$Script") }
 if ($Test) { $gutArgs += @("-gunit_test_name=$Test") }
 
-& $godot @gutArgs
+$output = & $godot @gutArgs 2>&1
+$output | ForEach-Object { Write-Host $_ }
 $code = $LASTEXITCODE
+
+# Un archivo de tests que no compila no aparece en rojo: GUT lo saltea con un
+# warning y el resumen sigue diciendo "All tests passed". Ya paso - un
+# `assert_le` que no existe dejo de correr test_hud_layout.gd entero, y con el
+# los tests que impiden que dos cosas de la HUD se dibujen encima. Un archivo
+# salteado es mas peligroso que uno fallando, asi que aca se trata como falla.
+$ignored = $output | Select-String -Pattern "Ignoring script"
+if ($ignored) {
+    Write-Host "`nHay archivos de tests que GUT no pudo cargar y saltó:" -ForegroundColor Red
+    $ignored | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    Write-Host "Revisalos con: godot --headless --check-only --script <ruta>" -ForegroundColor Yellow
+    if ($code -eq 0) { $code = 1 }
+}
 
 Restore-IncidentalChanges -RepoRoot $projectRoot -Before $treeBefore
 

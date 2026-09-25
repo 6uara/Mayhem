@@ -15,6 +15,7 @@ const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
 # Wave cluster
 @onready var _wave_number: Label = $Root/WaveCluster/WaveRow/Value
 @onready var _enemies_left: Label = $Root/WaveCluster/EnemiesRow/Count
+@onready var _enemies_mark: MayhemIcon = $Root/WaveCluster/EnemiesRow/Mark
 
 # Timer cluster
 @onready var _elapsed: Label = $Root/TimerCluster/TimeRow/Elapsed
@@ -59,6 +60,9 @@ const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
 var _player: Player
 var _weapon: WeaponComponent
 var _announce_timer: float = 0.0
+## El cartel de ayuda que llego mientras habia un aviso de oleada en pantalla, o
+## vacio. Ver _on_hint_shown(): los dos ocupan la misma banda, asi que se turnan.
+var _pending_hint: String = ""
 var _utility_slots: Array[Control] = []
 ## El fundido de la viñeta de daño. Ver _flash_damage().
 var _damage_tween: Tween
@@ -120,6 +124,10 @@ func _process(delta: float) -> void:
 		_announce_timer -= delta
 		if _announce_timer <= 0.0:
 			_announce.visible = false
+			# La banda se libero: si habia una ayuda esperando, ahora entra.
+			if _pending_hint != "":
+				_show_hint(_pending_hint)
+				_pending_hint = ""
 
 	if _player == null:
 		return
@@ -342,8 +350,20 @@ func _tick_wave() -> void:
 	# that step, and the frames between steps have nothing to say.
 	var remaining: int = WaveManager.get_remaining_count()
 	if remaining != _remaining_shown:
+		var was_empty: bool = _remaining_shown == 0
 		_remaining_shown = remaining
 		_enemies_left.text = "%d" % remaining
+		# En cero la fila se apaga en vez de quedarse en rojo.
+		#
+		# Rojo significa "esto te ataca", y la oleada limpia es lo contrario:
+		# dejarlo encendido convertia el unico momento tranquilo de la partida en
+		# una alarma de nada, y de paso gastaba el color en el instante en que
+		# menos informa. Solo en las transiciones a y desde cero, por la misma
+		# razon que el resto de este bloque.
+		if (remaining == 0) != was_empty:
+			var tint: Color = Tokens.DIM if remaining == 0 else Tokens.ENEMY
+			_enemies_left.add_theme_color_override(&"font_color", tint)
+			_enemies_mark.color = tint
 
 	var elapsed_seconds: int = int(elapsed)
 	if elapsed_seconds != _elapsed_seconds_shown:
@@ -594,7 +614,24 @@ func _on_subtitle_hidden() -> void:
 ## A first-time-mechanic prompt (TutorialHintManager) - neutral HUD overlay,
 ## same fade treatment as the subtitle box but never a Host line: the Host
 ## talks to the crowd, not the player.
+## El aviso de oleada y el cartel de ayuda comparten la banda de arriba, asi que
+## se turnan en vez de dibujarse uno sobre el otro.
+##
+## Gana el aviso: dura tres segundos, sale una vez por oleada y dice algo que
+## caduca. La ayuda espera y entra despues - postergarla no le quita nada,
+## taparla la perdia entera.
+##
+## La otra salida era moverla a otro lado de la pantalla, y no hay: arriba esta
+## el cluster de tiempo, el centro es zona sin UI y abajo estan el subtitulo del
+## Host y la barra de habilidades.
 func _on_hint_shown(text: String, _duration: float) -> void:
+	if _announce_timer > 0.0:
+		_pending_hint = text
+		return
+	_show_hint(text)
+
+
+func _show_hint(text: String) -> void:
 	_hint_text.text = text
 	_hint_box.visible = true
 	_hint_box.modulate.a = 0.0
@@ -603,6 +640,9 @@ func _on_hint_shown(text: String, _duration: float) -> void:
 
 
 func _on_hint_hidden() -> void:
+	# Tambien la que estaba esperando: si la ayuda ya caduco, no tiene por que
+	# aparecer cuando se vaya el aviso.
+	_pending_hint = ""
 	if not _hint_box.visible:
 		return
 	var tween: Tween = create_tween()

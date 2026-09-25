@@ -243,7 +243,7 @@ alignment = 2
 script = ExtResource("4_icon")
 custom_minimum_size = Vector2(18, 18)
 size_flags_vertical = 8
-kind = 12
+kind = 10
 color = Color(1, 0.231, 0.329, 1)
 
 [node name="Text" type="Label" parent="Root/VitalsCluster/HealthRow/CriticalTag"]
