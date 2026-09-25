@@ -10,11 +10,17 @@ extends Control
 
 signal closed()
 
-const COLUMNS: Array[String] = ["#", "NAME", "SCORE", "WAVES", "TIME", "DATE"]
+const COLUMNS: Array[String] = ["#", "NAME", "SCORE", "WAVES", "TIME", "DATE", "TROPHIES"]
 ## Relative widths. Name, score and date carry the most, the rank the least.
-const WEIGHTS: Array[float] = [0.5, 1.8, 1.4, 1.0, 1.0, 2.2]
+const WEIGHTS: Array[float] = [0.5, 1.8, 1.4, 1.0, 1.0, 1.8, 3.0]
 ## Indice de la columna del puntaje, que es la que va en la tipografia grande.
 const SCORE_COLUMN: int = 2
+## Y la de los trofeos, que no es texto sino una hilera de fichas.
+const TROPHY_COLUMN: int = 6
+## Cuantas fichas entran en una fila antes de resumir el resto en un "+N". Una
+## run excepcional puede ganar ocho trofeos, y ocho fichas en una fila de tabla
+## dejan de leerse como logros y pasan a ser ruido.
+const MAX_CHIPS: int = 4
 
 @onready var _rows: VBoxContainer = $Panel/Margin/Layout/Scroll/Rows
 @onready var _empty: Label = $Panel/Margin/Layout/EmptyState
@@ -73,6 +79,7 @@ func _rebuild() -> void:
 			"%d" % int(entry.get("waves", 0)),
 			_format_time(float(entry.get("time", 0.0))),
 			String(entry.get("date", "-")),
+			entry.get("trophies", []),
 		], false))
 
 
@@ -80,6 +87,9 @@ func _make_row(values: Array, is_header: bool) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override(&"separation", 16)
 	for index: int in values.size():
+		if index == TROPHY_COLUMN and not is_header:
+			row.add_child(_make_trophies(values[index] as Array))
+			continue
 		var label := Label.new()
 		label.text = String(values[index])
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -92,6 +102,52 @@ func _make_row(values: Array, is_header: bool) -> Control:
 			label.theme_type_variation = &"Keybind" if index != SCORE_COLUMN 				else &"NumSecond"
 		row.add_child(label)
 	return row
+
+
+## La hilera de fichas de una run. Vacia cuando no gano ninguno - y una fila sin
+## trofeos es informacion, no un hueco: dice que esa run fue solo puntaje.
+##
+## Las fichas son texto hasta que exista el set de iconos (ver el handoff de
+## iconografia): cuando lo haya, lo unico que cambia es lo que se mete adentro
+## del chip, no la columna ni la fila.
+func _make_trophies(trophy_ids: Array) -> Control:
+	var box := HBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.size_flags_stretch_ratio = WEIGHTS[TROPHY_COLUMN]
+	box.add_theme_constant_override(&"separation", 6)
+	if trophy_ids.is_empty():
+		return box
+
+	var shown: int = mini(trophy_ids.size(), MAX_CHIPS)
+	for i: int in shown:
+		var id := StringName(trophy_ids[i])
+		var chip := Label.new()
+		chip.text = RunRecord.get_label(id)
+		chip.theme_type_variation = &"HUDLabel"
+		chip.add_theme_color_override(&"font_color", Tokens.REWARD)
+		# El que mira la tabla no tiene por que saber que significa CIRUJANO.
+		chip.tooltip_text = RunRecord.get_description(id)
+		chip.mouse_filter = Control.MOUSE_FILTER_PASS
+		box.add_child(chip)
+
+	if trophy_ids.size() > shown:
+		var more := Label.new()
+		more.text = "+%d" % (trophy_ids.size() - shown)
+		more.theme_type_variation = &"HUDLabel"
+		more.add_theme_color_override(&"font_color", Tokens.MUTED)
+		more.tooltip_text = _describe_all(trophy_ids)
+		more.mouse_filter = Control.MOUSE_FILTER_PASS
+		box.add_child(more)
+	return box
+
+
+## Todos los trofeos de la run, uno por linea. Es lo que el "+N" tiene que poder
+## contestar cuando alguien le pregunta.
+func _describe_all(trophy_ids: Array) -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	for id: Variant in trophy_ids:
+		lines.append(RunRecord.get_label(StringName(id)))
+	return "\n".join(lines)
 
 
 func _format_time(seconds: float) -> String:

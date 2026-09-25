@@ -7,10 +7,18 @@ extends Node
 ## Tokens.LEADERBOARD_PATH. JSON rather than ConfigFile because the handoff
 ## names the file, and a leaderboard is a list rather than a settings tree.
 const SAVE_PATH: String = "user://leaderboard.json"
-## Veinte y no diez desde que las filas llevan nombre: con dos o tres personas
-## turnandose en la misma maquina, diez lugares los llena el mejor de todos y el
-## resto no vuelve a verse nunca en la tabla.
-const MAX_ENTRIES: int = 20
+## Diez, y no las veinte que hubo un tiempo.
+##
+## Veinte se eligio cuando las filas empezaron a llevar nombre, para que en una
+## maquina compartida el mejor de todos no llenara la tabla entero. El costo de
+## esa decision fue una tabla que nadie lee hasta el final: veinte filas de tres
+## numeros son una planilla, y la fila quince no significa nada para nadie.
+##
+## Diez vuelve a hacer que entrar a la tabla sea un logro, que es de lo que vive
+## una tabla local. Lo que compensa el lugar que se pierde son los trofeos: una
+## fila ahora cuenta **como** fue esa run, asi que diez filas dicen mas de lo que
+## decian veinte.
+const MAX_ENTRIES: int = 10
 
 ## Los nombres que ya se usaron en esta maquina. Archivo aparte, por el mismo
 ## criterio que separa el leaderboard de los hints: "borrame los puntajes" no
@@ -30,7 +38,7 @@ const MAX_PROFILES: int = 8
 const TUTORIAL_SAVE_PATH: String = "user://tutorial.json"
 
 ## Array of { "name": String, "score": int, "time": float, "waves": int,
-## "date": String }
+## "date": String, "trophies": Array[String] }
 var _entries: Array[Dictionary] = []
 ## Nombres usados, del mas reciente al mas viejo.
 var _profiles: Array[String] = []
@@ -48,19 +56,29 @@ func _ready() -> void:
 
 ## Guardar tambien recuerda el nombre: la lista de perfiles es un efecto de
 ## haber jugado, no una pantalla de alta aparte.
+## Los trofeos viajan con la fila y no en un archivo de logros aparte: en un
+## juego sin meta-progresion, un trofeo es la marca de **esa** run, y se va con
+## ella cuando la fila cae de la tabla. Ver RunRecord.
 func submit_score(score: int, total_time: float, waves_cleared: int,
-		player_name: String = DEFAULT_NAME) -> void:
+		player_name: String = DEFAULT_NAME,
+		trophies: Array = []) -> void:
 	var final_name: String = sanitize_name(player_name)
 	if final_name == "":
 		final_name = DEFAULT_NAME
 	else:
 		remember_profile(final_name)
+	# A String y no StringName: lo que sale de aca se escribe como JSON, y un
+	# StringName vuelve del archivo como String igual.
+	var trophy_ids: Array = []
+	for id: Variant in trophies:
+		trophy_ids.append(String(id))
 	_entries.push_back({
 		"name": final_name,
 		"score": score,
 		"time": total_time,
 		"waves": waves_cleared,
 		"date": Time.get_datetime_string_from_system(false, true),
+		"trophies": trophy_ids,
 	})
 	_entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a["score"]) > int(b["score"]))
@@ -105,6 +123,10 @@ func load_leaderboard() -> void:
 		# desaparecer de la tabla.
 		if not row.has("name"):
 			row["name"] = DEFAULT_NAME
+		# Lo mismo para las runs anteriores a los trofeos: una run sin trofeos y
+		# una run de antes de que existieran se ven igual, que es lo correcto.
+		if not row.has("trophies"):
+			row["trophies"] = []
 		_entries.push_back(row)
 
 

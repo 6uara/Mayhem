@@ -124,7 +124,10 @@ func _on_skip_pressed() -> void:
 
 
 func _submit(player_name: String) -> void:
-	SaveManager.submit_score(_score, _time, _waves, player_name)
+	# Los trofeos los evaluo RunRecord cuando la run termino; este panel solo los
+	# pasa. Decidirlos aca los ataria a haber abierto esta pantalla.
+	SaveManager.submit_score(_score, _time, _waves, player_name,
+		RunRecord.get_trophies())
 	visible = false
 	saved.emit()
 

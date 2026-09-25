@@ -50,6 +50,9 @@ func start_match() -> void:
 	_match_start_time = _now()
 	UpgradeManager.reset()
 	EconomyManager.reset()
+	# Junto a los otros dos y no colgado de la primera oleada: "empezo una
+	# partida" es una decision de este director, no un efecto secundario.
+	RunRecord.reset()
 	WaveManager.reset()
 	WaveManager.setup(waves)
 	GameManager.start_run()

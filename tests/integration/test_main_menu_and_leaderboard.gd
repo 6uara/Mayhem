@@ -141,6 +141,85 @@ func test_a_legacy_entry_without_a_name_still_loads() -> void:
 	assert_eq(String(entries[0].get("name", "")), SaveManager.DEFAULT_NAME)
 
 
+# ------------------------------------------------------------- los trofeos
+
+## Los trofeos viajan con la fila: en un juego sin meta-progresion no hay donde
+## mas ponerlos, y ahi es donde significan algo.
+func test_a_run_keeps_the_trophies_it_was_saved_with() -> void:
+	SaveManager.clear_leaderboard()
+	SaveManager.submit_score(2000, 300.0, 10, "Nyx",
+		[RunRecord.CHAMPION, RunRecord.FLAWLESS])
+
+	var entries: Array[Dictionary] = SaveManager.get_entries()
+	var trophies: Array = entries[0].get("trophies", [])
+	assert_eq(trophies.size(), 2)
+	assert_true(trophies.has(String(RunRecord.CHAMPION)),
+		"guardados como String, que es lo que vuelve del JSON")
+
+
+## Una run sin trofeos y una guardada antes de que existieran se leen igual, que
+## es lo correcto: ninguna de las dos gano ninguno.
+func test_a_legacy_entry_without_trophies_still_loads() -> void:
+	SaveManager.clear_leaderboard()
+	var legacy: FileAccess = FileAccess.open(SaveManager.SAVE_PATH, FileAccess.WRITE)
+	legacy.store_string(JSON.stringify([
+		{"name": "OLD", "score": 999, "time": 120.0, "waves": 4, "date": "2026-01-01"}]))
+	legacy.close()
+	SaveManager.load_leaderboard()
+
+	var entries: Array[Dictionary] = SaveManager.get_entries()
+	assert_eq(entries.size(), 1)
+	assert_eq((entries[0].get("trophies", null) as Array).size(), 0)
+
+
+## Diez y no veinte: entrar a la tabla tiene que volver a ser un logro.
+func test_the_board_keeps_only_the_best_ten() -> void:
+	SaveManager.clear_leaderboard()
+	for i: int in SaveManager.MAX_ENTRIES + 5:
+		SaveManager.submit_score(100 + i * 10, 200.0, 5, "Nyx")
+
+	var entries: Array[Dictionary] = SaveManager.get_entries()
+	assert_eq(entries.size(), SaveManager.MAX_ENTRIES)
+	assert_eq(int(entries[0]["score"]), 100 + (SaveManager.MAX_ENTRIES + 4) * 10,
+		"la mejor queda arriba")
+	assert_eq(int(entries[SaveManager.MAX_ENTRIES - 1]["score"]), 100 + 5 * 10,
+		"y las cinco peores se cayeron")
+
+
+func test_the_table_shows_the_trophies_of_a_run() -> void:
+	SaveManager.clear_leaderboard()
+	SaveManager.submit_score(2000, 300.0, 10, "Nyx", [RunRecord.CHAMPION])
+
+	var leaderboard: LeaderboardPanel = _panel("Leaderboard")
+	leaderboard.open()
+	await wait_frames(2)
+
+	var rows: VBoxContainer = _panel("Leaderboard/Panel/Margin/Layout/Scroll/Rows")
+	var chips: Control = rows.get_child(1).get_child(LeaderboardPanel.TROPHY_COLUMN)
+	assert_eq(chips.get_child_count(), 1, "una ficha por trofeo")
+	assert_eq((chips.get_child(0) as Label).text, RunRecord.get_label(RunRecord.CHAMPION))
+
+
+## Ocho fichas en una fila de tabla dejan de leerse como logros.
+func test_too_many_trophies_collapse_into_a_count() -> void:
+	SaveManager.clear_leaderboard()
+	var many: Array = []
+	for id: StringName in RunRecord.TROPHY_INFO.keys():
+		many.append(id)
+	SaveManager.submit_score(9000, 300.0, 10, "Nyx", many)
+
+	var leaderboard: LeaderboardPanel = _panel("Leaderboard")
+	leaderboard.open()
+	await wait_frames(2)
+
+	var rows: VBoxContainer = _panel("Leaderboard/Panel/Margin/Layout/Scroll/Rows")
+	var chips: Control = rows.get_child(1).get_child(LeaderboardPanel.TROPHY_COLUMN)
+	assert_eq(chips.get_child_count(), LeaderboardPanel.MAX_CHIPS + 1,
+		"las que entran, mas el +N")
+	var last := chips.get_child(LeaderboardPanel.MAX_CHIPS) as Label
+	assert_eq(last.text, "+%d" % (many.size() - LeaderboardPanel.MAX_CHIPS))
+
+
 func test_saving_a_run_remembers_the_name_for_the_next_one() -> void:
 	SaveManager.forget_profiles()
 	SaveManager.submit_score(100, 60.0, 2, "Vera")
