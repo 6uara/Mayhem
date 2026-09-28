@@ -35,7 +35,10 @@ func _ready() -> void:
 	EventBus.kill_credited.connect(_on_kill_credited)
 	EventBus.kill_payout.connect(_on_kill_payout)
 	EventBus.player_damaged.connect(_on_player_damaged.unbind(1))
-	EventBus.player_died.connect(reset)
+	# Morir NO resetea la billetera. Este autoload se conecta a `player_died`
+	# antes que MatchDirector, asi que resetear aca le borraba la plata al
+	# puntaje de la derrota antes de que se calculara. La run siguiente la
+	# resetea MatchDirector.start_match(), que es quien decide que empezo otra.
 	reset()
 
 

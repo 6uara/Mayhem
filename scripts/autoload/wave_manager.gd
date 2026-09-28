@@ -24,7 +24,10 @@ var _last_breakdown: Dictionary = {}
 func _ready() -> void:
 	EventBus.enemy_killed.connect(_on_enemy_killed)
 	EventBus.player_damaged.connect(_on_player_damaged)
-	EventBus.player_died.connect(reset)
+	# `stop()` y no `reset()`: la oleada deja de spawnear, pero `current_index`
+	# sigue diciendo en cual se murio. Este autoload se conecta antes que
+	# MatchDirector, y resetear aca dejaba toda derrota anotada con 0 oleadas.
+	EventBus.player_died.connect(stop)
 
 
 # Public API
@@ -36,8 +39,14 @@ func setup(wave_list: Array[WaveData]) -> void:
 
 
 func reset() -> void:
-	_run_generation += 1
+	stop()
 	current_index = -1
+
+
+## Corta la oleada en curso -los spawns en vuelo mueren por la generacion- sin
+## olvidar que oleada era.
+func stop() -> void:
+	_run_generation += 1
 	is_wave_active = false
 	_alive_enemies = 0
 	_pending_spawns = 0

@@ -106,3 +106,37 @@ func test_player_death_stops_the_match() -> void:
 	EventBus.player_died.emit()
 	await wait_physics_frames(2)
 	assert_false(_director.is_running)
+
+
+## Morir anota la plata y las oleadas que habia al morir. EconomyManager y
+## WaveManager escuchan `player_died` antes que el director, y reseteaban todo:
+## las derrotas quedaban con la plata inicial y 0 oleadas.
+func test_a_death_scores_what_the_player_had_when_they_fell() -> void:
+	EventBus.enemy_killed.emit(&"test", Vector3.ZERO, 10)
+	await wait_seconds(0.3)
+	_shop.close()
+	await wait_seconds(0.8)
+	assert_eq(WaveManager.current_index, 1, "precondition: en la segunda oleada")
+
+	EconomyManager.currency = 500
+	_director.death_reveal_delay = 0.0
+	watch_signals(EventBus)
+	EventBus.player_died.emit()
+	await wait_physics_frames(2)
+
+	var params: Array = get_signal_parameters(EventBus, "run_finished")
+	assert_false(params.is_empty(), "la derrota se anuncio")
+	assert_gte(int(params[0]), 5000, "el puntaje incluye la plata que habia")
+	assert_eq(int(params[2]), 1, "una oleada limpia antes de morir")
+
+
+## La muerte se deja ver: el final se anuncia despues de la caida, no en el mismo
+## frame del golpe.
+func test_death_is_announced_after_the_reveal_delay() -> void:
+	_director.death_reveal_delay = 0.4
+	watch_signals(EventBus)
+	EventBus.player_died.emit()
+	await wait_seconds(0.1)
+	assert_signal_not_emitted(EventBus, "run_finished", "todavia se esta cayendo")
+	await wait_seconds(0.5)
+	assert_signal_emitted(EventBus, "run_finished")
