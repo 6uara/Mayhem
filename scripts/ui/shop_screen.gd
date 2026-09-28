@@ -109,8 +109,10 @@ func _on_currency_changed(total: int) -> void:
 	_refresh_affordability()
 
 
+## Ambar y justo debajo de las tarjetas: es la otra salida cuando ninguna oferta
+## sirve, y como boton gris entre los demas nadie lo encontraba.
 func _on_reroll_cost_changed(cost: int) -> void:
-	_reroll_button.text = "Reroll  %d" % cost
+	_reroll_button.text = "[R]  REROLL OFFERS   %d" % cost
 	_refresh_affordability()
 
 

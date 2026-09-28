@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/shop_screen.gd" id="1_shop"]
 [ext_resource type="Script" path="res://scripts/systems/shop.gd" id="2_shop_logic"]
@@ -19,6 +19,48 @@ rail_color = Color(0.208, 0.878, 0.831, 1)
 rail_side = 3
 tick_length = 28.0
 tick_color = Color(0.208, 0.878, 0.831, 1)
+
+[sub_resource type="StyleBox" id="StyleBox_reroll"]
+script = ExtResource("5_chamfer")
+fill_color = Color(1, 0.69, 0.125, 1)
+fill_alpha = 0.1
+border_color = Color(1, 0.69, 0.125, 1)
+border_width = 2.0
+chamfer = 12.0
+rail_width = 4.0
+rail_color = Color(1, 0.69, 0.125, 1)
+rail_side = 0
+content_margin_left = 28.0
+content_margin_right = 28.0
+
+[sub_resource type="StyleBox" id="StyleBox_reroll_hover"]
+script = ExtResource("5_chamfer")
+fill_color = Color(1, 0.69, 0.125, 1)
+fill_alpha = 0.24
+border_color = Color(1, 0.8, 0.4, 1)
+border_width = 2.0
+chamfer = 12.0
+rail_width = 4.0
+rail_color = Color(1, 0.8, 0.4, 1)
+rail_side = 0
+content_margin_left = 28.0
+content_margin_right = 28.0
+
+[sub_resource type="StyleBox" id="StyleBox_reroll_disabled"]
+script = ExtResource("5_chamfer")
+fill_color = Color(0.086, 0.098, 0.125, 1)
+fill_alpha = 0.85
+border_color = Color(0.173, 0.192, 0.251, 1)
+border_width = 1.0
+chamfer = 12.0
+content_margin_left = 28.0
+content_margin_right = 28.0
+
+[sub_resource type="InputEventKey" id="InputEventKey_reroll"]
+physical_keycode = 82
+
+[sub_resource type="Shortcut" id="Shortcut_reroll"]
+events = [SubResource("InputEventKey_reroll")]
 
 [node name="ShopScreen" type="CanvasLayer" node_paths=PackedStringArray("shop")]
 layer = 3
@@ -87,6 +129,27 @@ theme_override_font_sizes/font_size = 16
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
+[node name="RerollRow" type="HBoxContainer" parent="Root/Panel/VBox"]
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="RerollButton" type="Button" parent="Root/Panel/VBox/RerollRow"]
+custom_minimum_size = Vector2(420, 64)
+tooltip_text = "New offers. Costs more each time this visit."
+shortcut = SubResource("Shortcut_reroll")
+shortcut_in_tooltip = false
+text = "[R]  REROLL OFFERS   50"
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
+theme_override_colors/font_hover_color = Color(1, 0.8, 0.4, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.8, 0.4, 1)
+theme_override_colors/font_focus_color = Color(1, 0.69, 0.125, 1)
+theme_override_styles/normal = SubResource("StyleBox_reroll")
+theme_override_styles/hover = SubResource("StyleBox_reroll_hover")
+theme_override_styles/pressed = SubResource("StyleBox_reroll_hover")
+theme_override_styles/focus = SubResource("StyleBox_reroll_hover")
+theme_override_styles/disabled = SubResource("StyleBox_reroll_disabled")
+
 [node name="ActiveBonuses" type="VBoxContainer" parent="Root/Panel/VBox"]
 theme_override_constants/separation = 10
 
@@ -99,13 +162,6 @@ theme_override_colors/font_color = Color(0.541, 0.565, 0.639, 1)
 script = ExtResource("6_bonus_list")
 show_empty_categories = true
 horizontal = true
-
-[node name="RerollRow" type="HBoxContainer" parent="Root/Panel/VBox"]
-theme_override_constants/separation = 12
-
-[node name="RerollButton" type="Button" parent="Root/Panel/VBox/RerollRow"]
-custom_minimum_size = Vector2(0, 40)
-text = "Reroll  50"
 
 [node name="SkipButton" type="Button" parent="Root/Panel/VBox"]
 custom_minimum_size = Vector2(0, 44)
