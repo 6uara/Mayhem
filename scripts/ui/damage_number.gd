@@ -1,6 +1,6 @@
 class_name DamageNumber
 extends Node3D
-## Pooled floating damage number over whatever a hit landed on. Cosmetic only -
+## Floating damage number over whatever a hit landed on. Cosmetic only -
 ## driven by EventBus.damage_dealt, the same signal HitstopController already
 ## consumes, so this never becomes a second source of truth for damage.
 ##
@@ -13,6 +13,10 @@ extends Node3D
 ## framerate. Medido con tools/profile_damage_numbers.gd, la primera version
 ## costaba mas de la mitad del framerate a 60 hits/s. Todo lo que sigue esta
 ## escrito contra esa medicion.
+##
+## No se anima solo: lo recicla y lo anima `DamageNumberSpawner`, que tiene un
+## anillo fijo de estos y los avanza a todos con `tick()` desde un unico
+## `_process`. Un numero suelto (un test) se usa igual, llamando `tick()` a mano.
 
 const LIFETIME: float = 0.7
 const RISE_HEIGHT: float = 1.0
@@ -46,6 +50,14 @@ var _is_playing: bool = false
 var _base_y: float = 0.0
 ## Daño acumulado que esta mostrando. Ver add_damage().
 var _shown: float = 0.0
+## Sube con cada `play_at`. Quien guarda una referencia a este numero guarda
+## tambien este valor, y si ya no coincide es que el numero se reciclo para otra
+## cosa: ver `DamageNumberSpawner._open_number_for()`.
+var play_id: int = 0
+
+
+func _ready() -> void:
+	set_process(false)
 
 
 ## `amount` is already the final applied damage (falloff, headshot multiplier,
@@ -63,6 +75,8 @@ func play_at(hit_position: Vector3, amount: float, is_headshot: bool) -> void:
 
 	_timer = LIFETIME
 	_is_playing = true
+	play_id += 1
+	visible = true
 
 
 ## Lo mismo, en verde y con signo. Comparte todo el resto - la subida, el
@@ -111,20 +125,19 @@ func is_playing() -> bool:
 	return _is_playing
 
 
-## Subida y desvanecido a mano, no con un Tween.
+## Avanza la subida y el desvanecido. Devuelve false cuando el numero termino, y
+## quien lo lleva lo devuelve al pool con `stop()`.
 ##
-## Cada numero creaba el suyo con dos properties, y con fuego sostenido eso son
-## decenas de Tweens por segundo instanciandose, registrandose en el arbol y
-## muriendo - todo para animar dos valores que este _process, que ya corre para
-## contar el tiempo de vida, calcula en dos lineas. La animacion es la misma; lo
-## que se fue es la ceremonia.
-func _process(delta: float) -> void:
+## A mano y no con un Tween: cada numero creaba el suyo con dos properties, y
+## con fuego sostenido eso eran decenas de Tweens por segundo instanciandose,
+## registrandose en el arbol y muriendo, para animar dos valores que esto
+## calcula en dos lineas.
+func tick(delta: float) -> bool:
 	if not _is_playing:
-		return
+		return false
 	_timer -= delta
 	if _timer <= 0.0:
-		ObjectPool.release(self)
-		return
+		return false
 
 	var elapsed: float = 1.0 - (_timer / LIFETIME)
 	# Ease out cubico: sale rapido del golpe y frena arriba.
@@ -132,8 +145,12 @@ func _process(delta: float) -> void:
 	if elapsed > FADE_START_FRACTION:
 		_label.modulate.a = 1.0 - ((elapsed - FADE_START_FRACTION) \
 			/ (1.0 - FADE_START_FRACTION))
+	return true
 
 
-func _on_released() -> void:
+## Lo apaga y lo deja listo para reusar. Oculto alcanza: un Label3D invisible no
+## se dibuja, asi que no hace falta sacarlo del arbol ni mandarlo lejos.
+func stop() -> void:
 	_is_playing = false
 	_shown = 0.0
+	visible = false

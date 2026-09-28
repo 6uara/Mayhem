@@ -28,18 +28,27 @@ func test_headshots_read_differently_from_body_shots() -> void:
 	assert_ne(body_label.modulate, headshot_label.modulate)
 
 
-func test_numbers_come_from_the_pool_and_go_back() -> void:
-	ObjectPool.clear()
-	var scene: PackedScene = load(SCENE)
-	var number: Node = ObjectPool.acquire(scene)
-	assert_true(number.has_method(&"play_at"))
-	number.call(&"play_at", Vector3.ZERO, 10.0, false)
-	assert_eq(ObjectPool.get_active_count(), 1)
+## El numero no se anima solo: lo avanza el spawner con tick(), y tick() avisa
+## cuando termino para que vuelva al anillo.
+func test_tick_runs_the_number_out_and_stop_hides_it() -> void:
+	var number: DamageNumber = add_child_autofree(load(SCENE).instantiate())
+	number.play_at(Vector3.ZERO, 10.0, false)
+	assert_true(number.visible)
+	assert_true(number.tick(DamageNumber.LIFETIME * 0.5), "a mitad de vida sigue")
+	assert_gt(number.global_position.y, 0.0, "y va subiendo")
+	assert_false(number.tick(DamageNumber.LIFETIME), "pasada la vida, termino")
 
-	ObjectPool.release(number)
-	assert_eq(ObjectPool.get_active_count(), 0)
-	assert_eq(ObjectPool.get_free_count(scene), 1, "a released number returns to its pool")
-	ObjectPool.clear()
+	number.stop()
+	assert_false(number.visible)
+	assert_false(number.is_playing())
+
+
+func test_each_play_gets_a_new_play_id() -> void:
+	var number: DamageNumber = add_child_autofree(load(SCENE).instantiate())
+	number.play_at(Vector3.ZERO, 10.0, false)
+	var first: int = number.play_id
+	number.play_at(Vector3.ZERO, 10.0, false)
+	assert_ne(number.play_id, first)
 
 
 func test_negative_or_zero_amounts_never_go_negative_on_screen() -> void:

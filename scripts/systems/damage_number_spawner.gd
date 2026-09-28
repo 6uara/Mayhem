@@ -14,13 +14,21 @@ extends Node
 ## es lo que hacia que una escopeta sobre un grupo costara mas de la mitad del
 ## framerate (medido con tools/profile_damage_numbers.gd). Las dos reglas de
 ## abajo - agregar y topear - salen de ahi.
+##
+## El pool es propio y no `ObjectPool`. El generico paga, por cada numero que
+## entra y sale, un cambio de grupo, dos de `process_mode` (que notifican a
+## todo el subarbol), un teletransporte y dos diccionarios - y cada numero
+## corria su propio `_process`. Aca hay un anillo fijo de `max_live_numbers`
+## numeros, creados una sola vez como hijos de este nodo y que no salen nunca
+## del arbol: uno libre esta oculto y nada mas, y los vivos los avanza el unico
+## `_process` de abajo. El tope deja de ser un conteo: es el tamaño del anillo.
 
 @export var damage_number_scene: PackedScene
 ## Enemy origins sit at the feet (EnemyData.head_offset etc. are all measured
 ## up from there) - numbers spawning at ground level would read as coming from
 ## the floor, not the hit.
 @export var height_offset: float = 1.1
-## Cuantos numeros pueden estar vivos a la vez.
+## Cuantos numeros pueden estar vivos a la vez, y por lo tanto cuantos se crean.
 ##
 ## Pasado este tope no se pide uno nuevo: el golpe sigue existiendo, sigue
 ## haciendo daño y sigue sonando, simplemente no pinta un Label3D mas. Doce
@@ -35,30 +43,45 @@ extends Node
 ## que ocho 30 superpuestos.
 @export var merge_window: float = 0.25
 
-## target -> { "number": DamageNumber, "at": float } del ultimo numero abierto
-## sobre ese objetivo. Se vacia cuando la ventana de agregacion vence, asi que
-## NO sirve para contar cuantos numeros hay vivos - un numero sigue en pantalla
-## medio segundo despues de dejar de aceptar sumas.
+## target -> { "number": DamageNumber, "play_id": int, "at": float } del ultimo
+## numero abierto sobre ese objetivo.
 var _open: Dictionary = {}
-## Los numeros efectivamente en pantalla. Lista aparte de _open justamente por lo
-## de arriba: contar sobre _open hacia que el tope no topeara nada, que es como
-## la primera version de esto no mejoro una sola medicion.
+## Los numeros en pantalla, del mas viejo al mas nuevo.
 var _live: Array[DamageNumber] = []
+## Los libres, como pila.
+var _free: Array[DamageNumber] = []
 
 
 func _ready() -> void:
 	EventBus.damage_dealt.connect(_on_damage_dealt)
 	EventBus.healed.connect(_on_healed)
 	EventBus.kill_payout.connect(_on_kill_payout)
-	# El primer tiroteo no tiene por que pagar la instanciacion de todo el tope.
-	if damage_number_scene != null:
-		ObjectPool.prewarm(damage_number_scene, max_live_numbers)
+	_build_pool()
 
+
+## Todos los numeros vivos en una sola pasada. Al reves para poder sacar
+## mientras se recorre.
+func _process(delta: float) -> void:
+	for i: int in range(_live.size() - 1, -1, -1):
+		var number: DamageNumber = _live[i]
+		if not number.tick(delta):
+			_release_at(i)
+
+
+# Public API
+
+func get_live_count() -> int:
+	return _live.size()
+
+
+func get_pool_size() -> int:
+	return _live.size() + _free.size()
+
+
+# Signal handlers
 
 func _on_damage_dealt(target: Node, amount: float, is_headshot: bool) -> void:
-	if amount <= 0.0 or damage_number_scene == null:
-		return
-	if not bool(SettingsManager.get_value("hud/damage_numbers", true)):
+	if amount <= 0.0 or not _numbers_enabled():
 		return
 	var target_3d: Node3D = target as Node3D
 	if target_3d == null:
@@ -69,102 +92,105 @@ func _on_damage_dealt(target: Node, amount: float, is_headshot: bool) -> void:
 		existing.add_damage(amount, is_headshot)
 		return
 
-	if _live_count() >= max_live_numbers:
+	var number: DamageNumber = _acquire()
+	if number == null:
 		return
-
-	var number: Node = ObjectPool.acquire(damage_number_scene)
-	if number == null or not number.has_method(&"play_at"):
-		return
-	number.call(&"play_at", target_3d.global_position + Vector3.UP * height_offset,
+	number.play_at(target_3d.global_position + Vector3.UP * height_offset,
 		amount, is_headshot)
-	_open[target_3d] = {"number": number, "at": _now()}
-	_live.append(number)
+	_open[target_3d] = {"number": number, "play_id": number.play_id, "at": _now()}
 
 
-## La curacion sube por el mismo pool y con el mismo tope que el daño: es un
+## La curacion sale del mismo anillo y con el mismo tope que el daño: es un
 ## numero flotante mas, y el presupuesto que existe es para todos.
 ##
 ## No se agrega con `add_damage` sobre un numero abierto - un +12 verde sumado
 ## a un 240 rojo no es ningun numero - asi que una curacion sobre un objetivo
 ## que ya tiene un numero arriba pide el suyo.
 func _on_healed(target: Node, amount: float) -> void:
-	if amount <= 0.0 or damage_number_scene == null:
-		return
-	if not bool(SettingsManager.get_value("hud/damage_numbers", true)):
+	if amount <= 0.0 or not _numbers_enabled():
 		return
 	var target_3d: Node3D = target as Node3D
-	if target_3d == null or _live_count() >= max_live_numbers:
+	if target_3d == null:
 		return
-	var number: Node = ObjectPool.acquire(damage_number_scene)
-	if number == null or not number.has_method(&"play_heal_at"):
+	var number: DamageNumber = _acquire()
+	if number == null:
 		return
-	number.call(&"play_heal_at",
-		target_3d.global_position + Vector3.UP * height_offset, amount)
-	_live.append(number)
+	number.play_heal_at(target_3d.global_position + Vector3.UP * height_offset, amount)
 
 
 ## La plata que dejo la kill, sobre el cuerpo, recompensa y bono en un solo
 ## numero.
 ##
-## Entra en el mismo tope de `max_live_numbers` que el daño - el presupuesto de
-## framerate es para todos los numeros flotantes, no uno por tipo-, pero se
-## cuela por encima de el cuando hace falta: una kill es exactamente el momento
-## en que el tope esta lleno de numeros de daño sobre el enemigo que acaba de
-## morir, y perder justo ahi el unico numero que dice cuanto cobraste seria
-## quedarse sin la informacion en el unico instante en que importa. Se libera el
-## mas viejo para hacerle lugar.
+## Entra en el mismo tope que el daño, pero se cuela por encima de el cuando
+## hace falta: una kill es exactamente el momento en que el anillo esta lleno de
+## numeros de daño sobre el enemigo que acaba de morir, y perder justo ahi el
+## unico numero que dice cuanto cobraste seria quedarse sin la informacion en el
+## unico instante en que importa. Se libera el mas viejo para hacerle lugar.
 func _on_kill_payout(reward: int, _bonus_ids: Array, bonus_total: int,
 		position: Vector3) -> void:
 	var total: int = reward + bonus_total
-	if total <= 0 or damage_number_scene == null:
+	if total <= 0 or not _numbers_enabled():
 		return
-	if not bool(SettingsManager.get_value("hud/damage_numbers", true)):
+	if _free.is_empty() and not _live.is_empty():
+		_release_at(0)
+	var number: DamageNumber = _acquire()
+	if number == null:
 		return
-	if _live_count() >= max_live_numbers:
-		_release_oldest()
-	var number: Node = ObjectPool.acquire(damage_number_scene)
-	if number == null or not number.has_method(&"play_reward_at"):
-		return
-	number.call(&"play_reward_at", position + Vector3.UP * height_offset, total)
-	_live.append(number)
+	number.play_reward_at(position + Vector3.UP * height_offset, total)
 
 
 # Private
 
-## Saca de pantalla el numero vivo mas viejo, para que un numero mas importante
-## entre sin ampliar el presupuesto.
-func _release_oldest() -> void:
-	for i: int in _live.size():
-		var number: DamageNumber = _live[i]
-		if is_instance_valid(number) and number.is_playing():
-			ObjectPool.release(number)
-			_live.remove_at(i)
+func _build_pool() -> void:
+	if damage_number_scene == null:
+		return
+	for _i: int in maxi(max_live_numbers, 0):
+		var number := damage_number_scene.instantiate() as DamageNumber
+		if number == null:
+			push_error("DamageNumberSpawner: damage_number_scene is not a DamageNumber")
 			return
+		add_child(number)
+		number.stop()
+		_free.push_back(number)
+
+
+## Un numero libre, ya contado como vivo, o null si el anillo esta lleno.
+func _acquire() -> DamageNumber:
+	if _free.is_empty():
+		return null
+	var number: DamageNumber = _free.pop_back()
+	_live.push_back(number)
+	return number
+
+
+func _release_at(index: int) -> void:
+	var number: DamageNumber = _live[index]
+	_live.remove_at(index)
+	number.stop()
+	_free.push_back(number)
 
 
 ## El numero todavia abierto sobre este objetivo, o null. Limpia de paso la
-## entrada cuando el numero ya se apago o el objetivo se fue: el diccionario no
-## puede crecer con enemigos muertos.
+## entrada vencida: el diccionario no puede crecer con enemigos muertos.
+##
+## El `play_id` es lo que impide sumarle daño a un numero ajeno: si el numero se
+## apago y el anillo lo reciclo para otro enemigo, sigue "jugando", pero ya no es
+## el mismo numero que se guardo aca.
 func _open_number_for(target: Node3D) -> DamageNumber:
 	var entry: Dictionary = _open.get(target, {})
 	if entry.is_empty():
 		return null
 	var number := entry["number"] as DamageNumber
-	if not is_instance_valid(number) or not number.is_playing() \
+	if not number.is_playing() or number.play_id != int(entry["play_id"]) \
 			or _now() - float(entry["at"]) > merge_window:
 		_open.erase(target)
 		return null
 	return number
 
 
-## Cuantos numeros hay realmente en pantalla, purgando de paso los que ya se
-## apagaron. Se recorre al reves para poder borrar mientras se itera.
-func _live_count() -> int:
-	for i: int in range(_live.size() - 1, -1, -1):
-		var number: DamageNumber = _live[i]
-		if not is_instance_valid(number) or not number.is_playing():
-			_live.remove_at(i)
-	return _live.size()
+func _numbers_enabled() -> bool:
+	return damage_number_scene != null \
+		and bool(SettingsManager.get_value("hud/damage_numbers", true))
 
 
 func _now() -> float:

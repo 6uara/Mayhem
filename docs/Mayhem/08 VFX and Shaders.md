@@ -124,9 +124,17 @@ already varies sound per material; only the audio content lags. See
 
 `DamageNumberSpawner` (`scripts/systems/damage_number_spawner.gd`, a node in
 `game.tscn` beside `HitstopController`) listens to the same
-`EventBus.damage_dealt` signal `HitstopController` already does, and pools a
+`EventBus.damage_dealt` signal `HitstopController` already does, and shows a
 `DamageNumber` (`scripts/ui/damage_number.gd` + `scenes/vfx/damage_number.tscn`
 — a billboarded `Label3D`) over whatever got hit.
+
+The pool is the spawner's own, not `ObjectPool`: a fixed ring of
+`max_live_numbers` numbers instantiated once as its children, never leaving the
+tree (a free one is just hidden), all advanced by the spawner's single
+`_process` through `DamageNumber.tick()`. Hits on the same target inside
+`merge_window` add into one number; an open number is tracked with its
+`play_id` so a recycled one never takes another target's hits. Kill payouts
+evict the oldest number when the ring is full.
 
 That signal carries the target `Node`, not the exact hit position, so numbers
 spawn at `target.global_position + height_offset` (enemy origins sit at the
@@ -134,10 +142,11 @@ feet) rather than the precise impact point — close enough to read as attached
 to what got hit, without adding a new EventBus parameter just for this.
 A small random per-number jitter keeps simultaneous hits (a shotgun blast, a
 handful of enemies dying the same frame) from stacking into one unreadable
-column. Rises and fades out over `DamageNumber.LIFETIME` via a `Tween`.
+column. Rises and fades out over `DamageNumber.LIFETIME`, computed in `tick()`
+rather than a `Tween`.
 
 Headshots read differently by design, same as the hitmarker treatment in
-`Reticle` — bigger (`HEADSHOT_FONT_SIZE`), tinted `Tokens.REWARD` instead of
+`Reticle` — bigger (node scale `HEADSHOT_SCALE`, never a different font size), tinted `Tokens.REWARD` instead of
 `Tokens.TEXT`. Gated by `hud/damage_numbers` in `SettingsManager` (off is a
 legitimate preference — floating numbers are divisive — same accessibility
 section as the screenshake toggle).
