@@ -8,6 +8,9 @@ extends CanvasLayer
 ## The HUD never polls: every value arrives on a signal from the gameplay layer.
 
 const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
+## Brillo minimo de la viñeta de daño, y cuanto daño la lleva al maximo.
+const DAMAGE_FLASH_FLOOR: float = 0.5
+const DAMAGE_FLASH_FULL_AT: float = 40.0
 
 @onready var _root: Control = $Root
 @onready var _reticle: Reticle = $Root/Reticle
@@ -68,6 +71,8 @@ var _utility_slots: Array[Control] = []
 var _damage_tween: Tween
 var _snare_tween: Tween
 var _grapple_slot: Control
+## El fundido de la muerte. Ver _on_player_died().
+var _death_fade: ColorRect
 
 ## What _tick_wave() last wrote into the timer cluster. It runs every frame, but
 ## the values it derives change on transitions - a new wave, crossing par, taking
@@ -95,6 +100,7 @@ func _ready() -> void:
 	EventBus.ammo_changed.connect(_on_ammo_changed)
 	EventBus.currency_changed.connect(_on_currency_changed)
 	EventBus.player_damaged.connect(_on_player_damaged)
+	EventBus.player_died.connect(_on_player_died)
 	EventBus.damage_dealt.connect(_on_damage_dealt)
 	EventBus.enemy_killed.connect(_on_enemy_killed)
 	EventBus.weapon_fired.connect(_on_weapon_fired)
@@ -533,9 +539,28 @@ func _on_enemy_killed(_type: StringName, _position: Vector3, _reward: int) -> vo
 	_reticle.show_hit(Reticle.Hit.KILL)
 
 
-func _on_player_damaged(_amount: float, _remaining: float) -> void:
+func _on_player_damaged(amount: float, _remaining: float) -> void:
 	_refresh_health()
-	_flash_damage()
+	_flash_damage(amount)
+
+
+## La caida del jugador, en pantalla: la reticula se apaga y todo se hunde en un
+## rojo oscuro mientras la camara cae (Player._play_death). Es lo que separa
+## "me mataron" de "se corto el juego" en los dos segundos antes del panel.
+func _on_player_died() -> void:
+	_reticle.visible = false
+	_damage_indicators.clear()
+	if _death_fade == null:
+		_death_fade = ColorRect.new()
+		_death_fade.name = "DeathFade"
+		_death_fade.color = Color(0.22, 0.02, 0.04, 1.0)
+		_death_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_death_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_death_fade.modulate.a = 0.0
+		_state_overlays.add_child(_death_fade)
+	var tween: Tween = create_tween()
+	tween.tween_property(_death_fade, "modulate:a", 0.6, 1.6) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 
 ## Called by whatever dealt the damage when it knows where it came from; the
@@ -680,11 +705,20 @@ func _set_elite_stripe(is_elite: bool) -> void:
 ## el alpha que el nuevo acababa de subir - y ademas se acumulaban. Matar el
 ## anterior arregla las dos cosas de una, y es la mitad barata del reporte de
 ## performance del playtest.
-func _flash_damage() -> void:
+##
+## El pico escala con el golpe: un roce apenas tiñe los bordes, un golpe grande
+## se ve. Antes era un parpadeo fijo de 0.12s recortado arriba y abajo por el
+## aspecto de la pantalla, y el playtest no lo registraba como "me pegaron".
+## Nunca baja lo que ya estaba encendido, asi que una rafaga se sostiene en vez
+## de parpadear.
+func _flash_damage(amount: float = 0.0) -> void:
 	var vignette: Control = _state_overlays.get_node_or_null("DamageVignette")
 	if vignette == null:
 		return
-	vignette.modulate.a = 1.0
+	var peak: float = clampf(DAMAGE_FLASH_FLOOR + amount / DAMAGE_FLASH_FULL_AT, 0.0, 1.0)
+	if bool(SettingsManager.get_value("accessibility/reduce_flashing")):
+		peak *= 0.6
+	vignette.modulate.a = maxf(vignette.modulate.a, peak)
 	if _damage_tween != null and _damage_tween.is_valid():
 		_damage_tween.kill()
 	_damage_tween = create_tween()

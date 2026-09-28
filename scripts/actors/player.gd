@@ -25,6 +25,27 @@ const ZIP_LINE_AIM_ASSIST_DEGREES: float = 6.0
 ## reporta bloqueo donde no lo hay.
 const ZIP_LINE_SIGHT_MARGIN: float = 0.5
 
+## La caida al morir. Ver `_play_death()`.
+const DEATH_FALL_TIME: float = 1.1
+const DEATH_EYE_HEIGHT: float = 0.35
+const DEATH_ROLL_DEGREES: float = 78.0
+const DEATH_PITCH_DEGREES: float = 18.0
+## Friccion del cuerpo muerto contra el piso: frena el derrape sin cortarlo seco.
+const DEATH_FRICTION: float = 14.0
+const DEATH_GRAVITY: float = 30.0
+## Separacion minima entre dos sonidos de golpe. Rodeado, el daño llega de a
+## varios por frame, y un sonido por cada uno es un zumbido, no un aviso.
+const HURT_SOUND_INTERVAL: float = 0.09
+## Los placeholder de tools/generate_placeholder_sfx.py. Se cargan por ruta y
+## solo si existen, para que la escena no dependa de haber corrido el generador.
+const HURT_SOUND_PATH: String = "res://assets/audio/sfx/player/player_hurt.wav"
+const DEATH_SOUND_PATH: String = "res://assets/audio/sfx/player/player_death.wav"
+
+@export_group("Audio")
+## El golpe recibido. Un sonido no posicional: sale del propio cuerpo.
+@export var hurt_sound: AudioStream
+@export var death_sound: AudioStream
+
 @export_group("Nodes")
 @export var head: Node3D
 @export var camera: Camera3D
@@ -46,7 +67,11 @@ var weapon: WeaponComponent:
 ## frame para prender el mismo estado de reticula que prende un ancla, que es lo
 ## que hace que la tirolesa deje de ser una cosa que hay que saber que esta ahi.
 var is_zip_line_in_range: bool = false
+## Muerto y cayendo. El cuerpo deja de responder al input y la camara se va al
+## piso; ver `_play_death()`.
+var is_dead: bool = false
 
+var _hurt_sound_cooldown: float = 0.0
 var _look_yaw: float = 0.0
 var _look_pitch: float = 0.0
 var _base_fov: float = 95.0
@@ -63,6 +88,10 @@ func _ready() -> void:
 	set_meta(SurfaceMaterials.META_KEY, &"flesh")
 	_base_fov = float(SettingsManager.get_value("video/fov"))
 	EventBus.settings_applied.connect(_on_settings_applied)
+	if hurt_sound == null and ResourceLoader.exists(HURT_SOUND_PATH):
+		hurt_sound = load(HURT_SOUND_PATH)
+	if death_sound == null and ResourceLoader.exists(DEATH_SOUND_PATH):
+		death_sound = load(DEATH_SOUND_PATH)
 	if health != null:
 		health.damaged.connect(_on_damaged)
 		health.died.connect(_on_died)
@@ -88,6 +117,8 @@ func _apply_view_nodes() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_dead:
+		return
 	var motion := event as InputEventMouseMotion
 	if motion != null and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var sensitivity: float = SettingsManager.get_mouse_sensitivity(_is_ads())
@@ -126,6 +157,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_hurt_sound_cooldown = maxf(_hurt_sound_cooldown - delta, 0.0)
+	# Muerto, la cabeza la maneja el tween de la caida: la mirada y el recoil ya
+	# no tienen nada que decir.
+	if is_dead:
+		return
 	_apply_look()
 	_apply_fov(delta)
 
@@ -133,7 +169,10 @@ func _process(delta: float) -> void:
 ## La busqueda de zip line consulta el espacio de fisica, asi que vive aca y no
 ## en _process: forzar un raycast desde un frame de dibujo es preguntarle al
 ## motor mientras esta juntando las respuestas.
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	if is_dead:
+		_tick_dead_body(delta)
+		return
 	is_zip_line_in_range = _find_zip_line() != null
 
 
@@ -273,9 +312,81 @@ func _on_settings_applied() -> void:
 
 
 func _on_damaged(amount: float, remaining: float) -> void:
+	# El golpe que mata suena como muerte, no como un golpe mas.
+	if remaining > 0.0 and _hurt_sound_cooldown <= 0.0:
+		_hurt_sound_cooldown = HURT_SOUND_INTERVAL
+		AudioPool.play_2d(hurt_sound, AudioPool.BUS_SFX, -2.0, randf_range(0.92, 1.08))
 	EventBus.player_damaged.emit(amount, remaining)
 
 
 func _on_died() -> void:
 	# No revives, no teammates to hold the line: the run ends the moment you fall.
+	_play_death()
 	EventBus.player_died.emit()
+
+
+## La caida: el cuerpo deja de responder, el arma se va de la mano y la camara se
+## desploma de costado hasta el piso.
+##
+## Existe porque la run terminaba en el mismo frame del golpe: la pantalla de
+## nombre tapaba todo y el jugador no llegaba a ver que habia muerto, ni de que.
+## MatchDirector espera esto antes de anunciar el final (`death_reveal_delay`).
+##
+## Placeholder a proposito: un tween sobre la cabeza y nada mas. Lo que importa
+## es el tiempo que compra, no la animacion.
+func _play_death() -> void:
+	if is_dead:
+		return
+	is_dead = true
+	AudioPool.play_2d(death_sound, AudioPool.BUS_SFX)
+
+	if movement != null:
+		movement.set_physics_process(false)
+	if grapple != null and grapple.is_grappling:
+		grapple.release()
+	if utility != null:
+		utility.disarm()
+	var equipped: WeaponComponent = weapon
+	if equipped != null:
+		equipped.set_trigger(false)
+		equipped.set_ads(false)
+	_drop_viewmodel()
+
+	if head == null:
+		return
+	# Cae hacia el lado que la gravedad elija; el signo solo varia la toma.
+	var roll: float = DEATH_ROLL_DEGREES * (1.0 if randf() < 0.5 else -1.0)
+	var tween: Tween = create_tween().set_parallel()
+	tween.tween_property(head, "position:y", DEATH_EYE_HEIGHT, DEATH_FALL_TIME) \
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(head, "rotation:z", deg_to_rad(roll), DEATH_FALL_TIME * 0.8) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(head, "rotation:x", deg_to_rad(DEATH_PITCH_DEGREES),
+		DEATH_FALL_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+## El arma baja y desaparece: sin mano que la sostenga, dejarla en pantalla
+## seria decir que todavia se puede disparar.
+func _drop_viewmodel() -> void:
+	var layer := get_node_or_null("ViewmodelLayer") as CanvasLayer
+	var rig := get_node_or_null("ViewmodelLayer/ViewmodelRig") as ViewmodelRig
+	if rig == null or rig.slots == null:
+		if layer != null:
+			layer.visible = false
+		return
+	var tween: Tween = create_tween()
+	tween.tween_property(rig.slots, "position", rig.slots.position + Vector3(0.0, -0.6, 0.15),
+		0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if layer != null:
+		tween.tween_callback(func() -> void: layer.visible = false)
+
+
+## El cuerpo muerto sigue cayendo y derrapando, pero ya no camina.
+func _tick_dead_body(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y -= DEATH_GRAVITY * delta
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	horizontal = horizontal.move_toward(Vector3.ZERO, DEATH_FRICTION * delta)
+	velocity.x = horizontal.x
+	velocity.z = horizontal.z
+	move_and_slide()

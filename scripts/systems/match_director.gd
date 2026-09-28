@@ -18,6 +18,9 @@ signal match_state_changed(is_running: bool)
 @export var shop_screen: CanvasLayer
 ## Beat between the wave clearing and the shop opening, so the last kill lands.
 @export var shop_open_delay: float = 1.5
+## Cuanto se deja ver la muerte antes de que la pantalla de nombre tape todo.
+## Tiene que cubrir la caida del jugador (`Player.DEATH_FALL_TIME`) y un respiro.
+@export var death_reveal_delay: float = 2.2
 
 var is_running: bool = false
 
@@ -158,15 +161,34 @@ func _end_in_victory() -> void:
 ## ninguno: solo se guardaba la victoria, asi que la tabla solo podia listar a
 ## quien se hubiera pasado las diez waves - que en la practica es una tabla
 ## vacia. Lo que se anota son las waves que efectivamente se limpiaron.
+##
+## El puntaje y las waves se leen en el momento de morir y se anuncian despues de
+## `death_reveal_delay`: la transicion instantanea tapaba la muerte misma, y el
+## jugador no llegaba a ver que lo habia matado.
 func _on_player_died() -> void:
 	if not is_running:
 		return
 	var total_time: float = get_match_time()
 	is_running = false
 	_generation += 1
-	EventBus.run_finished.emit(_calculate_score(total_time), total_time,
-		maxi(WaveManager.current_index, 0), false)
+	var generation: int = _generation
+	var score: int = _calculate_score(total_time)
+	var waves_cleared: int = maxi(WaveManager.current_index, 0)
 	match_state_changed.emit(false)
+	if death_reveal_delay <= 0.0 or not is_inside_tree():
+		_announce_death(generation, score, total_time, waves_cleared)
+		return
+	# Conectado y no con await: si la escena se descarta durante la espera, la
+	# conexion muere con este nodo en vez de reanudar una corrutina sin duenio.
+	get_tree().create_timer(death_reveal_delay).timeout.connect(
+		_announce_death.bind(generation, score, total_time, waves_cleared))
+
+
+func _announce_death(generation: int, score: int, total_time: float,
+		waves_cleared: int) -> void:
+	if generation != _generation:
+		return
+	EventBus.run_finished.emit(score, total_time, waves_cleared, false)
 
 
 ## Rewards speed rather than pure completion (CLAUDE.md 5.5). Currency banked

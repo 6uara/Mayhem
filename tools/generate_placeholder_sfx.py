@@ -499,6 +499,29 @@ def snare_break(rng: random.Random) -> list[float]:
     )
 
 
+def player_hurt(rng: random.Random) -> list[float]:
+    """Te pegaron: un golpe sordo y corto, oido desde adentro del cuerpo.
+
+    Grave y sin cola a proposito. Suena varias veces por segundo cuando el jugador
+    esta rodeado, asi que tiene que ser corto para no empastarse, y no puede
+    parecerse al hitmarker - ese es agudo y dice "le pegaste vos".
+    """
+    return _mix(
+        (_lowpass(_noise(ms(70), 0.0008, 0.12, 0.9, rng), 700.0), 0),
+        (_tone(ms(140), 150.0, 0.001, 0.2, 0.8, sweep=0.55), 0),
+        (_tone(ms(90), 420.0, 0.001, 0.12, 0.25, sweep=0.6), 0),
+    )
+
+
+def player_death(rng: random.Random) -> list[float]:
+    """El final de la run: un golpe grande que se hunde y se apaga."""
+    return _mix(
+        (_noise(ms(60), 0.0005, 0.1, 0.9, rng), 0),
+        (_tone(ms(900), 180.0, 0.002, 0.7, 0.9, sweep=0.3), 0),
+        (_lowpass(_noise(ms(800), 0.02, 0.7, 0.5, rng), 600.0), ms(40)),
+    )
+
+
 def main() -> None:
     rng = random.Random(20260802)
     print("Generating placeholder SFX:")
@@ -600,6 +623,10 @@ def main() -> None:
     snare_rng = random.Random(20260824)
     _write("world/snare_caught.wav", snare_caught(snare_rng))
     _write("world/snare_break.wav", snare_break(snare_rng))
+    # Semilla propia, por el mismo motivo que los de arriba.
+    player_rng = random.Random(20260928)
+    _write("player/player_hurt.wav", player_hurt(player_rng))
+    _write("player/player_death.wav", player_death(player_rng))
     print("Done. These are placeholders - replace them in Phase 5.")
 
 

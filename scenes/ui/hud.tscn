@@ -21,8 +21,8 @@
 [ext_resource type="Shader" path="res://assets/shaders/speed_lines.gdshader" id="13_speedlines_shader"]
 
 [sub_resource type="Gradient" id="Grad_vignette"]
-offsets = PackedFloat32Array(0.55, 1)
-colors = PackedColorArray(1, 0.231, 0.329, 0, 1, 0.231, 0.329, 0.42)
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(1, 0.231, 0.329, 0.06, 1, 0.231, 0.329, 0.14, 1, 0.231, 0.329, 0.62)
 
 [sub_resource type="GradientTexture2D" id="Tex_vignette"]
 gradient = SubResource("Grad_vignette")
@@ -489,7 +489,7 @@ mouse_filter = 2
 modulate = Color(1, 1, 1, 0)
 texture = SubResource("Tex_vignette")
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 0
 
 [node name="SnareVignette" type="TextureRect" parent="Root/StateOverlays"]
 anchors_preset = 15
