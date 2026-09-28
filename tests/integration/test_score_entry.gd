@@ -128,6 +128,30 @@ func test_a_known_name_can_be_picked_from_the_list() -> void:
 	assert_eq(String(SaveManager.get_entries()[0].get("name", "")), "IRIS")
 
 
+## Con nombres conocidos, "New name..." tiene que abrir el campo y anotar lo que
+## se escriba. Se rompio porque el item se agregaba con id -1, que para
+## OptionButton significa "usa el indice": la comparacion nunca daba.
+func test_picking_new_name_opens_the_field_and_saves_what_is_typed() -> void:
+	SaveManager.remember_profile("Iris")
+	EventBus.run_finished.emit(700, 90.0, 4, false)
+	await wait_frames(2)
+
+	var profiles: OptionButton = _profiles()
+	var last: int = profiles.item_count - 1
+	profiles.select(last)
+	profiles.item_selected.emit(last)
+	await wait_frames(2)
+
+	assert_true(_name_edit().visible, "elegir 'New name...' tiene que mostrar el campo")
+	_name_edit().text = "Nova"
+	_name_edit().text_changed.emit("Nova")
+	assert_false(_save_button().disabled)
+	_save_button().pressed.emit()
+	await wait_frames(2)
+
+	assert_eq(String(SaveManager.get_entries()[0].get("name", "")), "NOVA")
+
+
 ## El boton apagado es el aviso: el jugador tiene que ver que le falta mientras
 ## escribe, no despues de apretar.
 func test_save_stays_disabled_until_the_name_is_valid() -> void:

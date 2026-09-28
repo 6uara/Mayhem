@@ -15,7 +15,13 @@ signal saved()
 
 ## Ultimo item del selector. Un id y no un indice porque la lista de perfiles
 ## cambia de largo y el "nuevo" siempre es el que esta abajo de todo.
-const NEW_NAME_ID: int = -1
+##
+## No puede ser -1: para `OptionButton.add_item()` un id de -1 significa "usa el
+## indice", asi que el item quedaba con el id de su posicion, la comparacion en
+## `_on_profile_selected()` nunca daba y el campo de texto no aparecia jamas. Los
+## perfiles usan su indice (0..MAX_PROFILES-1) como id, asi que cualquier numero
+## fuera de ese rango sirve.
+const NEW_NAME_ID: int = 9999
 
 @onready var _summary: Label = $Panel/Margin/Layout/Summary
 @onready var _profiles: OptionButton = $Panel/Margin/Layout/Profiles
@@ -83,7 +89,9 @@ func _on_profile_selected(index: int) -> void:
 	_name_edit.visible = is_new
 	if is_new:
 		_name_edit.text = ""
-		_name_edit.grab_focus()
+		# Diferido: el popup del selector se cierra despues de esta señal y le
+		# devuelve el foco al OptionButton, pisando el que se le da al campo.
+		_name_edit.grab_focus.call_deferred()
 	_update_validity()
 
 
