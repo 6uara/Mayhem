@@ -142,6 +142,27 @@ y vuelta al playtest. PLAY guarda, valida y entra a la partida real de MAYHEM en
 esa arena; el menú de pausa muestra **Back to the editor** solamente durante ese
 playtest, y volver no pierde nada porque la arena nunca salió de memoria.
 
+## Visor de enemigos — botón Enemy Viewer (dev) en el menú, o `viewer` en consola
+
+`scenes/main/enemy_viewer.tscn`. Cada arquetipo parado solo sobre una grilla de
+un metro, para juzgar modelos y animaciones sin jugar una oleada. El botón del
+menú solo aparece en builds de debug; la escena también corre suelta con F6.
+
+- **Izquierda:** la lista de arquetipos, leída de `data/enemies/`.
+- **Derecha:** los datos de presentación del arquetipo (modelo, ajuste, cápsula,
+  hitbox, cabeza y los valores de "Model motion") y los controles:
+  caminar en círculo (con velocidad), girar en el lugar, usar habilidad,
+  preparar ataque (windup), espoleta armada (solo si tiene), mostrar hitboxes
+  (rojo: cuerpo que se dispara, ámbar: cabeza, cian: cápsula de movimiento) y
+  los clips propios del modelo, si trae.
+- **Cámara:** arrastrar orbita, la rueda acerca. ESC vuelve al menú.
+
+Es el `Enemy` de partida con su `EnemyData` real, con la IA y la física
+apagadas: lo que se ve acá es lo que se ve jugando. Para ajustar un modelo se
+edita su `.tres` (`model_fit_height`, `model_offset`, `model_yaw_degrees`, el
+grupo "Model motion"), se guarda y se aprieta **Recargar .tres desde disco**:
+relee el archivo salteando la caché de recursos.
+
 ## Capturas de pantalla — `tools/capture_hud.tscn`
 
 Saca una foto de la HUD en combate sin tener que jugar hasta que se den las

@@ -104,6 +104,7 @@ func _register_commands() -> void:
 	_add("balance", "", "Reload the balance resources from disk.", _cmd_balance)
 	_add("shop", "", "Open the shop screen right now.", _cmd_shop)
 	_add("stats", "", "Wave, enemies, currency, fps.", _cmd_stats)
+	_add("viewer", "", "Open the enemy viewer (models and animations).", _cmd_viewer)
 	_add("clear", "", "Clear the console output.", _cmd_clear)
 	_add("quit", "", "Quit the game.", _cmd_quit)
 
@@ -124,6 +125,14 @@ func _cmd_help(args: PackedStringArray) -> String:
 	for name: String in names:
 		lines.append("  %s %s" % [name, _commands[name]["args"]])
 	return "commands:\n" + "\n".join(lines)
+
+
+## Sale de lo que haya - partida, menu - al visor de enemigos. La consola se
+## cierra antes, o su congelamiento quedaria puesto sobre la escena nueva.
+func _cmd_viewer(_args: PackedStringArray) -> String:
+	set_open(false)
+	GameManager.open_scene("res://scenes/main/enemy_viewer.tscn")
+	return "opening enemy viewer"
 
 
 func _cmd_give(args: PackedStringArray) -> String:

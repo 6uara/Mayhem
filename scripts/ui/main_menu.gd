@@ -7,6 +7,8 @@ extends Control
 ## that behaves differently depending on where it was opened from is a bug waiting
 ## to be written, so there is only one of it.
 
+const ENEMY_VIEWER_SCENE_PATH: String = "res://scenes/main/enemy_viewer.tscn"
+
 @onready var _root: Control = $Root
 @onready var _play_button: Button = $Root/Panel/Margin/Layout/PlayButton
 @onready var _create_arena_button: Button = $Root/Panel/Margin/Layout/CreateArenaButton
@@ -39,6 +41,7 @@ func _ready() -> void:
 	_credits.closed.connect(_on_panel_closed)
 	_feedback.closed.connect(_on_panel_closed)
 	_arena_select.arena_chosen.connect(_on_arena_chosen)
+	_add_enemy_viewer_button()
 	_refresh_best()
 	_set_footer()
 	_play_button.grab_focus()
@@ -82,6 +85,21 @@ func _on_arena_chosen(path: String) -> void:
 ## and its own scene, so it goes through GameManager like a run does.
 func _on_create_arena_pressed() -> void:
 	ArenaSession.open_editor()
+
+
+## El visor de enemigos es una herramienta de desarrollo: solo en builds de
+## debug, y armado por codigo para no tocar la escena del menu que ve el jugador.
+func _add_enemy_viewer_button() -> void:
+	if not OS.is_debug_build():
+		return
+	var button := Button.new()
+	button.text = "Enemy Viewer (dev)"
+	button.custom_minimum_size = _create_arena_button.custom_minimum_size
+	button.pressed.connect(func() -> void:
+		GameManager.open_scene(ENEMY_VIEWER_SCENE_PATH))
+	var layout: Node = _create_arena_button.get_parent()
+	layout.add_child(button)
+	layout.move_child(button, _create_arena_button.get_index() + 1)
 
 
 func _on_leaderboard_pressed() -> void:
