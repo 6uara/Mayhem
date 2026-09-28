@@ -48,6 +48,17 @@ signal drop_thrown(utility_id: StringName, landing: Vector3)
 ## que arroja algo por encima de una barrera de dos pisos es lo que se ve, y es
 ## lo que de verdad tendria que pasar.
 @export var launch_height: float = 18.0
+## Cuanto se sube el punto de lanzamiento cada vez que el arco choca, y cuantas
+## veces se intenta. Ver `_clear_origin()`.
+@export var clearance_step: float = 5.0
+@export var clearance_attempts: int = 8
+
+## Tramos en los que se parte el arco para comprobar que nada lo corte.
+const ARC_SAMPLES: int = 24
+## Fraccion final del vuelo que no se revisa: ahi el arco ya esta bajando sobre
+## el punto de aterrizaje, y lo que toque es el piso o lo que haya encima, que es
+## exactamente donde tiene que caer.
+const ARC_LANDING_SHARE: float = 0.12
 
 var _seconds_left: float = 0.0
 var _is_running: bool = false
@@ -89,8 +100,8 @@ func throw_now() -> CrowdDropPickup:
 	var data: UtilityData = table.pick(_rng, _has_room_for.bind(player))
 	if data == null:
 		return null
-	var seat: Vector3 = _pick_origin(player)
 	var landing: Vector3 = _pick_landing(player)
+	var seat: Vector3 = _clear_origin(_pick_origin(player), landing)
 
 	var pickup := ObjectPool.acquire(drop_scene) as CrowdDropPickup
 	if pickup == null:
@@ -148,6 +159,50 @@ func _pick_origin(player: Player) -> Vector3:
 	var floor_y: float = _arena_bounds().position.y
 	seat.y = maxf(seat.y, floor_y + launch_height)
 	return seat
+
+
+## Sube el origen hasta que el arco llegue limpio al punto de aterrizaje.
+##
+## `launch_height` alcanzaba para el muro de 14m de los shells viejos, pero el
+## coliseo levanta el perimetro a 30m: cada tiro se estrellaba contra la cara de
+## afuera y quedaba en el foso, y desde la arena se leia como que el publico no
+## tiraba nada. Una altura fija siempre va a quedar corta contra el proximo
+## venue, asi que en vez de adivinar el muro se vuela el arco contra el mundo y
+## se sube hasta que pase. El techo cuenta igual: si subir lo hace chocar arriba,
+## el intento tambien falla y se sigue buscando.
+##
+## Sin un arco limpio devuelve el ultimo intento. Un gadget en el foso es un bug,
+## pero no tirar nunca es peor, y el ultimo intento es el que mas chances tenia.
+func _clear_origin(seat: Vector3, landing: Vector3) -> Vector3:
+	var origin: Vector3 = seat
+	for _attempt: int in maxi(clearance_attempts, 1):
+		if _is_arc_clear(origin, landing):
+			return origin
+		origin.y += clearance_step
+	return origin
+
+
+## Recorre el arco que el pickup va a volar, en tramos, contra lo mismo contra lo
+## que el pickup resuelve su vuelo.
+func _is_arc_clear(origin: Vector3, landing: Vector3) -> bool:
+	if not is_inside_tree():
+		return true
+	var space: PhysicsDirectSpaceState3D = get_viewport().get_world_3d().direct_space_state
+	if space == null:
+		return true
+	var velocity: Vector3 = CrowdDropPickup.arc_to(origin, landing, flight_time)
+	var gravity: float = CrowdDropPickup.get_gravity()
+	var checked: float = flight_time * (1.0 - ARC_LANDING_SHARE)
+	var previous: Vector3 = origin
+	for index: int in range(1, ARC_SAMPLES + 1):
+		var t: float = checked * float(index) / float(ARC_SAMPLES)
+		var point: Vector3 = origin + velocity * t + Vector3.DOWN * (0.5 * gravity * t * t)
+		# WORLD, que es el `hit_mask` de crowd_drop_pickup.tscn.
+		var query := PhysicsRayQueryParameters3D.create(previous, point, PhysicsLayers.WORLD)
+		if not space.intersect_ray(query).is_empty():
+			return false
+		previous = point
+	return true
 
 
 ## Un punto en la banda de distancia alrededor del jugador, recortado contra la

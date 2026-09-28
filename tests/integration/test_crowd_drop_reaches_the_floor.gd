@@ -17,13 +17,13 @@ const TABLE_PATH: String = "res://data/crowd_drop_table.tres"
 ## Copia de lo que arman los dos shells: media arena, y el muro justo en el borde.
 const ARENA_HALF: float = 30.0
 const WALL_HEIGHT: float = 14.0
+## El perimetro del coliseo (`ArenaColiseum.wall_height`), que es la arena por
+## defecto. Con este muro el `launch_height` fijo de 18m quedaba corto y todos
+## los gadgets terminaban en el foso.
+const COLISEUM_WALL_HEIGHT: float = 30.0
 const WALL_THICKNESS: float = 2.0
 
 var _floor: StaticBody3D
-
-
-func before_each() -> void:
-	_build_venue()
 
 
 func after_each() -> void:
@@ -32,7 +32,7 @@ func after_each() -> void:
 
 ## El piso de la arena y los cuatro muros del perimetro, en la capa WORLD, que es
 ## contra lo que el gadget resuelve su arco.
-func _build_venue() -> void:
+func _build_venue(wall_height: float = WALL_HEIGHT) -> void:
 	_floor = _box(Vector3(ARENA_HALF * 2.0, 1.0, ARENA_HALF * 2.0), Vector3(0.0, -0.5, 0.0))
 	var offsets: Array[Vector3] = [
 		Vector3(0.0, 0.0, -ARENA_HALF - WALL_THICKNESS * 0.5),
@@ -41,10 +41,10 @@ func _build_venue() -> void:
 		Vector3(ARENA_HALF + WALL_THICKNESS * 0.5, 0.0, 0.0),
 	]
 	for offset: Vector3 in offsets:
-		var size := Vector3(ARENA_HALF * 2.0, WALL_HEIGHT, WALL_THICKNESS)
+		var size := Vector3(ARENA_HALF * 2.0, wall_height, WALL_THICKNESS)
 		if is_zero_approx(offset.z):
-			size = Vector3(WALL_THICKNESS, WALL_HEIGHT, ARENA_HALF * 2.0)
-		_box(size, offset + Vector3(0.0, WALL_HEIGHT * 0.5, 0.0))
+			size = Vector3(WALL_THICKNESS, wall_height, ARENA_HALF * 2.0)
+		_box(size, offset + Vector3(0.0, wall_height * 0.5, 0.0))
 
 
 func _box(size: Vector3, position: Vector3) -> StaticBody3D:
@@ -79,6 +79,16 @@ func _seat_crowd() -> CrowdStands:
 
 
 func test_the_gadget_clears_the_barrier_and_lands_inside() -> void:
+	_build_venue()
+	await _assert_drops_land_inside()
+
+
+func test_the_gadget_clears_the_coliseum_wall_too() -> void:
+	_build_venue(COLISEUM_WALL_HEIGHT)
+	await _assert_drops_land_inside()
+
+
+func _assert_drops_land_inside() -> void:
 	var player: Player = add_child_autofree(load(PLAYER_SCENE).instantiate()) as Player
 	player.global_position = Vector3(0.0, 1.0, 0.0)
 	_seat_crowd()
