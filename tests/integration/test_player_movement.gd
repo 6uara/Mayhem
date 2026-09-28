@@ -22,7 +22,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	# Input is global state: a key left down leaks into the next test.
-	for action: String in ["jump", "crouch_slide", "move_forward"]:
+	for action: String in ["jump", "crouch_slide", "move_forward", "move_right"]:
 		if Input.is_action_pressed(action):
 			Input.action_release(action)
 
@@ -123,6 +123,63 @@ func test_landing_costs_no_horizontal_speed() -> void:
 	var after: float = Vector2(_player.velocity.x, _player.velocity.z).length()
 	assert_gt(after, before * 0.9,
 		"a landing must not eat momentum (%0.1f -> %0.1f)" % [before, after])
+
+
+# ------------------------------------------------------------------ bunnyhop
+
+## Air-strafe: pedir de costado a la velocidad, en el aire, la alarga. Es la
+## mitad de la tecnica del bhop; la otra es no perderla al tocar el piso.
+##
+## A nivel componente porque la tecnica necesita el mouse: girando, el pedido
+## sigue de costado frame tras frame. Aca se lo mantiene perpendicular a mano,
+## que es lo que hace un giro perfecto.
+func test_strafing_sideways_in_the_air_gains_speed() -> void:
+	var movement: MovementComponent = _player.movement
+	var horizontal := Vector3(0.0, 0.0, -10.0)
+	for _i: int in 30:
+		var sideways: Vector3 = horizontal.normalized().cross(Vector3.UP)
+		horizontal = movement._air_strafe(horizontal, sideways, 1.0 / 60.0)
+
+	assert_gt(horizontal.length(), 10.5,
+		"el strafe de costado tiene que sumar velocidad (%0.2f)" % horizontal.length())
+
+
+func test_air_strafe_never_builds_past_the_bhop_cap() -> void:
+	var movement: MovementComponent = _player.movement
+	var horizontal := Vector3(0.0, 0.0, -(movement.bhop_max_speed - 0.1))
+	for _i: int in 120:
+		var sideways: Vector3 = horizontal.normalized().cross(Vector3.UP)
+		horizontal = movement._air_strafe(horizontal, sideways, 1.0 / 60.0)
+
+	assert_lt(horizontal.length(), movement.bhop_max_speed + 0.01)
+
+
+## Pedir hacia donde ya se va no acelera: si lo hiciera, mantener W en el aire
+## seria un acelerador gratis y el strafe dejaria de ser una tecnica.
+func test_holding_forward_in_the_air_adds_nothing() -> void:
+	_player.global_position = Vector3(0, FLOOR_Y + 30.0, 0)
+	await wait_physics_frames(2)
+	_player.velocity = Vector3(0.0, 0.0, -10.0)
+	Input.action_press("move_forward")
+	await wait_physics_frames(20)
+	Input.action_release("move_forward")
+
+	var speed: float = Vector2(_player.velocity.x, _player.velocity.z).length()
+	assert_almost_eq(speed, 10.0, 0.05, "ir derecho no gana velocidad")
+
+
+## Un salto en el frame del aterrizaje sale antes que la friccion del piso.
+func test_jumping_on_touchdown_keeps_all_the_speed() -> void:
+	await wait_physics_frames(4)
+	assert_true(_player.is_on_floor(), "precondition: grounded")
+	_player.velocity = Vector3(12.0, 0.0, 0.0)
+	Input.action_press("jump")
+	await wait_physics_frames(2)
+	Input.action_release("jump")
+
+	assert_gt(_player.velocity.y, 0.0, "precondition: salto")
+	var speed: float = Vector2(_player.velocity.x, _player.velocity.z).length()
+	assert_gt(speed, 11.9, "el salto no puede pagar un frame de friccion (%0.2f)" % speed)
 
 
 # -------------------------------------------------------------- responsiveness

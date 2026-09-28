@@ -60,6 +60,26 @@ const SNARE_GRACE: float = 0.9
 ## A jump pressed this long before touchdown is honoured on landing.
 @export var jump_buffer_time: float = 0.12
 
+@export_group("Bunnyhop")
+## Air-strafe al estilo Source/Quake: con A/D apretado y el mouse girando hacia
+## el mismo lado, el jugador gana velocidad en el aire. Es la aceleracion de
+## `PM_AirAccelerate`: solo suma en la componente de la velocidad que va hacia
+## donde se pide, y solo hasta `air_strafe_wish_speed` en esa componente. Ir
+## derecho no gana nada; ir perpendicular a la velocidad, siempre un poco - y
+## girando, ese poco se acumula salto tras salto.
+@export var air_strafe_enabled: bool = true
+## Tope de la velocidad *proyectada* sobre la direccion pedida. Chico a
+## proposito (Quake usa ~30 de 320): grande, el aire acelera como el piso y deja
+## de ser una tecnica.
+@export var air_strafe_wish_speed: float = 0.8
+## Cuanto se puede sumar por segundo, por m/s de velocidad de carrera. Es el
+## `sv_airaccelerate` de Quake: de costado casi siempre manda el tope de arriba,
+## y lo que controla de verdad es cuanto frena pedir hacia atras.
+@export var air_strafe_accel: float = 10.0
+## Velocidad horizontal maxima que el air-strafe puede construir. No frena nada
+## que venga de otro lado (dash, pad, gancho): solo deja de sumar.
+@export var bhop_max_speed: float = 24.0
+
 @export_group("Slide")
 ## One-time boost when entering a slide from a run. Not applied on bhop re-entry,
 ## otherwise crouch-spam would be a free accelerator.
@@ -254,6 +274,14 @@ func break_snare() -> void:
 
 func _tick_grounded(wish_direction: Vector3, delta: float) -> void:
 	_apply_gravity(delta)
+	# El salto va antes que la friccion: es lo que hace al bhop. Un salto en el
+	# frame del aterrizaje (sostenido o del buffer) sale con toda la velocidad que
+	# se traia; pagar la friccion primero le cobraba un frame de piso a cada salto,
+	# y a 60 m/s^2 eso es un metro por segundo por salto - el encadenado nunca
+	# podia ganar.
+	if _consume_jump():
+		_jump()
+		return
 	var horizontal: Vector3 = _horizontal()
 	var speed: float = get_move_speed()
 	if wish_direction != Vector3.ZERO:
@@ -261,9 +289,6 @@ func _tick_grounded(wish_direction: Vector3, delta: float) -> void:
 	else:
 		horizontal = horizontal.move_toward(Vector3.ZERO, friction * delta)
 	_set_horizontal(horizontal)
-
-	if _consume_jump():
-		_jump()
 
 
 func _tick_airborne(wish_direction: Vector3, delta: float) -> void:
@@ -283,6 +308,10 @@ func _tick_airborne(wish_direction: Vector3, delta: float) -> void:
 	# Steering only - no drag. Whatever speed was earned is kept until the floor
 	# or a wall takes it away.
 	if wish_direction != Vector3.ZERO:
+		# Primero el strafe: lo que gane pasa a ser la "velocidad actual" que el
+		# tope del control de abajo respeta, asi que el control nunca lo devuelve.
+		if air_strafe_enabled:
+			_set_horizontal(_air_strafe(_horizontal(), wish_direction, delta))
 		var horizontal: Vector3 = _horizontal()
 		var steering: float = _stat(StatsComponent.AIR_CONTROL, air_control)
 		var target: Vector3 = horizontal + wish_direction * steering * delta
@@ -448,6 +477,29 @@ func _post_move(fall_speed: float, delta: float) -> void:
 		state = State.AIRBORNE
 
 	_was_on_floor = on_floor
+
+
+## La aceleracion aerea de Quake/Source sobre `horizontal`.
+##
+## Suma sobre la direccion pedida solo lo que falte para que la proyeccion de la
+## velocidad sobre ella llegue a `air_strafe_wish_speed`. Pidiendo hacia donde ya
+## se va, la proyeccion ya esta arriba del tope y no suma nada; pidiendo de
+## costado la proyeccion es casi cero y suma el tope entero, que de costado
+## alarga el vector. Esa es toda la tecnica: girar el mouse con el strafe para
+## que la direccion pedida siga siendo de costado.
+func _air_strafe(horizontal: Vector3, wish_direction: Vector3, delta: float) -> Vector3:
+	var current: float = horizontal.dot(wish_direction)
+	var add: float = air_strafe_wish_speed - current
+	if add <= 0.0:
+		return horizontal
+	var accel: float = minf(air_strafe_accel * base_move_speed * delta, add)
+	var result: Vector3 = horizontal + wish_direction * accel
+	# El tope solo corta lo que el strafe sumo: una velocidad que ya venia por
+	# encima (dash, pad) se conserva, pero no crece.
+	var ceiling: float = maxf(horizontal.length(), bhop_max_speed)
+	if result.length() > ceiling:
+		result = result.normalized() * ceiling
+	return result
 
 
 ## A wall at chest height with clear space at head height is a mantleable ledge.

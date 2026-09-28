@@ -33,10 +33,16 @@ chaining is intentional.
 
 ### Ground / Air
 
-- `_tick_grounded()` — accelerate toward `wish_direction * get_move_speed()`
-  (`acceleration`), or decelerate to zero (`friction`) with no input.
-- `_tick_airborne()` — **steering only, no drag**. Air control (`air_control`)
-  can redirect velocity but never accelerate past current speed. Mantling
+- `_tick_grounded()` — a pending jump fires **before** friction (so a jump on
+  the touchdown frame keeps all its speed — the bhop), otherwise accelerate
+  toward `wish_direction * get_move_speed()` (`acceleration`), or decelerate to
+  zero (`friction`) with no input.
+- `_tick_airborne()` — **no drag**. First `_air_strafe()`, Source/Quake-style
+  air acceleration: it only adds along the wish direction until the velocity's
+  projection on it reaches `air_strafe_wish_speed`, so strafing sideways while
+  turning the mouse builds speed, up to `bhop_max_speed`, and holding forward
+  builds nothing. Then air control (`air_control`) redirects velocity but never
+  accelerates past current speed. Mantling
   (`_try_mantle()`) triggers automatically while airborne, moving toward a wall,
   holding jump: a chest-height ray finds the wall, a head-height ray confirms
   clearance, and finding both boosts `velocity.y` — geometry snags that would
