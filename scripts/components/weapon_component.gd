@@ -70,6 +70,10 @@ signal ads_changed(is_ads: bool)
 ## que tampoco deja residuo.
 @export var reload_dip: float = 0.05
 
+## Por preload y no por class_name: asi no depende de que la cache de clases
+## globales ya se haya regenerado (CLI de tests en una copia recien clonada).
+const ARMS_SCRIPT := preload("res://scripts/components/viewmodel_arms.gd")
+
 var is_reloading: bool = false
 var is_ads: bool = false
 ## 0 = hipfire, 1 = fully aimed. Drives FOV and spread interpolation.
@@ -95,6 +99,8 @@ var _view_rest_position: Vector3 = Vector3.ZERO
 var _muzzle_marker: Node3D
 var _view_kick_offset: Vector3 = Vector3.ZERO
 var _view_kick_rot: float = 0.0
+## Los brazos placeholder, hermanos de `_view` y no hijos. Ver ViewmodelArms.
+var _arms: Node3D
 
 
 func _ready() -> void:
@@ -531,6 +537,11 @@ func _spawn_viewmodel() -> void:
 	model.rotation_degrees = data.viewmodel_rotation_degrees
 	model.scale = Vector3.ONE * data.viewmodel_scale
 
+	# Solo en el rig: sin su propio mundo, unos brazos a 35cm del ojo se meterian
+	# en cada pared igual que se metia el arma.
+	if viewmodel_parent != null:
+		_spawn_arms(host, model)
+
 	# The pivot no longer lives under this node when a rig is in play, so it cannot
 	# inherit the visibility WeaponHolder toggles here.
 	visibility_changed.connect(_sync_viewmodel_visibility)
@@ -538,9 +549,20 @@ func _spawn_viewmodel() -> void:
 	_align_muzzle_to_barrel(model)
 
 
+func _spawn_arms(host: Node3D, model: Node3D) -> void:
+	var arms := ARMS_SCRIPT.new()
+	arms.name = &"ViewArms"
+	host.add_child(arms)
+	arms.position = _view_rest_position
+	arms.build(_model_bounds(model), _view_rest_position)
+	_arms = arms
+
+
 func _sync_viewmodel_visibility() -> void:
 	if _view != null:
 		_view.visible = visible
+	if _arms != null:
+		_arms.visible = visible
 
 
 ## Puts the muzzle node at the model's own barrel tip.
@@ -611,6 +633,10 @@ func _tick_viewmodel(delta: float) -> void:
 	var reload_progress: float = get_reload_progress()
 	_view.position = _view_rest_position + _view_kick_offset 		+ Vector3.DOWN * (reload_dip * sin(PI * reload_progress))
 	_view.rotation_degrees.x = _view_kick_rot + _reload_spin(reload_progress)
+	# Los brazos siguen el kick y la bajada, pero no la vuelta de recarga.
+	if _arms != null:
+		_arms.position = _view.position
+		_arms.rotation_degrees.x = _view_kick_rot
 
 
 ## El giro de recarga, derivado del progreso en vez de animado por un Tween.
