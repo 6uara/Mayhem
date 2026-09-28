@@ -23,7 +23,9 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_end_panel.visible = false
 	_banner.text = ""
-	EventBus.wave_started.connect(_on_wave_started)
+	# El arranque de oleada no pasa por aca: lo anuncia la HUD (HUD.announce),
+	# con el tratamiento elite incluido. Los dos a la vez eran el mismo "WAVE N"
+	# dos veces en pantalla.
 	EventBus.wave_completed.connect(_on_wave_completed)
 	# El final de la run entra por una sola señal, ganada o perdida. Escuchar
 	# `match_completed` y `player_died` por separado dejaba el orden entre el
@@ -48,11 +50,6 @@ func _show_banner(text: String) -> void:
 	_banner.text = text
 	_banner_timer = BANNER_TIME
 	_banner.modulate.a = 1.0
-
-
-func _on_wave_started(wave_index: int, config: WaveData) -> void:
-	var suffix: String = "  -  ELITE" if config != null and config.is_elite_wave else ""
-	_show_banner("WAVE %d%s" % [wave_index + 1, suffix])
 
 
 func _on_wave_completed(wave_index: int, duration: float, damage_taken: float) -> void:
