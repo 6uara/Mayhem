@@ -6,6 +6,7 @@
 [ext_resource type="AudioStream" uid="uid://kf0mt03qndd8" path="res://assets/audio/sfx/enemies/healer_windup.wav" id="4_windup"]
 [ext_resource type="AudioStream" uid="uid://chouo0wv8vcp3" path="res://assets/audio/sfx/enemies/healer_pulse.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://b8l4pk0c7khek" path="res://assets/audio/sfx/enemies/healer_death.wav" id="6_death"]
+[ext_resource type="PackedScene" uid="uid://dnlhmxmymwi5u" path="res://assets/models/enemies/Healer/Healer.blend" id="7_model"]
 
 [sub_resource type="CapsuleMesh" id="Mesh_healer"]
 radius = 0.34
@@ -32,10 +33,19 @@ has_halo = true
 halo_height = 2.55
 has_tether = true
 mesh = SubResource("Mesh_healer")
+model_scene = ExtResource("7_model")
+model_fit_height = 2.0
 body_color = Color(0.706, 0.361, 1, 1)
 collision_height = 2.0
 collision_radius = 0.36
+hitbox_radius = 0.45
 head_offset = 1.8
+model_hover_height = 0.04
+model_bob_height = 0.04
+model_bob_rate = 0.5
+model_lean_degrees = 8.0
+model_breathe = 0.025
+model_cast_pop = 0.12
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")

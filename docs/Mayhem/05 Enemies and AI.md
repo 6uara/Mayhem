@@ -40,6 +40,23 @@ exists. The Ranger got away with it, the Elite and the Summoner sat low, and
 anything shorter than 1.8m floated. Archetypes with a `model_scene` never
 noticed either way, since the primitive is hidden under a model.
 
+## Models and model motion
+
+`model_fit_height` (when > 0) replaces `model_scale`: `Enemy._measure_model()`
+reads the model's mesh bounds once, and `_place_model()` scales it to that
+height, puts its base on the floor and centres it on the body. `model_offset`
+still adds on top for fine tuning.
+
+`EnemyModelMotion` (`scripts/components/enemy_model_motion.gd`) animates the
+model with no clips, driven by the "Model motion" group of `EnemyData`: hover,
+bob, spin, lean into movement, breathing, and a pop on `Enemy.ability_used`
+(the Healer emits it when it heals). With the fuse armed everything speeds up
+and shakes. If the model ships an `AnimationPlayer`, its clips are picked by
+name (idle/hover, walk/run/fly, cast/heal/attack) and played from the same
+state. It is cosmetic only: the body, capsule and hitboxes never move, so a
+floating archetype (the Bomber) still walks the navmesh, and its hitboxes
+(`head_offset`) are authored for where the model is drawn.
+
 ## Movement fields — a contract, not taste
 
 ```gdscript

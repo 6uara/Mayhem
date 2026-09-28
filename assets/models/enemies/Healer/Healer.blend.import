@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://1n1pf4ehrn6o"
-path="res://.godot/imported/Bomber.blend-6f7fc6e0a588b85b8e8a3c02849e7774.scn"
+uid="uid://dnlhmxmymwi5u"
+path="res://.godot/imported/Healer.blend-89b3166035af3934667d0ee64ce990f5.scn"
 
 [deps]
 
-source_file="res://assets/models/enemies/Bomber/Bomber.blend"
-dest_files=["res://.godot/imported/Bomber.blend-6f7fc6e0a588b85b8e8a3c02849e7774.scn"]
+source_file="res://assets/models/enemies/Healer/Healer.blend"
+dest_files=["res://.godot/imported/Healer.blend-89b3166035af3934667d0ee64ce990f5.scn"]
 
 [params]
 

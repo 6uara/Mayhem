@@ -92,6 +92,44 @@ func test_a_pooled_body_swaps_its_model_with_its_archetype() -> void:
 	assert_true(enemy.mesh_instance.visible, "and the capsule came back")
 
 
+## Un modelo nuevo llega en sus propias unidades. Con `model_fit_height` se lo
+## ajusta a esa altura midiendo la malla, apoyado en el piso.
+func test_fit_height_sizes_the_model_from_its_mesh() -> void:
+	var enemy: Enemy = await _spawn("healer")
+	assert_gt(enemy.data.model_fit_height, 0.0, "precondition: el healer se ajusta por altura")
+	var bounds: AABB = enemy._model_bounds
+	assert_gt(bounds.size.y, 0.0, "la malla se pudo medir")
+	var height: float = bounds.size.y * enemy._model.scale.y
+	assert_almost_eq(height, enemy.data.model_fit_height, 0.15,
+		"el modelo mide lo que pide el arquetipo (%0.2f)" % height)
+
+
+## El Bomber flota: su modelo no toca el piso en ningun punto del bob, pero su
+## cuerpo sigue en el piso, que es lo que camina el navmesh.
+func test_the_bomber_floats_above_the_floor() -> void:
+	var enemy: Enemy = await _spawn("bomber")
+	assert_not_null(enemy._motion, "el bomber tiene animacion procedural")
+	var lowest: float = INF
+	for _i: int in 90:
+		await wait_frames(1)
+		var bottom: float = enemy._model.position.y \
+			+ enemy._model_bounds.position.y * enemy._model.scale.y
+		lowest = minf(lowest, bottom)
+	assert_gt(lowest, 0.2, "la base del modelo nunca baja al piso (%0.2f)" % lowest)
+	assert_almost_eq(enemy.global_position.y, 0.0, 0.3, "el cuerpo sigue en el piso")
+
+
+## Curar se ve en el cuerpo del Healer, no solo en los haces.
+func test_the_healer_pops_when_it_heals() -> void:
+	var enemy: Enemy = await _spawn("healer")
+	assert_not_null(enemy._motion)
+	await wait_frames(2)
+	var rest_scale: float = enemy._model.scale.x
+	enemy.ability_used.emit()
+	await wait_seconds(0.2)
+	assert_gt(enemy._model.scale.x, rest_scale * 1.03, "se infla al curar")
+
+
 ## Hit flashes and wind-ups drive one knob now, whichever way the enemy is drawn.
 ## Both paths have to survive being asked to light up.
 func test_lighting_up_works_with_a_model_and_without_one() -> void:

@@ -7,6 +7,9 @@ extends CharacterBody3D
 ## (CLAUDE.md 5.3). The behavior trees describe engagement, not searching.
 
 signal staggered()
+## Uso su habilidad: el Healer curo a alguien. Lo escucha la presentacion
+## (`EnemyModelMotion`) para animar el momento; el efecto en si ya ocurrio.
+signal ability_used()
 
 ## How long an enemy may be commanded to move while covering no ground before it
 ## treats itself as obstructed.
@@ -14,6 +17,9 @@ const STUCK_TIME: float = 0.3
 ## Metres per second of real progress below which it is not actually moving.
 const STUCK_SPEED: float = 0.9
 const JUMP_COOLDOWN: float = 0.9
+## Por preload y no por class_name: no depende de que la cache de clases globales
+## ya se haya regenerado.
+const MODEL_MOTION_SCRIPT := preload("res://scripts/components/enemy_model_motion.gd")
 ## A jump that ends this close to where it started got the enemy nowhere.
 ##
 ## The bug this measures: an enemy wedged against a lip or a railing hops, lands
@@ -180,6 +186,12 @@ var _glow_material: StandardMaterial3D
 ## Walks the model's legs when it has any. Null for an archetype still wearing
 ## its grey-box capsule, which has nothing to walk with.
 var _gait: LeggedGait
+## Flota, oscila, se inclina: la animacion procedural del modelo, cuando el
+## arquetipo pide alguna o el modelo trae clips. Ver EnemyModelMotion.
+var _motion: MODEL_MOTION_SCRIPT
+## Caja de las mallas del modelo en su propio espacio, sin su transform. La mide
+## `_apply_model()` una vez por modelo y la usa `model_fit_height`.
+var _model_bounds: AABB = AABB()
 var _flash_timer: float = 0.0
 var _stagger_timer: float = 0.0
 var _attack_cooldown_left: float = 0.0
@@ -1099,6 +1111,7 @@ func heal_nearby_allies() -> int:
 		return a.health.get_health_fraction() < b.health.get_health_fraction())
 	if healer_tether != null:
 		healer_tether.pulse(patients)
+	ability_used.emit()
 	return patients.size()
 
 
@@ -2047,7 +2060,12 @@ func _apply_model() -> void:
 	_model = null
 	_model_meshes.clear()
 	_model_source = data.model_scene
+	_model_bounds = AABB()
 	if _model_source == null:
+		# Sin modelo no hay nada que caminar ni animar, y los dos quedarian
+		# apuntando al que se acaba de liberar.
+		_attach_gait()
+		_attach_motion()
 		return
 	_model = _model_source.instantiate() as Node3D
 	if _model == null:
@@ -2056,8 +2074,10 @@ func _apply_model() -> void:
 	add_child(_model)
 	_prune_authoring_nodes(_model)
 	_collect_model_meshes(_model)
+	_model_bounds = _measure_model(_model)
 	_place_model()
 	_attach_gait()
+	_attach_motion()
 
 
 ## Throws away what the modelling program packed alongside the model.
@@ -2092,12 +2112,59 @@ func _attach_gait() -> void:
 	gait.queue_free()
 
 
+## Anima el modelo si el arquetipo lo pide o el modelo trae clips. Mismo criterio
+## que el gait: si no hay nada que hacer, el nodo no se queda.
+func _attach_motion() -> void:
+	if _motion != null:
+		_motion.queue_free()
+		_motion = null
+	if _model == null:
+		return
+	var motion := MODEL_MOTION_SCRIPT.new()
+	add_child(motion)
+	if motion.setup(_model, self):
+		_motion = motion
+		return
+	motion.queue_free()
+
+
 func _place_model() -> void:
 	if _model == null:
 		return
-	_model.position = data.model_offset
-	_model.scale = Vector3.ONE * data.model_scale
-	_model.rotation = Vector3(0.0, deg_to_rad(data.model_yaw_degrees), 0.0)
+	var yaw := Basis(Vector3.UP, deg_to_rad(data.model_yaw_degrees))
+	var scale_factor: float = data.model_scale
+	var fit_offset := Vector3.ZERO
+	# Ajuste por altura: escala a `model_fit_height`, apoya la base en el piso y
+	# centra la malla sobre el cuerpo. El centrado se gira con el yaw, porque la
+	# caja se midio antes de girar el modelo.
+	if data.model_fit_height > 0.0 and _model_bounds.size.y > 0.0001:
+		scale_factor = data.model_fit_height / _model_bounds.size.y
+		var centre: Vector3 = _model_bounds.get_center()
+		fit_offset = yaw * Vector3(-centre.x, -_model_bounds.position.y, -centre.z) \
+			* scale_factor
+	_model.transform = Transform3D(yaw.scaled(Vector3.ONE * scale_factor),
+		data.model_offset + fit_offset)
+	if _motion != null:
+		_motion.capture_rest()
+
+
+## La caja de todas las mallas del modelo, en el espacio del modelo sin su propio
+## transform. Mismo recorrido que `WeaponComponent._model_bounds()`.
+func _measure_model(model: Node3D) -> AABB:
+	var out := AABB()
+	var found: bool = false
+	for mesh_node: MeshInstance3D in _model_meshes:
+		if mesh_node.mesh == null:
+			continue
+		var relative := Transform3D.IDENTITY
+		var node: Node3D = mesh_node
+		while node != null and node != model:
+			relative = node.transform * relative
+			node = node.get_parent() as Node3D
+		var local: AABB = relative * mesh_node.mesh.get_aabb()
+		out = local if not found else out.merge(local)
+		found = true
+	return out if found else AABB()
 
 
 ## An imported model brings its own materials, so the hit flash cannot be an

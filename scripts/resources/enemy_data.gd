@@ -209,6 +209,14 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL,
 ## this was turned around. Belongs to the archetype rather than to the .fbx
 ## import so it is visible next to the rest of the placement.
 @export_range(-180.0, 180.0, 1.0) var model_yaw_degrees: float = 0.0
+## Alto en metros al que se ajusta el modelo, midiendo su malla. 0 lo apaga y
+## manda `model_scale`.
+##
+## Existe porque un modelo nuevo llega en las unidades en que se autoro, y
+## adivinar la escala a mano es el paso que mas se equivoca. Con esto el modelo se
+## escala a este alto, se apoya con la base en el piso y se centra sobre el
+## cuerpo; `model_offset` sigue sumando encima, para el ajuste fino.
+@export var model_fit_height: float = 0.0
 @export var body_color: Color = Color(0.6, 0.62, 0.66)
 @export var body_scale: float = 1.0
 ## Capsule collision, kept in sync with the mesh by hand while grey-boxing.
@@ -228,6 +236,29 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL,
 @export var hitbox_radius: float = 0.0
 @export var head_offset: float = 1.62
 @export var head_radius: float = 0.25
+
+@export_group("Model motion")
+## Animacion procedural del modelo, ver `EnemyModelMotion`. Todo en cero es un
+## modelo quieto, que es lo que tenia cualquier arquetipo antes de esto.
+##
+## Es cosmetico, igual que el resto de la presentacion: nada de esto mueve el
+## cuerpo, la capsula ni las hitboxes. Un arquetipo que flota a la vista sigue
+## caminando por el navmesh, y sus hitboxes se autoran para donde se lo ve.
+##
+## Metros que el modelo flota sobre el piso.
+@export var model_hover_height: float = 0.0
+## Cuanto sube y baja al flotar, y cuantas veces por segundo.
+@export var model_bob_height: float = 0.0
+@export var model_bob_rate: float = 0.6
+## Giro continuo sobre su eje vertical. Para lo que no tiene frente, como una bomba.
+@export var model_spin_degrees_per_second: float = 0.0
+## Cuanto se inclina hacia donde avanza, a velocidad de carrera.
+@export var model_lean_degrees: float = 0.0
+## Respiracion: cuanto se estira en alto, en fraccion, en reposo.
+@export var model_breathe: float = 0.0
+## Cuanto se infla, en fraccion, cuando usa su habilidad (la curacion del Healer,
+## el disparo de quien dispare).
+@export var model_cast_pop: float = 0.0
 
 @export_group("Audio")
 ## Each archetype must be identifiable by sound alone (CLAUDE.md 6).
