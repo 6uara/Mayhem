@@ -9,7 +9,7 @@ ella en la misma sesion. Reemplaza como "estado actual" a
 [BACKLOG_ESTADO.md](BACKLOG_ESTADO.md), que quedo del 2026-08-25 y no conoce el
 coliseo, el publico ni los modelos nuevos.
 
-Suite al cerrar: **1028 tests**, todos en verde salvo lo que dice §4.
+Suite al cerrar: **1028 tests, 1028 en verde** (`tools/run_tests.ps1`, Godot 4.7.2).
 
 ---
 
@@ -34,6 +34,7 @@ Suite al cerrar: **1028 tests**, todos en verde salvo lo que dice §4.
 | P3-6 | `tests/settings_guard.gd`: los tests de settings restauran valores, bindings y el `settings.cfg` | `e4c981a` |
 | P4 | `RunLogger`: un JSON por run en `user://runs/` (por ola: duracion vs par, daño, kills por tipo, headshots; compras, disparos, ola de muerte). La pantalla de feedback nombra la carpeta | `ddc48b0`, `2348408` |
 | — | Dos tests rotos: el de muerte en `test_match_flow` (corria sin spawner) y una carrera de frames en `test_scene_transition` | `b2bb4e8`, `6122e61` |
+| — | Los gadgets del publico podian quedar apoyados en el borde del muro del coliseo (flaky de `test_crowd_drop_reaches_the_floor`) | `0535134` |
 
 ## 2. Resuelto sin tocar nada
 
