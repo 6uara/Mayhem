@@ -11,7 +11,7 @@ func before_each() -> void:
 	# Frames de proceso y no de fisica: el warm-up del shader deja el rect visible
 	# un process_frame, y un frame de fisica puede terminar antes que ese - el
 	# test de "empieza escondido" fallaba segun como cayeran los dos relojes.
-	await wait_frames(2)
+	await wait_process_frames(2)
 
 
 func test_starts_hidden() -> void:
