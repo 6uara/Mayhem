@@ -1,9 +1,17 @@
-[gd_resource type="Environment" load_steps=4 format=3]
+[gd_resource type="Environment" format=3 uid="uid://kb8eamfrnedd"]
 
-[ext_resource type="Shader" path="res://assets/shaders/night_sky.gdshader" id="1_sky"]
+[ext_resource type="Shader" uid="uid://c33wtr2qwk6rg" path="res://assets/shaders/night_sky.gdshader" id="1_sky"]
 
 [sub_resource type="ShaderMaterial" id="Mat_sky"]
 shader = ExtResource("1_sky")
+shader_parameter/zenith_color = Color(0.012, 0.016, 0.035, 1)
+shader_parameter/horizon_color = Color(0.09, 0.05, 0.14, 1)
+shader_parameter/glow_color = Color(0.55, 0.18, 0.42, 1)
+shader_parameter/glow_falloff = 18.0
+shader_parameter/glow_strength = 0.9
+shader_parameter/star_density = 0.16
+shader_parameter/star_brightness = 1.4
+shader_parameter/star_twinkle = 0.35
 
 [sub_resource type="Sky" id="Sky_night"]
 sky_material = SubResource("Mat_sky")
@@ -19,7 +27,6 @@ tonemap_mode = 3
 tonemap_white = 2.0
 glow_enabled = true
 glow_intensity = 1.1
-glow_strength = 1.0
 glow_bloom = 0.08
 glow_hdr_threshold = 0.95
 fog_enabled = true
