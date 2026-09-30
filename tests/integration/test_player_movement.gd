@@ -22,7 +22,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	# Input is global state: a key left down leaks into the next test.
-	for action: String in ["jump", "crouch_slide", "move_forward", "move_right"]:
+	for action: String in ["jump", "crouch_slide", "move_forward", "move_right", "look_right"]:
 		if Input.is_action_pressed(action):
 			Input.action_release(action)
 
@@ -398,3 +398,23 @@ func test_landing_holds_its_clip_before_the_ground_state_can_overwrite_it() -> v
 		"a landing has to show its own clip on the frame it happens")
 	assert_gt(animator._land_lock_left, 0.0,
 		"and hold it briefly rather than letting the next tick's ground clip erase it")
+
+
+# ---------------------------------------------------------------- gamepad
+
+## The right stick turns the view at a rate, and a half-tilted stick turns much
+## less than half as fast - the response curve is where fine aim lives.
+func test_the_right_stick_turns_the_view() -> void:
+	var start: float = _player._look_yaw
+	Input.action_press(&"look_right", 1.0)
+	await wait_frames(10)
+	var full: float = start - _player._look_yaw
+	Input.action_release(&"look_right")
+	assert_gt(full, 0.0, "pushing right turns right (yaw goes negative)")
+
+	start = _player._look_yaw
+	Input.action_press(&"look_right", 0.5)
+	await wait_frames(10)
+	var half: float = start - _player._look_yaw
+	Input.action_release(&"look_right")
+	assert_lt(half, full * 0.4, "half tilt is well under half the speed")

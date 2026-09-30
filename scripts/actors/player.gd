@@ -164,8 +164,29 @@ func _process(delta: float) -> void:
 	# no tienen nada que decir.
 	if is_dead:
 		return
+	_tick_stick_look(delta)
 	_apply_look()
 	_apply_fov(delta)
+
+
+## The right stick. Degrees per second rather than per pixel: a stick is a rate,
+## not a distance. Squared response so the small corrections aiming is made of
+## live in the first half of the throw, and full tilt is still a fast turn.
+## No aim assist - it would need its own design pass, not a default.
+func _tick_stick_look(delta: float) -> void:
+	if not InputMap.has_action(&"look_left"):
+		return
+	var stick: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
+	if stick == Vector2.ZERO:
+		return
+	stick *= stick.length()
+	var speed: float = float(SettingsManager.get_value("input/stick_sensitivity"))
+	if _is_ads():
+		speed *= float(SettingsManager.get_value("input/ads_sensitivity_multiplier"))
+	var invert: float = -1.0 if bool(SettingsManager.get_value("input/invert_y")) else 1.0
+	_look_yaw -= stick.x * speed * delta
+	_look_pitch = clampf(_look_pitch - stick.y * speed * invert * delta,
+		-MAX_PITCH_DEGREES, MAX_PITCH_DEGREES)
 
 
 ## La busqueda de zip line consulta el espacio de fisica, asi que vive aca y no

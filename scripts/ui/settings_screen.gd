@@ -24,6 +24,8 @@ const SCHEMA: Array = [
 		"type": "slider", "min": 0.1, "max": 10.0, "step": 0.05},
 	{"key": "input/ads_sensitivity_multiplier", "label": "ADS sensitivity",
 		"type": "slider", "min": 0.1, "max": 2.0, "step": 0.01},
+	{"key": "input/stick_sensitivity", "label": "Gamepad look speed",
+		"type": "slider", "min": 60.0, "max": 400.0, "step": 10.0, "suffix": "°/s"},
 	{"key": "input/invert_y", "label": "Invert vertical look", "type": "toggle"},
 	{"key": "input/gadget_quick_cast", "label": "Gadget quick cast", "type": "toggle"},
 

@@ -17,6 +17,8 @@ const DEFAULTS: Dictionary = {
 	"input/mouse_sensitivity": 2.40,
 	"input/ads_sensitivity_multiplier": 0.72,
 	"input/invert_y": false,
+	## Grados por segundo con el stick derecho a fondo. Ver Player._tick_stick_look().
+	"input/stick_sensitivity": 200.0,
 	## Quick cast: el gadget sale al apretar la tecla. Apagado, la tecla lo pone
 	## en la mano y el jugador elige cuando lanzarlo con el disparo.
 	##
