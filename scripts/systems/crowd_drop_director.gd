@@ -59,6 +59,15 @@ const ARC_SAMPLES: int = 24
 ## el punto de aterrizaje, y lo que toque es el piso o lo que haya encima, que es
 ## exactamente donde tiene que caer.
 const ARC_LANDING_SHARE: float = 0.12
+## Metros de aire que el arco tiene que dejarle al borde de lo que cruza.
+##
+## El chequeo corta el arco en ARC_SAMPLES rectas, y el pickup en vuelo lo recorre
+## en un tramo por frame: dos poligonales distintas de la misma curva. Un arco que
+## pasaba rozando el borde del muro del coliseo por arriba daba limpio en las 24
+## rectas y en vuelo se apoyaba en el borde, colgado a 30m (test flaky de
+## `test_crowd_drop_reaches_the_floor`). Se prueba ademas la misma recta bajada
+## esta distancia: si esa choca, el arco pasa demasiado justo.
+const ARC_CLEARANCE: float = 0.75
 
 var _seconds_left: float = 0.0
 var _is_running: bool = false
@@ -200,6 +209,10 @@ func _is_arc_clear(origin: Vector3, landing: Vector3) -> bool:
 		# WORLD, que es el `hit_mask` de crowd_drop_pickup.tscn.
 		var query := PhysicsRayQueryParameters3D.create(previous, point, PhysicsLayers.WORLD)
 		if not space.intersect_ray(query).is_empty():
+			return false
+		var lowered := PhysicsRayQueryParameters3D.create(previous + Vector3.DOWN * ARC_CLEARANCE,
+			point + Vector3.DOWN * ARC_CLEARANCE, PhysicsLayers.WORLD)
+		if not space.intersect_ray(lowered).is_empty():
 			return false
 		previous = point
 	return true
