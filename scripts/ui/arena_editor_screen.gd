@@ -22,6 +22,9 @@ const REFUSAL_TEXT: Dictionary = {
 	&"unknown_piece": "That piece is not in the catalog.",
 	&"piece_limit": "That is as many of those as an arena takes.",
 	&"nothing_there": "There is nothing there to move.",
+	&"platform_path": "A moving platform travels through there - keep its path clear.",
+	&"path_blocked": "Its path is blocked: every cell it travels through has to be empty.",
+	&"path_out_of_bounds": "Its path leaves the grid. Turn it with R or move it in.",
 }
 ## Las herramientas que se pintan arrastrando. Los spawns y el mover son
 ## acciones de un click: repetirlas por celda mientras el mouse se mueve solo
@@ -48,6 +51,9 @@ var _painted_cells: Dictionary = {}
 ## Celda de la pieza levantada con MOVE, si hay una en la mano.
 var _move_origin: Vector3i = Vector3i.ZERO
 var _has_move_origin: bool = false
+## El motivo por el que el ghost esta en rojo, si el status lo esta mostrando.
+## Se guarda para borrarlo cuando el ghost vuelve a verde, y no pisar otro mensaje.
+var _hover_refusal: StringName = &""
 ## La arena tal como la encontro esta sesion del editor. Con lo que hay que
 ## comparar para saber si alguien construyo algo - ver `_on_exit`.
 var _baseline: Dictionary = {}
@@ -230,7 +236,10 @@ func _update_ghost() -> void:
 			if selected_piece == &"":
 				_preview.hide_ghost()
 				return
-			_preview.show_ghost(selected_piece, _hover_cell, pending_rotation, _can_place())
+			var refusal: StringName = model.refusal_for(
+				selected_piece, _hover_cell, pending_rotation, true)
+			_preview.show_ghost(selected_piece, _hover_cell, pending_rotation, refusal == &"")
+			_explain_hover(refusal)
 		_:
 			_preview.hide_highlight()
 			_preview.hide_ghost()
@@ -249,8 +258,27 @@ func _update_move_ghost() -> void:
 	if entry == null:
 		_preview.hide_ghost()
 		return
-	var fits: bool = model.move_to(_move_origin, _hover_cell, pending_rotation, true) == &""
+	var move_refusal: StringName = model.move_to(_move_origin, _hover_cell, pending_rotation, true)
+	var fits: bool = move_refusal == &""
+	_explain_hover(move_refusal)
 	_preview.show_ghost(entry.piece_id, _hover_cell, pending_rotation, fits)
+
+
+## El ghost en rojo dice que no, y esto dice por que - antes habia que hacer click
+## para enterarse. Solo cuando el motivo cambia, y se borra al volver a verde si
+## lo que habia en el status era este mismo aviso.
+func _explain_hover(refusal: StringName) -> void:
+	# Encima de una pieza el rojo se explica solo, y es lo que pasa con cada celda
+	# recien pintada: decirlo en cada una llenaria el status de ruido.
+	if refusal == &"cell_taken":
+		refusal = &""
+	if refusal == _hover_refusal:
+		return
+	if refusal != &"":
+		_hud.set_status(REFUSAL_TEXT.get(refusal, "That piece cannot go there."))
+	elif _hover_refusal != &"":
+		_hud.set_status("")
+	_hover_refusal = refusal
 
 
 ## One source of truth for "can this go here": the model. The ghost asking the
