@@ -42,7 +42,9 @@ var _model: Node3D
 var _enemy: Enemy
 var _rest_position: Vector3 = Vector3.ZERO
 var _rest_scale: Vector3 = Vector3.ONE
-var _rest_yaw: float = 0.0
+## La orientacion de reposo entera, sin escala: yaw y tambien el cabeceo que
+## corrige a un modelo que llego acostado. Guardar solo el yaw lo volvia a acostar.
+var _rest_rotation: Basis = Basis.IDENTITY
 
 var _phase: float = 0.0
 var _spin: float = 0.0
@@ -103,7 +105,7 @@ func capture_rest() -> void:
 		return
 	_rest_position = _model.position
 	_rest_scale = _model.scale
-	_rest_yaw = _model.rotation.y
+	_rest_rotation = _model.basis.orthonormalized()
 	# Cada uno con su fase: cinco bombas que suben y bajan juntas se leen como una
 	# sola cosa rigida, no como cinco que flotan.
 	_phase = randf() * TAU
@@ -147,7 +149,8 @@ func _process(delta: float) -> void:
 		goal = local.normalized() * amount
 	_lean = _lean.lerp(goal, clampf(LEAN_SMOOTHING * delta, 0.0, 1.0))
 
-	var basis := Basis(Vector3.UP, _rest_yaw + _spin)
+	# El giro va en el espacio del padre (vertical del mundo), encima del reposo.
+	var basis := Basis(Vector3.UP, _spin) * _rest_rotation
 	if _lean.length_squared() > 0.000001:
 		var axis: Vector3 = Vector3.UP.cross(_lean).normalized()
 		basis = Basis(axis, deg_to_rad(data.model_lean_degrees) * _lean.length()) * basis

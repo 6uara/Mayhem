@@ -357,8 +357,10 @@ func _refresh_info() -> void:
 		"Flota %.2f   bob %.2f @ %.1f/s   giro %.0f/s" % [_data.model_hover_height,
 			_data.model_bob_height, _data.model_bob_rate,
 			_data.model_spin_degrees_per_second],
-		"Inclina %.0f   respira %.3f   pop %.2f   yaw %.0f" % [_data.model_lean_degrees,
-			_data.model_breathe, _data.model_cast_pop, _data.model_yaw_degrees],
+		"Inclina %.0f   respira %.3f   pop %.2f" % [_data.model_lean_degrees,
+			_data.model_breathe, _data.model_cast_pop],
+		"Yaw %.0f   pitch %.0f   halo del modelo: %s" % [_data.model_yaw_degrees,
+			_data.model_pitch_degrees, "si" if _data.model_has_halo else "no"],
 	]
 	_info.text = "\n".join(lines)
 

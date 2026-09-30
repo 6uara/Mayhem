@@ -2131,18 +2131,20 @@ func _attach_motion() -> void:
 func _place_model() -> void:
 	if _model == null:
 		return
-	var yaw := Basis(Vector3.UP, deg_to_rad(data.model_yaw_degrees))
+	# El cabeceo va primero, en el espacio del modelo, y el yaw despues.
+	var orient: Basis = Basis(Vector3.UP, deg_to_rad(data.model_yaw_degrees)) \
+		* Basis(Vector3.RIGHT, deg_to_rad(data.model_pitch_degrees))
 	var scale_factor: float = data.model_scale
 	var fit_offset := Vector3.ZERO
 	# Ajuste por altura: escala a `model_fit_height`, apoya la base en el piso y
-	# centra la malla sobre el cuerpo. El centrado se gira con el yaw, porque la
-	# caja se midio antes de girar el modelo.
+	# centra la malla sobre el cuerpo. Se mide la caja ya orientada: medida antes,
+	# un modelo acostado tomaba su espesor por altura y salia gigante.
 	if data.model_fit_height > 0.0 and _model_bounds.size.y > 0.0001:
-		scale_factor = data.model_fit_height / _model_bounds.size.y
-		var centre: Vector3 = _model_bounds.get_center()
-		fit_offset = yaw * Vector3(-centre.x, -_model_bounds.position.y, -centre.z) \
-			* scale_factor
-	_model.transform = Transform3D(yaw.scaled(Vector3.ONE * scale_factor),
+		var oriented: AABB = Transform3D(orient, Vector3.ZERO) * _model_bounds
+		scale_factor = data.model_fit_height / oriented.size.y
+		var centre: Vector3 = oriented.get_center()
+		fit_offset = Vector3(-centre.x, -oriented.position.y, -centre.z) * scale_factor
+	_model.transform = Transform3D(orient.scaled(Vector3.ONE * scale_factor),
 		data.model_offset + fit_offset)
 	if _motion != null:
 		_motion.capture_rest()
@@ -2216,8 +2218,11 @@ func _glow_level() -> float:
 ## turns them off.
 func _apply_silhouette_markers() -> void:
 	if halo != null:
-		halo.visible = data.has_halo
-		if data.has_halo:
+		# Si el modelo trae su halo, el generado se apaga: dos anillos encimados no
+		# se leen como uno. Sin modelo (grey-box) vuelve a ser el generado.
+		var model_draws_halo: bool = data.model_has_halo and data.model_scene != null
+		halo.visible = data.has_halo and not model_draws_halo
+		if halo.visible:
 			halo.position.y = data.halo_height
 			halo.scale = Vector3.ONE * data.halo_radius
 			_tint(halo, data.body_color)

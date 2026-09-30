@@ -13,6 +13,20 @@ func _spawn(id: String) -> Enemy:
 	return enemy
 
 
+## La caja de todas las mallas del modelo en el espacio del cuerpo del enemigo.
+func _body_space_bounds(enemy: Enemy) -> AABB:
+	var out := AABB()
+	var found: bool = false
+	var to_body: Transform3D = enemy.global_transform.affine_inverse()
+	for mesh_node: MeshInstance3D in enemy._model_meshes:
+		if mesh_node.mesh == null:
+			continue
+		var box: AABB = to_body * mesh_node.global_transform * mesh_node.mesh.get_aabb()
+		out = box if not found else out.merge(box)
+		found = true
+	return out
+
+
 func _find(node: Node, type_name: String) -> Node:
 	if node.is_class(type_name):
 		return node
@@ -94,19 +108,41 @@ func test_a_pooled_body_swaps_its_model_with_its_archetype() -> void:
 
 ## Un modelo nuevo llega en sus propias unidades. Con `model_fit_height` se lo
 ## ajusta a esa altura midiendo la malla, apoyado en el piso.
+##
+## Se mide en el espacio del cuerpo, ya orientado: el Healer llega acostado y se
+## para con `model_pitch_degrees`, asi que su alto de verdad es otro eje de la malla.
 func test_fit_height_sizes_the_model_from_its_mesh() -> void:
 	var enemy: Enemy = await _spawn("healer")
 	assert_gt(enemy.data.model_fit_height, 0.0, "precondition: el healer se ajusta por altura")
-	var bounds: AABB = enemy._model_bounds
+	var bounds: AABB = _body_space_bounds(enemy)
 	assert_gt(bounds.size.y, 0.0, "la malla se pudo medir")
-	var height: float = bounds.size.y * enemy._model.scale.y
-	assert_almost_eq(height, enemy.data.model_fit_height, 0.15,
-		"el modelo mide lo que pide el arquetipo (%0.2f)" % height)
+	assert_almost_eq(bounds.size.y, enemy.data.model_fit_height, 0.15,
+		"el modelo mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
+	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z),
+		"y esta parado: el alto es su eje mas largo")
+
+
+## El Healer trae su propio halo en el modelo; el anillo generado no se dibuja
+## encima, pero el arquetipo sigue contando como uno con halo.
+func test_the_healer_shows_only_the_models_halo() -> void:
+	var enemy: Enemy = await _spawn("healer")
+	assert_true(enemy.data.has_halo, "el arquetipo sigue teniendo halo")
+	assert_false(enemy.halo.visible, "pero lo dibuja el modelo, no el anillo generado")
 
 
 ## El Bomber flota: su modelo no toca el piso en ningun punto del bob, pero su
 ## cuerpo sigue en el piso, que es lo que camina el navmesh.
 func test_the_bomber_floats_above_the_floor() -> void:
+	# Con piso: sin el, el cuerpo cae fuera del mundo y muere en medio del test.
+	var floor_body := StaticBody3D.new()
+	floor_body.collision_layer = PhysicsLayers.WORLD
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(20.0, 1.0, 20.0)
+	shape.shape = box
+	shape.position.y = -0.5
+	floor_body.add_child(shape)
+	add_child_autofree(floor_body)
 	var enemy: Enemy = await _spawn("bomber")
 	assert_not_null(enemy._motion, "el bomber tiene animacion procedural")
 	var lowest: float = INF

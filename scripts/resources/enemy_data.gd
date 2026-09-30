@@ -209,6 +209,16 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL,
 ## this was turned around. Belongs to the archetype rather than to the .fbx
 ## import so it is visible next to the rest of the placement.
 @export_range(-180.0, 180.0, 1.0) var model_yaw_degrees: float = 0.0
+## Correccion de cabeceo, en grados, aplicada antes del yaw.
+##
+## Para el modelo que llega acostado: el Healer vino con el cuerpo a lo largo de
+## Z y la cara hacia arriba, y ningun yaw lo para. Se aplica en el espacio del
+## modelo y despues gira el yaw, asi las dos correcciones se leen por separado.
+@export_range(-180.0, 180.0, 1.0) var model_pitch_degrees: float = 0.0
+## El modelo trae su propio halo, asi que el anillo generado (`has_halo`) no se
+## dibuja. El arquetipo sigue contando como uno con halo: lo que cambia es quien
+## lo pone en pantalla.
+@export var model_has_halo: bool = false
 ## Alto en metros al que se ajusta el modelo, midiendo su malla. 0 lo apaga y
 ## manda `model_scale`.
 ##
