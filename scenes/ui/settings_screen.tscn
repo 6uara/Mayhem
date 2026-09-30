@@ -87,22 +87,26 @@ theme_override_constants/separation = 12
 alignment = 2
 
 [node name="ResetHintsButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=872554484]
+tooltip_text = "Show every first-time hint again, as if it were your first run."
 custom_minimum_size = Vector2(210, 44)
 layout_mode = 2
 text = "Reset tutorial hints"
 
 [node name="ResetButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=997966791]
+tooltip_text = "Put every option and key binding back to its default."
 custom_minimum_size = Vector2(190, 44)
 layout_mode = 2
 text = "Reset to defaults"
 
 [node name="ApplyButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=1641004820]
+tooltip_text = "Keep the changes. Back without applying undoes them."
 custom_minimum_size = Vector2(170, 44)
 layout_mode = 2
 disabled = true
 text = "Apply changes"
 
 [node name="BackButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=789658418]
+tooltip_text = "Close the options. Anything not applied is undone."
 custom_minimum_size = Vector2(150, 44)
 layout_mode = 2
 text = "Back"

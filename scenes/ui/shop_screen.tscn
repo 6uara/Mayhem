@@ -164,5 +164,6 @@ show_empty_categories = true
 horizontal = true
 
 [node name="SkipButton" type="Button" parent="Root/Panel/VBox"]
+tooltip_text = "Start the next wave now. The run clock keeps ticking while you shop, and a faster run scores more."
 custom_minimum_size = Vector2(0, 44)
 text = "Back to the arena  (bank the speed bonus)"

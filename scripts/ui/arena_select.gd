@@ -82,6 +82,8 @@ func _build_row(entry: Dictionary, index: int) -> Button:
 		entry["name"], SHIPPED_TAG if entry["shipped"] else YOURS_TAG, entry["pieces"]]
 	button.add_theme_color_override("font_color",
 		Tokens.TEXT if bool(entry["shipped"]) else Tokens.PLAYER)
+	button.tooltip_text = ("Ships with the game." if bool(entry["shipped"])
+		else "Made in the arena editor.") + " Double-click to play it."
 	button.pressed.connect(func() -> void: _select(index))
 	# Double click, or Enter on a focused row, plays it: the second press should
 	# not need the mouse to travel to the corner.

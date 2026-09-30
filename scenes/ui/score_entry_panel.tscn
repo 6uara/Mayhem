@@ -65,6 +65,7 @@ theme_type_variation = &"HUDLabel"
 text = "Who takes this one?"
 
 [node name="Profiles" type="OptionButton" parent="Panel/Margin/Layout"]
+tooltip_text = "Names already used on this machine."
 custom_minimum_size = Vector2(0, 44)
 
 [node name="NameEdit" type="LineEdit" parent="Panel/Margin/Layout"]
@@ -83,9 +84,11 @@ theme_override_constants/separation = 12
 alignment = 2
 
 [node name="SkipButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+tooltip_text = "Leave this run out of Best runs."
 custom_minimum_size = Vector2(150, 44)
 text = "Skip"
 
 [node name="SaveButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+tooltip_text = "Record this run in Best runs under this name."
 custom_minimum_size = Vector2(150, 44)
 text = "Save"

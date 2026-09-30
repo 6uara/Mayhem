@@ -54,6 +54,9 @@ func _initialize() -> void:
 	# --- buttons ----------------------------------------------------------------
 	_buttons(theme, sans_semi)
 
+	# --- tooltips ---------------------------------------------------------------
+	_tooltips(theme, sans)
+
 	var error: int = ResourceSaver.save(theme, OUTPUT_PATH)
 	if error != OK:
 		push_error("build_theme: save failed (%d)" % error)
@@ -126,6 +129,27 @@ func _slot(is_ready: bool) -> ChamferStyleBox:
 	box.border_width = 1.0
 	box.chamfer = Tokens.CHAMFER
 	return box
+
+
+## The engine's default tooltip is a light grey box in the editor's font, which in
+## the middle of this UI reads as a system error. Same panel as everything else,
+## the PLAYER border that hover already uses, and body text in TEXT.
+func _tooltips(theme: Theme, font: Font) -> void:
+	var box := ChamferStyleBox.new()
+	box.fill_color = Tokens.BASE
+	box.fill_alpha = 0.96
+	box.border_color = Tokens.PLAYER
+	box.border_width = 1.0
+	box.chamfer = Tokens.CHAMFER * 0.5
+	box.content_margin_left = 12
+	box.content_margin_right = 12
+	box.content_margin_top = 8
+	box.content_margin_bottom = 8
+	theme.set_stylebox("panel", "TooltipPanel", box)
+	theme.set_font("font", "TooltipLabel", font)
+	theme.set_font_size("font_size", "TooltipLabel", Tokens.SIZE_LABEL)
+	theme.set_color("font_color", "TooltipLabel", Tokens.TEXT)
+	theme.set_color("font_shadow_color", "TooltipLabel", Color(0, 0, 0, 0))
 
 
 func _buttons(theme: Theme, font: Font) -> void:

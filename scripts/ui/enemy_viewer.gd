@@ -332,6 +332,7 @@ func _rebuild_clip_list() -> void:
 		return
 	var auto := Button.new()
 	auto.text = "AUTO (por estado)"
+	auto.tooltip_text = "Deja que el clip lo elija el estado del enemigo, como en el juego."
 	auto.pressed.connect(_on_clip_pressed.bind(&""))
 	_clip_list.add_child(auto)
 	for clip: StringName in clips:
@@ -467,12 +468,14 @@ func _build_ui() -> void:
 
 	var reload := Button.new()
 	reload.text = "Recargar .tres desde disco"
+	reload.tooltip_text = "Vuelve a leer el EnemyData del disco: ver un cambio sin reiniciar el visor."
 	reload.pressed.connect(_on_reload_pressed)
 	right_column.add_child(reload)
 
 	right_column.add_child(_section("ESTADO"))
 	_walk_toggle = CheckButton.new()
 	_walk_toggle.text = "Caminar"
+	_walk_toggle.tooltip_text = "Lo hace caminar, para ver el paso y la inclinacion. Al apagarlo vuelve a su lugar."
 	_walk_toggle.toggled.connect(_on_walk_toggled)
 	right_column.add_child(_walk_toggle)
 	var speed_row := HBoxContainer.new()
@@ -496,18 +499,22 @@ func _build_ui() -> void:
 	right_column.add_child(turntable)
 	var ability := Button.new()
 	ability.text = "Usar habilidad"
+	ability.tooltip_text = "La reaccion del modelo al usar su habilidad (ability_used). Solo lo visual."
 	ability.pressed.connect(_on_ability_pressed)
 	right_column.add_child(ability)
 	var windup := Button.new()
 	windup.text = "Preparar ataque (windup)"
+	windup.tooltip_text = "Muestra el aviso previo al ataque: el brillo que el jugador tiene que leer."
 	windup.pressed.connect(_on_windup_pressed)
 	right_column.add_child(windup)
 	_fuse_toggle = CheckButton.new()
 	_fuse_toggle.text = "Espoleta armada"
+	_fuse_toggle.tooltip_text = "La espoleta del Bomber: el brillo de aviso encendido."
 	_fuse_toggle.toggled.connect(_on_fuse_toggled)
 	right_column.add_child(_fuse_toggle)
 	var hitboxes := CheckButton.new()
 	hitboxes.text = "Mostrar hitboxes"
+	hitboxes.tooltip_text = "Dibuja la capsula del cuerpo y la esfera de la cabeza que registran los tiros."
 	hitboxes.toggled.connect(_on_hitboxes_toggled)
 	right_column.add_child(hitboxes)
 

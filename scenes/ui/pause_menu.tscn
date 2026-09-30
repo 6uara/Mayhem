@@ -73,14 +73,17 @@ custom_minimum_size = Vector2(0, 48)
 text = "Options"
 
 [node name="FeedbackButton" type="Button" parent="Root/Panel/Margin/Layout"]
+tooltip_text = "Report what just happened while it's fresh. Nothing is sent on its own."
 custom_minimum_size = Vector2(0, 44)
 text = "Send feedback"
 
 [node name="EditorButton" type="Button" parent="Root/Panel/Margin/Layout"]
+tooltip_text = "End the playtest and go back to editing this arena."
 custom_minimum_size = Vector2(0, 44)
 text = "Back to the editor"
 
 [node name="MenuButton" type="Button" parent="Root/Panel/Margin/Layout"]
+tooltip_text = "Abandon this run. It won't be recorded in Best runs."
 custom_minimum_size = Vector2(0, 48)
 text = "Quit to menu"
 

@@ -29,6 +29,16 @@ signal venue_changed(theme_id: StringName)
 ## and the file buttons beside it.
 const TOOL_NAMES: Array[String] = ["BUILD", "ERASE", "PLAYER", "ENEMY", "MOVE"]
 const TOOL_KEYS: Array[String] = ["1", "2", "3", "4", "5"]
+## Lo que hace cada herramienta, en el mismo orden. La barra solo tiene lugar
+## para el nombre; el como va aca.
+const TOOL_TOOLTIPS: Array[String] = [
+	"Place the selected piece. Drag to keep placing.",
+	"Remove pieces. Drag to erase across cells.",
+	"Set where the player spawns.",
+	"Place a door enemies come in through.",
+	"Click a piece to pick it up, click again to drop it.",
+]
+const PLAY_TOOLTIP: String = "Save and playtest. Pause > Back to the editor returns here."
 ## Seconds a pressed DELETE waits for the second press before it forgets.
 const DELETE_CONFIRM_TIME: float = 3.0
 ## The controls panel, as the player reads them.
@@ -168,6 +178,8 @@ func show_issues(issues: Array[ValidationIssue]) -> void:
 			errors += 1
 	_play_button.disabled = errors > 0
 	_play_button.text = "PLAY" if errors == 0 else "PLAY  (%d errors)" % errors
+	_play_button.tooltip_text = PLAY_TOOLTIP if errors == 0 \
+		else "Fix the errors in the list first. Click one to jump to it."
 
 
 func open_load_panel(paths: PackedStringArray) -> void:
@@ -253,6 +265,7 @@ func _build_top_bar() -> void:
 		_size_button.add_item(preset_name, size_index)
 		size_index += 1
 	_size_button.select(0)
+	_size_button.tooltip_text = "Arena size"
 	# Un solo tamano: el control se queda para decir cual es, no para elegirlo.
 	_size_button.disabled = ArenaData.SIZE_PRESETS.size() <= 1
 	_size_button.item_selected.connect(func(index: int) -> void:
@@ -263,6 +276,7 @@ func _build_top_bar() -> void:
 		var button := Button.new()
 		button.toggle_mode = true
 		button.text = "%s  %s" % [TOOL_KEYS[index], TOOL_NAMES[index]]
+		button.tooltip_text = "%s  (%s)" % [TOOL_TOOLTIPS[index], TOOL_KEYS[index]]
 		button.focus_mode = Control.FOCUS_NONE
 		var captured: int = index
 		button.pressed.connect(func() -> void: tool_changed.emit(captured))
@@ -290,13 +304,16 @@ func _build_top_bar() -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
 
-	row.add_child(_action("NEW", func() -> void: new_pressed.emit()))
-	row.add_child(_action("SAVE", open_save_panel))
-	row.add_child(_action("LOAD", func() -> void: load_requested.emit("")))
-	_play_button = _action("PLAY", func() -> void: play_pressed.emit())
+	row.add_child(_action("NEW", func() -> void: new_pressed.emit(),
+		"Start a blank arena. Unsaved changes to this one are lost."))
+	row.add_child(_action("SAVE", open_save_panel, "Save this arena under a name."))
+	row.add_child(_action("LOAD", func() -> void: load_requested.emit(""),
+		"Open or delete a saved arena."))
+	_play_button = _action("PLAY", func() -> void: play_pressed.emit(), PLAY_TOOLTIP)
 	row.add_child(_play_button)
-	row.add_child(_action("EXIT", func() -> void: exit_pressed.emit()))
-	row.add_child(_action("?", toggle_help))
+	row.add_child(_action("EXIT", func() -> void: exit_pressed.emit(),
+		"Back to the main menu. What you built is saved."))
+	row.add_child(_action("?", toggle_help, "Show the controls  (H)"))
 
 
 func _build_issue_panel() -> void:
@@ -410,7 +427,8 @@ func _build_load_panel() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.add_child(_action("OPEN", _on_load_confirmed))
-	_delete_button = _action("DELETE", _on_delete_pressed)
+	_delete_button = _action("DELETE", _on_delete_pressed,
+		"Delete the selected arena from disk. Press twice to confirm.")
 	_delete_button.add_theme_color_override("font_color", Tokens.ENEMY)
 	buttons.add_child(_delete_button)
 	buttons.add_child(_action("CANCEL", close_load_panel))
@@ -581,9 +599,10 @@ func _bar_label(text: String) -> Label:
 	return label
 
 
-func _action(text: String, handler: Callable) -> Button:
+func _action(text: String, handler: Callable, tooltip: String = "") -> Button:
 	var button := Button.new()
 	button.text = text
 	button.focus_mode = Control.FOCUS_NONE
 	button.pressed.connect(handler)
+	button.tooltip_text = tooltip
 	return button

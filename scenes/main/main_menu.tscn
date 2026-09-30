@@ -109,16 +109,19 @@ custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=240581368]
+tooltip_text = "Pick an arena and start a run: ten waves, no saves."
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Play"
 
 [node name="CreateArenaButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=599094322]
+tooltip_text = "Build your own arena, then play it."
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 text = "Create arena"
 
 [node name="LeaderboardButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=803373435]
+tooltip_text = "The ten best runs on this machine, with the trophies each one earned."
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Best runs"
@@ -129,6 +132,7 @@ layout_mode = 2
 text = "Options"
 
 [node name="FeedbackButton" type="Button" parent="Root/Panel/Margin/Layout" unique_id=2136941499]
+tooltip_text = "Report a bug or an idea. Nothing is sent on its own."
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 text = "Send feedback"

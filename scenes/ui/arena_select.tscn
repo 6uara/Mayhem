@@ -77,5 +77,6 @@ custom_minimum_size = Vector2(150, 44)
 text = "Back"
 
 [node name="PlayButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+tooltip_text = "Start the run on the selected arena. Double-click an arena to do the same."
 custom_minimum_size = Vector2(180, 44)
 text = "Play"

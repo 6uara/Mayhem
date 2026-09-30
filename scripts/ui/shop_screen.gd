@@ -8,6 +8,9 @@ extends CanvasLayer
 
 signal shop_closed()
 
+## Lo que hace el reroll. Vive aca y no solo en la escena porque
+## `_refresh_affordability()` lo reescribe con el motivo cuando no alcanza.
+const REROLL_TOOLTIP: String = "New offers. Costs more each time this visit."
 const CARD_MIN_WIDTH: int = 250
 ## Alto del icono en la cabecera de una tarjeta. Mas grande que en la HUD: aca
 ## hay tiempo para mirarlo y es lo primero que distingue una tarjeta de otra.
@@ -269,6 +272,10 @@ func _weapon_name(weapon_id: StringName) -> String:
 func _refresh_affordability() -> void:
 	if shop != null and _reroll_button.visible:
 		_reroll_button.disabled = not shop.can_reroll()
+		# Un boton apagado sin decir por que se lee como un bug; el tooltip de
+		# la escena explica que hace, este agrega por que no se puede.
+		_reroll_button.tooltip_text = REROLL_TOOLTIP if not _reroll_button.disabled \
+			else "%s\n%s" % [REROLL_TOOLTIP, _short_text(shop.get_reroll_cost())]
 	for node: Node in _cards.get_children():
 		var panel := node as Control
 		var button: Button = _find_button(node)
@@ -277,11 +284,17 @@ func _refresh_affordability() -> void:
 		var offer: Dictionary = button.get_meta(&"offer")
 		var affordable: bool = shop != null and shop.can_afford(offer)
 		button.disabled = not affordable
+		button.tooltip_text = "" if affordable else _short_text(int(offer["cost"]))
 		panel.modulate = Color.WHITE if affordable else Color(1, 1, 1, 0.45)
 		var style: StyleBox = panel.get_theme_stylebox(&"panel")
 		var chamfer_style := style as ChamferStyleBox
 		if chamfer_style != null:
 			chamfer_style.rail_color.a = 1.0 if affordable else 0.0
+
+
+## Cuanto falta, en la moneda que la HUD muestra.
+func _short_text(cost: int) -> String:
+	return "Not enough money: %d short." % maxi(cost - EconomyManager.currency, 0)
 
 
 func _find_button(node: Node) -> Button:

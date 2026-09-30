@@ -122,6 +122,18 @@ chamfer = 0.0
 rail_width = 3.0
 rail_color = Color(1, 0.6901961, 0.1254902, 1)
 
+[sub_resource type="StyleBox" id="StyleBox_ul555"]
+resource_local_to_scene = false
+resource_name = ""
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+script = ExtResource("1_n5uuq")
+fill_alpha = 0.96
+border_color = Color(0.20784314, 0.8784314, 0.83137256, 1)
+chamfer = 6.0
+
 [resource]
 default_font = ExtResource("5_fojls")
 default_font_size = 15
@@ -203,3 +215,8 @@ Subtitle/font_sizes/font_size = 30
 Subtitle/fonts/font = ExtResource("5_fojls")
 SubtitlePanel/base_type = &"PanelContainer"
 SubtitlePanel/styles/panel = SubResource("StyleBox_d2hor")
+TooltipLabel/colors/font_color = Color(0.9019608, 0.9098039, 0.9372549, 1)
+TooltipLabel/colors/font_shadow_color = Color(0, 0, 0, 0)
+TooltipLabel/font_sizes/font_size = 15
+TooltipLabel/fonts/font = ExtResource("5_fojls")
+TooltipPanel/styles/panel = SubResource("StyleBox_ul555")

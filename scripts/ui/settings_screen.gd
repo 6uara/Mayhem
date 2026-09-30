@@ -76,6 +76,41 @@ const SCHEMA: Array = [
 	{"key": "hud/damage_numbers", "label": "Damage numbers", "type": "toggle"},
 ]
 
+## What a row does, for the rows whose label does not say it on its own. Shown on
+## hover over the label and the control. Apart from SCHEMA so the schema stays a
+## list of controls, and a row that needs no explanation just has no entry.
+const TOOLTIPS: Dictionary = {
+	"input/ads_sensitivity_multiplier":
+		"Look speed while aiming down sights, as a share of the normal one.",
+	"input/stick_sensitivity": "How fast the right stick turns the view at full tilt.",
+	"input/gadget_quick_cast":
+		"On: a gadget key throws at once.\nOff: it goes to your hand, and Fire throws it.",
+	"video/fov": "How wide you see. Wider shows more around you; narrower makes targets bigger.",
+	"video/vsync": "Removes screen tearing, at the cost of a little input delay.",
+	"video/fps_cap":
+		"The most frames drawn per second. Match monitor draws as many as your screen shows.",
+	"video/render_scale":
+		"Draws the 3D world at a lower resolution and upscales it with FSR.\nLower it if the game runs slow. Menus and HUD stay sharp.",
+	"video/anti_aliasing":
+		"Smooths jagged edges.\nFXAA: cheapest, slightly soft.\nMSAA: sharp edges, costs more.\nTAA: smoothest, can blur in motion.",
+	"video/shadow_quality": "Sharpness of the shadows. Lower it if the game runs slow.",
+	"audio/vo_volume": "The Host's voice.",
+	"accessibility/screenshake_enabled":
+		"Camera shake from hits, explosions, landings and dashes.",
+	"accessibility/view_bob_enabled":
+		"The camera rocking with each step. Turn off if it makes you queasy.",
+	"accessibility/subtitles_enabled": "Show what the Host says.",
+	"accessibility/reduce_flashing":
+		"Low health and low ammo warnings hold steady instead of blinking.",
+	"accessibility/speed_lines_enabled": "Streaks at the edge of the screen when moving fast.",
+	"hud/scale": "Size of the HUD.",
+	"hud/damage_indicators": "Arrows around the crosshair pointing to whatever hit you.",
+	"hud/damage_numbers": "The damage of each hit, floating over the enemy.",
+}
+## For every key binding button in CONTROLS.
+const BIND_TOOLTIP: String = \
+	"Click, then press the key or mouse button you want.\nEsc cancels. A key another action uses swaps with it."
+
 const ROW_CONTROL_WIDTH: int = 260
 
 @onready var _rows: VBoxContainer = $Panel/Margin/Layout/Scroll/Rows
@@ -184,6 +219,7 @@ func _build_control_rows() -> void:
 		row.add_child(label)
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(ROW_CONTROL_WIDTH, 0)
+		button.tooltip_text = BIND_TOOLTIP
 		button.pressed.connect(_start_capture.bind(action))
 		row.add_child(button)
 		_bind_buttons[action] = button
@@ -261,6 +297,7 @@ func _build_host_presenter_row() -> void:
 	controls.custom_minimum_size = Vector2(ROW_CONTROL_WIDTH, 0)
 
 	var option := OptionButton.new()
+	option.tooltip_text = "Who calls the match. Subtitles only keeps the Host silent."
 	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var selected_index: int = 0
 	for i: int in presenters.size():
@@ -280,6 +317,7 @@ func _build_host_presenter_row() -> void:
 
 	_listen_button = Button.new()
 	_listen_button.text = "Listen"
+	_listen_button.tooltip_text = "Play a line from this presenter."
 	_listen_button.disabled = presenters[selected_index].preview_line_id == &""
 	_listen_button.pressed.connect(func() -> void:
 		var presenter: HostPresenter = NarratorManager.find_presenter(
@@ -322,7 +360,23 @@ func _make_row(entry: Dictionary) -> Control:
 	control.custom_minimum_size = Vector2(ROW_CONTROL_WIDTH, 0)
 	row.add_child(control)
 	_controls[String(entry["key"])] = control
+	_set_row_tooltip(label, control, String(TOOLTIPS.get(String(entry["key"]), "")))
 	return row
+
+
+## On the label as well as the control: the label is what the player reads when
+## wondering what a row does, and a Label ignores the mouse unless told otherwise.
+## A slider row's control is a box around the slider, so its children get it too.
+func _set_row_tooltip(label: Label, control: Control, text: String) -> void:
+	if text == "":
+		return
+	label.tooltip_text = text
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	control.tooltip_text = text
+	for child: Node in control.get_children():
+		var inner := child as Control
+		if inner != null:
+			inner.tooltip_text = text
 
 
 func _make_control(entry: Dictionary) -> Control:

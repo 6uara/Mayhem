@@ -61,6 +61,7 @@ theme_type_variation = &"HUDLabel"
 text = "What happened, and what did you expect instead?"
 
 [node name="Category" type="OptionButton" parent="Panel/Margin/Layout"]
+tooltip_text = "What kind of report this is."
 custom_minimum_size = Vector2(0, 44)
 
 [node name="Body" type="TextEdit" parent="Panel/Margin/Layout"]
@@ -84,14 +85,17 @@ theme_override_constants/separation = 12
 alignment = 2
 
 [node name="SaveButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+tooltip_text = "Write the report to a file on this machine."
 custom_minimum_size = Vector2(130, 44)
 text = "Save"
 
 [node name="CopyButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+tooltip_text = "Copy the report to the clipboard, ready to paste anywhere."
 custom_minimum_size = Vector2(130, 44)
 text = "Copy"
 
 [node name="FormButton" type="Button" parent="Panel/Margin/Layout/Footer"]
+tooltip_text = "Copy the report and open the feedback form in your browser."
 custom_minimum_size = Vector2(150, 44)
 text = "Open form"
 

@@ -94,6 +94,7 @@ func _add_enemy_viewer_button() -> void:
 		return
 	var button := Button.new()
 	button.text = "Enemy Viewer (dev)"
+	button.tooltip_text = "Dev tool: look at every enemy model, its animations and hitboxes."
 	button.custom_minimum_size = _create_arena_button.custom_minimum_size
 	button.pressed.connect(func() -> void:
 		GameManager.open_scene(ENEMY_VIEWER_SCENE_PATH))

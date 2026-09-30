@@ -53,6 +53,7 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 20
 
 [node name="RestartButton" type="Button" parent="EndPanel/VBox"]
+tooltip_text = "Start a new run from wave 1."
 text = "Restart"
 
 [node name="MenuButton" type="Button" parent="EndPanel/VBox"]
