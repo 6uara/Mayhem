@@ -77,6 +77,22 @@ func test_toggle_pause_flips_is_paused() -> void:
 	assert_false(GameManager.is_paused)
 
 
+## Un alt-tab en medio de una oleada no puede costar la run.
+func test_losing_focus_mid_wave_pauses() -> void:
+	GameManager.state = GameManager.State.PLAYING
+	GameManager.pause_for_focus_loss()
+	assert_true(GameManager.is_paused)
+	GameManager.clear_freezes()
+
+
+func test_losing_focus_outside_a_wave_does_not_pause() -> void:
+	for state: GameManager.State in [GameManager.State.MENU,
+			GameManager.State.SHOPPING, GameManager.State.GAME_OVER]:
+		GameManager.state = state
+		GameManager.pause_for_focus_loss()
+		assert_false(GameManager.is_paused, "no pausa en %s" % GameManager.State.keys()[state])
+
+
 # run time
 
 func test_run_time_is_zero_while_in_the_menu() -> void:

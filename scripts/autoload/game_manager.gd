@@ -76,7 +76,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Perder el foco en medio de una oleada pausa.
+##
+## MAYHEM es una run sola y sin saves: un alt-tab, una notificacion que roba el
+## foco o un segundo monitor no pueden costar la partida mientras la horda sigue
+## pegando sin nadie al mando. Solo en PLAYING: la tienda no corre peligro, y
+## pausar encima de ella solo agregaria un panel que cerrar al volver. Recuperar
+## el foco no despausa: el jugador decide cuando sigue, con la mano en el mouse.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		pause_for_focus_loss()
+
+
 # Public API
+
+func pause_for_focus_loss() -> void:
+	if state == State.PLAYING:
+		set_paused(true)
+
 
 func start_run() -> void:
 	is_paused = false
@@ -95,6 +112,7 @@ func restart_run() -> void:
 	if scene == null:
 		await _reveal()
 		return
+	_drop_pooled_nodes()
 	var previous: Node = get_tree().current_scene
 	var error: int = get_tree().change_scene_to_packed(scene)
 	if error != OK:
@@ -115,6 +133,7 @@ func open_scene(path: String, new_state: State = State.MENU) -> void:
 	is_paused = false
 	state = new_state
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_drop_pooled_nodes()
 	var previous: Node = get_tree().current_scene
 	if scene == null:
 		await _reveal()
@@ -131,6 +150,7 @@ func return_to_menu() -> void:
 	is_paused = false
 	state = State.MENU
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_drop_pooled_nodes()
 	var previous: Node = get_tree().current_scene
 	if scene != null and get_tree().change_scene_to_packed(scene) != OK:
 		push_error("GameManager: failed to enter menu scene")
@@ -278,6 +298,18 @@ func _reveal() -> void:
 func _hide_loading() -> void:
 	if _loading != null:
 		_loading.finish()
+
+
+## Todo lo que salga de una escena de juego pasa por aca.
+##
+## Lo pooleado no cuelga de la escena sino de ObjectPool, que es un autoload: el
+## cambio de escena no lo toca. Solo la pantalla de fin de partida vaciaba el pool,
+## asi que salir desde la pausa ("Main menu") dejaba a los enemigos de esa oleada
+## vivos y corriendo abajo del menu, y la run siguiente prewarmeaba otros 48 encima.
+## Vaciarlo en cada cambio es gratis cuando ya esta vacio y cierra todas las salidas
+## a la vez, incluidas las que se agreguen despues.
+func _drop_pooled_nodes() -> void:
+	ObjectPool.clear()
 
 
 func _on_player_died() -> void:
