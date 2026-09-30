@@ -9,26 +9,34 @@ extends GutTest
 const MENU_SCENE: String = "res://scenes/main/main_menu.tscn"
 
 var _menu: Control
-var _saved: Array[Dictionary] = []
+## The leaderboard file exactly as it was on disk, or null if there was none.
+var _saved_file: Variant = null
 var _saved_profiles: Array[String] = []
 
 
 func before_each() -> void:
 	# The leaderboard is real user data on disk; a test must not overwrite it.
+	# Se guarda el archivo tal cual y no las filas: volver a cargarlas con
+	# submit_score() les borraba los trofeos y la fecha a las runs de quien juega
+	# en esta maquina, cada vez que corria la suite.
 	# Los perfiles tambien: guardar un puntaje recuerda el nombre, asi que correr
 	# la suite no puede dejarle "TESTER" en la lista a quien juega en esta maquina.
-	_saved = SaveManager.get_entries()
+	_saved_file = null
+	if FileAccess.file_exists(SaveManager.SAVE_PATH):
+		_saved_file = FileAccess.get_file_as_string(SaveManager.SAVE_PATH)
 	_saved_profiles = SaveManager.get_profiles()
 	_menu = add_child_autofree(load(MENU_SCENE).instantiate())
 	await wait_frames(2)
 
 
 func after_each() -> void:
-	SaveManager.clear_leaderboard()
-	for entry: Dictionary in _saved:
-		SaveManager.submit_score(int(entry.get("score", 0)),
-			float(entry.get("time", 0.0)), int(entry.get("waves", 0)),
-			String(entry.get("name", SaveManager.DEFAULT_NAME)))
+	if _saved_file == null:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManager.SAVE_PATH))
+	else:
+		var file: FileAccess = FileAccess.open(SaveManager.SAVE_PATH, FileAccess.WRITE)
+		file.store_string(String(_saved_file))
+		file.close()
+	SaveManager.load_leaderboard()
 	SaveManager.forget_profiles()
 	for index: int in range(_saved_profiles.size() - 1, -1, -1):
 		SaveManager.remember_profile(_saved_profiles[index])
@@ -139,6 +147,30 @@ func test_a_legacy_entry_without_a_name_still_loads() -> void:
 	var entries: Array[Dictionary] = SaveManager.get_entries()
 	assert_eq(entries.size(), 1, "no se pierde por no tener nombre")
 	assert_eq(String(entries[0].get("name", "")), SaveManager.DEFAULT_NAME)
+
+
+## El archivo lo puede tocar cualquiera. Una fila sin puntaje cargaba bien y
+## reventaba despues, en el sort o en el mejor puntaje del menu.
+func test_a_malformed_row_is_skipped_rather_than_crashing_later() -> void:
+	SaveManager.clear_leaderboard()
+	var file: FileAccess = FileAccess.open(SaveManager.SAVE_PATH, FileAccess.WRITE)
+	file.store_string(JSON.stringify([
+		{},
+		"not a row",
+		{"name": "BAD", "score": "lots", "time": 1.0, "waves": 1},
+		{"name": "LOW", "score": 100, "time": 60.0, "waves": 2, "trophies": [3, "ok"]},
+		{"name": "TOP", "score": 900, "time": 90.0, "waves": 5},
+	]))
+	file.close()
+	SaveManager.load_leaderboard()
+
+	var entries: Array[Dictionary] = SaveManager.get_entries()
+	assert_eq(entries.size(), 2, "solo quedan las filas que se pueden leer como runs")
+	assert_eq(String(entries[0]["name"]), "TOP", "y quedan ordenadas aunque el archivo no")
+	assert_eq(SaveManager.get_best_score(), 900)
+	assert_eq(entries[1]["trophies"], ["ok"], "un trofeo que no es un id se descarta")
+	SaveManager.submit_score(500, 80.0, 3, "MID")
+	assert_eq(SaveManager.get_entries().size(), 3, "y la tabla sigue aceptando runs")
 
 
 # ------------------------------------------------------------- los trofeos

@@ -115,19 +115,53 @@ func load_leaderboard() -> void:
 		push_warning("SaveManager: %s is not a leaderboard, ignoring it" % SAVE_PATH)
 		return
 	for entry: Variant in parsed:
-		if not entry is Dictionary:
-			continue
-		var row: Dictionary = entry
-		# Las entradas guardadas antes de que existieran los nombres siguen
-		# siendo runs validas: se leen con el nombre por defecto en vez de
-		# desaparecer de la tabla.
-		if not row.has("name"):
-			row["name"] = DEFAULT_NAME
-		# Lo mismo para las runs anteriores a los trofeos: una run sin trofeos y
-		# una run de antes de que existieran se ven igual, que es lo correcto.
-		if not row.has("trophies"):
-			row["trophies"] = []
-		_entries.push_back(row)
+		var row: Dictionary = _read_row(entry)
+		if not row.is_empty():
+			_entries.push_back(row)
+	# El archivo lo puede editar cualquiera: no se confia en que venga ordenado
+	# ni en que respete el tope.
+	_entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a["score"]) > int(b["score"]))
+	if _entries.size() > MAX_ENTRIES:
+		_entries.resize(MAX_ENTRIES)
+
+
+## Una fila del archivo, validada. Vacia si no se puede leer como una run.
+##
+## `user://leaderboard.json` es un archivo que el jugador puede tocar a mano. Una
+## fila sin `score` cargaba bien y reventaba despues, en el sort de
+## `submit_score()` o en `get_best_score()`. Lo imprescindible para ordenar y
+## mostrar (puntaje, tiempo, oleadas) tiene que ser un numero; lo demas se
+## completa con su valor por defecto.
+func _read_row(entry: Variant) -> Dictionary:
+	if not entry is Dictionary:
+		return {}
+	var raw: Dictionary = entry
+	for key: String in ["score", "time", "waves"]:
+		var value: Variant = raw.get(key)
+		if not (value is int or value is float):
+			return {}
+	# Las entradas guardadas antes de que existieran los nombres siguen siendo
+	# runs validas: se leen con el nombre por defecto en vez de desaparecer.
+	var name_value: Variant = raw.get("name")
+	var row_name: String = sanitize_name(name_value) if name_value is String else ""
+	# Lo mismo para las runs anteriores a los trofeos: una run sin trofeos y una
+	# de antes de que existieran se ven igual, que es lo correcto.
+	var trophies: Array = []
+	var trophy_value: Variant = raw.get("trophies")
+	if trophy_value is Array:
+		for id: Variant in trophy_value:
+			if id is String:
+				trophies.append(id)
+	var date_value: Variant = raw.get("date")
+	return {
+		"name": row_name if row_name != "" else DEFAULT_NAME,
+		"score": int(raw["score"]),
+		"time": float(raw["time"]),
+		"waves": int(raw["waves"]),
+		"date": date_value if date_value is String else "",
+		"trophies": trophies,
+	}
 
 
 func save_leaderboard() -> void:
