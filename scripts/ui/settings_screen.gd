@@ -33,8 +33,17 @@ const SCHEMA: Array = [
 	{"key": "video/fullscreen", "label": "Fullscreen", "type": "toggle"},
 	{"key": "video/vsync", "label": "V-Sync", "type": "toggle"},
 	{"key": "video/fps_cap", "label": "Frame rate cap", "type": "option",
-		"choices": [["60 FPS", 60], ["120 FPS", 120], ["144 FPS", 144],
-			["240 FPS", 240], ["Uncapped", 0]]},
+		"choices": [["Match monitor", -1], ["60 FPS", 60],
+			["120 FPS", 120], ["144 FPS", 144], ["240 FPS", 240], ["Uncapped", 0]]},
+	{"key": "video/render_scale", "label": "Render scale", "type": "option",
+		"choices": [["100% (native)", 100], ["85%", 85], ["75%", 75], ["67%", 67],
+			["50%", 50]]},
+	# Valores: SettingsManager.ANTI_ALIASING_* y FPS_CAP_MONITOR (-1). Literales
+	# porque SCHEMA es const.
+	{"key": "video/anti_aliasing", "label": "Anti-aliasing", "type": "option",
+		"choices": [["Off", 0], ["FXAA", 1], ["MSAA 2x", 2], ["MSAA 4x", 3], ["TAA", 4]]},
+	{"key": "video/shadow_quality", "label": "Shadow quality", "type": "option",
+		"choices": [["Low", 0], ["Medium", 1], ["High", 2]]},
 
 	{"section": "AUDIO"},
 	{"key": "audio/master_volume", "label": "Master", "type": "percent"},
@@ -85,6 +94,10 @@ var _snapshot: Dictionary = {}
 ## `toggled` igual que si lo hubiera tocado el jugador. Sin esto, abrir la
 ## pantalla se marcaba solo como "hay cambios sin aplicar".
 var _is_refreshing: bool = false
+## action -> the button that shows and rebinds it.
+var _bind_buttons: Dictionary = {}
+## The action waiting for its new key, or empty when nothing is listening.
+var _capturing_action: StringName = &""
 
 
 func _ready() -> void:
@@ -101,6 +114,9 @@ func _ready() -> void:
 ## escape key, or closing the options would also unpause the match underneath.
 func _input(event: InputEvent) -> void:
 	if not visible:
+		return
+	if _capturing_action != &"":
+		_capture(event)
 		return
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
 		close()
@@ -143,6 +159,81 @@ func _build() -> void:
 			continue
 		_rows.add_child(_make_row(entry))
 	_build_host_presenter_row()
+	_build_control_rows()
+
+
+## Outside SCHEMA for the same reason as the presenter: a binding is not a value in
+## DEFAULTS but an InputMap entry, and what it shows has to be read from there.
+##
+## Rebinding applies at once and survives Back, like a remapped key anywhere
+## else: the player just pressed the key they want, there is nothing to preview.
+func _build_control_rows() -> void:
+	_rows.add_child(_make_section("CONTROLS"))
+	for entry: Array in SettingsManager.REBINDABLE_ACTIONS:
+		var action: StringName = entry[0]
+		if not InputMap.has_action(action):
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override(&"separation", 16)
+		var label := Label.new()
+		label.text = String(entry[1])
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(label)
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(ROW_CONTROL_WIDTH, 0)
+		button.pressed.connect(_start_capture.bind(action))
+		row.add_child(button)
+		_bind_buttons[action] = button
+		_rows.add_child(row)
+	_refresh_bindings()
+
+
+func _start_capture(action: StringName) -> void:
+	_refresh_bindings()
+	_capturing_action = action
+	var button: Button = _bind_buttons.get(action)
+	if button != null:
+		button.text = "Press a key... (Esc cancels)"
+
+
+## Takes the next key or mouse button as the new binding. Escape cancels rather
+## than binding: it is the one key every menu in the game needs to keep.
+func _capture(event: InputEvent) -> void:
+	var bound: InputEvent = null
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo:
+		if key.physical_keycode == KEY_ESCAPE or key.keycode == KEY_ESCAPE:
+			_stop_capture()
+			get_viewport().set_input_as_handled()
+			return
+		var fresh := InputEventKey.new()
+		fresh.physical_keycode = key.physical_keycode if key.physical_keycode != KEY_NONE \
+			else key.keycode
+		bound = fresh
+	var mouse := event as InputEventMouseButton
+	if mouse != null and mouse.pressed:
+		var fresh_mouse := InputEventMouseButton.new()
+		fresh_mouse.button_index = mouse.button_index
+		bound = fresh_mouse
+	if bound == null:
+		return
+	SettingsManager.rebind_primary(_capturing_action, bound)
+	SettingsManager.save_settings()
+	_stop_capture()
+	get_viewport().set_input_as_handled()
+
+
+func _stop_capture() -> void:
+	_capturing_action = &""
+	_refresh_bindings()
+
+
+func _refresh_bindings() -> void:
+	for action: StringName in _bind_buttons:
+		var event: InputEvent = SettingsManager.get_primary_event(action)
+		(_bind_buttons[action] as Button).text = \
+			SettingsManager.describe_event(event) if event != null else "Unbound"
 
 
 ## Outside SCHEMA on purpose: the presenter list is data-driven
@@ -417,6 +508,7 @@ func _refresh_all() -> void:
 func _on_reset_pressed() -> void:
 	SettingsManager.reset_to_defaults()
 	_refresh_all()
+	_refresh_bindings()
 	_refresh_apply_state()
 
 

@@ -12,22 +12,21 @@ const PAUSE_SCENE: String = "res://scenes/ui/pause_menu.tscn"
 
 var _menu: CanvasLayer
 var _settings: SettingsScreen
-var _saved: Dictionary = {}
+const SettingsGuard = preload("res://tests/settings_guard.gd")
+
+var _guard: SettingsGuard = SettingsGuard.new()
 
 
 func before_each() -> void:
 	# Settings are global and persist to disk; a test must not rewrite the player's.
-	_saved = {}
-	for key: String in SettingsManager.DEFAULTS:
-		_saved[key] = SettingsManager.get_value(key)
+	_guard.take()
 	_menu = add_child_autofree(load(PAUSE_SCENE).instantiate())
 	_settings = _menu.get_node("Settings")
 	await wait_frames(2)
 
 
 func after_each() -> void:
-	for key: String in _saved:
-		SettingsManager.set_value(key, _saved[key])
+	_guard.restore()
 	GameManager.is_paused = false
 	get_tree().paused = false
 
@@ -81,8 +80,105 @@ func test_a_control_is_built_for_every_row() -> void:
 	# outside SCHEMA on purpose (the presenter list is data-driven - see its
 	# docstring) - +2, as long as the presenter catalog isn't empty.
 	var host_row_nodes: int = 2 if not NarratorManager.get_presenters().is_empty() else 0
-	assert_eq(built, SettingsScreen.SCHEMA.size() + host_row_nodes,
-		"every schema entry should produce exactly one node (%d rows + headers), plus the host presenter row" % rows)
+	# Y la seccion CONTROLS: su header mas una fila por accion rebindeable.
+	var control_rows: int = 1
+	for entry: Array in SettingsManager.REBINDABLE_ACTIONS:
+		if InputMap.has_action(entry[0]):
+			control_rows += 1
+	assert_eq(built, SettingsScreen.SCHEMA.size() + host_row_nodes + control_rows,
+		"every schema entry should produce exactly one node (%d rows + headers), plus the host presenter and control rows" % rows)
+
+
+# ---------------------------------------------------------------- rebinding
+
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	return event
+
+
+func test_every_rebindable_action_exists() -> void:
+	for entry: Array in SettingsManager.REBINDABLE_ACTIONS:
+		assert_true(InputMap.has_action(entry[0]), "%s is a real action" % entry[0])
+
+
+func test_rebinding_replaces_the_key_and_keeps_a_gamepad_binding() -> void:
+	var pad := InputEventJoypadButton.new()
+	pad.button_index = JOY_BUTTON_A
+	InputMap.action_add_event(&"jump", pad)
+	SettingsManager.rebind_primary(&"jump", _key(KEY_V))
+	var events: Array[InputEvent] = InputMap.action_get_events(&"jump")
+	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"jump")),
+		OS.get_keycode_string(KEY_V))
+	assert_eq(events.size(), 2, "one key, and the pad button stays")
+	assert_true(events.any(func(e: InputEvent) -> bool: return e is InputEventJoypadButton))
+
+
+## Dos acciones en la misma tecla dejan a una inalcanzable: se cambian de lugar.
+func test_taking_another_actions_key_swaps_them() -> void:
+	var jump_before: InputEvent = SettingsManager.get_primary_event(&"jump")
+	var dash_key: InputEvent = SettingsManager.get_primary_event(&"dash")
+	SettingsManager.rebind_primary(&"jump", dash_key)
+	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"jump")),
+		SettingsManager.describe_event(dash_key))
+	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"dash")),
+		SettingsManager.describe_event(jump_before), "dash took jump's old key")
+
+
+func test_the_options_screen_captures_the_next_key() -> void:
+	await _open_options()
+	_settings._start_capture(&"reload")
+	var press := InputEventKey.new()
+	press.physical_keycode = KEY_T
+	press.pressed = true
+	_settings._capture(press)
+	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"reload")),
+		OS.get_keycode_string(KEY_T))
+	assert_eq((_settings._bind_buttons[&"reload"] as Button).text, OS.get_keycode_string(KEY_T))
+
+
+func test_escape_cancels_a_capture_without_binding() -> void:
+	await _open_options()
+	var before: String = SettingsManager.describe_event(SettingsManager.get_primary_event(&"reload"))
+	_settings._start_capture(&"reload")
+	var escape := InputEventKey.new()
+	escape.physical_keycode = KEY_ESCAPE
+	escape.pressed = true
+	_settings._capture(escape)
+	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"reload")), before)
+	assert_eq(_settings._capturing_action, &"", "and it stops listening")
+
+
+# ------------------------------------------------------------------- video
+
+func test_match_monitor_follows_the_refresh_rate() -> void:
+	assert_eq(SettingsManager.resolve_fps_cap(SettingsManager.FPS_CAP_MONITOR, 143.9), 144)
+	assert_eq(SettingsManager.resolve_fps_cap(SettingsManager.FPS_CAP_MONITOR, -1.0), 60,
+		"a monitor that does not report falls back to 60, not uncapped")
+	assert_eq(SettingsManager.resolve_fps_cap(0), 0, "uncapped stays uncapped")
+	assert_eq(SettingsManager.resolve_fps_cap(120), 120)
+
+
+func test_render_scale_below_native_turns_on_fsr() -> void:
+	SettingsManager.set_value("video/render_scale", 67)
+	SettingsManager.apply_all()
+	var viewport: Viewport = get_tree().root
+	assert_almost_eq(viewport.scaling_3d_scale, 0.67, 0.001)
+	assert_eq(viewport.scaling_3d_mode, Viewport.SCALING_3D_MODE_FSR)
+	SettingsManager.set_value("video/render_scale", 100)
+	SettingsManager.apply_all()
+	assert_eq(viewport.scaling_3d_mode, Viewport.SCALING_3D_MODE_BILINEAR, "native is not upscaled")
+
+
+func test_anti_aliasing_options_reach_the_viewport() -> void:
+	var viewport: Viewport = get_tree().root
+	SettingsManager.set_value("video/anti_aliasing", SettingsManager.ANTI_ALIASING_MSAA_4X)
+	SettingsManager.apply_all()
+	assert_eq(viewport.msaa_3d, Viewport.MSAA_4X)
+	SettingsManager.set_value("video/anti_aliasing", SettingsManager.ANTI_ALIASING_FXAA)
+	SettingsManager.apply_all()
+	assert_eq(viewport.msaa_3d, Viewport.MSAA_DISABLED)
+	assert_eq(viewport.screen_space_aa, Viewport.SCREEN_SPACE_AA_FXAA)
 
 
 # ------------------------------------------------------------------ behaviour
