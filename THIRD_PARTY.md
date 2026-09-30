@@ -45,17 +45,21 @@ the fonts are not sold on their own.
 | IBM Plex Mono (SemiBold) | Copyright (c) 2017 IBM Corp. | <https://github.com/IBM/plex> |
 | Archivo (Variable) | Copyright (c) Omnibus-Type | <https://github.com/Omnibus-Type/Archivo> |
 
-> **Open item.** The OFL requires the licence text itself to be distributed with the fonts, and
-> `ui/fonts/` currently holds only the font files. Download `OFL.txt` from each project above
-> and commit it next to the fonts (`ui/fonts/OFL-IBMPlex.txt`, `ui/fonts/OFL-Archivo.txt`)
-> before the public release. Naming the licence here is necessary but not by itself sufficient.
+The full licence texts, taken verbatim from each project's repository, sit next to the fonts:
+[ui/fonts/OFL-IBMPlex.txt](ui/fonts/OFL-IBMPlex.txt) (IBM Plex, Reserved Font Name "Plex") and
+[ui/fonts/OFL-Archivo.txt](ui/fonts/OFL-Archivo.txt) (Copyright 2020 The Archivo Project
+Authors). A `.txt` is not a Godot resource, so the release presets carry an `include_filter` for
+them — see [docs/EXPORT.md](docs/EXPORT.md), checklist item 6.
 
 ## Original assets
 
-Every model, texture, shader, sound effect and music track in `assets/` is original to this
-project. The current SFX and music are procedurally generated placeholders produced by
-`tools/generate_placeholder_sfx.py` and `tools/generate_placeholder_music.py` — no third-party
-material, no attribution owed. See `assets/audio/music/CREDITS.md`.
+Every model, texture, shader and sound effect in `assets/` is original to this project. The
+current SFX are procedurally generated placeholders produced by
+`tools/generate_placeholder_sfx.py` — no third-party material, no attribution owed.
+
+> **Open item — music.** The six tracks in `assets/audio/music/` replaced the generated
+> placeholders and their origin is not recorded yet: composer or licensor, licence and any
+> attribution string are pending in `assets/audio/music/CREDITS.md`. Release blocker.
 
 **If licensed or commissioned audio replaces the placeholders, add it to this file in the same
 pass** — title, composer or licensor, licence, and any attribution string the licence requires

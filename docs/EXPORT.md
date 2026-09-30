@@ -91,6 +91,7 @@ name="Windows Dev"
 platform="Windows Desktop"
 custom_features="dev"
 export_filter="all_resources"
+include_filter="ui/fonts/OFL-*.txt"
 exclude_filter=""
 export_path="builds/dev/mayhem.exe"
 
@@ -99,6 +100,7 @@ name="Windows Release"
 platform="Windows Desktop"
 custom_features="release"
 export_filter="all_resources"
+include_filter="ui/fonts/OFL-*.txt"
 exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*"
 export_path="builds/release/mayhem.exe"
 
@@ -107,6 +109,7 @@ name="Linux Release"
 platform="Linux"
 custom_features="release"
 export_filter="all_resources"
+include_filter="ui/fonts/OFL-*.txt"
 exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*"
 export_path="builds/release/mayhem.x86_64"
 ```
@@ -167,6 +170,11 @@ in-editor if you check `OS.has_feature("dev") or OS.has_feature("editor")` — s
    alone.
 4. Launch the release build and confirm no Debug Draw geometry is visible.
 5. Confirm 60 FPS with a full elite wave on screen (section 10 of `CLAUDE.md`).
-6. **En el build, no en el editor**: abrir Options y Best runs desde el menu, y Options
+6. **Las licencias de las fuentes viajan con el build.** La OFL exige que el texto acompañe a
+   las fuentes, y un `.txt` no es un recurso: sin el `include_filter="ui/fonts/OFL-*.txt"` de
+   los presets de arriba, Godot no lo mete en el `.pck`. Confirmar en el log del export
+   `Storing File: res://ui/fonts/OFL-IBMPlex.txt` y `OFL-Archivo.txt`, y ademas copiar los dos
+   archivos al lado del ejecutable en el `.zip` que se sube a itch.io.
+7. **En el build, no en el editor**: abrir Options y Best runs desde el menu, y Options
    desde la pausa. Los tres paneles tienen que quedar centrados. Es el unico sintoma de la
    trampa de `layout_mode` de mas arriba, y no se ve corriendo desde el editor.
