@@ -4,6 +4,11 @@ tags: [mayhem, backlog, estado]
 
 # MAYHEM — Estado del backlog al 2026-08-25
 
+> **Desactualizado.** El estado al 2026-09-30 esta en
+> [PLAN_PULIDO.md](PLAN_PULIDO.md). Desde aca entraron el coliseo, el publico, los
+> modelos de Bomber y Healer, gamepad, rebind y el log de runs; lo de abajo queda
+> como registro de lo que se verifico en agosto.
+
 Auditoría del repo (`develop` @ `ae71de0`, más el árbol de trabajo sin
 commitear) cruzada contra [PLAN_BACKLOG_RESTANTE.md](PLAN_BACKLOG_RESTANTE.md),
 que estaba escrito contra el estado del 2026-08-10 y quedó desactualizado: de
