@@ -27,6 +27,16 @@ class StubShop:
 		close_count += 1
 
 
+## Hands WaveManager a body per spawn, so a wave stays open until something dies.
+class StubSpawner:
+	extends Node
+
+	func spawn(_data: EnemyData, _doors: Array) -> Node:
+		var body := Node.new()
+		add_child(body)
+		return body
+
+
 var _director: MatchDirector
 var _shop: StubShop
 
@@ -56,6 +66,12 @@ func before_each() -> void:
 	_director.first_wave_delay = 0.0
 	_director.shop_open_delay = 0.0
 	add_child_autofree(_director)
+	await wait_physics_frames(3)
+
+
+## Starts the match over, for a test that changed what the director runs against.
+func _director_restarted() -> void:
+	_director.start_match()
 	await wait_physics_frames(3)
 
 
@@ -112,6 +128,13 @@ func test_player_death_stops_the_match() -> void:
 ## WaveManager escuchan `player_died` antes que el director, y reseteaban todo:
 ## las derrotas quedaban con la plata inicial y 0 oleadas.
 func test_a_death_scores_what_the_player_had_when_they_fell() -> void:
+	# Sin spawner, WaveManager no cuenta a nadie vivo y cada oleada se da por
+	# limpia sola: la segunda terminaba el match antes de que el jugador pudiera
+	# morir en ella, y el test media un director que ya no estaba corriendo.
+	var spawner := StubSpawner.new()
+	add_child_autofree(spawner)
+	WaveManager.spawner = spawner
+	await _director_restarted()
 	EventBus.enemy_killed.emit(&"test", Vector3.ZERO, 10)
 	await wait_seconds(0.3)
 	_shop.close()

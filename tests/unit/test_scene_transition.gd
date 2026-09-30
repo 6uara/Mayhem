@@ -8,7 +8,10 @@ func before_each() -> void:
 	_transition = add_child_autofree(
 		load("res://scenes/ui/scene_transition.tscn").instantiate())
 	_transition.duration = 0.05
-	await wait_physics_frames(1)
+	# Frames de proceso y no de fisica: el warm-up del shader deja el rect visible
+	# un process_frame, y un frame de fisica puede terminar antes que ese - el
+	# test de "empieza escondido" fallaba segun como cayeran los dos relojes.
+	await wait_frames(2)
 
 
 func test_starts_hidden() -> void:
