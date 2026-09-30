@@ -56,6 +56,8 @@ const DEATH_SOUND_PATH: String = "res://assets/audio/sfx/player/player_death.wav
 @export var movement: MovementComponent
 @export var grapple: GrappleComponent
 @export var utility: UtilityComponent
+## Adds the dash's FOV punch on top of ours; see `_apply_fov()`.
+@export var camera_feel: CameraFeelComponent
 
 ## The equipped weapon. Everything that used to read `player.weapon` still can;
 ## the holder owns which one that is.
@@ -270,7 +272,11 @@ func _apply_fov(delta: float) -> void:
 	if camera == null:
 		return
 	var target: float = weapon.get_current_fov(_base_fov) if weapon != null else _base_fov
-	camera.fov = target + _tick_speed_fov(delta)
+	var punch: float = camera_feel.get_fov_offset() if camera_feel != null else 0.0
+	if weapon != null:
+		# Same rule as the speed FOV: a punch through the sights is a punch in the eye.
+		punch *= 1.0 - weapon.ads_progress
+	camera.fov = target + _tick_speed_fov(delta) + punch
 
 
 ## Widens the view as ground speed climbs past a normal run.

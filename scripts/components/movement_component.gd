@@ -16,6 +16,9 @@ signal jumped()
 ## Fires only when a mantle actually boosts the player up a ledge - a probe that
 ## finds nothing mantleable is not "mantling".
 signal mantled()
+## Fires on the frame a dash starts, with its horizontal world direction. The
+## camera answers this one and not EventBus.dash_used, which carries no direction.
+signal dashed(direction: Vector3)
 
 enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 
@@ -403,6 +406,7 @@ func _try_dash(wish_direction: Vector3) -> void:
 	state = State.DASHING
 	break_snare()
 	AudioPool.play_3d(dash_sound, body.global_position, AudioPool.BUS_WORLD)
+	dashed.emit(_dash_direction)
 	EventBus.dash_used.emit(dash_charges.get_available())
 
 

@@ -58,6 +58,17 @@ signal stepped()
 @export var land_stiffness: float = 150.0
 @export var land_damping: float = 15.0
 
+@export_group("Dash")
+## Degrees of FOV the dash punches out at its peak. On top of the speed FOV, which
+## is smooth on purpose and so never reads as a hit.
+@export var dash_fov_punch: float = 7.0
+## Metres the view is left behind, opposite the dash, at the peak.
+@export var dash_kick: float = 0.07
+## Spring frequency of both. Critically damped: out fast, back once, no wobble. At
+## 18 rad/s the peak lands at ~55ms and it has settled by ~0.35s - about twice the
+## dash itself, so the camera finishes answering just after the body does.
+@export var dash_frequency: float = 18.0
+
 ## Below this speed the player is not really walking, so no step fires.
 @export var step_min_speed: float = 1.5
 
@@ -67,6 +78,14 @@ var _tilt_degrees: float = 0.0
 var _land_offset: float = 0.0
 var _land_velocity: float = 0.0
 var _rest_position: Vector3 = Vector3.ZERO
+## One normalised curve drives the whole dash reaction: 0 at rest, 1 at the peak.
+## FOV and kick are both scaled off it, so they can never drift out of sync.
+var _dash_amount: float = 0.0
+## Seconds since the dash started; INF when there is no reaction playing.
+var _dash_elapsed: float = INF
+## Where the kick pushes, in view_node's parent space. Fixed at the dash, so turning
+## mid-dash does not swing the kick around with the head.
+var _dash_kick_direction: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -74,6 +93,13 @@ func _ready() -> void:
 		_rest_position = view_node.position
 	if movement != null:
 		movement.landed.connect(_on_landed)
+		movement.dashed.connect(_on_dashed)
+
+
+## Extra degrees of FOV from the dash right now. Player owns the camera's FOV and
+## adds this on top; see `Player._apply_fov()`.
+func get_fov_offset() -> float:
+	return _dash_amount * dash_fov_punch
 
 
 func _physics_process(delta: float) -> void:
@@ -87,6 +113,7 @@ func _physics_process(delta: float) -> void:
 	_tick_bob(speed, grounded, delta)
 	_tick_tilt(delta)
 	_tick_landing(delta)
+	_tick_dash(delta)
 	_apply()
 
 
@@ -131,6 +158,21 @@ func _tick_landing(delta: float) -> void:
 		_land_velocity = 0.0
 
 
+## The impulse response of a critically damped spring, evaluated in closed form:
+## w*e*t*exp(-w*t) peaks at exactly 1.0 when t = 1/w. Closed form and not stepped
+## like the landing spring, because at 18 rad/s the damping term is strong enough
+## that an Euler step at 60Hz eats more than half the peak.
+func _tick_dash(delta: float) -> void:
+	if _dash_elapsed == INF:
+		return
+	_dash_elapsed += delta
+	var w: float = dash_frequency
+	_dash_amount = w * exp(1.0) * _dash_elapsed * exp(-w * _dash_elapsed)
+	if _dash_elapsed * w > 8.0:
+		_dash_amount = 0.0
+		_dash_elapsed = INF
+
+
 func _apply() -> void:
 	var offset := Vector3.ZERO
 	if _bob_enabled():
@@ -140,6 +182,7 @@ func _apply() -> void:
 		offset.y = -absf(sin(_bob_phase)) * bob_vertical * scale
 		offset.x = cos(_bob_phase) * bob_horizontal * scale
 	offset.y += _land_offset
+	offset += _dash_kick_direction * (_dash_amount * dash_kick)
 	view_node.position = _rest_position + offset
 	view_node.rotation_degrees.z = _tilt_degrees
 
@@ -164,3 +207,17 @@ func _on_landed(fall_speed: float) -> void:
 	var punch: float = minf(fall_speed * land_punch_scale, land_punch_max)
 	_land_offset = -punch
 	_land_velocity = 0.0
+
+
+func _on_dashed(direction: Vector3) -> void:
+	# Same switch as the landing: a punch is a shake, whatever axis it is on.
+	if not bool(SettingsManager.get_value("accessibility/screenshake_enabled")):
+		return
+	_dash_amount = 0.0
+	_dash_elapsed = 0.0
+	_dash_kick_direction = Vector3.ZERO
+	var parent: Node3D = view_node.get_parent() as Node3D if view_node != null else null
+	if parent != null and direction != Vector3.ZERO:
+		# The body surges ahead and the view lags: push opposite the dash, in the
+		# space view_node's position is written in.
+		_dash_kick_direction = parent.global_basis.orthonormalized().inverse() * -direction

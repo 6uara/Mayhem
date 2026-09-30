@@ -91,7 +91,7 @@ scale_max = 0.8
 damping_min = 2.0
 damping_max = 4.0
 
-[node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon_holder", "recoil", "health", "stats", "movement", "grapple", "utility")]
+[node name="Player" type="CharacterBody3D" groups=["player"] node_paths=PackedStringArray("head", "camera", "weapon_holder", "recoil", "health", "stats", "movement", "grapple", "utility", "camera_feel")]
 collision_layer = 2
 collision_mask = 1
 script = ExtResource("1_player")
@@ -104,6 +104,7 @@ stats = NodePath("StatsComponent")
 movement = NodePath("MovementComponent")
 grapple = NodePath("GrappleComponent")
 utility = NodePath("UtilityComponent")
+camera_feel = NodePath("CameraFeelComponent")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
