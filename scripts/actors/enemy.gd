@@ -1090,8 +1090,9 @@ func heal_nearby_allies() -> int:
 	if data == null:
 		return 0
 	var patients: Array = []
-	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
-		var other := node as Enemy
+	# La lista de vivos y no el grupo: sin nadie herido, el arbol del Healer vuelve
+	# a preguntar esto en cada tick, y get_nodes_in_group() arma un Array por vez.
+	for other: Enemy in get_active_enemies():
 		if other == null or other == self or not other.is_active or other.health == null:
 			continue
 		if other.get_faction() != get_faction():
