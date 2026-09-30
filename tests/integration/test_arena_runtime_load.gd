@@ -190,3 +190,29 @@ func test_the_anchors_hang_within_grapple_range_of_the_floor() -> void:
 		# scenery the player can never reach.
 		assert_lt(node.position.y, 28.0, "%s is out of grapple range" % node.name)
 	assert_gt(found, 0, "the default arena hangs anchors")
+
+
+## The platform's travel comes from the grid and its rotation, in world space -
+## the scene reads it that way, and ignored the piece's rotation before.
+func test_moving_platforms_travel_along_their_rotated_path() -> void:
+	var runtime: ArenaRuntime = ArenaLoader.load_arena(
+		_default(), _parent, ArenaSession.catalog)
+	var catalog: PieceCatalog = ArenaSession.catalog
+	var piece: PieceDefinition = catalog.get_piece(&"moving_platform")
+	var checked: int = 0
+	for entry: PlacementEntry in _default().placements:
+		if entry.piece_id != &"moving_platform":
+			continue
+		var node := runtime.geometry_root.get_node("moving_platform_%d_%d_%d"
+			% [entry.cell.x, entry.cell.y, entry.cell.z]) as MovingPlatform
+		assert_not_null(node)
+		assert_eq(node.travel, Vector3(piece.get_travel(entry.rotation)) * catalog.cell_size)
+		assert_false(node.is_in_group(ArenaRuntime.NAVIGATION_SOURCE_GROUP),
+			"baked at its start, the navmesh would leave the horde walking on air")
+		# Its top flush with a floor tile of the same level, so stepping on is a step.
+		var floor_top: float = catalog.cell_to_world(entry.cell).y \
+			+ catalog.cell_size.y * catalog.get_piece(&"floor_1x1").greybox_extents.y
+		var slab: BoxShape3D = (node.get_node("CollisionShape3D") as CollisionShape3D).shape
+		assert_almost_eq(node.position.y + slab.size.y * 0.5, floor_top, 0.02)
+		checked += 1
+	assert_gt(checked, 0)

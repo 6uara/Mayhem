@@ -10,7 +10,9 @@ extends AnimatableBody3D
 
 signal arrived(at_end: bool)
 
-## Local-space offset from the start position to the far end.
+## Offset from the start position to the far end, in world space - rotating the
+## platform does not turn it. The arena loader computes it from the piece's
+## `travel_cells` and its rotation; a hand-placed platform authors it directly.
 @export var travel: Vector3 = Vector3(0, 0, 10)
 @export var speed: float = 3.0
 ## Seconds held at each end, so the player can step on without timing a frame.

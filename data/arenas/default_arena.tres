@@ -1386,12 +1386,14 @@ rotation = 3
 [sub_resource type="Resource" id="Resource_i35us"]
 script = ExtResource("2_4cxl0")
 piece_id = &"moving_platform"
-cell = Vector3i(11, 0, 11)
+cell = Vector3i(8, 1, 11)
+rotation = 1
 
 [sub_resource type="Resource" id="Resource_hbct4"]
 script = ExtResource("2_4cxl0")
 piece_id = &"moving_platform"
-cell = Vector3i(21, 0, 21)
+cell = Vector3i(20, 1, 8)
+rotation = 2
 
 [sub_resource type="Resource" id="Resource_13qrc"]
 script = ExtResource("2_4cxl0")

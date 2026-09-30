@@ -24,6 +24,9 @@ const REFUSAL_TEXT: Dictionary = {
 	&"unknown_piece": "That piece is not in the catalog.",
 	&"piece_limit": "That is as many of those as an arena takes.",
 	&"nothing_there": "There is nothing there to move.",
+	&"platform_path": "A moving platform travels through there - keep its path clear.",
+	&"path_blocked": "Its path is blocked: every cell it travels through has to be empty.",
+	&"path_out_of_bounds": "Its path leaves the grid. Turn it with R or move it in.",
 }
 ## Shared with the in-game editor: one list of grid sizes, two front ends.
 const SIZE_PRESETS: Dictionary = ArenaData.SIZE_PRESETS

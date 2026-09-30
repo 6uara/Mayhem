@@ -48,11 +48,30 @@ static func _build_geometry(runtime: ArenaRuntime, data: ArenaData,
 		# Ground pieces are built up from the cell floor; everything else sits on
 		# top of whatever ground is in the cell. Without the lift a bounce pad on
 		# a 0.75m floor tile spends most of its height inside it.
-		node.position = catalog.cell_to_world(entry.cell) + Vector3(
-			0.0, 0.0 if piece.is_ground() else graph.surface_offset(entry.cell), 0.0)
+		node.position = piece_position(piece, entry, catalog, graph)
 		node.rotation.y = deg_to_rad(-90.0 * entry.rotation)
-		_mark_navigation_source(node)
+		if piece.moves():
+			# El recorrido sale de la grilla y del giro de la pieza, y se le pasa
+			# antes de que entre al arbol: la plataforma fija su origen en _ready.
+			# La escena lo lee en espacio mundo, asi que va ya girado.
+			node.set(&"travel", Vector3(piece.get_travel(entry.rotation)) * catalog.cell_size)
+		else:
+			# Una plataforma movil no va al navmesh: se bakearia en su punto de
+			# partida y la horda caminaria sobre aire en cuanto arranca.
+			_mark_navigation_source(node)
 		runtime.geometry_root.add_child(node)
+
+
+## Donde va el origen de la pieza. Las de piso se arman desde el piso de la
+## celda; lo demas se apoya sobre lo que haya en ella, y lo que cuelga en una
+## celda vacia queda a su `hang_height`. El preview del editor usa esta misma
+## cuenta: lo que se ve al poner es lo que se juega.
+static func piece_position(piece: PieceDefinition, entry: PlacementEntry,
+		catalog: PieceCatalog, graph: GridGraph) -> Vector3:
+	var lift: float = 0.0
+	if not piece.is_ground():
+		lift = graph.surface_offset(entry.cell) + piece.hang_height
+	return catalog.cell_to_world(entry.cell) + Vector3(0.0, lift, 0.0)
 
 
 ## A jump link the enemies can use becomes a real NavigationLink3D, so the same

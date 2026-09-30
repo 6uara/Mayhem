@@ -241,10 +241,13 @@ func _build_traversal() -> void:
 	_place(&"jump_link", Vector3i(mid, 0, FLOOR - 8), 0)
 	_place(&"jump_link", Vector3i(6, 0, mid), 1)
 	_place(&"jump_link", Vector3i(FLOOR - 8, 0, mid), 3)
-	for cell: Vector3i in [
-		Vector3i(11, 0, 11), Vector3i(21, 0, 21),
-	]:
-		_decorate(&"moving_platform", cell)
+	# Dos ferries entre una isla y el anillo, a la altura de los dos: salen del
+	# borde de la isla y llegan al del anillo por un hueco de cuatro celdas. El
+	# recorrido es (0, 0, +3) sin rotar; un cuarto de vuelta lo manda a -X y
+	# media vuelta a -Z. Antes andaban por el piso, arrastrando una losa entre la
+	# cobertura, que no llevaba a ningun lado.
+	_place(&"moving_platform", Vector3i(8, LEDGE_LEVEL, 11), 1)
+	_place(&"moving_platform", Vector3i(20, LEDGE_LEVEL, 8), 2)
 	# Las anclas cuelgan sobre piso abierto, una altura sobre las perchas: lo que
 	# hace util a una es estar arriba tuyo, asi que van en celdas vacias.
 	for cell: Vector3i in [

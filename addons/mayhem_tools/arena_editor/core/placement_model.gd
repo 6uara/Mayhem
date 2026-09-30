@@ -44,6 +44,7 @@ func refusal_for(piece_id: StringName, cell: Vector3i, rotation: int = 0,
 	if piece.max_instances > 0 and count_of(piece_id) >= piece.max_instances:
 		return &"piece_limit"
 	var footprint: Array[Vector3i] = piece.get_footprint(rotation)
+	var paths: Dictionary = platform_path_cells()
 	for offset: Vector3i in footprint:
 		var target: Vector3i = cell + offset
 		if not arena.is_in_bounds(target):
@@ -52,17 +53,53 @@ func refusal_for(piece_id: StringName, cell: Vector3i, rotation: int = 0,
 			return &"too_low"
 		if is_occupied(target, piece.is_ground()):
 			return &"cell_taken"
+		# Por donde pasa una plataforma movil no se construye nada, de ninguna
+		# capa: una baldosa ahi es una pared contra la que la plataforma choca.
+		if paths.has(target):
+			return &"platform_path"
 		if piece.is_ground():
 			continue
 		if piece.support == PieceDefinition.Support.FLOOR and not has_flat_ground(target):
 			return &"needs_floor"
 		if piece.support == PieceDefinition.Support.EMPTY 				and get_entry_at(target, true) != null:
 			return &"needs_empty"
+	if piece.moves():
+		var refusal: StringName = _path_refusal(piece, cell, rotation, paths)
+		if refusal != &"":
+			return refusal
 	if dry_run:
 		return &""
 	_snapshot()
 	arena.placements.append(PlacementEntry.make(piece_id, cell, rotation))
 	changed.emit()
+	return &""
+
+
+## Las celdas que recorre cada pieza movil puesta, sin contar la suya (esa ya la
+## cubre su footprint): celda -> la entrada que pasa por ahi. Es la reserva que
+## `refusal_for` respeta, y lo que el preview dibuja.
+func platform_path_cells() -> Dictionary:
+	var cells: Dictionary = {}
+	for entry: PlacementEntry in arena.placements:
+		var piece: PieceDefinition = _piece(entry.piece_id)
+		if piece == null or not piece.moves():
+			continue
+		for offset: Vector3i in piece.get_path_offsets(entry.rotation):
+			cells[entry.cell + offset] = entry
+	return cells
+
+
+## Por que el recorrido de `piece` puesta en `cell` no entra, o vacio si entra.
+## Cada celda del camino tiene que estar dentro de la grilla y vacia en las dos
+## capas, y no ser del camino de otra plataforma: dos que se cruzan chocan.
+func _path_refusal(piece: PieceDefinition, cell: Vector3i, rotation: int,
+		paths: Dictionary) -> StringName:
+	for offset: Vector3i in piece.get_path_offsets(rotation):
+		var target: Vector3i = cell + offset
+		if not arena.is_in_bounds(target):
+			return &"path_out_of_bounds"
+		if is_occupied(target) or paths.has(target):
+			return &"path_blocked"
 	return &""
 
 
@@ -145,21 +182,10 @@ func rotate_at(cell: Vector3i, turns: int = 1) -> bool:
 		entry = get_entry_at(cell, true)
 	if entry == null:
 		return false
-	var piece: PieceDefinition = _piece(entry.piece_id)
-	if piece == null:
-		return false
-	var new_rotation: int = posmod(entry.rotation + turns, 4)
-	for offset: Vector3i in piece.get_footprint(new_rotation):
-		var target: Vector3i = entry.cell + offset
-		if not arena.is_in_bounds(target):
-			return false
-		var blocker: PlacementEntry = get_entry_at(target, piece.is_ground())
-		if blocker != null and blocker != entry:
-			return false
-	_snapshot()
-	entry.rotation = new_rotation
-	changed.emit()
-	return true
+	# Girar es moverla a su misma celda con otro giro, y pasa por las mismas
+	# reglas que poner: antes solo miraba el footprint, y a una plataforma movil
+	# le cambia el recorrido entero.
+	return _move_entry(entry, entry.cell, entry.rotation + turns, false) == &""
 
 
 func set_player_spawn(cell: Vector3i) -> bool:
@@ -229,6 +255,15 @@ func move_to(from: Vector3i, to: Vector3i, rotation: Variant = null,
 		entry = get_entry_at(from, true)
 	if entry == null:
 		return &"nothing_there"
+	return _move_entry(entry, to, rotation, dry_run)
+
+
+## `move_to` con la pieza ya elegida. Aparte porque girar tiene que mover
+## exactamente la pieza que eligio, y buscarla de nuevo por su celda de origen
+## agarraba lo que estuviera parado encima: girar un piso de 3x3 giraba la
+## cobertura apoyada en su esquina.
+func _move_entry(entry: PlacementEntry, to: Vector3i, rotation: Variant,
+		dry_run: bool) -> StringName:
 	var new_rotation: int = entry.rotation if rotation == null else posmod(int(rotation), 4)
 	# El estado previo se guarda antes de tocar nada y se confirma solo si el
 	# movimiento sale: un rechazo no tiene que gastar el unico undo que hay.
@@ -275,10 +310,17 @@ func fill_floor(level: int = 0) -> int:
 	var taken: Dictionary = {}
 	for entry: PlacementEntry in arena.placements:
 		var piece: PieceDefinition = _piece(entry.piece_id)
-		if piece == null or not piece.is_ground():
+		# Lo que cuelga en una celda vacia (anclas, plataformas moviles) tambien la
+		# ocupa para esto: un piso debajo le quita justo lo que necesita.
+		if piece == null or not (piece.is_ground()
+				or piece.support == PieceDefinition.Support.EMPTY):
 			continue
 		for offset: Vector3i in piece.get_footprint(entry.rotation):
 			taken[entry.cell + offset] = true
+	# El recorrido de las plataformas moviles tambien: embaldosarlo las deja
+	# chocando contra el piso que se les puso adelante.
+	for cell: Vector3i in platform_path_cells():
+		taken[cell] = true
 
 	# El estado previo se guarda antes de embaldosar nada: un snapshot tomado
 	# despues seria una foto del piso ya puesto, y Z no devolveria nada.

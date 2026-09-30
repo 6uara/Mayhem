@@ -40,9 +40,13 @@ func rebuild() -> void:
 		if node == null:
 			continue
 		# Same lift as the loader: what you place is what you get.
-		node.position = catalog.cell_to_world(entry.cell) + Vector3(
-			0.0, 0.0 if piece.is_ground() else graph.surface_offset(entry.cell), 0.0)
+		node.position = ArenaLoader.piece_position(piece, entry, catalog, graph)
 		node.rotation.y = deg_to_rad(-90.0 * entry.rotation)
+		if piece.moves():
+			# Quieta en su punta de partida: una plataforma andando en el editor
+			# no se puede apuntar, y el recorrido ya lo dice la linea.
+			node.process_mode = Node.PROCESS_MODE_DISABLED
+			_overlay.add_child(_travel_path(piece, entry.rotation, node.position))
 		_geometry.add_child(node)
 
 	_overlay.add_child(ArenaGizmos.build_grid(model.arena.grid_size, catalog.cell_size, level))
@@ -66,11 +70,25 @@ func show_ghost(piece_id: StringName, cell: Vector3i, rotation: int, valid: bool
 		hide_ghost()
 		_ghost = PieceMeshBuilder.build_preview(piece, model.catalog,
 			ArenaGizmos.GHOST_VALID if valid else ArenaGizmos.GHOST_INVALID)
+		if piece.moves():
+			# El recorrido va con el ghost, en su espacio y sin girar: el ghost ya
+			# esta girado, y asi la linea gira con R sin rearmarse. Rojo si no
+			# entra, porque lo que suele no entrar es justamente el camino.
+			_ghost.add_child(ArenaGizmos.build_travel_path(
+				Vector3(0.0, _ghost_top(piece), 0.0),
+				Vector3(piece.travel_cells) * model.catalog.cell_size
+					+ Vector3(0.0, _ghost_top(piece), 0.0),
+				_footprint_size(piece),
+				ArenaGizmos.TRAVEL_PATH_COLOR if valid else ArenaGizmos.GHOST_INVALID))
 		_ghost_piece_id = piece_id
 		_ghost_rotation = rotation
 		_ghost_valid = valid
 		add_child(_ghost)
 	var lift: float = 0.0 if piece.is_ground() else model.build_graph().surface_offset(cell)
+	# El ghost es la caja gris, armada desde el piso de la celda; la escena real
+	# cuelga centrada a su `hang_height`. Se baja media caja para que coincidan.
+	if piece.hang_height > 0.0:
+		lift += piece.hang_height - _greybox_height(piece) * 0.5
 	_ghost.position = model.catalog.cell_to_world(cell) + Vector3(0.0, lift, 0.0)
 	_ghost.rotation.y = deg_to_rad(-90.0 * rotation)
 
@@ -122,6 +140,33 @@ func hide_ghost() -> void:
 
 
 # Private
+
+## El recorrido de una pieza movil ya puesta, en el espacio del preview.
+## `origin` es donde quedo el origen de la escena, que cuelga centrada.
+func _travel_path(piece: PieceDefinition, rotation: int, origin: Vector3) -> Node3D:
+	var top := Vector3(0.0, _greybox_height(piece) * 0.5, 0.0)
+	var from: Vector3 = origin + top
+	var to: Vector3 = from + Vector3(piece.get_travel(rotation)) * model.catalog.cell_size
+	var size: Vector2 = _footprint_size(piece)
+	if posmod(rotation, 2) == 1:
+		size = Vector2(size.y, size.x)
+	return ArenaGizmos.build_travel_path(from, to, size, ArenaGizmos.TRAVEL_PATH_COLOR)
+
+
+## Alto de la caja gris de la pieza, que es tambien el grosor de la losa real.
+func _greybox_height(piece: PieceDefinition) -> float:
+	return model.catalog.cell_size.y * piece.greybox_extents.y
+
+
+## La cara de arriba del ghost, medida desde su propio origen (su base).
+func _ghost_top(piece: PieceDefinition) -> float:
+	return _greybox_height(piece)
+
+
+func _footprint_size(piece: PieceDefinition) -> Vector2:
+	return Vector2(model.catalog.cell_size.x * piece.greybox_extents.x,
+		model.catalog.cell_size.z * piece.greybox_extents.z)
+
 
 func _add_marker(cell: Vector3i, color: Color) -> void:
 	var marker: MeshInstance3D = ArenaGizmos.build_spawn_marker(color, model.catalog.cell_size)

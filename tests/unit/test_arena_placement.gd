@@ -224,7 +224,7 @@ func test_rotating_takes_the_body_piece_over_the_floor() -> void:
 func test_every_shipped_interactable_wants_a_floor() -> void:
 	var catalog := load("res://data/arena_pieces/default_catalog.tres") as PieceCatalog
 	for id: StringName in [&"bounce_pad", &"jump_link", &"zip_line",
-			&"moving_platform", &"hazard_zone", &"ammo_pickup", &"snare_zone"]:
+			&"hazard_zone", &"ammo_pickup", &"snare_zone"]:
 		var piece: PieceDefinition = catalog.get_piece(id)
 		assert_not_null(piece, "%s is in the catalog" % id)
 		assert_eq(piece.support, PieceDefinition.Support.FLOOR,

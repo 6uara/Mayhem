@@ -75,6 +75,21 @@ enum Support {
 ## the only ones that do not become a bidirectional navigation link at load.
 @export var link_is_one_way: bool = true
 
+@export_group("Motion")
+## Celdas que recorre la pieza desde la suya hasta la otra punta, sin rotar. Cero
+## es una pieza quieta, que es todo menos la plataforma movil.
+##
+## En celdas y no en metros: el recorrido tiene que caer en la grilla para que el
+## editor pueda exigir que este libre y dibujarlo, y para que la punta de llegada
+## sea una celda a la que se puede apuntar. Gira con la pieza, igual que el
+## footprint - es lo que hace que R elija para donde va.
+@export var travel_cells: Vector3i = Vector3i.ZERO
+## Metros sobre el piso de la celda a los que queda el origen de la escena cuando
+## la pieza cuelga en una celda vacia. La plataforma movil es una losa centrada en
+## su origen; con esto su cara de arriba queda al ras de una baldosa de piso del
+## mismo nivel, y subirse desde una pasarela es caminar, no saltar.
+@export var hang_height: float = 0.0
+
 @export_group("Presentation")
 ## Lo que la pieza no puede explicar sola. El resto del tooltip - donde apoya,
 ## desde que nivel, cuantas entran - se arma de los campos de arriba, asi que
@@ -112,6 +127,9 @@ func tooltip() -> String:
 			lines.append("Hangs in the air: it goes in a cell with no floor.")
 	if min_level > 0:
 		lines.append("Only from level %d up." % min_level)
+	if moves():
+		lines.append("Travels %d cells - every cell on the way has to be empty. R turns it."
+			% get_path_offsets().size())
 	if max_instances > 0:
 		lines.append("Up to %d per arena." % max_instances)
 	return "\n".join(lines)
@@ -148,6 +166,29 @@ func get_walkable_cells(rotation: int = 0) -> Array[Vector3i]:
 
 func get_link_offsets(rotation: int = 0) -> Array[Vector3i]:
 	return _rotated(link_offsets, rotation)
+
+
+func moves() -> bool:
+	return travel_cells != Vector3i.ZERO
+
+
+## La otra punta del recorrido, relativa a la celda de origen.
+func get_travel(rotation: int = 0) -> Vector3i:
+	return rotate_cell(travel_cells, rotation)
+
+
+## Cada celda que la pieza atraviesa despues de la suya, hasta la punta incluida,
+## relativa al origen. Una por paso: un recorrido de tres celdas son tres celdas,
+## no solo la de llegada, porque lo que se interpone a mitad de camino tambien
+## lo corta.
+func get_path_offsets(rotation: int = 0) -> Array[Vector3i]:
+	var out: Array[Vector3i] = []
+	var travel: Vector3i = get_travel(rotation)
+	var steps: int = maxi(absi(travel.x), maxi(absi(travel.y), absi(travel.z)))
+	for step: int in range(1, steps + 1):
+		var t: float = float(step) / float(steps)
+		out.append(Vector3i(roundi(travel.x * t), roundi(travel.y * t), roundi(travel.z * t)))
+	return out
 
 
 # Private

@@ -14,6 +14,9 @@ const GHOST_INVALID := Color(1.0, 0.3, 0.3, 0.45)
 const ERASE_HIGHLIGHT := Color(1.0, 0.35, 0.3, 0.9)
 ## Lo que se levanto con la herramienta de mover y todavia no se solto.
 const MOVE_HIGHLIGHT := Color(1.0, 0.85, 0.3, 0.9)
+## El recorrido de una plataforma movil. Cyan, el color de lo que el jugador usa
+## para moverse, igual que la plataforma en el juego.
+const TRAVEL_PATH_COLOR := Color(0.3, 0.95, 1.0, 0.9)
 
 
 ## A wireframe floor for the working level, so empty cells are still aimable.
@@ -79,6 +82,67 @@ static func build_cell_outline(color: Color, cell_size: Vector3) -> MeshInstance
 	material.no_depth_test = true
 	instance.material_override = material
 	return instance
+
+
+## De donde a donde va una pieza movil: una linea por el medio del recorrido,
+## una flecha en cada celda que cruza, y la silueta de la pieza en la otra punta.
+## `from` y `to` en el espacio del nodo que la contenga, a la altura de la cara
+## que se pisa. Se dibuja por encima de todo: un recorrido tapado por la pieza
+## que el jugador esta por poner no le dice nada.
+static func build_travel_path(from: Vector3, to: Vector3, footprint: Vector2,
+		color: Color) -> Node3D:
+	var root := Node3D.new()
+	root.name = "TravelPath"
+	var vertices := PackedVector3Array()
+	vertices.append(from)
+	vertices.append(to)
+	var span: Vector3 = to - from
+	var direction: Vector3 = span.normalized() if span.length() > 0.001 else Vector3.FORWARD
+	var side: Vector3 = direction.cross(Vector3.UP).normalized()
+	if side.length() < 0.001:
+		side = Vector3.RIGHT
+	var head: float = minf(footprint.x, footprint.y) * 0.18
+	# Una flecha por metro y medio de camino, no por celda: la de la punta sola
+	# no alcanza para leer el sentido desde lejos.
+	var arrows: int = maxi(int(span.length() / 1.5), 1)
+	for index: int in range(1, arrows + 1):
+		var tip: Vector3 = from + span * (float(index) / float(arrows))
+		vertices.append(tip)
+		vertices.append(tip - direction * head + side * head)
+		vertices.append(tip)
+		vertices.append(tip - direction * head - side * head)
+	# La silueta de la pieza en la punta de llegada.
+	var half := Vector3(footprint.x * 0.5, 0.0, footprint.y * 0.5)
+	var corners: Array[Vector3] = [
+		to + Vector3(-half.x, 0.0, -half.z), to + Vector3(half.x, 0.0, -half.z),
+		to + Vector3(half.x, 0.0, half.z), to + Vector3(-half.x, 0.0, half.z),
+	]
+	for index: int in 4:
+		vertices.append(corners[index])
+		vertices.append(corners[(index + 1) % 4])
+
+	var mesh := ArrayMesh.new()
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arrays)
+	var lines := MeshInstance3D.new()
+	lines.name = "Lines"
+	lines.mesh = mesh
+	var line_material: StandardMaterial3D = unshaded_material(color)
+	line_material.no_depth_test = true
+	lines.material_override = line_material
+	root.add_child(lines)
+
+	var slab := MeshInstance3D.new()
+	slab.name = "Arrival"
+	var plane := PlaneMesh.new()
+	plane.size = footprint
+	slab.mesh = plane
+	slab.position = to + Vector3(0.0, 0.02, 0.0)
+	slab.material_override = unshaded_material(Color(color, color.a * 0.25))
+	root.add_child(slab)
+	return root
 
 
 static func build_spawn_marker(color: Color, cell_size: Vector3) -> MeshInstance3D:

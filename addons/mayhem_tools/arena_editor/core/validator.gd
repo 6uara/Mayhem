@@ -62,7 +62,30 @@ static func _check_placements(arena: ArenaData, catalog: PieceCatalog,
 					"'%s' at %s sticks out of the grid." % [piece.display_name, entry.cell],
 					entry.cell))
 				break
+		if piece.moves():
+			var blocked: Variant = _first_blocked_path_cell(arena, graph, piece, entry)
+			if blocked != null:
+				# Aviso y no error: el editor ya no deja armar esto, asi que solo
+				# llega aca una arena de antes de la regla o editada a mano, y
+				# una plataforma que atraviesa algo se ve mal pero no rompe la run.
+				issues.append(ValidationIssue.make(&"platform_path_blocked",
+					ValidationIssue.Severity.WARNING,
+					"The %s at %s runs into something at %s."
+						% [piece.display_name.to_lower(), entry.cell, blocked],
+					entry.cell))
 	return issues
+
+
+## La primera celda del recorrido de `entry` que esta fuera de la grilla o
+## tiene algo, en cualquiera de las dos capas. Null si el camino esta libre.
+static func _first_blocked_path_cell(arena: ArenaData, graph: GridGraph,
+		piece: PieceDefinition, entry: PlacementEntry) -> Variant:
+	for offset: Vector3i in piece.get_path_offsets(entry.rotation):
+		var cell: Vector3i = entry.cell + offset
+		if not arena.is_in_bounds(cell) or graph.ground_occupancy.has(cell) \
+				or graph.body_occupancy.has(cell):
+			return cell
+	return null
 
 
 static func _check_spawns(arena: ArenaData, graph: GridGraph,

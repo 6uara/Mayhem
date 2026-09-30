@@ -4,10 +4,10 @@
 [ext_resource type="Script" path="res://scripts/components/telegraph_component.gd" id="2_tel"]
 
 [sub_resource type="BoxMesh" id="Mesh_plat"]
-size = Vector3(5, 0.4, 5)
+size = Vector3(3.8, 0.4, 3.8)
 
 [sub_resource type="BoxShape3D" id="Shape_plat"]
-size = Vector3(5, 0.4, 5)
+size = Vector3(3.8, 0.4, 3.8)
 
 [node name="MovingPlatform" type="AnimatableBody3D" node_paths=PackedStringArray("telegraph")]
 collision_layer = 1
