@@ -36,6 +36,7 @@ mesh = SubResource("Mesh_summoner")
 body_color = Color(1, 0.231, 0.757, 1)
 collision_height = 2.2
 collision_radius = 0.55
+hitbox_radius = 0.8
 head_offset = 1.95
 head_radius = 0.3
 spawn_sound = ExtResource("3_spawn")

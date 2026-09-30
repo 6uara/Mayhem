@@ -36,6 +36,7 @@ model_offset = Vector3(-0.127, 0, 0)
 body_color = Color(1, 0.478, 0.122, 1)
 collision_height = 1.9
 collision_radius = 0.34
+hitbox_radius = 0.45
 head_offset = 1.7
 head_radius = 0.24
 spawn_sound = ExtResource("3_spawn")
