@@ -34,11 +34,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _settled:
-		return
+	# The clock runs settled or not. It used to stop at the `_settled` return below,
+	# so a casing that landed was never freed: every shot of the run left one node
+	# behind in the viewmodel, a few thousand by wave 10 with the SMG.
 	_lifetime += delta
 	if _lifetime >= MAX_LIFETIME:
 		queue_free()
+		return
+	if _settled:
 		return
 
 	_velocity.y -= GRAVITY * delta
