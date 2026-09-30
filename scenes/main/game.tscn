@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3]
+[gd_scene load_steps=40 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/arena_host.gd" id="1_arena_host"]
 [ext_resource type="Resource" path="res://data/arenas/default_arena.tres" id="1_default_arena"]
@@ -26,6 +26,7 @@
 [ext_resource type="PackedScene" path="res://scenes/vfx/impact_effect.tscn" id="15_impact"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="15_enemy_projectile"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/explosion.tscn" id="15_explosion"]
+[ext_resource type="Script" path="res://scripts/systems/run_logger.gd" id="16_run_logger"]
 [ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
 [ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
 [ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w03"]
@@ -90,6 +91,9 @@ prewarm_count = 48
 script = ExtResource("15_prewarmer")
 scenes = Array[PackedScene]([ExtResource("15_projectile"), ExtResource("15_impact"), ExtResource("15_enemy_projectile"), ExtResource("15_explosion")])
 counts = PackedInt32Array(32, 32, 16, 4)
+
+[node name="RunLogger" type="Node" parent="."]
+script = ExtResource("16_run_logger")
 
 [node name="MatchDirector" type="Node" parent="." node_paths=PackedStringArray("spawner", "shop_screen")]
 script = ExtResource("8_director")
