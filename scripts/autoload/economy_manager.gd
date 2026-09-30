@@ -66,10 +66,19 @@ func get_wave_damage_loss() -> int:
 
 ## Awards the end-of-wave bonuses and returns the itemised breakdown so the
 ## wave-complete screen can show all three income sources explicitly.
+##
+## A null wave still pays what does not depend on it (kills already banked, the
+## no-damage bonus) instead of crashing the end of the wave: a hole in the wave
+## list is a content bug, and the run should survive it.
 func award_wave_bonuses(wave: WaveData, duration: float, took_damage: bool) -> Dictionary:
-	var speed_bonus: int = _scale(config.get_speed_bonus(duration, wave.par_time))
+	var speed_bonus: int = 0
+	var completion_bonus: int = 0
+	if wave != null:
+		speed_bonus = _scale(config.get_speed_bonus(duration, wave.par_time))
+		completion_bonus = _scale(wave.completion_bonus)
+	else:
+		push_error("EconomyManager.award_wave_bonuses: null wave, paying no speed or completion bonus")
 	var no_damage_bonus: int = 0 if took_damage else _scale(config.no_damage_bonus)
-	var completion_bonus: int = _scale(wave.completion_bonus)
 	currency += speed_bonus + no_damage_bonus + completion_bonus
 	return {
 		"kills": _wave_kill_income,

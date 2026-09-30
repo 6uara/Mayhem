@@ -138,6 +138,19 @@ func test_slow_clear_forfeits_only_the_speed_bonus() -> void:
 	assert_eq(int(breakdown["completion_bonus"]), 100, "clearing still pays")
 
 
+## A hole in the wave list is a content bug; the end of the wave still pays what
+## does not depend on the wave, and says why the rest is missing.
+func test_a_null_wave_pays_what_it_can_instead_of_crashing() -> void:
+	EconomyManager.begin_wave()
+	EventBus.kill_credited.emit(30)
+	var breakdown: Dictionary = EconomyManager.award_wave_bonuses(null, 20.0, false)
+	assert_push_error("null wave")
+	assert_eq(int(breakdown["kills"]), 30)
+	assert_eq(int(breakdown["speed_bonus"]), 0)
+	assert_eq(int(breakdown["completion_bonus"]), 0)
+	assert_gt(int(breakdown["no_damage_bonus"]), 0)
+
+
 func test_reset_returns_to_the_configured_starting_currency() -> void:
 	EconomyManager.currency = 999
 	EconomyManager.reset()
