@@ -30,7 +30,12 @@ func _ready() -> void:
 		_category.add_item(category)
 	if _category.item_count > 0:
 		_category.select(0)
-	_privacy.text = "Attached automatically: version, arena, wave, score, session length, OS, GPU, resolution and FPS. Nothing is sent anywhere on its own."
+	# Las runs tambien quedan escritas (RunLogger); se nombra la carpeta para que
+	# quien quiera ayudar con el balance sepa que mandar, sin que nada se mande solo.
+	_privacy.text = ("Attached automatically: version, arena, wave, score, session length, "
+		+ "OS, GPU, resolution and FPS. Nothing is sent anywhere on its own.\n"
+		+ "Your last runs are logged in %s - attaching them helps with balance.") \
+		% ProjectSettings.globalize_path(RunLogger.LOG_DIR)
 	_save_button.pressed.connect(_on_save_pressed)
 	_copy_button.pressed.connect(_on_copy_pressed)
 	_form_button.pressed.connect(_on_form_pressed)
