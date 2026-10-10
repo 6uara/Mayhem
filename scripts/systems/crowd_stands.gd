@@ -278,6 +278,10 @@ func _build_multimesh(transforms: Array[Transform3D], colors: PackedColorArray,
 		mm.set_instance_color(i, colors[i])
 		mm.set_instance_custom_data(i, customs[i])
 	multimesh = mm
+	# Miles de impostores en el mapa de sombras del sol eran la mitad de las
+	# primitivas de un frame de partida en una GPU integrada, para una sombra que
+	# cae sobre la propia tribuna y nadie mira de cerca.
+	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# El shader mueve los vertices y Godot no lo sabe: sin margen, un espectador
 	# que salta en el borde de la caja parpadea cuando el culling lo descarta.
 	custom_aabb = mm.get_aabb().grow(3.0)

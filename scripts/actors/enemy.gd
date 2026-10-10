@@ -205,6 +205,13 @@ var _leap_hit_landed: bool = false
 ## Quieto despues de aterrizar. Es la ventana que premia el esquive.
 var _leap_recovery_left: float = 0.0
 var _behavior_tree: Node
+## Giro pendiente de la ultima decision del arbol. Ver `face_target()`.
+var _face_hold: float = 0.0
+## Si el overlay del destello esta puesto en el modelo. Ver `_set_overlay()`.
+var _overlay_on: bool = false
+var _face_speed: float = 8.0
+## Cada cuanto se revisa a que ritmo decide este enemigo. Ver `_tick_ai_lod()`.
+var _ai_lod_left: float = 0.0
 var _slow_multiplier: float = 1.0
 
 ## Segundos que le quedan a la espoleta. Solo significa algo con `_fuse_armed`.
@@ -333,6 +340,8 @@ func _physics_process(delta: float) -> void:
 	_separation_timer = maxf(_separation_timer - delta, 0.0)
 	_leap_recovery_left = maxf(_leap_recovery_left - delta, 0.0)
 	_expire_blocked_links(delta)
+	_tick_facing(delta)
+	_tick_ai_lod(delta)
 
 
 	if is_flying():
@@ -756,13 +765,35 @@ func stop_moving() -> void:
 
 
 ## Yaw-only turn toward the player; enemies never pitch.
+## Gira hacia el objetivo durante `delta` segundos.
+##
+## La llaman las hojas del arbol con `get_ai_delta()`, que con el arbol a ritmo
+## espaciado cubre dos o tres frames de fisica. Girar todo eso de golpe en el
+## frame en que decide el arbol se veria a saltos; asi gira este frame lo que le
+## toca y deja el resto para los siguientes (`_tick_facing()`), con la misma
+## velocidad de giro. A ritmo completo no queda resto y es lo mismo que antes.
 func face_target(delta: float, turn_speed: float = 8.0) -> void:
+	var step: float = minf(delta, get_physics_process_delta_time())
+	_turn_toward_target(turn_speed * step)
+	_face_speed = turn_speed
+	_face_hold = maxf(delta - step, 0.0)
+
+
+func _tick_facing(delta: float) -> void:
+	if _face_hold <= 0.0:
+		return
+	var step: float = minf(delta, _face_hold)
+	_face_hold -= step
+	_turn_toward_target(_face_speed * step)
+
+
+func _turn_toward_target(amount: float) -> void:
 	var to_player: Vector3 = get_target_position() - global_position
 	to_player.y = 0.0
 	if to_player.length_squared() < 0.01:
 		return
 	var target_yaw: float = atan2(to_player.x, to_player.z)
-	rotation.y = rotate_toward(rotation.y, target_yaw, turn_speed * delta)
+	rotation.y = rotate_toward(rotation.y, target_yaw, amount)
 
 
 func is_attack_ready() -> bool:
@@ -2060,6 +2091,7 @@ func _apply_model() -> void:
 		_model.queue_free()
 	_model = null
 	_model_meshes.clear()
+	_overlay_on = false
 	_model_source = data.model_scene
 	_model_bounds = AABB()
 	if _model_source == null:
@@ -2174,6 +2206,10 @@ func _measure_model(model: Node3D) -> AABB:
 ## albedo swap the way it is on a grey-box capsule. It is laid over the top
 ## instead: one unshaded material on every part, transparent until something
 ## lights it up.
+##
+## Puesto solo mientras brilla (`_set_overlay()`). Un overlay transparente en cero
+## igual se dibuja: cada parte de cada modelo pasaba dos veces por frame, la
+## segunda en el pase transparente, para no pintar nada.
 func _collect_model_meshes(node: Node) -> void:
 	var mesh_node := node as MeshInstance3D
 	if mesh_node != null:
@@ -2182,7 +2218,7 @@ func _collect_model_meshes(node: Node) -> void:
 			_glow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			_glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			_glow_material.albedo_color = Color(flash_color, 0.0)
-		mesh_node.material_overlay = _glow_material
+		mesh_node.material_overlay = null
 		_model_meshes.append(mesh_node)
 	for child: Node in node.get_children():
 		_collect_model_meshes(child)
@@ -2202,9 +2238,19 @@ func _set_glow(amount: float, tint: Color = flash_color) -> void:
 	var level: float = clampf(amount, 0.0, 1.2)
 	if _glow_material != null:
 		_glow_material.albedo_color = Color(tint, minf(level, 1.0) * 0.8)
+		_set_overlay(level > 0.0)
 	if _material != null:
 		_material.emission = tint
 		_material.emission_energy_multiplier = level * 2.5
+
+
+func _set_overlay(on: bool) -> void:
+	if on == _overlay_on:
+		return
+	_overlay_on = on
+	for mesh_node: MeshInstance3D in _model_meshes:
+		if is_instance_valid(mesh_node):
+			mesh_node.material_overlay = _glow_material if on else null
 
 
 func _glow_level() -> float:
@@ -2292,6 +2338,58 @@ func _rebuild_behavior_tree() -> void:
 	var beehave := _behavior_tree as BeehaveTree
 	if beehave != null:
 		beehave.actor = self
+	_face_hold = 0.0
+	# El primer chequeo de ritmo cae en un momento distinto para cada uno.
+	_ai_lod_left = randf() * AI_LOD_INTERVAL
+
+
+## La IA decide cada dos frames de cerca y mas espaciado de lejos.
+##
+## Medido en una GPU integrada (Radeon 680M) con la ola 10 entera: los arboles
+## de Beehave eran el costo mas grande del paso de fisica - mas que mover a los 42
+## cuerpos -, y casi todo era la maquinaria de Beehave recorriendo el arbol, no
+## lo que las hojas deciden. Decidir cada 33 ms en vez de cada 16 no se ve; de
+## lejos, cada 50 o 66 ms tampoco.
+##
+## El movimiento no cambia de ritmo: `_physics_process` sigue corriendo entero y
+## el giro se reparte entre frames (`face_target()`). Los timers de las hojas
+## cuentan con `get_ai_delta()`, asi que un telegrafo dura lo mismo a cualquier
+## ritmo.
+const AI_NEAR_DISTANCE: float = 14.0
+const AI_FAR_DISTANCE: float = 30.0
+const AI_LOD_INTERVAL: float = 0.5
+const AI_TICK_NEAR: int = 2
+const AI_TICK_MID: int = 3
+const AI_TICK_FAR: int = 4
+
+
+## Lo que paso desde la ultima vez que decidio el arbol: el delta de fisica por el
+## ritmo de ticks. Las hojas lo usan para sus timers en vez del delta crudo.
+func get_ai_delta() -> float:
+	return get_physics_process_delta_time() * float(get_ai_tick_rate())
+
+
+func get_ai_tick_rate() -> int:
+	var beehave := _behavior_tree as BeehaveTree
+	return maxi(beehave.tick_rate, 1) if beehave != null else 1
+
+
+func _tick_ai_lod(delta: float) -> void:
+	_ai_lod_left -= delta
+	if _ai_lod_left > 0.0:
+		return
+	_ai_lod_left = AI_LOD_INTERVAL
+	var beehave := _behavior_tree as BeehaveTree
+	if beehave == null:
+		return
+	var distance: float = get_distance_to_target()
+	var rate: int = AI_TICK_NEAR if distance <= AI_NEAR_DISTANCE 		else AI_TICK_MID if distance <= AI_FAR_DISTANCE else AI_TICK_FAR
+	if rate == beehave.tick_rate:
+		return
+	beehave.tick_rate = rate
+	# Repartidos: si todos saltaran el mismo frame, el costo volveria entero cada
+	# tantos frames en vez de bajar.
+	beehave.last_tick = randi() % rate
 
 
 func _clear_behavior_tree() -> void:

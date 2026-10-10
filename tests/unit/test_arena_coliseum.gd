@@ -156,7 +156,17 @@ func test_the_bowl_wears_the_same_panel_as_the_rest_of_the_game() -> void:
 	var bowl := shell.get_node("Coliseum/Bowl") as MeshInstance3D
 	var material := bowl.material_override as ShaderMaterial
 	assert_not_null(material, "el cuenco va con el panel del proyecto")
-	assert_eq(material.shader.resource_path, ArenaColiseum.PANEL_SHADER)
+	# La variante quieta del mismo panel: misma grilla y mismos parametros, sin
+	# pagar la animacion que el cuenco tiene apagada.
+	assert_eq(material.shader.resource_path, ArenaColiseum.PANEL_STATIC_SHADER)
+
+
+## La sombra del cuenco cae en el foso, que nadie pisa, y costaba un pase entero
+## del sol sobre la malla mas pesada del frame.
+func test_the_bowl_casts_no_shadow() -> void:
+	var shell: ArenaColiseum = _built(_shell())
+	var bowl := shell.get_node("Coliseum/Bowl") as MeshInstance3D
+	assert_eq(bowl.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 
 
 func test_there_is_a_lit_edge_per_walkway_plus_the_podium() -> void:

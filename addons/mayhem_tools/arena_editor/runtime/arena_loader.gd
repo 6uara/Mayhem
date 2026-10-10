@@ -24,6 +24,8 @@ static func load_arena(data: ArenaData, parent: Node3D, catalog: PieceCatalog) -
 	parent.add_child(runtime)
 	var graph: GridGraph = GridGraph.build(data, catalog)
 	_build_geometry(runtime, data, catalog, graph)
+	# Despues de armar y antes de bakear: el bake lee colliders, que no se tocan.
+	ArenaGeometryBatcher.batch(runtime, runtime.geometry_root)
 	_build_navigation_links(runtime, graph, catalog)
 	_build_spawn_doors(runtime, data, catalog)
 	runtime.bake_navigation()

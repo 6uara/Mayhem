@@ -20,6 +20,11 @@ extends Node3D
 ## colision por escalon serian miles de formas que nadie va a tocar nunca.
 
 const PANEL_SHADER: String = "res://assets/shaders/arena_glitch_panel.gdshader"
+## La misma grilla sin nada que dependa de TIME. El cuenco va congelado (ver
+## `_panel()`), y como los parametros de animacion son uniforms el shader
+## animado los seguia evaluando por pixel para un resultado constante, sobre la
+## superficie mas grande de la pantalla.
+const PANEL_STATIC_SHADER: String = "res://assets/shaders/arena_panel_static.gdshader"
 ## Cuanto mas abajo que el piso de la arena va el piso del foso. Lo suficiente
 ## para no pelearse por el mismo plano con las piezas -el disco corre por debajo
 ## de toda la arena, no solo del anillo- y poco, porque cada centimetro de esto
@@ -261,6 +266,10 @@ func _build_bowl(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 	mesh.name = "Bowl"
 	mesh.mesh = surface.commit()
 	mesh.material_override = _panel()
+	# El cuenco es la malla mas pesada del frame (cientos de miles de
+	# triangulos) y queda afuera de la arena: proyectar su sombra costaba un pase
+	# entero del sol para oscurecer el foso que nadie pisa.
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_built.add_child(mesh)
 	_build_mouths(centre, floor_y, axes, profile)
 	_build_trim(centre, floor_y, axes)
@@ -465,6 +474,7 @@ func _build_pit_floor(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 	mesh.name = "PitFloor"
 	mesh.mesh = surface.commit()
 	mesh.material_override = _panel()
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_built.add_child(mesh)
 
 
@@ -530,7 +540,7 @@ func _panel() -> ShaderMaterial:
 func _panel_material(lines: Color, energy: float,
 		animation: float) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
-	material.shader = load(PANEL_SHADER)
+	material.shader = load(PANEL_SHADER if animation > 0.0 else PANEL_STATIC_SHADER)
 	material.set_shader_parameter(&"base_color", concrete_color)
 	material.set_shader_parameter(&"line_color", lines)
 	material.set_shader_parameter(&"grid_scale", 0.12)

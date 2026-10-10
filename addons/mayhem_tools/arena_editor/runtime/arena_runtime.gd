@@ -30,6 +30,9 @@ var arena: ArenaData
 var catalog: PieceCatalog
 var theme: ArenaTheme
 
+## Hasta donde llegan las sombras del sol, en metros. Ver `_make_sun()`.
+const SUN_SHADOW_DISTANCE: float = 60.0
+
 var geometry_root: Node3D
 var navigation_region: NavigationRegion3D
 var spawn_doors_root: Node3D
@@ -141,6 +144,13 @@ func _make_sun() -> DirectionalLight3D:
 	sun.light_energy = theme.sun_energy
 	sun.light_color = theme.sun_color
 	sun.shadow_enabled = true
+	# Dos cascadas hasta SUN_SHADOW_DISTANCE en vez de cuatro hasta 100m. Cada
+	# cascada es un pase entero de la escena, y en una GPU integrada el pase de
+	# sombras costaba casi un quinto del frame: las sombras que se leen son las
+	# de cerca (plataformas, enemigos encima tuyo), no las del otro lado de una
+	# arena de 128m.
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = SUN_SHADOW_DISTANCE
 	return sun
 
 

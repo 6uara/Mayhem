@@ -34,7 +34,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		return FAILURE
 
 	var distance: float = enemy.get_distance_to_target()
-	enemy.face_target(get_physics_process_delta_time())
+	enemy.face_target(enemy.get_ai_delta())
 
 	# Estar a la distancia justa no sirve de nada si hay una columna en el medio.
 	# Este SUCCESS era el que dejaba al tirador plantado detras de una pared el
@@ -61,7 +61,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 ## esta aparte para que los dos paguen los mismos frenos: sin eso el tirador ciego
 ## pediria un camino nuevo todos los frames.
 func _reposition(enemy: Enemy, wanted: Vector3) -> int:
-	_repath_timer -= get_physics_process_delta_time()
+	_repath_timer -= enemy.get_ai_delta()
 	if _repath_timer <= 0.0:
 		_repath_timer = repath_interval
 		var moved: float = wanted.distance_squared_to(enemy.move_target)

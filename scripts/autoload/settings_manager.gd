@@ -13,6 +13,10 @@ const ANTI_ALIASING_MSAA_4X: int = 3
 const ANTI_ALIASING_TAA: int = 4
 
 ## Defaults come from the design handoff (theme_tokens.gd), not from taste.
+## Ver `effective_defaults()`.
+const INTEGRATED_GPU_RENDER_SCALE: int = 75
+const INTEGRATED_GPU_SHADOW_QUALITY: int = 1
+
 const DEFAULTS: Dictionary = {
 	"input/mouse_sensitivity": 2.40,
 	"input/ads_sensitivity_multiplier": 0.72,
@@ -82,7 +86,7 @@ var _bindings: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_values = DEFAULTS.duplicate(true)
+	_values = effective_defaults()
 	load_settings()
 	apply_all()
 
@@ -103,8 +107,29 @@ func set_value(key: String, value: Variant) -> void:
 	_values[key] = value
 
 
+## Los defaults ajustados a la maquina. Hoy, una sola regla: con una GPU integrada
+## el 3D arranca al 75 % con FSR y las sombras en medio.
+##
+## Medido en una Radeon 680M (Ryzen 7535HS) a resolucion nativa: la ola 10 corre
+## a ~40 FPS con la GPU como uno de los dos techos. Arrancar ahi en alto es que la
+## primera impresion del juego sea un juego que tironea, en la clase de maquina
+## donde mas gente lo va a probar. Solo cambia el punto de partida: lo que el
+## jugador elija en opciones se guarda y manda.
+##
+## `adapter_type` es para las pruebas; sin pasarlo se pregunta al render.
+func effective_defaults(adapter_type: int = -1) -> Dictionary:
+	var values: Dictionary = DEFAULTS.duplicate(true)
+	var adapter: int = adapter_type
+	if adapter < 0:
+		adapter = int(RenderingServer.get_video_adapter_type())
+	if adapter == RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU:
+		values["video/render_scale"] = INTEGRATED_GPU_RENDER_SCALE
+		values["video/shadow_quality"] = INTEGRATED_GPU_SHADOW_QUALITY
+	return values
+
+
 func reset_to_defaults() -> void:
-	_values = DEFAULTS.duplicate(true)
+	_values = effective_defaults()
 	_bindings.clear()
 	InputMap.load_from_project_settings()
 	apply_all()
@@ -116,7 +141,7 @@ func load_settings() -> void:
 		return  # First run: defaults already in place.
 	for key: String in DEFAULTS:
 		var parts: PackedStringArray = key.split("/", true, 1)
-		_values[key] = config.get_value(parts[0], parts[1], DEFAULTS[key])
+		_values[key] = config.get_value(parts[0], parts[1], _values.get(key, DEFAULTS[key]))
 	if config.has_section("bindings"):
 		for action: String in config.get_section_keys("bindings"):
 			_bindings[action] = config.get_value("bindings", action, [])

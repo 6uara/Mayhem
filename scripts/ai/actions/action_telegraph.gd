@@ -47,8 +47,8 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 			AudioPool.BUS_ENEMIES, WINDUP_VOLUME_DB, 1.0, AudioPool.Priority.TELEGRAPH)
 
 	var duration: float = maxf(enemy.data.attack_windup * windup_multiplier, 0.05)
-	_elapsed += get_physics_process_delta_time()
-	enemy.face_target(get_physics_process_delta_time(), 4.0)
+	_elapsed += enemy.get_ai_delta()
+	enemy.face_target(enemy.get_ai_delta(), 4.0)
 	enemy.show_windup(clampf(_elapsed / duration, 0.0, 1.0))
 
 	if _elapsed < duration:

@@ -122,6 +122,9 @@ func _build(transforms: Array[Transform3D], customs: PackedColorArray) -> void:
 		mm.set_instance_transform(i, transforms[i])
 		mm.set_instance_custom_data(i, customs[i])
 	multimesh = mm
+	# A 90m y mas, detras de las gradas: su sombra no cae en ningun lugar que se
+	# vea desde la arena.
+	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func _tower_material() -> ShaderMaterial:

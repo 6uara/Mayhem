@@ -37,6 +37,6 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 	if left <= 0.0:
 		return SUCCESS
 
-	left -= get_physics_process_delta_time()
+	left -= enemy.get_ai_delta()
 	blackboard.set_value(COOLDOWN_KEY, left)
 	return SUCCESS if left <= 0.0 else FAILURE

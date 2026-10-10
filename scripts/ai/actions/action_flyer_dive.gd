@@ -50,9 +50,9 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 	# Se re-pide en cada frame y no sólo al empezar: si algo más pisó la altura
 	# mientras tanto, la picada es quien manda mientras dure.
 	enemy.set_flight_height_override(dive_height)
-	enemy.face_target(get_physics_process_delta_time())
+	enemy.face_target(enemy.get_ai_delta())
 
-	_repath_timer -= get_physics_process_delta_time()
+	_repath_timer -= enemy.get_ai_delta()
 	if _repath_timer <= 0.0:
 		_repath_timer = repath_interval
 		var target: Vector3 = enemy.get_target_position()
@@ -62,7 +62,7 @@ func tick(actor: Node, blackboard: Blackboard) -> int:
 			away = Vector3.FORWARD
 		enemy.set_move_target(target + away.normalized() * dive_distance)
 
-	_left -= get_physics_process_delta_time()
+	_left -= enemy.get_ai_delta()
 	if _left > 0.0:
 		return RUNNING
 	_finish(enemy, blackboard)

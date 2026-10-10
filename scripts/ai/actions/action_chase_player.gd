@@ -36,7 +36,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		enemy.stop_moving()
 		return SUCCESS
 
-	_repath_timer -= get_physics_process_delta_time()
+	_repath_timer -= enemy.get_ai_delta()
 	if _repath_timer <= 0.0:
 		_repath_timer = repath_interval
 		# Not the player's feet: a lane beside them, personal to this enemy, that
@@ -55,7 +55,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 			wanted = enemy.closest_reachable_point(enemy.get_target_position())
 		if _worth_repathing(enemy, wanted) and CombatDirector.request_repath(enemy):
 			enemy.set_move_target(wanted)
-	enemy.face_target(get_physics_process_delta_time())
+	enemy.face_target(enemy.get_ai_delta())
 	return RUNNING
 
 

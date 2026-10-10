@@ -44,6 +44,11 @@ var _frame: int = 0
 var _sampling: bool = false
 var _sample_time: float = 0.0
 var _samples: Array[float] = []
+## Donde se va el frame: ms de _process, de _physics_process y de GPU por frame.
+## Sin esto el numero dice "lento" y no dice si hay que mirar scripts o render.
+var _process_ms: Array[float] = []
+var _physics_ms: Array[float] = []
+var _gpu_ms: Array[float] = []
 var _game: Node
 var _waiting_for_spawn: bool = false
 var _spawn_wait_time: float = 0.0
@@ -69,6 +74,11 @@ func _initialize() -> void:
 		_sample_seconds = args[0].to_float()
 	var packed: PackedScene = load(GAME_SCENE_PATH)
 	_game = packed.instantiate()
+	# Sin tutorial de arranque: si corriera, al terminar arrancaria la oleada uno
+	# por encima de la diez que se fuerza aca.
+	var tutorial: Node = _game.get_node_or_null("TutorialDirector")
+	if tutorial != null:
+		tutorial.free()
 	root.add_child(_game)
 	print("Loaded %s, settling %d frames before forcing wave 10..." % [
 		GAME_SCENE_PATH, SETTLE_FRAMES])
@@ -123,6 +133,11 @@ func _process(delta: float) -> bool:
 	if _sampling:
 		_sample_time += delta
 		_samples.push_back(Engine.get_frames_per_second())
+		_process_ms.push_back(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+		_physics_ms.push_back(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
+		var viewport: RID = root.get_viewport_rid()
+		RenderingServer.viewport_set_measure_render_time(viewport, true)
+		_gpu_ms.push_back(RenderingServer.viewport_get_measured_render_time_gpu(viewport))
 		if _sample_time >= _sample_seconds:
 			_report()
 			quit()
@@ -244,3 +259,14 @@ func _report() -> void:
 	print("--- wave 10 profile (%d samples, %.0fs) ---" % [_samples.size(), _sample_time])
 	print("  min %.1f  avg %.1f  max %.1f FPS" % [minimum, average, maximum])
 	print("  %.1f%% of frames under 60 FPS" % (100.0 * under_60 / _samples.size()))
+	print("  ms per frame: process %.2f  physics %.2f  gpu %.2f (averages)" % [
+		_average(_process_ms), _average(_physics_ms), _average(_gpu_ms)])
+
+
+func _average(values: Array[float]) -> float:
+	if values.is_empty():
+		return 0.0
+	var total: float = 0.0
+	for value: float in values:
+		total += value
+	return total / values.size()

@@ -26,6 +26,32 @@ extends SubViewportContainer
 func _ready() -> void:
 	if camera != null:
 		camera.fov = viewmodel_fov
+	_configure_viewport()
+	EventBus.settings_applied.connect(_configure_viewport)
+
+
+## El arma se dibuja en un segundo pase 3D entero, a la resolucion de la ventana.
+## Medido en una Radeon 680M, ese pase costaba unos 4 ms por frame - casi tanto
+## como toda la horda - para dibujar un arma.
+##
+## Lo que se le saca no se ve en un arma: el atlas de sombras de luces puntuales
+## (ninguna luz de aca proyecta sombra) y el antialias de pantalla. Y se le da la
+## misma escala de render que al mundo, asi que bajar la calidad en opciones
+## tambien abarata esto, que antes quedaba siempre a resolucion completa.
+func _configure_viewport() -> void:
+	var viewport := get_node_or_null(^"SubViewport") as SubViewport
+	if viewport == null:
+		return
+	viewport.positional_shadow_atlas_size = 0
+	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	viewport.msaa_3d = Viewport.MSAA_DISABLED
+	viewport.use_taa = false
+	viewport.use_debanding = false
+	viewport.use_occlusion_culling = false
+	var main: Viewport = get_viewport()
+	if main != null:
+		viewport.scaling_3d_mode = main.scaling_3d_mode
+		viewport.scaling_3d_scale = main.scaling_3d_scale
 
 
 ## Where WeaponComponent should mount its viewmodel.

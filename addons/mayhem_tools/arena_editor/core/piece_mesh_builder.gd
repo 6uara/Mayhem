@@ -23,6 +23,17 @@ const EDGE_LIFT: float = 0.01
 const ELEVATED_LIGHTEN: float = 0.22
 const ELEVATED_ROUGHNESS: float = 0.45
 const GROUND_ROUGHNESS: float = 0.9
+## Marca de las piezas armadas aca, para que el cargador sepa cuales puede juntar
+## en un MultiMesh (ver ArenaGeometryBatcher). Una pieza con escena propia no la
+## lleva: su geometria es de quien la modelo.
+const GREYBOX_META: StringName = &"greybox"
+
+## Una malla por medida y un material por aspecto, compartidos por todas las
+## piezas. Antes cada celda de cada pieza estrenaba su BoxMesh y cada pieza su
+## material: unas 1450 mallas y 300 materiales distintos en la arena por defecto,
+## y nada que el render pudiera agrupar.
+static var _boxes: Dictionary = {}
+static var _materials: Dictionary = {}
 
 
 ## `elevated` marca lo que esta por encima del nivel del piso. No es una
@@ -41,22 +52,16 @@ static func build(piece: PieceDefinition, catalog: PieceCatalog,
 static func build_greybox(piece: PieceDefinition, catalog: PieceCatalog,
 		with_collision: bool, elevated: bool = false) -> Node3D:
 	var root: Node3D = StaticBody3D.new() if with_collision else Node3D.new()
-	var material := StandardMaterial3D.new()
-	material.albedo_color = piece.greybox_color
-	material.roughness = GROUND_ROUGHNESS
-	if elevated:
-		material.albedo_color = piece.greybox_color.lightened(ELEVATED_LIGHTEN)
-		material.roughness = ELEVATED_ROUGHNESS
+	root.set_meta(GREYBOX_META, true)
+	var material: StandardMaterial3D = _surface_material(piece.greybox_color, elevated)
 	var size: Vector3 = catalog.cell_size * piece.greybox_extents
 	# Built up from the cell floor, never centred on the cell: a 0.25-high floor
 	# tile has to be the ground of its cell, not a slab hanging in the middle of
 	# it, or every wall standing on it floats.
 	var lift := Vector3(0.0, size.y * 0.5, 0.0)
 	for offset: Vector3i in piece.footprint:
-		var box := BoxMesh.new()
-		box.size = size
 		var mesh_instance := MeshInstance3D.new()
-		mesh_instance.mesh = box
+		mesh_instance.mesh = _box(size)
 		mesh_instance.material_override = material
 		mesh_instance.position = Vector3(offset) * catalog.cell_size + lift
 		root.add_child(mesh_instance)
@@ -110,11 +115,7 @@ static func _add_edge_trim(root: Node3D, piece: PieceDefinition,
 		top + EDGE_LIFT,
 		(float(lowest.z) + float(highest.z)) * 0.5 * cell.z)
 	var thickness: float = minf(cell.x, cell.z) * EDGE_THICKNESS
-	var material := StandardMaterial3D.new()
-	material.albedo_color = piece.edge_color
-	material.emission_enabled = true
-	material.emission = piece.edge_color
-	material.emission_energy_multiplier = piece.edge_energy
+	var material: StandardMaterial3D = _edge_material(piece.edge_color, piece.edge_energy)
 	var bars: Array[Array] = [
 		[Vector3(span.x, EDGE_HEIGHT, thickness), Vector3(0.0, 0.0, -span.z * 0.5)],
 		[Vector3(span.x, EDGE_HEIGHT, thickness), Vector3(0.0, 0.0, span.z * 0.5)],
@@ -122,10 +123,39 @@ static func _add_edge_trim(root: Node3D, piece: PieceDefinition,
 		[Vector3(thickness, EDGE_HEIGHT, span.z), Vector3(span.x * 0.5, 0.0, 0.0)],
 	]
 	for bar: Array in bars:
-		var box := BoxMesh.new()
-		box.size = bar[0]
 		var mesh_instance := MeshInstance3D.new()
-		mesh_instance.mesh = box
+		mesh_instance.mesh = _box(bar[0])
 		mesh_instance.material_override = material
 		mesh_instance.position = center + (bar[1] as Vector3)
 		root.add_child(mesh_instance)
+
+
+static func _box(size: Vector3) -> BoxMesh:
+	var key: String = str(size)
+	if not _boxes.has(key):
+		var box := BoxMesh.new()
+		box.size = size
+		_boxes[key] = box
+	return _boxes[key]
+
+
+static func _surface_material(color: Color, elevated: bool) -> StandardMaterial3D:
+	var key: String = "surface|%s|%s" % [color.to_html(), elevated]
+	if not _materials.has(key):
+		var material := StandardMaterial3D.new()
+		material.albedo_color = color.lightened(ELEVATED_LIGHTEN) if elevated else color
+		material.roughness = ELEVATED_ROUGHNESS if elevated else GROUND_ROUGHNESS
+		_materials[key] = material
+	return _materials[key]
+
+
+static func _edge_material(color: Color, energy: float) -> StandardMaterial3D:
+	var key: String = "edge|%s|%s" % [color.to_html(), energy]
+	if not _materials.has(key):
+		var material := StandardMaterial3D.new()
+		material.albedo_color = color
+		material.emission_enabled = true
+		material.emission = color
+		material.emission_energy_multiplier = energy
+		_materials[key] = material
+	return _materials[key]
