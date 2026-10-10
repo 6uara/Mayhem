@@ -1,3 +1,9 @@
+---
+tags: [mayhem]
+estado: guia
+actualizado: 2026-10-09
+---
+
 # Testing
 
 GUT 9.7.1, vendored at `addons/gut/`. Tests live in `tests/` and mirror `scripts/`.
@@ -144,17 +150,18 @@ Un worktree nunca trae `.godot`, así que arranca con caché fresca por definici
 
 ## Estado actual de la suite
 
-Godot 4.7, corridas locales:
-
-| Rama | Fecha | Resultado |
+| Fecha | Commit | Resultado |
 | --- | --- | --- |
-| `develop` @ `c76d772` | 14/08/2026 | 364 tests, **364 en verde** |
-| `feat/coop-p2p` @ `de77658` | 14/08/2026 | 380 tests, **380 en verde** |
-| `feat/coop-p2p` @ merge de `develop` | 19/08/2026 | 442 tests, **442 en verde** |
+| 2026-09-30 | `develop` @ `7844c92` | 1028 tests, **1028 en verde** (Godot 4.7.2, `tools/run_tests.ps1`) |
+| 2026-10-09 | `develop` @ `1a37794` | 1052 tests, **1052 en verde** (Godot 4.7.1) |
+| 2026-10-09 | `docs/regularizacion` (sin commitear) | 1117 tests, **1117 en verde** (Godot 4.7.1) |
+
+Actualizar esta tabla con cada corrida completa que se registre; las corridas
+viejas quedan en git.
 
 ## What to test
 
-Pure logic, not rendering. In priority order (section 9 of `CLAUDE.md`):
+Pure logic, not rendering. In priority order (section 9 of the design brief, [DISENO.md](DISENO.md#9-prioridades-de-testing)):
 
 1. **`StatModifier` aggregation** - order, stacking limits. Highest priority: it breaks balance
    silently. Covered by `tests/unit/test_stat_modifier.gd`.

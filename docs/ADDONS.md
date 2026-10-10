@@ -1,23 +1,31 @@
+---
+tags: [mayhem]
+estado: guia
+actualizado: 2026-10-09
+---
+
 # Addons
 
 Vendored under `addons/` and committed to the repo, so a fresh clone runs without setup.
 
 | Addon | Status | Purpose |
 |---|---|---|
-| **GUT** 9.7.1 | Installed, enabled | Unit testing, see `docs/TESTING.md` |
-| **Beehave** 2.9.2 | Installed, enabled | Behavior trees for enemy AI (Phase 3) |
+| **GUT** 9.7.1 | Installed, enabled | Unit testing, see [TESTING.md](TESTING.md). Carries a local patch |
+| **Beehave** 2.9.2 | Installed, enabled | Behavior trees for every enemy archetype. Carries a local patch |
+| **MAYHEM Tools** | Ours, enabled | Arena editor + balance editor dock, see [`addons/mayhem_tools/README.md`](../addons/mayhem_tools/README.md) |
 | **DebugDraw3D** | Installed (no plugin to enable) | Runtime hitbox / projectile / AI path visualization |
-| **Phantom Camera** | **Not installed** | Camera rig, shake, recoil kick, FOV transitions |
+| **Phantom Camera** 0.11.0.3 | **Vendored, not enabled, not used** | — |
 
-## Phantom Camera - still not installed
+## Phantom Camera - on disk, unused
 
-Camera kick shipped in Phase 1 without it: `CameraRecoilComponent` drives a `CameraRig` node
-between the head pivot and the camera. Phantom Camera can take that node over whenever it is
-installed - the aim-offset half of recoil is deliberately independent of it. Take the release
-tagged for Godot 4.7: https://github.com/ramokz/phantom-camera
+It was vendored (`79a2b4e`) for camera kick, but kick shipped without it:
+`CameraRecoilComponent` drives a `CameraRig` node between the head pivot and the camera, and the
+dash punch and landing spring were built the same way. Nothing in `scripts/` or `scenes/`
+references it, the plugin is not in `[editor_plugins]`, and the export filter already keeps it
+out of builds (see [EXPORT.md](EXPORT.md)).
 
-After installing: enable it in Project > Project Settings > Plugins, then commit
-`addons/phantom_camera/` together with the updated `[editor_plugins]` line in `project.godot`.
+Either enable it for a concrete need or delete `addons/phantom_camera/` (~1.9 MB). Leaving it
+vendored and unused only means one more addon to keep in step with the engine version.
 
 ## DebugDraw3D
 
@@ -35,13 +43,14 @@ if OS.has_feature("dev"):
 
 ## Beehave
 
-Enabled but unused until Phase 3. Behavior trees are referenced from `EnemyData.behavior_tree` as
+Behavior trees are referenced from `EnemyData.behavior_tree` as
 a `PackedScene`, so an archetype's AI is swappable from data. The project also carries a Beehave
 script template at `script_templates/BeehaveNode/default.gd`.
 
 ## Adding a new addon
 
-Do not. Section 11 of `CLAUDE.md`: propose it with a justification first.
+Do not. Section 11 of the design brief ([DISENO.md](DISENO.md#11-addons)): propose it with a
+justification first.
 
 ## Local patch to Beehave
 

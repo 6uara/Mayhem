@@ -32,18 +32,10 @@ the exclude filter that keeps tests, docs and unused addons out of shipping buil
 
 ## Documentation
 
+Everything is indexed in [docs/README.md](docs/README.md). The entry points:
+
+- [docs/DISENO.md](docs/DISENO.md) — design brief: pillars and rules the code cites as `CLAUDE.md §N`
+- [docs/ESTADO.md](docs/ESTADO.md) — current status, release blockers, open decisions
+- [docs/Mayhem/00 Home.md](docs/Mayhem/00%20Home.md) — technical reference (Obsidian vault)
 - [docs/EXPORT.md](docs/EXPORT.md) — export presets, feature tags, pre-release checklist
 - [docs/TESTING.md](docs/TESTING.md) — test suite layout and conventions
-- [docs/ADDONS.md](docs/ADDONS.md) — which addons are installed and why
-- [docs/HANDOFF_ICONOGRAPHY.md](docs/HANDOFF_ICONOGRAPHY.md) — the UI icon set: rules, what exists, what is missing
-
-## Licence
-
-Copyright (c) 2026 Juan Guaragnini. All rights reserved.
-
-MAYHEM is **proprietary** — the source and assets in this repository are not open source and
-carry no permissive licence. Playing the published builds and streaming or monetising video of
-your own sessions is explicitly fine; redistributing the game or reusing its code and assets is
-not. Full terms in [LICENSE](LICENSE).
-
-Bundled third-party components keep their own licences — see [THIRD_PARTY.md](THIRD_PARTY.md).

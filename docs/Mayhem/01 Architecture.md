@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, architecture]
+estado: referencia
+actualizado: 2026-08-04
 ---
 
 # Architecture

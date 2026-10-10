@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, architecture, autoloads]
+estado: referencia
+actualizado: 2026-10-09
 ---
 
 # Autoloads
@@ -20,7 +22,12 @@ globals):
 | `SaveManager` | `save_manager.gd` | Local leaderboard |
 | `EconomyManager` | `economy_manager.gd` | Currency, purchases |
 | `UpgradeManager` | `upgrade_manager.gd` | Owned upgrades, stat modifiers |
+| `KillBonusTracker` | `kill_bonus_tracker.gd` | Judges each player kill for style bonuses |
+| `RunRecord` | `run_record.gd` | What happened this run, and the trophies it earned |
 | `WaveManager` | `wave_manager.gd` | Wave sequencing, enemy spawn scheduling |
+| `CombatDirector` | `combat_director.gd` | Coordinates the horde: roles, attack tokens, per-frame budget |
+| `BroadcastRating` | `broadcast_rating.gd` | The broadcast rating: style multiplier — see [[06 Waves and Economy#Rating]] |
+| `BroadcastRules` | `broadcast_rules.gd` | The per-wave broadcast rule — see [[06 Waves and Economy#Broadcast rules]] |
 | `NarratorManager` | `narrator_manager.gd` | Host VO lines, subtitle queue |
 | `TutorialHintManager` | `tutorial_hint_manager.gd` | First-time-mechanic HUD hints |
 | `BalanceHub` | `balance_hub.gd` | Editor-only live reload of balance `.tres` files |
@@ -154,7 +161,7 @@ Dos reglas que no son obvias:
 - **Se roba la voz más lejana del oyente**, a igual prioridad (la más vieja en el
   pool 2D, que no tiene posición). Un impacto a treinta metros ya casi no se oye.
 
-Esto cierra el hallazgo §3 de [HANDOFF_FEEL_AND_FIXES.md](../HANDOFF_FEEL_AND_FIXES.md):
+Esto cierra el hallazgo §3 de [HANDOFF_FEEL_AND_FIXES.md](../historial/HANDOFF_FEEL_AND_FIXES.md):
 `tools/configure_audio_mix.gd` describía la jerarquía "VO y Weapons arriba, UI
 abajo", pero eso era ganancia. Esta es la mitad que faltaba, que es asignación de
 voces. Era además precondición de los Gladiadores: tres bandos peleando llenan el
@@ -174,8 +181,8 @@ settings, since the placeholder tracks are raw synthesized `.wav` output with
 no guaranteed loop config baked in yet.
 
 Tracks are placeholders (`tools/generate_placeholder_music.py`, same
-synthesized-stand-in approach as `generate_placeholder_sfx.py` — see
-`assets/audio/music/CREDITS.md`), not licensed/composed music.
+synthesized-stand-in approach as `generate_placeholder_sfx.py`), not composed
+music.
 
 ## SettingsManager
 
@@ -302,6 +309,36 @@ scene (and its `MovementComponent`) is recreated every run.
 `TutorialHint.action`, read live from `InputMap` — a remapped key is never
 wrong. Hints with no single key to name (movement, the shop) leave `action`
 empty and skip substitution.
+
+## KillBonusTracker
+
+`scripts/autoload/kill_bonus_tracker.gd`. Decides **whether** a kill earned a
+style bonus (headshot, airborne, spin, grapple, dash, long shot, point blank,
+last round, double/triple/mayhem multi-kills, priority target); `EconomyConfig`
+decides **how much** it pays. Player state (air, grapple, dash, magazine, camera
+spin) is tracked frame by frame, because by the instant of the kill it is too
+late to reconstruct. Bonus ids are stable `StringName`s, emitted on
+`EventBus.kill_payout`.
+
+## RunRecord
+
+`scripts/autoload/run_record.gd`. Accumulates what happened in the run from
+`EventBus` alone and awards trophies, which are saved **with the leaderboard
+row**, not in a profile — MAYHEM has no meta-progression on purpose. Trophy ids
+are stable so an old saved run keeps rendering. `RunLogger`
+(`scripts/systems/run_logger.gd`) is its playtest sibling: one JSON per run in
+`user://runs/`.
+
+## CombatDirector
+
+`scripts/autoload/combat_director.gd`. Decides what can only be decided looking
+at the whole horde: (1) **each enemy's post** — bearings around the target are
+handed out by role (`ROLE_BANDS`), never duplicated; (2) **who commits** —
+blocking telegraphed attacks (the leap) need a token, so a 30-enemy wave stays
+readable; (3) **the per-frame budget** — neighbours and repaths are served from
+a grid and a quota instead of a full scan per enemy. Autoload because pooled
+enemies outlive arenas. Why and the numbers:
+[PLAN_COMBAT_DIRECTOR](../historial/PLAN_COMBAT_DIRECTOR.md).
 
 ## BalanceHub
 

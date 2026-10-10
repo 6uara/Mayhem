@@ -2,7 +2,7 @@
 class_name NavGrid
 extends RefCounted
 ## A* over the same graph the validator uses (option A of the navigation
-## decision, see docs/DECISION_navegacion_arenas.md).
+## decision, see docs/decisiones/DECISION_navegacion_arenas.md).
 ##
 ## Nothing is baked: the arena's geometry is modular and known, so the path graph
 ## is the placement data itself. Preparation is free and the result is

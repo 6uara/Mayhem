@@ -95,6 +95,18 @@ order; an out-of-order recording silently plays the wrong line in game.
 
 - [ ] `purchase_03.ogg` ( / FLAVOR) — Money well spent. Probably.
 
+## crowd_drop
+
+- [ ] `crowd_drop_01.ogg` (STANDARD / FEEDBACK) — Somebody in the stands likes you. Go get it.
+
+- [ ] `crowd_drop_02.ogg` (STANDARD / FEEDBACK) — That came out of row two. Do not keep them waiting.
+
+- [ ] `crowd_drop_03.ogg` (STANDARD / FEEDBACK) — A gift from the cheap seats. Earn it.
+
+- [ ] `crowd_drop_04.ogg` (STANDARD / FEEDBACK) — The crowd is throwing things again. This one is useful.
+
+- [ ] `crowd_drop_05.ogg` (STANDARD / FEEDBACK) — Row three is feeling generous. That will not last.
+
 ## death
 
 - [ ] `death_01.ogg` (STANDARD / CRITICAL) — And that is how the story ends for most of them.
@@ -112,4 +124,40 @@ order; an out-of-order recording silently plays the wrong line in game.
 - [ ] `match_won_02.ogg` (PUNCHLINE / CRITICAL) — You survived the whole card. That is new.
 
 - [ ] `match_won_03.ogg` (PUNCHLINE / CRITICAL) — Ten waves, still upright. The crowd is yours.
+
+## broadcast_rule
+
+- [ ] `broadcast_rule_01.ogg` (STANDARD / STATE) — New rule for this one, courtesy of the house: %s.
+
+- [ ] `broadcast_rule_02.ogg` (STANDARD / STATE) — The sponsors insist. Tonight, %s.
+
+- [ ] `broadcast_rule_03.ogg` (STANDARD / STATE) — Change of format. %s. Try to keep up.
+
+## rating_up
+
+- [ ] `rating_up_01.ogg` (STANDARD / FEEDBACK) — We are %s. Somebody upstairs is paying attention.
+
+- [ ] `rating_up_02.ogg` (STANDARD / FEEDBACK) — The numbers are climbing. %s.
+
+- [ ] `rating_up_03.ogg` (STANDARD / FEEDBACK) — %s. The crowd is finally awake.
+
+## rating_down
+
+- [ ] `rating_down_01.ogg` (STANDARD / FEEDBACK) — And the ratings are sliding. Do something worth watching.
+
+- [ ] `rating_down_02.ogg` (STANDARD / FEEDBACK) — People are changing the channel. Style, please.
+
+- [ ] `rating_down_03.ogg` (STANDARD / FEEDBACK) — That was efficient. Nobody tunes in for efficient.
+
+## second_wind
+
+- [ ] `second_wind_01.ogg` (WARNING / STATE) — Not yet. The house is not done with you.
+
+- [ ] `second_wind_02.ogg` (WARNING / STATE) — Back up. We have airtime to fill.
+
+## tutorial_done
+
+- [ ] `tutorial_done_01.ogg` (STANDARD / STATE) — That is the tour. Doors open.
+
+- [ ] `tutorial_done_02.ogg` (STANDARD / STATE) — Lesson over. Now it counts.
 

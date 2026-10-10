@@ -1,8 +1,14 @@
 ---
 tags: [mayhem, plan, enemies, design, nice-to-have]
+estado: historico
+actualizado: 2026-08-24
 ---
 
 # MAYHEM — Comportamiento de los enemigos nuevos: recomendaciones
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 Los tres arquetipos simples (Bomber, Ranged Flyer, Environmental con sus dos
 frascos) **ya están construidos y verdes**. Lo que sigue no es trabajo pendiente
@@ -33,7 +39,7 @@ simples. Ninguna recomendación de acá depende de que exista una tercera facci�
 y ninguna debería empujar trabajo hacia ella.
 
 El motivo es el mismo que ya está anotado en
-[PLAN_NEW_ENEMY_TYPES.md](PLAN_NEW_ENEMY_TYPES.md): la infraestructura compartida
+[PLAN_NEW_ENEMY_TYPES.md](../planes/PLAN_NEW_ENEMY_TYPES.md): la infraestructura compartida
 —atribución de muertes, prioridad de voces, abstracción de objetivo y facciones—
 **ya está terminada y mergeada acá**, así que la rama del Gladiador puede
 contener sólo diseño de arquetipo (los tres habitantes, el net worth, el botín

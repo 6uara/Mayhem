@@ -1,8 +1,14 @@
 ---
 tags: [mayhem, plan, pulido]
+estado: historico
+actualizado: 2026-09-30
 ---
 
 # MAYHEM — Plan de pulido y optimizacion (2026-09-30)
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 Revision general del proyecto de cara al release en itch.io, y lo que se hizo de
 ella en la misma sesion. Reemplaza como "estado actual" a
@@ -46,7 +52,7 @@ Suite al cerrar: **1028 tests, 1028 en verde** (`tools/run_tests.ps1`, Godot 4.7
 ## 3. Abierto — necesita una decision o un asset
 
 - **Licencias de la musica.** Los seis tracks de `assets/audio/music/` no tienen
-  origen registrado ([CREDITS.md](../assets/audio/music/CREDITS.md)). Bloquea el
+  origen registrado ([CREDITS.md](../../assets/audio/music/CREDITS.md)). Bloquea el
   release.
 - **Audio de armas e impactos (P1-2).** Siguen siendo los sintetizados por
   `tools/generate_placeholder_sfx.py`; impactos son 2 archivos. Hace falta audio

@@ -1,18 +1,26 @@
 ---
 tags: [mayhem, enemies, ai]
+estado: referencia
+actualizado: 2026-10-09
 ---
 
 # Enemies and AI
 
-## One scene, seven archetypes
+## One scene, eight archetypes
 
-`scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~1275 lines, the largest
+`scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~2400 lines, the largest
 script in the codebase by a wide margin) is shared by every archetype. `EnemyData`
 (`scripts/resources/enemy_data.gd`) supplies everything that makes a Rusher a
 Rusher: silhouette, stats, behavior tree, audio. `Enemy` itself is architecture-
 agnostic — it reads `data.*` and never branches on archetype by name.
 
-`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL`.
+`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL, FLYER`.
+
+**The Elite is benched**: its data, behavior tree and tests are intact, but no
+wave spawns it — its question overlapped the Rusher's. Waves 5 and 10 are still
+flagged `is_elite_wave` and are mass waves instead. The exclusion is named in
+`test_wave_composition.gd` (`const BENCHED`). See
+[PLAN_COMBAT_DIRECTOR §6](../historial/PLAN_COMBAT_DIRECTOR.md).
 
 `EnemyData` field groups: **Stats** (health/speed/damage/range/cooldown/mass,
 `stagger_resistance` — 0 = staggered by every hit, 1 = immovable, elites sit
@@ -28,7 +36,10 @@ mandatory, `attack_cooldown_jitter` and the `Leap` and `Fuse` subgroups — see
 proportions and the halo is what separates their silhouettes at range),
 **Audio**, **Economy** (`reward_currency`).
 
-Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber,environmental}.tres`.
+Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber,environmental,flyer}.tres`.
+
+**Models today:** Rusher, Ranger, Bomber, Healer and Flyer have a `model_scene`;
+Elite, Environmental and Summoner are still the grey-box primitive.
 Behavior trees: `scenes/enemies/ai/tree_{archetype}.tscn`.
 
 `EnemyData.mesh` is the grey-box silhouette and is drawn centred on the body
@@ -304,7 +315,7 @@ a blast that turns a corner is damage with nothing on screen to explain it.
 ### What the fuse learned later
 
 Three things came out of the behaviour pass
-([PLAN_ENEMY_BEHAVIOR.md](../PLAN_ENEMY_BEHAVIOR.md) §2), and all three were
+([PLAN_ENEMY_BEHAVIOR.md](../historial/PLAN_ENEMY_BEHAVIOR.md) §2), and all three were
 arithmetic nobody had done rather than decisions anybody had made:
 
 - **It arms while it is still flanking.** `_approach_commit_distance()` returns
@@ -657,3 +668,17 @@ iterating on layout and must stay `false` in anything committed — baking CSG
 geometry at runtime pulls meshes back from the GPU, which Godot itself warns is
 a real cost. `AGENT_RADIUS = 0.85` in the bake tool is sized for the largest
 archetype (Elite, 0.75).
+
+## AI tick rate
+
+Trees do not tick every physics frame. `Enemy._tick_ai_lod()` sets
+`BeehaveTree.tick_rate` every 0.5 s from the distance to the target: 2 within
+`AI_NEAR_DISTANCE` (14 m), 3 within `AI_FAR_DISTANCE` (30 m), 4 beyond,
+staggered so they do not all skip the same frame. Leaves time things with
+`enemy.get_ai_delta()` (physics delta × tick rate), so a telegraph lasts the same
+at any rate, and `face_target()` spreads the turn over the frames until the next
+tick (`_tick_facing()`). Measured on a Radeon 680M with wave 10: Beehave was the
+largest single cost of the physics step. Movement still runs every frame.
+
+Model enemies get the hit-flash overlay only while they glow
+(`_set_overlay()`): a transparent overlay at zero still draws every part twice.

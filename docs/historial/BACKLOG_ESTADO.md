@@ -1,8 +1,14 @@
 ---
 tags: [mayhem, backlog, estado]
+estado: historico
+actualizado: 2026-09-30
 ---
 
 # MAYHEM — Estado del backlog al 2026-08-25
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 > **Desactualizado.** El estado al 2026-09-30 esta en
 > [PLAN_PULIDO.md](PLAN_PULIDO.md). Desde aca entraron el coliseo, el publico, los
@@ -167,7 +173,7 @@ Trabajo real hecho después del 2026-08-10 que Notion no tiene registrado:
 - **Rama de nuevos enemigos, casi entera.** Bomber, Environmental (los dos
   frascos), Ranged Flyer, rumbos de aproximación por arquetipo, atribución de
   muertes, prioridad de voces y la abstracción objetivo+facciones. Según
-  [PLAN_NEW_ENEMY_TYPES.md](PLAN_NEW_ENEMY_TYPES.md) lo único que queda de ese
+  [PLAN_NEW_ENEMY_TYPES.md](../planes/PLAN_NEW_ENEMY_TYPES.md) lo único que queda de ese
   plan son los **Gladiadores**, en su propia rama.
 - **Dos fixes de navmesh** (`2e7f39e`, `8b51960`): un enemigo ya no camina donde
   no hay navmesh ni aparece en una isla sin salida.

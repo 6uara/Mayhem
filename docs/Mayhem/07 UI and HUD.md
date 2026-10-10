@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, ui, hud]
+estado: referencia
+actualizado: 2026-10-09
 ---
 
 # UI and HUD
@@ -206,10 +208,8 @@ via GodotSteam) would be one added call, not a rewrite.
 "CREDITS" button between Options and Quit, same `open()`/`close()`/`closed`
 pattern and `ui_cancel` handling as `LeaderboardPanel`. Content comes from a
 data constant (`SECTIONS`, same idea as `SettingsScreen.SCHEMA`) rather than
-text authored in the `.tscn` — authorship, tools (Godot, Beehave, GUT,
-phantom_camera, debug_draw), fonts (IBM Plex, Archivo), audio and third-party
-assets, kept in sync with [THIRD_PARTY.md](../THIRD_PARTY.md) by construction:
-adding an attribution is adding one line to `SECTIONS`.
+text authored in the `.tscn` — authorship, engine and tools, typefaces:
+adding a line is adding one entry to `SECTIONS`. No licence text is shown.
 
 ## Feedback panel
 
@@ -242,3 +242,28 @@ const, so a test can shrink it) — if the tween is ever interrupted, the game
 must force the target value and move on rather than hang on a black screen
 waiting for a signal that will never come. `test_a_stalled_fade_is_forced_to_finish_rather_than_hanging_forever`
 proves this without actually waiting out the real 3-second default.
+
+## Opening tutorial
+
+`TutorialDirector` (node in `game.tscn`) + `TutorialStep` data
+(`data/tutorial/tutorial_steps.tres`): ten steps — seven to do (move, jump,
+slide, dash, grapple, fire/ADS, reload), three to read (colors, style and rating,
+shop and rules). `MatchDirector` holds the first wave until `finished`. Action
+steps end when the action happens or after `max_time`; a step whose
+`requires_group` is missing from the arena is skipped. Done or skipped, it is
+saved as the hint id `__tutorial_complete`, cleared by Options > *Reset tutorial*.
+Skip: `skip_tutorial` (T / right stick click) or the pause menu's *Skip tutorial*.
+While it runs, `TutorialHintManager` silences first-time hints and relays the
+steps to the HUD's `TutorialPanel`; doing a step marks its hint seen.
+
+## Mode select
+
+`ModeSelect` (built in code by the main menu): ARSENAL or ONE GUN plus the
+weapon, before the arena select. See [[06 Waves and Economy#Game modes]].
+
+## Leaderboard per arena
+
+`SaveManager` keeps `MAX_ENTRIES` rows per arena (`arena` id = the arena file's
+path; old rows belong to `DEFAULT_ARENA_ID`) and each row's `mode`.
+`LeaderboardPanel.open(arena_id)` opens on the next run's arena, with a picker
+when there is more than one, and a MODE column.

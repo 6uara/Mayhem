@@ -1,4 +1,14 @@
+---
+tags: [mayhem]
+estado: historico
+actualizado: 2026-08-03
+---
+
 # Phase 5 - Visual identity
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 Implementation of the design handoff (`DESIGN_BRIEF.md` + four SPEC files + `theme_tokens.gd`).
 This document records what was built, what deviates and why, and what is still open.

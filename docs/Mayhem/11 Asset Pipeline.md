@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, assets, tooling]
+estado: referencia
+actualizado: 2026-10-09
 ---
 
 # Asset Pipeline
@@ -19,8 +21,12 @@ tags: [mayhem, assets, tooling]
 - `configure_audio_mix.gd` — writes `default_bus_layout.tres`: a first-pass
   per-bus gain hierarchy plus a Master limiter. Not a real mix — see
   [[12 Known Issues and Gaps]].
+- `profile_scene_cost.gd` — FPS, draw calls and GPU time of the arena without
+  a wave, with parts removed by option. See [[12 Known Issues and Gaps#Performance]].
+- `find_unused_assets.py` — lists files under `assets/` nothing references, and
+  with `--filter` the whole unused folders for the export's `exclude_filter`.
 - `profile_elite_wave.gd` — measures real (uncapped, rendered, not
-  `--headless`) frame time with wave 10's full 27 enemies alive. See
+  `--headless`) frame time with wave 10 fully alive. See
   [[12 Known Issues and Gaps#Performance]] for the last verified result and
   how to rerun it.
 

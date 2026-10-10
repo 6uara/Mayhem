@@ -29,6 +29,11 @@ too_slow,too_slow_03,too_slow_03.ogg,STANDARD,FEEDBACK,We are on a schedule out 
 purchase,purchase_01,purchase_01.ogg,,FLAVOR,Spending it already. Bold.
 purchase,purchase_02,purchase_02.ogg,,FLAVOR,The house appreciates your business.
 purchase,purchase_03,purchase_03.ogg,,FLAVOR,Money well spent. Probably.
+crowd_drop,crowd_drop_01,crowd_drop_01.ogg,STANDARD,FEEDBACK,Somebody in the stands likes you. Go get it.
+crowd_drop,crowd_drop_02,crowd_drop_02.ogg,STANDARD,FEEDBACK,That came out of row two. Do not keep them waiting.
+crowd_drop,crowd_drop_03,crowd_drop_03.ogg,STANDARD,FEEDBACK,A gift from the cheap seats. Earn it.
+crowd_drop,crowd_drop_04,crowd_drop_04.ogg,STANDARD,FEEDBACK,The crowd is throwing things again. This one is useful.
+crowd_drop,crowd_drop_05,crowd_drop_05.ogg,STANDARD,FEEDBACK,Row three is feeling generous. That will not last.
 death,death_01,death_01.ogg,STANDARD,CRITICAL,And that is how the story ends for most of them.
 death,death_02,death_02.ogg,STANDARD,CRITICAL,The crowd will remember this for almost a minute.
 death,death_03,death_03.ogg,STANDARD,CRITICAL,Every show needs one of these. Thank you for volunteering.
@@ -36,3 +41,16 @@ death,death_04,death_04.ogg,STANDARD,CRITICAL,Well. That happened.
 match_won,match_won_01,match_won_01.ogg,PUNCHLINE,CRITICAL,All ten. The house is not used to paying out.
 match_won,match_won_02,match_won_02.ogg,PUNCHLINE,CRITICAL,You survived the whole card. That is new.
 match_won,match_won_03,match_won_03.ogg,PUNCHLINE,CRITICAL,"Ten waves, still upright. The crowd is yours."
+broadcast_rule,broadcast_rule_01,broadcast_rule_01.ogg,STANDARD,STATE,"New rule for this one, courtesy of the house: %s."
+broadcast_rule,broadcast_rule_02,broadcast_rule_02.ogg,STANDARD,STATE,"The sponsors insist. Tonight, %s."
+broadcast_rule,broadcast_rule_03,broadcast_rule_03.ogg,STANDARD,STATE,Change of format. %s. Try to keep up.
+rating_up,rating_up_01,rating_up_01.ogg,STANDARD,FEEDBACK,We are %s. Somebody upstairs is paying attention.
+rating_up,rating_up_02,rating_up_02.ogg,STANDARD,FEEDBACK,The numbers are climbing. %s.
+rating_up,rating_up_03,rating_up_03.ogg,STANDARD,FEEDBACK,%s. The crowd is finally awake.
+rating_down,rating_down_01,rating_down_01.ogg,STANDARD,FEEDBACK,And the ratings are sliding. Do something worth watching.
+rating_down,rating_down_02,rating_down_02.ogg,STANDARD,FEEDBACK,"People are changing the channel. Style, please."
+rating_down,rating_down_03,rating_down_03.ogg,STANDARD,FEEDBACK,That was efficient. Nobody tunes in for efficient.
+second_wind,second_wind_01,second_wind_01.ogg,WARNING,STATE,Not yet. The house is not done with you.
+second_wind,second_wind_02,second_wind_02.ogg,WARNING,STATE,Back up. We have airtime to fill.
+tutorial_done,tutorial_done_01,tutorial_done_01.ogg,STANDARD,STATE,That is the tour. Doors open.
+tutorial_done,tutorial_done_02,tutorial_done_02.ogg,STANDARD,STATE,Lesson over. Now it counts.

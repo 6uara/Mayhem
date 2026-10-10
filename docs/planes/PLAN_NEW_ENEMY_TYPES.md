@@ -1,8 +1,18 @@
 ---
 tags: [mayhem, plan, enemies, nice-to-have]
+estado: activo
+actualizado: 2026-10-09
 ---
 
 # MAYHEM — Nuevos tipos de enemigos (nice to have)
+
+> **Estado al 2026-10-09.** Lo único abierto de este plan son los **Gladiadores
+> (§5)**; todo lo demás está en `develop` y documentado en
+> [05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md). Dos menciones de
+> abajo quedaron viejas y se dejan como estaban escritas: la rama
+> `feat/coop-p2p` ya no existe (el multijugador se sacó en `95f563c`), y la
+> referencia al "entregable universitario" es del contexto en que se escribió.
+> Su lugar en el backlog: [PLAN_MEJORAS.md](PLAN_MEJORAS.md).
 
 **Esta rama no entra en el entregable universitario.** Es una rama de features a
 futuro, igual que `feat/coop-p2p`: se deja planteada y documentada para que el
@@ -20,7 +30,7 @@ código contra ese commit, no asumido.
 > **Recomendaciones de comportamiento:** una vez construidos los tres arquetipos
 > simples, lo que queda es diseño y no código —qué preguntas hacen, dónde
 > debutan, qué números mover—. Vive en
-> [PLAN_ENEMY_BEHAVIOR.md](PLAN_ENEMY_BEHAVIOR.md), que también cubre los
+> [PLAN_ENEMY_BEHAVIOR.md](../historial/PLAN_ENEMY_BEHAVIOR.md), que también cubre los
 > hallazgos medidos sobre esta rama (entre ellos que el Bomber no estaba en
 > ninguna oleada). **Sus recomendaciones ya están aplicadas**; los números
 > siguen sin jugarse.
@@ -47,7 +57,7 @@ los tres habitantes, el net worth, el botín disputado y la marca del líder.
 Valen las reglas del proyecto: tipado estricto, balance en `.tres` y no en
 código, audio por `AudioPool`, colores desde `Tokens`, y telegrafía obligatoria
 antes de todo ataque (CLAUDE.md 5.3). Ver el bloque de reglas de
-[PLAN_BACKLOG_RESTANTE.md](PLAN_BACKLOG_RESTANTE.md) §0.
+[PLAN_BACKLOG_RESTANTE.md](../historial/PLAN_BACKLOG_RESTANTE.md) §0.
 
 ---
 
@@ -135,7 +145,7 @@ balance, es un sistema que no existe.
 
 Lo de abajo era el plan y se cumplió tal cual, salvo por lo anotado al final de
 la sección. Detalle de implementación en
-[05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The fuse; los tests
+[05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md) §The fuse; los tests
 viven en `tests/integration/test_bomber.gd`.
 
 **Fantasía:** una cuenta regresiva con patas. La pregunta no es "¿escapo?" sino
@@ -237,7 +247,7 @@ una rampa ni clavarse en el techo.
 
 El frasco de hazard está hecho (paso 2 de §6) y el de atrapado también (paso 8,
 último a propósito). Detalle en
-[05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The flask; tests en
+[05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md) §The flask; tests en
 `tests/integration/test_environmental.gd`.
 
 El plan decía "trabajo casi nulo" y era cierto, pero por un motivo que no estaba
@@ -515,18 +525,18 @@ El orden importa porque los bloqueos se comparten.
    coop: la señal correcta existía y sólo le faltaba la condición. Lo único que
    hubo que inventar fue el dueño del golpe, y va en `HealthComponent`, que es
    por donde ya pasaban todas las fuentes de daño. Detalle en
-   [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §Whose kill it was;
+   [05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md) §Whose kill it was;
    tests en `tests/integration/test_kill_attribution.gd`.
 4. ~~**Prioridad de voces en `AudioPool`** (M)~~ — **hecho.** La prioridad sale
    del bus, así que las cuarenta llamadas existentes quedaron clasificadas sin
    tocar ninguna; sólo los avisos la piden a mano, porque están repartidos entre
    `Enemies` y `World`. Detalle en
-   [02 Autoloads](Mayhem/02%20Autoloads.md) §Voice priority.
+   [02 Autoloads](../Mayhem/02%20Autoloads.md) §Voice priority.
 5. ~~**Abstracción de objetivo + facciones** (L)~~ — **hecho.** La red aguantó:
    ni un test existente se tocó. Lo más barato de todo fue la histéresis y el
    costo de §5.3, que salieron gratis del aggro-lock que ya existía - no se
    vuelve a elegir objetivo, así que no hay ni ping-pong ni búsqueda por frame.
-   Detalle en [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md)
+   Detalle en [05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md)
    §Factions, and who an enemy is actually fighting.
 6. **Gladiadores** (L) — encima de 3 y 5: facciones, net worth, botín, marca del
    líder. **La infraestructura compartida está terminada**, así que es acá donde
@@ -537,13 +547,13 @@ El orden importa porque los bloqueos se comparten.
    (rama hermana de `_is_leaping`, altura por raycast). Lo que no estaba
    planeado fue el hallazgo: el rumbo de aproximación no funcionaba para ningún
    arquetipo de alcance, porque el commit estaba atado a `attack_range`. Detalle
-   en [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §Flight.
+   en [05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md) §Flight.
 8. ~~**Environmental, frasco de atrapado** (M)~~ — **hecho.** Último a propósito
    y valió la pena: la mitad enemiga costó dos escenas y ninguna clase de frasco
    nueva, y todo el trabajo real fue del lado del jugador —`apply_snare()`,
    `break_snare()` y la gracia—, que es exactamente donde la advertencia 2 de
    §4.2.1 decía que iba a estar. Detalle en
-   [05 Enemies and AI](Mayhem/05%20Enemies%20and%20AI.md) §The trapping flask;
+   [05 Enemies and AI](../Mayhem/05%20Enemies%20and%20AI.md) §The trapping flask;
    tests en `tests/integration/test_snare_flask.gd`.
 
 ---

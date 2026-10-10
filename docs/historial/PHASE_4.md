@@ -1,4 +1,14 @@
+---
+tags: [mayhem]
+estado: historico
+actualizado: 2026-08-03
+---
+
 # Phase 4 - Economy, shop and content
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 **Exit criteria (from `CLAUDE.md` 7):** a full run has meaningful purchase decisions;
 first balance pass done. The systems are complete and 130 tests pass; whether the decisions

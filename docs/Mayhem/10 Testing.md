@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, testing]
+estado: referencia
+actualizado: 2026-08-19
 ---
 
 # Testing

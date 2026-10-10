@@ -1,4 +1,14 @@
+---
+tags: [mayhem]
+estado: historico
+actualizado: 2026-08-02
+---
+
 # Phase 0 - Foundation
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 **Goal:** everything a gameplay feature needs to exist, and nothing else. No gameplay.
 

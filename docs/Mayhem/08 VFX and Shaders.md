@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, vfx, shaders]
+estado: referencia
+actualizado: 2026-10-09
 ---
 
 # VFX and Shaders
@@ -77,10 +79,10 @@ anything about what the surface looks like.
 ## Per-instance material duplication
 
 Godot shares local `sub_resource`s across every instantiation of the same
-`PackedScene` by default. Both `SpawnDoor` (seven placed in the arena) and pooled
+`PackedScene` by default. Both `SpawnDoor` (one per spawn point in the arena file) and pooled
 `Enemy` instances therefore explicitly `.duplicate()` their material on `_ready()`
 before mutating it — without this, telegraphing one spawn door would visually
-light up all seven, since they'd all be pointing at the same `ShaderMaterial`
+light up all of them, since they'd all be pointing at the same `ShaderMaterial`
 instance. See `spawn_door.gd::_ready()` for the pattern.
 
 ## Impact VFX keyed to surface material

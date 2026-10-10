@@ -2,3 +2,10 @@ root = true
 
 [*]
 charset = utf-8
+
+# Markdown nests lists by spaces; an editor applying the GDScript tab
+# convention here breaks every nested list (it happened once, see
+# docs/historial/BACKLOG_ESTADO.md section 5).
+[*.md]
+indent_style = space
+indent_size = 2

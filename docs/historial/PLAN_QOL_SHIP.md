@@ -1,8 +1,14 @@
 ---
 tags: [mayhem, plan, qol, ship]
+estado: historico
+actualizado: 2026-09-04
 ---
 
 # MAYHEM — Plan de QoL y cierre para Steam
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 Seis puntos levantados el 2026-09-04 sobre `develop` @ `2f95707`. Escrito para
 ejecutarse tarea por tarea. Valen las reglas de
@@ -24,7 +30,7 @@ plataformas para no iluminar geometría que después se re-autora.
 
 ### Estado actual
 
-[grapple_component.gd](../scripts/components/grapple_component.gd) resuelve el
+[grapple_component.gd](../../scripts/components/grapple_component.gd) resuelve el
 apuntado con **un solo raycast** desde `aim_node` (`_find_anchor()`): o el
 centro exacto de la retícula toca el collider del ancla, o no hay grapple. Cero
 tolerancia angular — de ahí que se sienta duro.
@@ -39,7 +45,7 @@ de apuntado, y decidir si Fast Winch se queda como está.
 **1.1 — Asistencia angular en `_find_anchor()`.**
 Mantener el raycast como primera pasada (si pega directo, gana). Si falla,
 segunda pasada por el grupo `&"grapple_anchor"` (ya lo puebla
-[grapple_anchor.gd](../scripts/systems/grapple_anchor.gd) en `_ready`):
+[grapple_anchor.gd](../../scripts/systems/grapple_anchor.gd) en `_ready`):
 
 - descartar anclas fuera de `get_max_range()`;
 - descartar las que estén detrás (`dot` con el forward del `aim_node` ≤ 0);
@@ -64,7 +70,7 @@ conservador: "un poco más permisivo, no por mucho") y
 **1.3 — Upgrade nueva `data/upgrades/grapple_aim_assist.tres`.**
 `display_name = "Magnet Hook"`, multiplicador `1.6`, `max_stacks = 2`
 (4° → 6.4° → 10.2°), categoría movilidad, `cost ≈ 180`. Agregarla al array
-`upgrades` de [shop_catalog.tres](../data/economy/shop_catalog.tres).
+`upgrades` de [shop_catalog.tres](../../data/economy/shop_catalog.tres).
 
 **1.4 — Cooldown.** Fast Winch ya existe. Decisión de balance: subirla a
 `max_stacks = 3` (×0.42 acumulado sobre 5s → ~2.1s) o dejarla en 2. Recomiendo
@@ -92,10 +98,10 @@ perceptible.
 ### Estado actual
 
 Las plataformas (`platform_2x2`, `catwalk_1x3`, `floor_*`) no tienen `scene`:
-[piece_mesh_builder.gd](../addons/mayhem_tools/arena_editor/core/piece_mesh_builder.gd)
+[piece_mesh_builder.gd](../../addons/mayhem_tools/arena_editor/core/piece_mesh_builder.gd)
 les arma un `BoxMesh` con `StandardMaterial3D` y `albedo_color = greybox_color`
 (`0.45, 0.55, 0.62` — gris azulado, mate).
-[coliseum_env.tres](../data/arena_themes/coliseum_env.tres) da ambiente `0.85` y
+[coliseum_env.tres](../../data/arena_themes/coliseum_env.tres) da ambiente `0.85` y
 sol `0.35`: un albedo mate a esa luz es exactamente lo que desaparece. **El
 problema no es falta de luz, es falta de contraste y de borde.**
 
@@ -137,10 +143,10 @@ medición de PLAN_PERFORMANCE.
 ### Estado actual
 
 `ArenaData.SIZE_PRESETS` ofrece Small 16, Medium 24 y Large 32.
-[default_arena.tres](../data/arenas/default_arena.tres) está autorada en
+[default_arena.tres](../../data/arenas/default_arena.tres) está autorada en
 `24×8×24`. El editor expone el selector en
-[editor_dock.gd](../addons/mayhem_tools/arena_editor/ui/editor_dock.gd) y en
-[arena_editor_hud.gd](../scripts/ui/arena_editor_hud.gd).
+[editor_dock.gd](../../addons/mayhem_tools/arena_editor/ui/editor_dock.gd) y en
+[arena_editor_hud.gd](../../scripts/ui/arena_editor_hud.gd).
 
 ### Qué construir
 
@@ -184,10 +190,10 @@ atascados.
 
 ### Estado actual
 
-[save_manager.gd](../scripts/autoload/save_manager.gd) ya persiste hasta 10
+[save_manager.gd](../../scripts/autoload/save_manager.gd) ya persiste hasta 10
 entradas en `user://leaderboard.json` (`score`, `time`, `waves`, `date`), y
-[leaderboard_panel.gd](../scripts/ui/leaderboard_panel.gd) las muestra desde el
-menú. [match_director.gd:146](../scripts/systems/match_director.gd#L146) llama a
+[leaderboard_panel.gd](../../scripts/ui/leaderboard_panel.gd) las muestra desde el
+menú. [match_director.gd:146](../../scripts/systems/match_director.gd#L146) llama a
 `submit_score()` automáticamente al terminar la run. **Falta el jugador: no hay
 nombres, y el submit es silencioso.**
 
@@ -206,7 +212,7 @@ más `last_used`. API en `SaveManager`: `get_profiles()`,
 
 **4.3 — Prompt al final de la run.** `MatchDirector` deja de llamar a
 `submit_score()` directo; emite el resultado y el overlay de fin
-([match_overlay.gd](../scripts/ui/match_overlay.gd), `_show_end()`) abre un
+([match_overlay.gd](../../scripts/ui/match_overlay.gd), `_show_end()`) abre un
 panel nuevo `ScoreEntryPanel`:
 
 - si hay nombres registrados, lista para elegir con el último preseleccionado,
@@ -242,11 +248,11 @@ rehacer el sistema.
 
 ### Estado actual
 
-[main_menu.gd](../scripts/ui/main_menu.gd) tiene Play / Create Arena /
+[main_menu.gd](../../scripts/ui/main_menu.gd) tiene Play / Create Arena /
 Leaderboard / Options / Quit, y un `Footer` con versión y copyright. Los paneles
 (`Settings`, `Leaderboard`, `ArenaSelect`) siguen todos el mismo patrón: escena
 instanciada como hijo, `open()` / `closed`, `_root.visible = false`.
-[THIRD_PARTY.md](../THIRD_PARTY.md) ya tiene el material de atribución.
+[THIRD_PARTY.md](../../THIRD_PARTY.md) ya tiene el material de atribución.
 
 ### Qué construir
 
@@ -304,7 +310,7 @@ categoría, y tres acciones:
   de config, no hardcodeada, para poder cambiarla sin recompilar).
 
 **6.3 — Puntos de entrada:** botón en el menú principal y en el pause menu
-([pause_menu.gd](../scripts/ui/pause_menu.gd)) — el momento en que algo molesta
+([pause_menu.gd](../../scripts/ui/pause_menu.gd)) — el momento en que algo molesta
 es durante la run, no en el menú.
 
 **6.4 — Privacidad.** Una línea en el panel diciendo exactamente qué se incluye
@@ -338,7 +344,7 @@ del punto, pero conviene tenerlas anotadas.
 
 **1. La arena se re-autoro por script, no en el editor.** El editor de arenas es
 una GUI y esto se hizo headless. En vez de editar 2700 lineas de `.tres` a mano,
-se reescribio [tools/make_default_arena.gd](../tools/make_default_arena.gd), que
+se reescribio [tools/make_default_arena.gd](../../tools/make_default_arena.gd), que
 es el script que habia generado la arena original y que estaba desactualizado
 respecto del `.tres` commiteado. Ahora la arena vuelve a ser reproducible:
 `godot --headless --path . -s tools/make_default_arena.gd`. Valida sin un solo
@@ -372,7 +378,7 @@ romperlo en silencio.
 - **La URL del formulario de feedback esta vacia.** Hasta que haya un Google
   Form (o lo que sea) al que mandar gente, el boton "Open form" no aparece.
   Encenderlo es escribir la URL en
-  [data/feedback/feedback_config.tres](../data/feedback/feedback_config.tres):
+  [data/feedback/feedback_config.tres](../../data/feedback/feedback_config.tres):
   no hace falta tocar codigo ni volver a exportar.
 - **`Fast Winch` sigue en 2 stacks.** La decision de balance del punto 1.4 quedo
   para despues del playtest.

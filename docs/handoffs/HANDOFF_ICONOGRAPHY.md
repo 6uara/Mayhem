@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, handoff, iconography, ui, design]
+estado: activo
+actualizado: 2026-09-25
 ---
 
 # Handoff — Iconografía de UI
@@ -19,7 +21,7 @@ Baseline: `develop`, después del bloque de trofeos y bonos de kill.
 ## 0. Leer esto primero
 
 **El set ya existe y funciona.** Hay 25 iconos dibujados por código en
-[`scripts/ui/mayhem_icon.gd`](../scripts/ui/mayhem_icon.gd): rectángulos,
+[`scripts/ui/mayhem_icon.gd`](../../scripts/ui/mayhem_icon.gd): rectángulos,
 círculos, triángulos y un *skew*, sobre grilla 64×64 con trazo de 4px. No son un
 placeholder roto — son legibles, escalan sin perder nitidez y ya están cableados
 en la HUD.
@@ -127,11 +129,11 @@ Esto es el pedido. Agrupado por para qué sirve, con el lugar exacto donde entra
 
 Se ganan al terminar una run y se guardan con ella. Hoy se muestran como fichas
 de texto en la tabla de mejores runs
-([`leaderboard_panel.gd`](../scripts/ui/leaderboard_panel.gd), columna
+([`leaderboard_panel.gd`](../../scripts/ui/leaderboard_panel.gd), columna
 `TROPHIES`), y con hasta 4 fichas por fila el texto ya está apretado. **Son los
 que más ganan con un icono.**
 
-Definidos en [`run_record.gd`](../scripts/autoload/run_record.gd).
+Definidos en [`run_record.gd`](../../scripts/autoload/run_record.gd).
 
 | Id | Nombre en pantalla | Qué premia | Nota de dibujo |
 | --- | --- | --- | --- |
@@ -156,10 +158,10 @@ interior.
 ### 3.2 Bonos de kill — 12 iconos · **prioridad alta**
 
 Aparecen durante el combate, en el feed bajo el contador de plata
-([`payout_feed.gd`](../scripts/ui/payout_feed.gd)), con el texto del bono y lo
+([`payout_feed.gd`](../../scripts/ui/payout_feed.gd)), con el texto del bono y lo
 que pagó. Vida de la ficha: ~1.3s.
 
-Definidos en [`kill_bonus_tracker.gd`](../scripts/autoload/kill_bonus_tracker.gd).
+Definidos en [`kill_bonus_tracker.gd`](../../scripts/autoload/kill_bonus_tracker.gd).
 
 | Id | En pantalla | Condición |
 | --- | --- | --- |
@@ -191,7 +193,7 @@ disparando. El texto ya dice qué es; el icono existe para que no haya que leerl
 `UpgradeData` ya tiene un campo `icon: Texture2D` — **está vacío en las 19**. Las
 tarjetas de la tienda hoy son texto puro.
 
-Las 19 mejoras en [`data/upgrades/`](../data/upgrades/):
+Las 19 mejoras en [`data/upgrades/`](../../data/upgrades):
 
 - **Movilidad** — `move_speed`, `jump_height`, `air_control`, `dash_charge`,
   `dash_cooldown`, `grapple_cooldown`, `grapple_range`, `grapple_aim_assist`
@@ -249,7 +251,7 @@ Credits, Quit.
 
 ### 3.7 Editor de arenas — 21 iconos · **prioridad baja**
 
-La paleta de [`data/arena_pieces/`](../data/arena_pieces/) es hoy una lista de
+La paleta de [`data/arena_pieces/`](../../data/arena_pieces) es hoy una lista de
 nombres. Con 21 piezas, una grilla de iconos sería bastante más rápida de usar,
 pero el editor es una herramienta y no parte de la run.
 
@@ -289,7 +291,7 @@ una captura, una herramienta externa), se exporta del SVG.
 
 ### Cómo se buscan — *convención, no tabla*
 
-[`IconSet`](../scripts/ui/icon_set.gd) resuelve por nombre:
+[`IconSet`](../../scripts/ui/icon_set.gd) resuelve por nombre:
 
 ```
 res://ui/icons/<grupo>/<grupo>_<id>.svg
@@ -313,7 +315,7 @@ nada.
 ### Agregar un icono nuevo
 
 Dejar el SVG en `ui/icons/<grupo>/` con el nombre de la convención. Nada más.
-Los tests de [`test_icon_set.gd`](../tests/unit/test_icon_set.gd) recorren los
+Los tests de [`test_icon_set.gd`](../../tests/unit/test_icon_set.gd) recorren los
 `.tres` de disco, así que una mejora o un enemigo nuevo **sin** icono hace
 fallar la suite.
 
@@ -325,7 +327,7 @@ Ninguna es de dibujo, pero las dos afectan al pedido.
 
 Había dos tablas y no coincidían. `Tokens.CATEGORY_COLOR` decía
 `mobility → PLAYER · weapon → ENEMY · survivability → REWARD`, y
-[`bonus_list.gd`](../scripts/ui/bonus_list.gd) tenía su propia copia con
+[`bonus_list.gd`](../../scripts/ui/bonus_list.gd) tenía su propia copia con
 `weapon → REWARD · survivability → HEAL` — y `HEAL` está documentado en
 `theme_tokens.gd` como **"healing VFX only, never UI"**, o sea que el panel de
 bonos estaba pintando una categoría con un color que la propia ley prohíbe en

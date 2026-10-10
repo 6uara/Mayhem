@@ -1,8 +1,14 @@
 ---
 tags: [mayhem, handoff, feel, bugs]
+estado: historico
+actualizado: 2026-08-21
 ---
 
 # Handoff — Feel pass and code findings
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 Written from a code review session with no Godot binary available, so **nothing
 here was run**. Every claim is either measured from the source/data (marked
@@ -105,7 +111,7 @@ re-check `tests/integration/test_shooting_and_hitboxes.gd`.
 > Cerrado en la rama `nice-to-have/new-enemy-types`. `AudioPool` tiene una escala
 > de prioridad derivada del bus y roba voces en vez de descartar el sonido que
 > llega tarde; los avisos la piden a mano. Ver
-> [02 Autoloads](Mayhem/02%20Autoloads.md) §Voice priority. Lo de abajo es el
+> [02 Autoloads](../Mayhem/02%20Autoloads.md) §Voice priority. Lo de abajo es el
 > diagnóstico original.
 
 `AudioPool._find_free_3d()` (`scripts/autoload/audio_pool.gd:113`) scans 48

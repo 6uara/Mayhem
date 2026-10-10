@@ -1,14 +1,23 @@
 ---
 tags: [mayhem, index]
+estado: referencia
+actualizado: 2026-10-09
 ---
 
 # MAYHEM — Technical Documentation
 
 Single-player FPS arena shooter. Godot 4.7, GDScript, Jolt physics, Forward+.
 
-This vault documents the **current state of the codebase**, not its history — for
-the phase-by-phase build log see `docs/PHASE_0.md` through `docs/PHASE_5.md` in
-the repo root's `docs/` folder, which this vault does not replace.
+This vault documents the **current state of the codebase**, not its history.
+Everything else — design brief, live status, plans, handoffs and the build log —
+is indexed in [docs/README.md](../README.md):
+
+- [DISENO.md](../DISENO.md) — the design brief the code cites as `CLAUDE.md §N`.
+- [ESTADO.md](../ESTADO.md) — what is done, what is open, what blocks release.
+- [historial/](../historial/) — the phase-by-phase build log and closed plans.
+
+The vault is written in English with Spanish passages where the code it
+describes is commented in Spanish; it is not being translated.
 
 ## Map
 
@@ -23,7 +32,8 @@ the repo root's `docs/` folder, which this vault does not replace.
 - [[09 Design Tokens and Color Law]] — the single source of truth for color/timing/layout
 - [[10 Testing]] — GUT setup, coverage map, known flake
 - [[11 Asset Pipeline]] — model/audio import tooling
-- [[12 Known Issues and Gaps]] — what's missing or fragile, as of this writing
+- [[12 Known Issues and Gaps]] — technical debt and fragile spots
+- [[13 Arena, Venue and Crowd]] — arena files, the coliseum, the crowd, the Host
 
 ## Orientation, fast
 

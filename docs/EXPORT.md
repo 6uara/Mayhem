@@ -1,3 +1,9 @@
+---
+tags: [mayhem]
+estado: guia
+actualizado: 2026-10-09
+---
+
 # Export settings
 
 `export_presets.cfg` is gitignored (it can carry local paths and keystore info), so the export
@@ -69,6 +75,7 @@ before it was added here. Shipping it would hand a player the test suite, the de
 | `addons/phantom_camera/*` | Installed but unused — the only mention is a comment in `camera_recoil_component.gd` (~1.9 MB). |
 | `addons/debug_draw/*` | Installed but unused; no call site anywhere (~235 KB). |
 | `builds/*`, `LatestBuild/*` | Previous exports living inside the project directory. Belt and braces — `all_resources` should not pick up a `.exe` — but a build that packs an older build of itself is not a failure worth risking. |
+| `assets/flipbooks/*`, `assets/particles/opague/*`, 15 carpetas de `assets/textures/Noise128x128/`, `assets/models/props/*`, `assets/Logo_And_Banner/*`, `assets/fonts/*`, `assets/materials/*` | Packs de arte que ninguna escena, recurso ni script referencia (salen de `python tools/find_unused_assets.py --filter`). Siguen en el repo para el pase de VFX; no viajan en el build. Volver a correr el script antes de cada release: lo que entre en uso sale de la lista solo. |
 
 `addons/beehave/*` is **not** excluded: five enemy AI trees under `scenes/enemies/ai/` depend on
 it, and two of its scripts are autoloads (`BeehaveGlobalMetrics`, `BeehaveGlobalDebugger`).
@@ -91,7 +98,7 @@ name="Windows Dev"
 platform="Windows Desktop"
 custom_features="dev"
 export_filter="all_resources"
-include_filter="ui/fonts/OFL-*.txt"
+include_filter=""
 exclude_filter=""
 export_path="builds/dev/mayhem.exe"
 
@@ -100,8 +107,8 @@ name="Windows Release"
 platform="Windows Desktop"
 custom_features="release"
 export_filter="all_resources"
-include_filter="ui/fonts/OFL-*.txt"
-exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*"
+include_filter=""
+exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*,assets/fonts/*,assets/materials/*,assets/flipbooks/*,assets/models/props/*,assets/Logo_And_Banner/*,assets/particles/opague/*,assets/textures/Noise128x128/Vein/*,assets/textures/Noise128x128/Melt/*,assets/textures/Noise128x128/Gabor/*,assets/textures/Noise128x128/Milky/*,assets/textures/Noise128x128/Grainy/*,assets/textures/Noise128x128/Marble/*,assets/textures/Noise128x128/Perlin/*,assets/textures/Noise128x128/Streak/*,assets/textures/Noise128x128/Spokes/*,assets/textures/Noise128x128/Voronoi/*,assets/textures/Noise128x128/Craters/*,assets/textures/Noise128x128/Manifold/*,assets/textures/Noise128x128/Turbulence/*,assets/textures/Noise128x128/Super Noise/*,assets/textures/Noise128x128/Super Perlin/*"
 export_path="builds/release/mayhem.exe"
 
 [preset.2]
@@ -109,8 +116,8 @@ name="Linux Release"
 platform="Linux"
 custom_features="release"
 export_filter="all_resources"
-include_filter="ui/fonts/OFL-*.txt"
-exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*"
+include_filter=""
+exclude_filter="tests/*,docs/*,tools/*,script_templates/*,addons/gut/*,addons/phantom_camera/*,addons/debug_draw/*,builds/*,LatestBuild/*,assets/fonts/*,assets/materials/*,assets/flipbooks/*,assets/models/props/*,assets/Logo_And_Banner/*,assets/particles/opague/*,assets/textures/Noise128x128/Vein/*,assets/textures/Noise128x128/Melt/*,assets/textures/Noise128x128/Gabor/*,assets/textures/Noise128x128/Milky/*,assets/textures/Noise128x128/Grainy/*,assets/textures/Noise128x128/Marble/*,assets/textures/Noise128x128/Perlin/*,assets/textures/Noise128x128/Streak/*,assets/textures/Noise128x128/Spokes/*,assets/textures/Noise128x128/Voronoi/*,assets/textures/Noise128x128/Craters/*,assets/textures/Noise128x128/Manifold/*,assets/textures/Noise128x128/Turbulence/*,assets/textures/Noise128x128/Super Noise/*,assets/textures/Noise128x128/Super Perlin/*"
 export_path="builds/release/mayhem.x86_64"
 ```
 
@@ -169,12 +176,7 @@ in-editor if you check `OS.has_feature("dev") or OS.has_feature("editor")` — s
    — must be 0 for Release and nonzero for Dev. Do not trust a visual skim of the preset config
    alone.
 4. Launch the release build and confirm no Debug Draw geometry is visible.
-5. Confirm 60 FPS with a full elite wave on screen (section 10 of `CLAUDE.md`).
-6. **Las licencias de las fuentes viajan con el build.** La OFL exige que el texto acompañe a
-   las fuentes, y un `.txt` no es un recurso: sin el `include_filter="ui/fonts/OFL-*.txt"` de
-   los presets de arriba, Godot no lo mete en el `.pck`. Confirmar en el log del export
-   `Storing File: res://ui/fonts/OFL-IBMPlex.txt` y `OFL-Archivo.txt`, y ademas copiar los dos
-   archivos al lado del ejecutable en el `.zip` que se sube a itch.io.
-7. **En el build, no en el editor**: abrir Options y Best runs desde el menu, y Options
+5. Confirm 60 FPS with a full elite wave on screen (section 10 of the design brief, [DISENO.md](DISENO.md#10-performance)).
+6. **En el build, no en el editor**: abrir Options y Best runs desde el menu, y Options
    desde la pausa. Los tres paneles tienen que quedar centrados. Es el unico sintoma de la
    trampa de `layout_mode` de mas arriba, y no se ve corriendo desde el editor.

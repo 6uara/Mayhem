@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, design-tokens, color]
+estado: referencia
+actualizado: 2026-09-06
 ---
 
 # Design Tokens and Color Law

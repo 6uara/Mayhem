@@ -1,8 +1,13 @@
+---
+tags: [mayhem]
+estado: guia
+actualizado: 2026-10-09
+---
+
 # itch.io page — copy to paste
 
-Source of truth for the store page text, kept in the repo so the ownership wording on itch
-matches [LICENSE](../LICENSE), [THIRD_PARTY.md](../THIRD_PARTY.md) and the in-game footer. If you
-change one, change all four.
+Source of truth for the store page text, kept in the repo so it changes together with the
+game.
 
 ---
 
@@ -42,17 +47,6 @@ BUILDS
 Windows and Linux, 64-bit. Download, unzip, run. Roughly 210 MB.
 
 Version 0.3 — in development. Bug reports and feedback in the comments are read.
-
-LICENCE
-Copyright (c) 2026 Juan Guaragnini. All rights reserved.
-
-MAYHEM is proprietary software. You are welcome to play it and to publish video of your own
-sessions. Redistributing, re-uploading or mirroring the builds, and reusing the code or assets
-in another project, are not permitted without written permission.
-
-Built with Godot Engine 4.7 (MIT). Behavior trees by Beehave (MIT, (c) bitbrain). Typefaces:
-IBM Plex ((c) IBM Corp.) and Archivo ((c) Omnibus-Type), both SIL Open Font License 1.1. Full
-attribution ships with the game in THIRD_PARTY.md.
 ```
 
 ## Page settings checklist
@@ -64,20 +58,11 @@ attribution ships with the game in THIRD_PARTY.md.
 - [ ] **Visibility**: keep as Draft or Restricted until the pre-release checklist in
       [EXPORT.md](EXPORT.md) passes, then flip to Public
 - [ ] **Community**: comments on, so bug reports have somewhere to land
-- [ ] Upload `THIRD_PARTY.md` and `LICENSE` inside the zip next to the executable
 - [ ] Screenshots and a cover image (630x500 recommended by itch)
 
 ## What to actually zip
 
-The exported `.exe` alone is not the deliverable. Ship:
-
 ```
 mayhem-0.3.0-windows/
   mayhem.exe          <- the export, PCK embedded
-  LICENSE
-  THIRD_PARTY.md
 ```
-
-`LICENSE` and `THIRD_PARTY.md` are copied in as part of packaging, not exported by Godot — the
-export filter excludes `docs/*` and these live at the repo root, so nothing pulls them into the
-build automatically. Copy them by hand or in whatever packaging script lands later.

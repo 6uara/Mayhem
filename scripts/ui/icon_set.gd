@@ -6,7 +6,7 @@ extends RefCounted
 ## Por que por convencion y no por una tabla: el id de un trofeo, de un bono o de
 ## una mejora ya existe -en `RunRecord`, en `KillBonusTracker`, en el `.tres` de
 ## la mejora- y el archivo se llama igual a proposito (ver
-## docs/HANDOFF_ICONOGRAPHY.md §4). Una tabla `id -> ruta` seria una tercera
+## docs/handoffs/HANDOFF_ICONOGRAPHY.md §4). Una tabla `id -> ruta` seria una tercera
 ## copia de esos nombres, y la que se olvidaria de actualizar.
 ##
 ## Devolver `null` es parte del contrato, no una falla: un id sin archivo cae en

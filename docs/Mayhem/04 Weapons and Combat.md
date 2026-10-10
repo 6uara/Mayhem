@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, weapons, combat]
+estado: referencia
+actualizado: 2026-08-19
 ---
 
 # Weapons and Combat

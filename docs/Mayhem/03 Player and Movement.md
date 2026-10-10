@@ -1,5 +1,7 @@
 ---
 tags: [mayhem, player, movement]
+estado: referencia
+actualizado: 2026-09-28
 ---
 
 # Player and Movement

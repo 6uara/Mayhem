@@ -1,3 +1,9 @@
+---
+tags: [mayhem]
+estado: guia
+actualizado: 2026-09-28
+---
+
 # Herramientas en juego
 
 Tres cosas que existen en el juego corriendo: la consola de dev, el panel de

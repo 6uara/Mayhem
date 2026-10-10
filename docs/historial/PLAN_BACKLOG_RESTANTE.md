@@ -1,8 +1,14 @@
 ---
 tags: [mayhem, plan, backlog]
+estado: historico
+actualizado: 2026-09-04
 ---
 
 # MAYHEM — Plan de trabajo del backlog restante
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 Plan derivado del backlog de Notion (base de datos *MAYHEM Tasks*), cruzado
 contra el estado real del repo al 2026-08-10. Está escrito para ser ejecutado
@@ -32,14 +38,14 @@ archivos tocar, qué construir, qué testear y cuándo se considera cerrada.
   mezclar: si una tarea necesita un número de balance nuevo, va en un `.tres`,
   no hardcodeado en el script.
 - **`EventBus` es sólo señales**, cero lógica y cero estado. Si una tarea
-  necesita una señal nueva, se declara en [event_bus.gd](scripts/autoload/event_bus.gd)
+  necesita una señal nueva, se declara en [event_bus.gd](../../scripts/autoload/event_bus.gd)
   agrupada con las de su dominio y con comentario de una línea.
 - **Audio siempre por `AudioPool`**, nunca instanciando `AudioStreamPlayer`
   por evento. Buses: `Master > SFX > {Weapons, Impacts, Enemies, World}`,
   `Music`, `VO`, `UI`.
 - **Objetos de alta rotación por `ObjectPool`** (proyectiles, impactos,
   casquillos, números de daño).
-- **Colores y medidas desde `Tokens`** ([theme_tokens.gd](scripts/autoload/theme_tokens.gd)).
+- **Colores y medidas desde `Tokens`** ([theme_tokens.gd](../../scripts/autoload/theme_tokens.gd)).
   Nada de literales de color en escenas nuevas de UI: hay un test
   (`tests/unit/test_theme_tokens.gd`) que vigila la ley de color.
 
@@ -85,12 +91,12 @@ Godot **auto-resguarda las escenas abiertas** cuando se carga el proyecto
   *"Define viewmodel visual style (arms + 4 weapons)"* se está trabajando en
   la rama `feature/held-weapon-visual`. **No la toques desde este plan.**
   Consecuencia práctica: no modifiques
-  [viewmodel_rig.tscn](scenes/player/viewmodel_rig.tscn),
-  [player.tscn](scenes/player/player.tscn),
+  [viewmodel_rig.tscn](../../scenes/player/viewmodel_rig.tscn),
+  [player.tscn](../../scenes/player/player.tscn),
   [first_person_head_hider.gd](scripts/components/first_person_head_hider.gd),
   [torso_aim_follower.gd](scripts/components/torso_aim_follower.gd),
   [head_bone_follower.gd](scripts/components/head_bone_follower.gd) ni
-  [player_body_animator.gd](scripts/components/player_body_animator.gd).
+  [player_body_animator.gd](../../scripts/components/player_body_animator.gd).
   Varias tareas de acá abajo rozan `player.tscn` (speed lines, hints); en esos
   casos el plan indica cómo minimizar el conflicto — leé la nota de cada una.
 
@@ -124,14 +130,14 @@ sobra tiempo — están al final, sección 9.
 - **Notion:** *"Promover el bakeo de mallas de enemigos (fbx→.res) a tools/"* —
   P2, XS, epic AI.
 - **Por qué ahora:** hoy es un script `SceneTree` de scratch, no commiteado
-  (ver [12 Known Issues and Gaps.md](docs/Mayhem/12%20Known%20Issues%20and%20Gaps.md)).
+  (ver [12 Known Issues and Gaps.md](../Mayhem/12%20Known%20Issues%20and%20Gaps.md)).
   La tanda F lo va a correr 4+ veces más.
 
 **Qué hacer**
 
 1. Crear `tools/bake_enemy_meshes.gd`, siguiendo el patrón de los tools que ya
-   existen — mirá [bake_navmesh.gd](tools/bake_navmesh.gd) y
-   [build_theme.gd](tools/build_theme.gd) para la forma exacta (`extends
+   existen — mirá [bake_navmesh.gd](../../tools/bake_navmesh.gd) y
+   [build_theme.gd](../../tools/build_theme.gd) para la forma exacta (`extends
    SceneTree`, `func _init()`, invocación con `godot --headless -s`).
 2. El tool tiene que:
    - Recibir por argumento (o iterar un directorio convenido) los `.fbx`/`.glb`
@@ -141,11 +147,11 @@ sobra tiempo — están al final, sección 9.
    - Loguear una línea por asset procesado y salir con código != 0 si algún
 	 asset falla, para que sea usable desde CI.
 3. Documentar la invocación exacta en
-   [11 Asset Pipeline.md](docs/Mayhem/11%20Asset%20Pipeline.md), sección
+   [11 Asset Pipeline.md](../Mayhem/11%20Asset%20Pipeline.md), sección
    *Weapon/enemy model import*, reemplazando la descripción del proceso
    manual.
 4. Sacar el bullet correspondiente de
-   [12 Known Issues and Gaps.md](docs/Mayhem/12%20Known%20Issues%20and%20Gaps.md).
+   [12 Known Issues and Gaps.md](../Mayhem/12%20Known%20Issues%20and%20Gaps.md).
 
 **Aceptación:** correr el tool sobre el spiderbot actual reproduce el `.res`
 existente sin diferencias funcionales. Suite verde.
@@ -163,9 +169,9 @@ existente sin diferencias funcionales. Suite verde.
 
 **Contexto de código**
 
-- [host_catalog.gd](scripts/resources/host_catalog.gd) tiene
+- [host_catalog.gd](../../scripts/resources/host_catalog.gd) tiene
   `sets: Array[HostLineSet]`.
-- [host_line_set.gd](scripts/resources/host_line_set.gd) tiene `id: StringName`,
+- [host_line_set.gd](../../scripts/resources/host_line_set.gd) tiene `id: StringName`,
   `lines: Array[String]`, `tier`, `priority`, `category_cooldown`.
 - La instancia vive en `data/host/host_catalog.tres` (11 ocasiones, 37 líneas).
 - La convención de archivo de audio que va a usar A2 y la tarea E2 es
@@ -214,12 +220,12 @@ Correr el tool dos veces produce archivos idénticos (determinístico).
 
 Dos supuestos del código actual se rompen:
 
-1. [weapon_holder.gd](scripts/components/weapon_holder.gd) mantiene
+1. [weapon_holder.gd](../../scripts/components/weapon_holder.gd) mantiene
    `_owned: Array[WeaponComponent]` de hasta 4 armas simultáneas, con
    `cycle()`, `select_slot()`, `handle_input()` mapeando `weapon_1..4`, y
    `add_reserve_ammo_fraction()` que reparte munición entre **todas** las
    armas poseídas.
-2. [upgrade_manager.gd](scripts/autoload/upgrade_manager.gd) agrega los
+2. [upgrade_manager.gd](../../scripts/autoload/upgrade_manager.gd) agrega los
    modificadores **globalmente por `stat_key`**: `get_modifiers_for(stat_key)`
    recorre todos los upgrades owned sin saber a qué arma pertenecen. Hoy
    "extended mag" sube el cargador de lo que tengas equipado, siempre. Para
@@ -253,7 +259,7 @@ Dos supuestos del código actual se rompen:
 
 **Paso 2 — `StatsComponent` / `WeaponComponent` propagando el arma.**
 
-- [stats_component.gd](scripts/components/stats_component.gd) cachea por
+- [stats_component.gd](../../scripts/components/stats_component.gd) cachea por
   `stat_key` en `_cache`. Ese cache **se vuelve incorrecto** apenas el valor
   dependa del arma. Dos opciones; tomá la primera:
   - **(elegida)** `get_stat_from(stat_key, base_value)` gana `weapon_id`
@@ -293,7 +299,7 @@ Dos supuestos del código actual se rompen:
 
 **Paso 4 — Shop.**
 
-- En [shop.gd](scripts/systems/shop.gd), `_buy_weapon()` ya rechaza el arma
+- En [shop.gd](../../scripts/systems/shop.gd), `_buy_weapon()` ya rechaza el arma
   poseída con `MAX_STACKS`. Con reemplazo eso sigue siendo correcto: no podés
   comprar la que ya tenés.
 - `_build_pool()` filtra armas con `holder.owns(weapon.id)` — sigue bien.
@@ -306,11 +312,11 @@ Dos supuestos del código actual se rompen:
   tarjeta de un arma tiene que advertir que reemplaza la actual y que se
   pierden sus mejoras. Si el jugador no ve eso antes de comprar, el diseño se
   siente como un bug. Es un cambio en
-  [shop_screen.gd](scripts/ui/shop_screen.gd).
+  [shop_screen.gd](../../scripts/ui/shop_screen.gd).
 
 **Paso 5 — HUD.**
 
-- [hud.gd](scripts/ui/hud.gd) tiene `_weapon_list` y `_rebuild_weapon_list()`
+- [hud.gd](../../scripts/ui/hud.gd) tiene `_weapon_list` y `_rebuild_weapon_list()`
   que asumen hasta 4 slots con el equipado en rail cyan y el resto al 50% de
   opacidad. Con un arma sola, la lista es un solo elemento. Simplificá a un
   indicador de arma única (nombre + ícono), conservando el rail cyan del token.
@@ -349,7 +355,7 @@ comprar. Suite verde.
 
 1. **Tuning (trivial):** bajar `offers_per_visit` en el `.tres` del
    `ShopCatalog` en `data/economy/`. El campo ya existe en
-   [shop_catalog.gd](scripts/resources/shop_catalog.gd). Valor sugerido de
+   [shop_catalog.gd](../../scripts/resources/shop_catalog.gd). Valor sugerido de
    arranque: **4** (hoy 6). Es tuning, se reajusta en la tanda G.
 2. **Reroll (nuevo):**
    - Campos nuevos en `ShopCatalog`, en el grupo `Offer`:
@@ -359,7 +365,7 @@ comprar. Suite verde.
 	 ## Cuánto sube el costo por cada reroll dentro de la MISMA visita.
 	 @export var reroll_cost_increment: int = 50
 	 ```
-   - En [shop.gd](scripts/systems/shop.gd):
+   - En [shop.gd](../../scripts/systems/shop.gd):
 	 ```gdscript
 	 signal reroll_cost_changed(cost: int)
 
@@ -376,13 +382,13 @@ comprar. Suite verde.
 	 nunca en la UI — es la regla que ya sigue `buy()`.
    - `_rerolls_this_visit` se resetea al abrir la tienda. Enganchalo donde ya
 	 se llama a `roll_offers()` al abrir (buscá `EventBus.shop_opened` /
-	 `roll_offers` en [match_director.gd](scripts/systems/match_director.gd)).
+	 `roll_offers` en [match_director.gd](../../scripts/systems/match_director.gd)).
 3. **Decisión de diseño que el plan resuelve:** el reroll **respeta**
    `guarantee_one_per_category`. Razón: la garantía existe para que la mala
    suerte no encierre al jugador en una sola vía; un reroll que la ignora
    reintroduce exactamente ese problema y encima cobrando. Documentalo en el
    docstring de `reroll()`.
-4. **UI:** botón de reroll en [shop_screen.gd](scripts/ui/shop_screen.gd) con
+4. **UI:** botón de reroll en [shop_screen.gd](../../scripts/ui/shop_screen.gd) con
    el costo actual visible, deshabilitado (estado no-afford del sistema de
    tokens, el mismo que ya usan las tarjetas) cuando no alcanza la plata.
 
@@ -413,7 +419,7 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 2. **Mecánicas a cubrir** (una por hint): mover, saltar, mantle, slide, dash,
    grapple, ADS, recargar, primera tienda.
    - Movimiento/salto/mantle/slide/dash: vienen de
-	 [movement_component.gd](scripts/components/movement_component.gd)
+	 [movement_component.gd](../../scripts/components/movement_component.gd)
 	 (`state_changed`) y de `EventBus.dash_used`.
    - Grapple: `EventBus.grapple_started`.
    - ADS y recarga: `EventBus.weapon_reloaded` existe; para ADS puede que
@@ -428,18 +434,18 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
    completo y un hint que dice "SHIFT" cuando el jugador rebindeó es peor que
    no tener hint.
 4. **Persistencia:** el "ya lo vio" se guarda vía
-   [save_manager.gd](scripts/autoload/save_manager.gd). Hoy ese autoload sólo
+   [save_manager.gd](../../scripts/autoload/save_manager.gd). Hoy ese autoload sólo
    maneja el leaderboard en `user://leaderboard.json`, y su docstring dice
    explícitamente *"nothing carries between runs"*. Esto lo cambia: agregá un
    archivo aparte `user://tutorial.json` (no lo mezcles con el leaderboard) y
    **actualizá el docstring** para que deje de mentir.
    API sugerida: `has_seen_hint(id) -> bool` / `mark_hint_seen(id) -> void` /
    `clear_hints() -> void`.
-5. **UI:** un overlay discreto en [hud.tscn](scenes/ui/hud.tscn) — no un modal,
+5. **UI:** un overlay discreto en [hud.tscn](../../scenes/ui/hud.tscn) — no un modal,
    no pausa el juego. Estilo con `Tokens` y `ChamferStyleBox` como el resto del
    HUD. Nunca dos hints a la vez: si llega uno mientras hay otro visible,
    encolalo o descartalo (elegí encolar, con un tope).
-6. **Settings:** agregá en [settings_screen.gd](scripts/ui/settings_screen.gd)
+6. **Settings:** agregá en [settings_screen.gd](../../scripts/ui/settings_screen.gd)
    un botón "Reset tutorial hints" que llame a `clear_hints()`. Es lo que te va
    a salvar en la tanda G cuando quieras que un playtester vea los hints en
    frío.
@@ -466,7 +472,7 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 
 - **Notion:** *"Impact VFX and decals keyed to surface material"* — P1, M,
   In progress.
-- **Estado:** [impact_effect.gd](scripts/systems/impact_effect.gd) sólo
+- **Estado:** [impact_effect.gd](../../scripts/systems/impact_effect.gd) sólo
   distingue mundo vs. carne (`play_at(pos, normal, is_flesh)`), con
   `world_sound` / `flesh_sound` y un `Decal` que se oculta en carne.
 
@@ -491,14 +497,14 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
    (`set_meta(&"surface", &"metal")`). Tomá **la meta**: no ensucia el árbol de
    grupos, que ya se usa para lógica de gameplay (`&"player"`), y se ve en el
    inspector. El lookup vive en un helper estático — ponelo en
-   `scripts/util/` junto a [physics_layers.gd](scripts/util/physics_layers.gd).
+   `scripts/util/` junto a [physics_layers.gd](../../scripts/util/physics_layers.gd).
    **Fallback obligatorio:** una superficie sin meta usa el material por
    defecto y **no** loguea error por frame.
 3. `ImpactEffect.play_at()` cambia de firma: en vez de `is_flesh: bool`, recibe
    el `SurfaceMaterialData` (o el `StringName` del id y lo resuelve). Actualizá
    los llamadores — buscalos con `grep -rn "play_at" scripts/`; los principales
-   son [projectile.gd](scripts/systems/projectile.gd) y
-   [enemy_projectile.gd](scripts/systems/enemy_projectile.gd).
+   son [projectile.gd](../../scripts/systems/projectile.gd) y
+   [enemy_projectile.gd](../../scripts/systems/enemy_projectile.gd).
 4. El decal usa la textura del material; las partículas toman su color. Carne
    sigue sin decal (`spawns_decal = false` en su `.tres`, no un `if` en el
    código).
@@ -521,7 +527,7 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 
 - **Notion:** parte de *"Game feel polish: hitstop, damage numbers, transitions"* —
   el hitstop ya está hecho
-  ([hitstop_controller.gd](scripts/systems/hitstop_controller.gd)).
+  ([hitstop_controller.gd](../../scripts/systems/hitstop_controller.gd)).
 
 **Qué hacer**
 
@@ -543,8 +549,8 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 	 columna ilegible.
 5. **Toggle en settings.** Los números de daño son divisivos y el menú de
    settings del proyecto es un argumento de portfolio. Agregá el toggle en
-   [settings_manager.gd](scripts/autoload/settings_manager.gd) y
-   [settings_screen.gd](scripts/ui/settings_screen.gd), al lado del de
+   [settings_manager.gd](../../scripts/autoload/settings_manager.gd) y
+   [settings_screen.gd](../../scripts/ui/settings_screen.gd), al lado del de
    screenshake.
 
 **Tests** (`tests/unit/test_damage_numbers.gd`):
@@ -568,7 +574,7 @@ Tiene que ser un overlay neutro del HUD. No uses `NarratorManager`.
 
 1. Un `CanvasLayer` de transición con capa alta, en un autoload o en la escena
    raíz, con un `ColorRect` usando `scene_change.gdshader`.
-2. [game_manager.gd](scripts/autoload/game_manager.gd) hace los cambios de
+2. [game_manager.gd](../../scripts/autoload/game_manager.gd) hace los cambios de
    escena hoy. Envolvé ese camino: `fade_out → change_scene → fade_in`,
    `await` de por medio. Toda transición pasa por ahí; ningún llamador debería
    poder cambiar de escena salteando el fade.
@@ -591,7 +597,7 @@ sigan funcionando y **no se cuelguen** si la transición nunca termina
 - **Notion:** último item pendiente de *"Movement VFX: dash trail, slide sparks,
   speed lines"*. Con esto **esa tarea cierra**.
 - Dash trail y slide sparks ya están en
-  [movement_vfx_component.gd](scripts/components/movement_vfx_component.gd).
+  [movement_vfx_component.gd](../../scripts/components/movement_vfx_component.gd).
 
 **⚠ Nota de conflicto:** esto toca `player.tscn`, que la rama
 `feature/held-weapon-visual` está editando. **Mantené el cambio de escena al
@@ -643,7 +649,7 @@ de mergear.
    Es tu línea de base; sin ella no vas a saber qué rompiste.
 3. Contá los `NavigationLink3D` reales. El backlog dice 12; en
    `greybox_arena.tscn` no aparecen como nodos directos —
-   vienen instanciados desde [jump_link.tscn](scenes/arena/jump_link.tscn).
+   vienen instanciados desde [jump_link.tscn](../../scenes/arena/jump_link.tscn).
    **Verificá el número antes de empezar** y anotalo.
 
 **Cómo trabajar (crítico para no perder trabajo)**
@@ -661,7 +667,7 @@ de mergear.
 
 1. **Pase de silueta.** Ajustá la geometría mayor (niveles, rampas, coberturas)
    con el layout de combate ya validado. Rebakeá el navmesh con
-   [bake_navmesh.gd](tools/bake_navmesh.gd) y corré los tests de navegación
+   [bake_navmesh.gd](../../tools/bake_navmesh.gd) y corré los tests de navegación
    **en cada paso**.
 2. **Pase de dressing.** Props y detalle. Sci-fi; ya hay un `scifi_container`
    integrado como cobertura. El dressing es **no colisionable** salvo que sea
@@ -702,7 +708,7 @@ movilidad sigue subjetivamente en pie. Suite verde.
 4. **El costo es real y se paga en la tanda G.** Cada luz dinámica con sombra
    sale cara. Decidí qué es estático (bakeable) y qué dinámico, y anotá esa
    decisión — vas a volver a ella durante el profiling.
-5. Actualizá [08 VFX and Shaders.md](docs/Mayhem/08%20VFX%20and%20Shaders.md)
+5. Actualizá [08 VFX and Shaders.md](../Mayhem/08%20VFX%20and%20Shaders.md)
    con el setup final.
 
 **Commit:** `feat(arena): light the arena like the broadcast it is`
@@ -722,7 +728,7 @@ movilidad sigue subjetivamente en pie. Suite verde.
    anotala** en un `assets/audio/music/CREDITS.md`, hace falta para publicar).
    Mínimo: menú, combate, tienda/entre-olas.
 2. Un `MusicManager` — como autoload nuevo, o dentro de
-   [audio_pool.gd](scripts/autoload/audio_pool.gd) si encaja sin inflarlo.
+   [audio_pool.gd](../../scripts/autoload/audio_pool.gd) si encaja sin inflarlo.
    Responsabilidades: reproducir en el bus `Music`, loopear, y hacer
    crossfade entre estados.
 3. Los estados se enganchan a señales que ya existen: `EventBus.wave_started`,
@@ -769,17 +775,17 @@ movilidad sigue subjetivamente en pie. Suite verde.
    Sumar un presentador nuevo tiene que ser **sólo copiar una carpeta** — si
    hace falta editar un `.tres` por línea, el diseño está mal.
 3. **Resolución del stream:** en
-   [narrator_manager.gd](scripts/autoload/narrator_manager.gd), cuando se pide
+   [narrator_manager.gd](../../scripts/autoload/narrator_manager.gd), cuando se pide
    una línea, construir la ruta con el presentador activo y cargar con
    `ResourceLoader.exists()` antes de `load()`. Si no existe, **subtítulo solo**
    — que es lo que el manager ya sabe hacer. Cero errores en consola por una
    línea sin grabar: es el estado normal durante producción.
 4. **Cachear** los streams resueltos por `line_id`, y **limpiar el cache al
    cambiar de presentador**.
-5. **Selector en Settings** ([settings_screen.gd](scripts/ui/settings_screen.gd)):
+5. **Selector en Settings** ([settings_screen.gd](../../scripts/ui/settings_screen.gd)):
    dropdown de presentadores + botón de escucha que reproduce
    `preview_line_id`. Persistir en
-   [settings_manager.gd](scripts/autoload/settings_manager.gd).
+   [settings_manager.gd](../../scripts/autoload/settings_manager.gd).
 
 **Tests** (`tests/integration/test_host_voice.gd`, que ya existe):
 
@@ -852,8 +858,8 @@ todo sonando; los windups de enemigo se identifican sin mirar.
    esquivar. Un windup que no se lee es un bug de diseño.
 3. Importar y bakear con el tool de **A1**.
 4. Wiring: `EnemyData` ya es data-driven, así que el cableado final es rápido.
-   Mirá [enemy_data.gd](scripts/resources/enemy_data.gd) y
-   [enemy.tscn](scenes/enemies/enemy.tscn) — probablemente necesites permitir
+   Mirá [enemy_data.gd](../../scripts/resources/enemy_data.gd) y
+   [enemy.tscn](../../scenes/enemies/enemy.tscn) — probablemente necesites permitir
    una escena de modelo por arquetipo en `EnemyData` en vez de la malla
    compartida.
 5. **Verificá que las hitboxes sigan alineadas.** Cabeza y cuerpo son zonas
@@ -879,7 +885,7 @@ todo sonando; los windups de enemigo se identifican sin mirar.
 
 ### G1. Export pipeline y `docs/EXPORT.md`
 
-- **Notion:** P0, M, In progress. [EXPORT.md](docs/EXPORT.md) ya documenta los
+- **Notion:** P0, M, In progress. [EXPORT.md](../EXPORT.md) ya documenta los
   presets Windows Dev/Release planeados, pero `project.godot` **no tiene
   feature tags custom** — hoy sólo `config/features=PackedStringArray("4.7",
   "Forward Plus")`.
@@ -1006,7 +1012,7 @@ documentá qué falta y cuánto.
 **Qué hacer**
 
 1. Consolidá una lista: hallazgos de G3/G5, los items abiertos de
-   [12 Known Issues and Gaps.md](docs/Mayhem/12%20Known%20Issues%20and%20Gaps.md),
+   [12 Known Issues and Gaps.md](../Mayhem/12%20Known%20Issues%20and%20Gaps.md),
    y todo lo que el plan haya ido anotando.
 2. **Deudas ya identificadas que hay que cerrar acá:**
    - **Root-causear el test flaky** `test_the_navmesh_at_all`. Un test flaky

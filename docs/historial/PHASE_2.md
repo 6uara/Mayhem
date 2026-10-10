@@ -1,4 +1,14 @@
+---
+tags: [mayhem]
+estado: historico
+actualizado: 2026-09-04
+---
+
 # Phase 2 - Mobility
+
+> **Documento histórico.** Registra cómo y por qué se construyó algo; no describe
+> el estado actual del código. Lo vigente está en [ESTADO.md](../ESTADO.md) y en el
+> vault técnico ([00 Home](../Mayhem/00%20Home.md)).
 
 **Exit criteria (from `CLAUDE.md` 7):** a movement "playground" run through the arena is fun
 with no combat at all. Like Phase 1, that judgement is made at the controls; this documents the

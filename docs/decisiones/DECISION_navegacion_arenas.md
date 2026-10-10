@@ -1,3 +1,9 @@
+---
+tags: [mayhem]
+estado: decision
+actualizado: 2026-09-03
+---
+
 # Decisión de navegación — arenas de autor
 
 Hito 0 del handoff de MAYHEM Tools. Registra qué se eligió, por qué, y qué falta

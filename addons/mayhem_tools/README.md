@@ -29,13 +29,13 @@ contacto entre los dos.
 `ArenaData._migrate`, con un test que carga un archivo v1 contra la versión
 actual.
 
-**El catálogo de piezas son datos.** 12 piezas en `data/arena_pieces/`. Agregar
+**El catálogo de piezas son datos.** 21 piezas en `data/arena_pieces/`. Agregar
 una es escribir un `.tres` y sumarlo al catálogo — nunca tocar código. Una pieza
 sin escena asociada se greyboxea desde su huella, así que el catálogo es usable
 antes de que exista el arte.
 
 **Navegación: las dos opciones, con roles separados.** Ver
-[`docs/DECISION_navegacion_arenas.md`](../../docs/DECISION_navegacion_arenas.md).
+[`docs/decisiones/DECISION_navegacion_arenas.md`](../../docs/decisiones/DECISION_navegacion_arenas.md).
 
 **La escena de partida carga arenas.** `game.tscn` ya no lleva una arena adentro:
 tiene un `ArenaHost` que carga la arena default, la que el jugador está
@@ -145,8 +145,8 @@ las terrazas en un eje y las deja cortas en el otro.
 alrededor de lo construido. No hay proporción que pelear: la cantidad de copias
 sale del tamaño real de la arena y cada copia conserva lo que se modeló. Coloca
 por caja envolvente y no por origen, así que una sección autorada alrededor de
-cualquier origen cae donde tiene que caer. Es lo que usa la arena default
-(tema `tiled`).
+cualquier origen cae donde tiene que caer. La arena default usaba este tema;
+hoy usa `coliseum` (ver [13 Arena, Venue and Crowd](../../docs/Mayhem/13%20Arena%2C%20Venue%20and%20Crowd.md)).
 
 ## Convención de celdas
 
