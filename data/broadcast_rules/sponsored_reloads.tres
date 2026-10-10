@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"reload_time"
+operation = 1
+value = 0.5
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"reserve_ammo_max"
+operation = 1
+value = 1.5
+
+[resource]
+script = ExtResource("1_rule")
+id = &"sponsored_reloads"
+title = "SPONSORED RELOADS"
+description = "Reloads take half the time and every pouch holds 50% more."
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])

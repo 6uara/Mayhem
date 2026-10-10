@@ -87,10 +87,10 @@ theme_override_constants/separation = 12
 alignment = 2
 
 [node name="ResetHintsButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=872554484]
-tooltip_text = "Show every first-time hint again, as if it were your first run."
+tooltip_text = "Play the opening tutorial again next run, and show every first-time hint again."
 custom_minimum_size = Vector2(210, 44)
 layout_mode = 2
-text = "Reset tutorial hints"
+text = "Reset tutorial"
 
 [node name="ResetButton" type="Button" parent="Panel/Margin/Layout/Footer" unique_id=997966791]
 tooltip_text = "Put every option and key binding back to its default."

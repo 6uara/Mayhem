@@ -21,6 +21,13 @@ signal match_state_changed(is_running: bool)
 ## Cuanto se deja ver la muerte antes de que la pantalla de nombre tape todo.
 ## Tiene que cubrir la caida del jugador (`Player.DEATH_FALL_TIME`) y un respiro.
 @export var death_reveal_delay: float = 2.2
+## Si el Host sortea reglas de transmision en esta partida (BroadcastRules). Solo
+## en la escena de juego: un director armado a mano en una prueba no las quiere.
+@export var broadcast_rules_enabled: bool = false
+## El tutorial de arranque. Si corresponde mostrarlo, la primera oleada espera a
+## que termine o se saltee: la partida no empieza con alguien que todavia no sabe
+## dashear. Sin tutorial (pruebas, escenas armadas a mano) arranca directo.
+@export var tutorial: TutorialDirector
 
 var is_running: bool = false
 
@@ -56,11 +63,22 @@ func start_match() -> void:
 	# Junto a los otros dos y no colgado de la primera oleada: "empezo una
 	# partida" es una decision de este director, no un efecto secundario.
 	RunRecord.reset()
+	BroadcastRating.reset()
+	BroadcastRating.tracking = true
+	BroadcastRules.reset()
+	BroadcastRules.enabled = broadcast_rules_enabled
 	WaveManager.reset()
 	WaveManager.setup(waves)
 	GameManager.start_run()
 	match_state_changed.emit(true)
-	_start_wave_after(first_wave_delay, _generation)
+	_start_first_wave(_generation)
+
+
+func _exit_tree() -> void:
+	BroadcastRating.tracking = false
+	BroadcastRating.reset()
+	BroadcastRules.enabled = false
+	BroadcastRules.end_rule()
 
 
 func get_match_time() -> float:
@@ -70,6 +88,15 @@ func get_match_time() -> float:
 
 
 # Private
+
+func _start_first_wave(generation: int) -> void:
+	if tutorial != null and tutorial.should_run():
+		tutorial.begin()
+		await tutorial.finished
+		if generation != _generation or not is_running:
+			return
+	_start_wave_after(first_wave_delay, generation)
+
 
 func _start_wave_after(delay: float, generation: int) -> void:
 	if delay > 0.0:
@@ -148,7 +175,7 @@ func _end_in_victory() -> void:
 	# is_running is already false, so this only takes the shop off the screen -
 	# it cannot start an eleventh wave on the way out.
 	_resume_from_break()
-	var score: int = _calculate_score(total_time)
+	var score: int = _calculate_score(true)
 	GameManager.state = GameManager.State.GAME_OVER
 	# El puntaje ya no se guarda desde aca: la run termino y quien la anota es la
 	# pantalla que primero le pregunta al jugador con que nombre.
@@ -172,7 +199,7 @@ func _on_player_died() -> void:
 	is_running = false
 	_generation += 1
 	var generation: int = _generation
-	var score: int = _calculate_score(total_time)
+	var score: int = _calculate_score(false)
 	var waves_cleared: int = maxi(WaveManager.current_index, 0)
 	match_state_changed.emit(false)
 	if death_reveal_delay <= 0.0 or not is_inside_tree():
@@ -191,11 +218,12 @@ func _announce_death(generation: int, score: int, total_time: float,
 	EventBus.run_finished.emit(score, total_time, waves_cleared, false)
 
 
-## Rewards speed rather than pure completion (CLAUDE.md 5.5). Currency banked
-## stands in for accuracy until Phase 4 tracks shots landed.
-func _calculate_score(total_time: float) -> int:
-	var time_bonus: int = int(maxf(0.0, 1200.0 - total_time) * 10.0)
-	return EconomyManager.currency * 10 + time_bonus
+## Kills + estilo + oleadas, que es lo que RunRecord fue sumando en la run. La
+## velocidad sigue premiada (CLAUDE.md 5.5), pero por el camino de la plata: el
+## bono de velocidad de cada oleada compra mejoras, no puntos. Ver
+## EconomyConfig, grupo Score.
+func _calculate_score(victory: bool) -> int:
+	return RunRecord.get_score(victory)
 
 
 func _now() -> float:

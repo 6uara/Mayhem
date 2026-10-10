@@ -10,13 +10,14 @@ extends Control
 
 signal closed()
 
-const COLUMNS: Array[String] = ["#", "NAME", "SCORE", "WAVES", "TIME", "DATE", "TROPHIES"]
+const COLUMNS: Array[String] = ["#", "NAME", "SCORE", "WAVES", "MODE", "TIME", "DATE",
+	"TROPHIES"]
 ## Relative widths. Name, score and date carry the most, the rank the least.
-const WEIGHTS: Array[float] = [0.5, 1.8, 1.4, 1.0, 1.0, 1.8, 3.0]
+const WEIGHTS: Array[float] = [0.5, 1.8, 1.4, 0.9, 1.1, 1.0, 1.8, 3.0]
 ## Indice de la columna del puntaje, que es la que va en la tipografia grande.
 const SCORE_COLUMN: int = 2
 ## Y la de los trofeos, que no es texto sino una hilera de fichas.
-const TROPHY_COLUMN: int = 6
+const TROPHY_COLUMN: int = 7
 ## Cuantas fichas entran en una fila antes de resumir el resto en un "+N". Una
 ## run excepcional puede ganar ocho trofeos, y ocho fichas en una fila de tabla
 ## dejan de leerse como logros y pasan a ser ruido.
@@ -26,14 +27,22 @@ const MAX_CHIPS: int = 4
 const CHIP_BOX: float = 22.0
 
 @onready var _rows: VBoxContainer = $Panel/Margin/Layout/Scroll/Rows
+@onready var _scroll: ScrollContainer = $Panel/Margin/Layout/Scroll
 @onready var _empty: Label = $Panel/Margin/Layout/EmptyState
 @onready var _back_button: Button = $Panel/Margin/Layout/Footer/BackButton
+
+
+## Que arena se esta mirando. Una tabla por arena: ver SaveManager.
+var arena_id: String = SaveManager.DEFAULT_ARENA_ID
+var _arena_picker: OptionButton
+var _arena_ids: Array[String] = []
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	_back_button.pressed.connect(close)
+	_build_arena_picker()
 
 
 func _input(event: InputEvent) -> void:
@@ -46,7 +55,12 @@ func _input(event: InputEvent) -> void:
 
 # Public API
 
-func open() -> void:
+## Abre en la arena pedida (la de la proxima run, desde el menu), que es la
+## tabla que el jugador quiere ver; despues se cambia con el selector.
+func open(preferred_arena: String = "") -> void:
+	if preferred_arena != "":
+		arena_id = preferred_arena
+	_refresh_arena_picker()
 	_rebuild()
 	visible = true
 	_back_button.grab_focus()
@@ -65,7 +79,7 @@ func _rebuild() -> void:
 	for child: Node in _rows.get_children():
 		child.queue_free()
 
-	var entries: Array[Dictionary] = SaveManager.get_entries()
+	var entries: Array[Dictionary] = SaveManager.get_entries_for(arena_id)
 	# A run nobody has taken yet should say so, not show an empty grid the player
 	# has to interpret.
 	_empty.visible = entries.is_empty()
@@ -80,10 +94,47 @@ func _rebuild() -> void:
 			String(entry.get("name", SaveManager.DEFAULT_NAME)),
 			"%d" % int(entry.get("score", 0)),
 			"%d" % int(entry.get("waves", 0)),
+			GameManager.mode_label(int(entry.get("mode", 0))),
 			_format_time(float(entry.get("time", 0.0))),
 			String(entry.get("date", "-")),
 			entry.get("trophies", []),
 		], false))
+
+
+func _build_arena_picker() -> void:
+	_arena_picker = OptionButton.new()
+	_arena_picker.name = "ArenaPicker"
+	_arena_picker.tooltip_text = "Each arena keeps its own ten best runs."
+	_arena_picker.item_selected.connect(func(index: int) -> void:
+		if index >= 0 and index < _arena_ids.size():
+			arena_id = _arena_ids[index]
+			_rebuild())
+	var layout: Node = _scroll.get_parent()
+	layout.add_child(_arena_picker)
+	layout.move_child(_arena_picker, _scroll.get_index())
+
+
+func _refresh_arena_picker() -> void:
+	_arena_picker.clear()
+	_arena_ids.clear()
+	var arenas: Array[Dictionary] = SaveManager.get_arenas()
+	var has_current: bool = false
+	for arena: Dictionary in arenas:
+		if String(arena["id"]) == arena_id:
+			has_current = true
+	if not has_current:
+		arenas.push_front({"id": arena_id, "name": _name_for(arena_id)})
+	for arena: Dictionary in arenas:
+		_arena_ids.append(String(arena["id"]))
+		_arena_picker.add_item(String(arena["name"]))
+	_arena_picker.select(_arena_ids.find(arena_id))
+	_arena_picker.visible = _arena_ids.size() > 1
+
+
+func _name_for(id: String) -> String:
+	if id == SaveManager.DEFAULT_ARENA_ID:
+		return SaveManager.DEFAULT_ARENA_NAME
+	return id.get_file().get_basename()
 
 
 func _make_row(values: Array, is_header: bool) -> Control:

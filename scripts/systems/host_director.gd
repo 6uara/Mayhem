@@ -30,6 +30,8 @@ func _ready() -> void:
 	EventBus.match_completed.connect(_on_match_completed.unbind(2))
 	EventBus.purchase_made.connect(_on_purchase_made.unbind(2))
 	EventBus.crowd_drop_thrown.connect(_on_crowd_drop_thrown.unbind(2))
+	EventBus.rating_tier_changed.connect(_on_rating_tier_changed)
+	EventBus.broadcast_rule_started.connect(_on_broadcast_rule_started)
 
 
 # Private
@@ -111,3 +113,17 @@ func _on_purchase_made() -> void:
 ## hay que chequear nada, solo nombrar la ocasion con el peso correcto.
 func _on_crowd_drop_thrown() -> void:
 	NarratorManager.say(&"crowd_drop")
+
+
+## La regla de la oleada. El Host la anuncia: es su show y sus reglas.
+func _on_broadcast_rule_started(_rule_id: StringName, title: String, _description: String) -> void:
+	NarratorManager.say(&"broadcast_rule", [title])
+
+
+## El rating cruzo un escalon. El Host lo nombra, porque un multiplicador que nadie
+## anuncia es un numero en una esquina.
+func _on_rating_tier_changed(tier: int, went_up: bool) -> void:
+	if went_up:
+		NarratorManager.say(&"rating_up", [BroadcastRating.get_tier_name(tier)])
+	elif tier <= 1:
+		NarratorManager.say(&"rating_down")

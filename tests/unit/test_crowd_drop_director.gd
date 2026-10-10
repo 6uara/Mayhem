@@ -153,7 +153,10 @@ func test_weights_decide_what_falls_more_often() -> void:
 	var table: CrowdDropTable = _table()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	table.weights = PackedFloat32Array([1.0, 0.0, 0.0])
+	var weights := PackedFloat32Array([1.0])
+	for _i: int in table.utilities.size() - 1:
+		weights.append(0.0)
+	table.weights = weights
 	for _i: int in 30:
 		assert_eq(table.pick(rng).id, table.utilities[0].id,
 			"un peso en cero no sale nunca")

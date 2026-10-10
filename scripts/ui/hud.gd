@@ -122,7 +122,128 @@ func _ready() -> void:
 	_critical_tag.visible = false
 	_reload_prompt.visible = false
 	_on_currency_changed(EconomyManager.currency)
+	_build_rating_meter()
+	_build_rule_chip()
+	_build_tutorial_panel()
+	TutorialHintManager.tutorial_step_shown.connect(_on_tutorial_step_shown)
+	TutorialHintManager.tutorial_step_completed.connect(_on_tutorial_step_completed)
+	TutorialHintManager.tutorial_ended.connect(_on_tutorial_ended)
+	EventBus.broadcast_rule_started.connect(_on_broadcast_rule_started)
+	EventBus.broadcast_rule_ended.connect(_on_broadcast_rule_ended)
 	_bind_player.call_deferred()
+
+
+## El rating va debajo de la plata, que es lo que multiplica. Armado por codigo
+## para no tocar la escena de la HUD por un widget.
+func _build_rating_meter() -> void:
+	var cluster: Node = _currency.get_parent().get_parent()
+	var meter := RatingMeter.new()
+	meter.name = "RatingMeter"
+	cluster.add_child(meter)
+	cluster.move_child(meter, _currency.get_parent().get_index() + 1)
+
+
+## La regla de transmision de la oleada, visible toda la oleada debajo del
+## numero de oleada. Una regla que solo se anuncia una vez se olvida a la mitad.
+var _rule_chip: PanelContainer
+var _rule_label: Label
+
+
+func _build_rule_chip() -> void:
+	_rule_chip = PanelContainer.new()
+	_rule_chip.name = "RuleChip"
+	_rule_chip.theme_type_variation = &"HUDPanel"
+	_rule_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rule_chip.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_rule_label = Label.new()
+	_rule_label.theme_type_variation = &"HUDLabel"
+	_rule_label.add_theme_color_override("font_color", Tokens.REWARD)
+	_rule_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_rule_label.custom_minimum_size = Vector2(320.0, 0.0)
+	_rule_chip.add_child(_rule_label)
+	_wave_number.get_parent().get_parent().add_child(_rule_chip)
+	_rule_chip.visible = false
+
+
+## El tutorial de arranque: un panel arriba al centro, en la banda de los hints,
+## que los hints dejan libre mientras el tutorial corre.
+var _tutorial_panel: PanelContainer
+var _tutorial_header: Label
+var _tutorial_body: Label
+var _tutorial_footer: Label
+
+
+func _build_tutorial_panel() -> void:
+	_tutorial_panel = PanelContainer.new()
+	_tutorial_panel.name = "TutorialPanel"
+	_tutorial_panel.theme_type_variation = &"SubtitlePanel"
+	_tutorial_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_tutorial_panel.offset_left = -340.0
+	_tutorial_panel.offset_right = 340.0
+	_tutorial_panel.offset_top = 160.0
+	_tutorial_panel.offset_bottom = 270.0
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 6)
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_panel.add_child(layout)
+	_tutorial_header = Label.new()
+	_tutorial_header.theme_type_variation = &"HUDLabel"
+	_tutorial_header.add_theme_color_override("font_color", Tokens.PLAYER)
+	layout.add_child(_tutorial_header)
+	_tutorial_body = Label.new()
+	_tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(_tutorial_body)
+	_tutorial_footer = Label.new()
+	_tutorial_footer.theme_type_variation = &"HUDLabel"
+	_tutorial_footer.add_theme_color_override("font_color", Tokens.MUTED)
+	layout.add_child(_tutorial_footer)
+	_root.add_child(_tutorial_panel)
+	_tutorial_panel.visible = false
+
+
+func get_tutorial_text() -> String:
+	return _tutorial_body.text if _tutorial_panel != null and _tutorial_panel.visible else ""
+
+
+func _on_tutorial_step_shown(title: String, text: String, index: int, total: int,
+		is_info: bool) -> void:
+	_hint_box.visible = false
+	_tutorial_header.text = "TUTORIAL  %d/%d  -  %s" % [index + 1, total, title]
+	_tutorial_body.text = text
+	_tutorial_footer.text = "%s  skip tutorial%s" % [
+		TutorialHintManager.key_label(&"skip_tutorial"),
+		"" if is_info else "   -   do it to continue"]
+	_tutorial_panel.modulate = Color.WHITE
+	_tutorial_panel.visible = true
+
+
+func _on_tutorial_step_completed() -> void:
+	_tutorial_header.text += "   DONE"
+	_tutorial_panel.modulate = Color(Tokens.PLAYER, 1.0).lightened(0.6)
+
+
+func _on_tutorial_ended() -> void:
+	_tutorial_panel.visible = false
+
+
+func get_rule_text() -> String:
+	return _rule_label.text if _rule_chip != null and _rule_chip.visible else ""
+
+
+func _on_broadcast_rule_started(_rule_id: StringName, title: String, description: String) -> void:
+	_rule_label.text = "RULE  %s
+%s" % [title, description]
+	_rule_chip.visible = true
+	# Despues del cartel de la oleada, no encima: los dos usan la misma banda.
+	if is_inside_tree():
+		get_tree().create_timer(Tokens.ANNOUNCE_LIFE).timeout.connect(func() -> void:
+			if _rule_chip.visible:
+				announce("BROADCAST RULE", title, Tokens.REWARD))
+
+
+func _on_broadcast_rule_ended() -> void:
+	_rule_chip.visible = false
 
 
 func _process(delta: float) -> void:

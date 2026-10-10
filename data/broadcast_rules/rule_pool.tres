@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BroadcastRulePool" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule_pool.gd" id="1_pool"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/headshot_night.tres" id="r0"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/air_show.tres" id="r1"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/moon_boots.tres" id="r2"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/sponsored_reloads.tres" id="r3"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/crowd_frenzy.tres" id="r4"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/glass_cannon.tres" id="r5"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/combo_hour.tres" id="r6"]
+
+[resource]
+script = ExtResource("1_pool")
+rules = Array[Resource]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5"), ExtResource("r6")])

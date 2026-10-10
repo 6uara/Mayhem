@@ -25,6 +25,9 @@ const ENEMY_VIEWER_SCENE_PATH: String = "res://scenes/main/enemy_viewer.tscn"
 @onready var _credits: CreditsPanel = $Credits
 @onready var _feedback: FeedbackPanel = $Feedback
 
+## Armado por codigo: ver ModeSelect.
+var _mode_select: ModeSelect
+
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -41,6 +44,11 @@ func _ready() -> void:
 	_credits.closed.connect(_on_panel_closed)
 	_feedback.closed.connect(_on_panel_closed)
 	_arena_select.arena_chosen.connect(_on_arena_chosen)
+	_mode_select = ModeSelect.new()
+	_mode_select.name = "ModeSelect"
+	add_child(_mode_select)
+	_mode_select.closed.connect(_on_panel_closed)
+	_mode_select.mode_chosen.connect(_on_mode_chosen)
 	_add_enemy_viewer_button()
 	_refresh_best()
 	_set_footer()
@@ -51,29 +59,39 @@ func _ready() -> void:
 
 ## The one number worth putting on the front page: the thing the next run is for.
 func _refresh_best() -> void:
-	var best: int = SaveManager.get_best_score()
+	var best: int = SaveManager.get_best_score(_run_arena_id())
 	_best.text = "%d" % best if best > 0 else "-"
 
 
-## The ownership line the LICENSE and the itch.io page also carry. Cheap to show,
-## and it is the one place a player who never reads a store page still sees it -
-## which is exactly the audience that matters if a build ever turns up re-uploaded
-## somewhere it should not be. Version comes from config/version so a build can
-## always be identified from a screenshot in a bug report.
+## Version comes from config/version so a build can always be identified from a
+## screenshot in a bug report.
 func _set_footer() -> void:
 	var version: String = str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
-	_footer.text = "v%s  -  (c) 2026 Juan Guaragnini.  All rights reserved." % version
+	_footer.text = "v%s" % version
 
 
 ## With one arena installed, Play starts a run. With more than one - the game's
 ## own plus anything the player built - it asks first, because picking the floor
 ## is part of choosing the run.
+##
+## Antes de la arena, el modo: con arsenal o con un arma sola (ver ModeSelect).
 func _on_play_pressed() -> void:
+	_root.visible = false
+	_mode_select.open()
+
+
+func _on_mode_chosen(mode: GameManager.Mode, weapon_id: StringName) -> void:
+	GameManager.set_run_mode(mode, weapon_id)
 	if ArenaSession.list_playable().size() <= 1:
 		GameManager.restart_run()
 		return
-	_root.visible = false
 	_arena_select.open()
+
+
+## La arena de la proxima run, que es la tabla que le importa al jugador.
+func _run_arena_id() -> String:
+	return ArenaSession.run_arena_path if ArenaSession.run_arena_path != "" \
+		else SaveManager.DEFAULT_ARENA_ID
 
 
 func _on_arena_chosen(path: String) -> void:
@@ -105,7 +123,7 @@ func _add_enemy_viewer_button() -> void:
 
 func _on_leaderboard_pressed() -> void:
 	_root.visible = false
-	_leaderboard.open()
+	_leaderboard.open(_run_arena_id())
 
 
 func _on_options_pressed() -> void:
@@ -113,8 +131,6 @@ func _on_options_pressed() -> void:
 	_settings.open()
 
 
-## Los creditos no son cortesia: las licencias MIT y OFL que usa el juego exigen
-## atribucion, y la pagina de Steam la pide. Este es el lugar donde se cumple.
 func _on_credits_pressed() -> void:
 	_root.visible = false
 	_credits.open()

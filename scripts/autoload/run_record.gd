@@ -76,6 +76,17 @@ var earned: int = 0
 ## Cuantas veces se cumplio cada bono de kill, por id.
 var bonus_counts: Dictionary = {}
 
+## Las tres partes del puntaje. Ver `EconomyConfig` grupo Score: todo lo que
+## suma se gano jugando, y morir solo deja de sumar.
+## En que arena se juega. No lo borra `reset()`: lo pone ArenaHost al cargar la
+## arena, antes de que el director arranque la run y resetee lo demas.
+var arena_id: String = ""
+var arena_name: String = ""
+
+var kill_points: int = 0
+var style_points: int = 0
+var wave_points: int = 0
+
 ## Los trofeos de la run terminada. Vacio mientras se juega.
 var _trophies: Array[StringName] = []
 
@@ -130,7 +141,28 @@ func reset() -> void:
 	purchases = 0
 	earned = 0
 	bonus_counts.clear()
+	kill_points = 0
+	style_points = 0
+	wave_points = 0
 	_trophies.clear()
+
+
+func set_arena(id: String, display_name: String) -> void:
+	arena_id = id
+	arena_name = display_name
+
+
+## El puntaje de la run: kills + estilo + oleadas, mas el premio por ganarla.
+##
+## No depende del tiempo total ni de la plata en mano. Las dos cosas estaban en
+## la formula vieja y las dos premiaban lo contrario de lo que el juego pide:
+## morir temprano dejaba casi entero el bono de tiempo, y comprar bajaba el
+## puntaje.
+func get_score(victory: bool = false) -> int:
+	var total: int = kill_points + style_points + wave_points
+	if victory:
+		total += _config().score_victory_bonus
+	return total
 
 
 ## Los trofeos que la run terminada se gano, evaluados de una sola vez.
@@ -182,12 +214,17 @@ func _on_kill_scored(_enemy_type: StringName, _position: Vector3, was_headshot: 
 func _on_kill_payout(_reward: int, bonus_ids: Array, bonus_total: int,
 		_position: Vector3) -> void:
 	earned += bonus_total
+	# El estilo puntua con el mismo multiplicador que paga en plata: el rating
+	# de la transmision y las mejoras que lo tocan. Ver EconomyManager.
+	style_points += int(round(float(bonus_total * _config().score_per_style)
+		* EconomyManager.get_style_multiplier()))
 	for id: StringName in bonus_ids:
 		bonus_counts[id] = int(bonus_counts.get(id, 0)) + 1
 
 
 func _on_kill_credited(reward: int) -> void:
 	earned += reward
+	kill_points += reward * _config().score_per_kill_reward
 
 
 ## El contador de golpes va aparte del de daño porque las preguntas son
@@ -197,7 +234,8 @@ func _on_player_damaged(amount: float) -> void:
 	hits_taken += 1
 
 
-func _on_wave_completed(_wave_index: int, _duration: float, wave_damage: float) -> void:
+func _on_wave_completed(wave_index: int, _duration: float, wave_damage: float) -> void:
+	wave_points += _config().score_per_wave * (wave_index + 1)
 	if wave_damage <= 0.0:
 		flawless_waves += 1
 
@@ -209,3 +247,7 @@ func _on_purchase_made() -> void:
 func _on_run_finished(_score: int, total_time: float, _waves_cleared: int,
 		victory: bool) -> void:
 	_trophies = evaluate(total_time, victory)
+
+
+func _config() -> EconomyConfig:
+	return EconomyManager.config if EconomyManager.config != null else EconomyConfig.new()

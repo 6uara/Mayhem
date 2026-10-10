@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+
+[resource]
+script = ExtResource("1_rule")
+id = &"air_show"
+title = "AIR SHOW"
+description = "Airborne and grapple kills pay triple. Kills on foot pay half."
+bonus_multipliers = {
+&"airborne": 3.0,
+&"grapple": 3.0
+}
+kill_reward_multiplier = 0.5
+rating_gain_multiplier = 1.25

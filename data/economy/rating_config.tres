@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="RatingConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/rating_config.gd" id="1_rating"]
+
+[resource]
+script = ExtResource("1_rating")

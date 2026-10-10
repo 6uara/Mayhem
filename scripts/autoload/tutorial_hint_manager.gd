@@ -17,6 +17,11 @@ extends Node
 
 signal hint_shown(text: String, duration: float)
 signal hint_hidden()
+## El tutorial de arranque (TutorialDirector) pasa por aca para llegar a la HUD,
+## que ya escuchaba a este autoload. `is_info` es un paso que pasa solo.
+signal tutorial_step_shown(title: String, text: String, index: int, total: int, is_info: bool)
+signal tutorial_step_completed()
+signal tutorial_ended()
 
 const CATALOG_PATH: String = "res://data/tutorial/tutorial_hints.tres"
 ## Hints waiting to be shown are dropped past this, rather than growing
@@ -29,6 +34,10 @@ var _queue: Array[TutorialHint] = []
 var _current: TutorialHint
 var _time_left: float = 0.0
 var _movement: MovementComponent
+## El tutorial que esta corriendo, o null. Mientras corre, los hints de primera
+## vez se callan: los dos usan la misma banda de la pantalla, y el tutorial ya
+## esta enseñando lo mismo.
+var _tutorial: Node
 
 
 func _ready() -> void:
@@ -124,6 +133,8 @@ func _bind_player() -> void:
 
 
 func _fire(id: StringName) -> void:
+	if is_tutorial_running():
+		return
 	if SaveManager.has_seen_hint(id):
 		return
 	var hint: TutorialHint = _hints_by_id.get(id)
@@ -151,6 +162,47 @@ func _try_show_next() -> void:
 func _finish_current() -> void:
 	_current = null
 	hint_hidden.emit()
+
+
+# Public API - tutorial de arranque
+
+func begin_tutorial(tutorial: Node) -> void:
+	_tutorial = tutorial
+	_queue.clear()
+	if _current != null:
+		_finish_current()
+
+
+func end_tutorial(tutorial: Node) -> void:
+	if _tutorial != tutorial:
+		return
+	_tutorial = null
+	tutorial_ended.emit()
+
+
+func is_tutorial_running() -> bool:
+	return _tutorial != null and is_instance_valid(_tutorial)
+
+
+## Lo que llama el boton de la pausa. No sabe como se saltea: se lo pide al
+## tutorial que este corriendo.
+func skip_tutorial() -> void:
+	if is_tutorial_running() and _tutorial.has_method(&"skip"):
+		_tutorial.call(&"skip")
+
+
+func show_tutorial_step(title: String, text: String, index: int, total: int,
+		is_info: bool) -> void:
+	tutorial_step_shown.emit(title, text, index, total, is_info)
+
+
+func complete_tutorial_step() -> void:
+	tutorial_step_completed.emit()
+
+
+## La tecla que tiene asignada `action` ahora mismo, como se escribe en pantalla.
+func key_label(action: StringName) -> String:
+	return _key_label(action)
 
 
 ## Substitutes the live-bound key for `hint.action`'s first key event into the

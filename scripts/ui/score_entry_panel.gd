@@ -135,7 +135,8 @@ func _submit(player_name: String) -> void:
 	# Los trofeos los evaluo RunRecord cuando la run termino; este panel solo los
 	# pasa. Decidirlos aca los ataria a haber abierto esta pantalla.
 	SaveManager.submit_score(_score, _time, _waves, player_name,
-		RunRecord.get_trophies())
+		RunRecord.get_trophies(), RunRecord.arena_id, RunRecord.arena_name,
+		int(GameManager.run_mode))
 	visible = false
 	saved.emit()
 

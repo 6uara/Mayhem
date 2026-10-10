@@ -61,5 +61,18 @@ func get_next_charge_progress() -> float:
 	return 1.0 - clampf(soonest / _cooldown, 0.0, 1.0)
 
 
+## Devuelve una carga ya: la que estaba por volver primero. Lo usa la mejora que
+## recarga el dash al pisar un bounce pad.
+func restore_one() -> bool:
+	if _recharging.is_empty():
+		return false
+	var soonest: int = 0
+	for i: int in _recharging.size():
+		if _recharging[i] < _recharging[soonest]:
+			soonest = i
+	_recharging.remove_at(soonest)
+	return true
+
+
 func refill() -> void:
 	_recharging.clear()

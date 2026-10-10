@@ -22,6 +22,20 @@ const RELOAD_TIME: StringName = &"reload_time"
 const RECOIL_MAGNITUDE: StringName = &"recoil_magnitude"
 const SPREAD_MULTIPLIER: StringName = &"spread_multiplier"
 const ADS_TRANSITION_TIME: StringName = &"ads_transition_time"
+## Vida por segundo. Base 0: sin la mejora, el jugador no se regenera.
+const HEALTH_REGEN: StringName = &"health_regen"
+
+## Mejoras raras. Todas tienen base neutra (0, o 1 en los multiplicadores), asi
+## que la regla esta apagada hasta que una mejora la mueve: una mejora rara sigue
+## siendo "solo StatModifiers", como pide UpgradeData.
+const SLIDE_RELOAD_RATE: StringName = &"slide_reload_rate"
+const DASH_RAM_DAMAGE: StringName = &"dash_ram_damage"
+const AIRBORNE_DAMAGE_MULTIPLIER: StringName = &"airborne_damage_multiplier"
+const HEADSHOT_KILL_REFUND: StringName = &"headshot_kill_refund"
+const SPEED_DAMAGE_REDUCTION: StringName = &"speed_damage_reduction"
+const STYLE_PAYOUT_MULTIPLIER: StringName = &"style_payout_multiplier"
+const SECOND_WIND_CHARGES: StringName = &"second_wind_charges"
+const PAD_DASH_REFILL: StringName = &"pad_dash_refill"
 
 signal stats_changed()
 

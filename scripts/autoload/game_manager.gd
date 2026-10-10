@@ -3,6 +3,20 @@ extends Node
 
 enum State { MENU, PLAYING, SHOPPING, GAME_OVER }
 
+## Como se arma el arsenal de la run.
+##
+## ARSENAL: se empieza con la pistola y la tienda vende las otras armas. Cambiar
+## de arma deja atras sus mejoras, a proposito (ver UpgradeManager).
+## SINGLE_WEAPON: se elige un arma en el menu y es la de toda la run; la tienda
+## no ofrece armas, solo mejoras.
+enum Mode { ARSENAL, SINGLE_WEAPON }
+
+## Nombre corto de cada modo, para la tabla y la pantalla de fin.
+const MODE_LABEL: Dictionary = {
+	Mode.ARSENAL: "ARSENAL",
+	Mode.SINGLE_WEAPON: "ONE GUN",
+}
+
 ## Motivos de congelamiento del arbol. Ver set_freeze().
 const FREEZE_PAUSE_MENU: StringName = &"pause_menu"
 const FREEZE_SHOP: StringName = &"shop"
@@ -37,6 +51,11 @@ var state: State = State.MENU:
 		EventBus.game_state_changed.emit(int(value))
 
 var is_paused: bool = false
+
+## El modo de la proxima run y, en SINGLE_WEAPON, con que arma. Lo elige el menu
+## antes de arrancar y sobrevive a los reinicios: "otra vez" juega lo mismo.
+var run_mode: Mode = Mode.ARSENAL
+var run_weapon_id: StringName = &""
 
 ## Motivos por los que el arbol esta congelado ahora mismo. Ver set_freeze().
 var _freezes: Dictionary = {}
@@ -89,6 +108,25 @@ func _notification(what: int) -> void:
 
 
 # Public API
+
+func set_run_mode(mode: Mode, weapon_id: StringName = &"") -> void:
+	run_mode = mode
+	run_weapon_id = weapon_id if mode == Mode.SINGLE_WEAPON else &""
+
+
+## El arma con la que arranca la run, o vacio para la de siempre (la pistola).
+func get_starting_weapon_id() -> StringName:
+	return run_weapon_id if run_mode == Mode.SINGLE_WEAPON else &""
+
+
+## Si la tienda puede vender armas en esta run.
+func shop_sells_weapons() -> bool:
+	return run_mode == Mode.ARSENAL
+
+
+static func mode_label(mode: int) -> String:
+	return String(MODE_LABEL.get(mode, "ARSENAL"))
+
 
 func pause_for_focus_loss() -> void:
 	if state == State.PLAYING:

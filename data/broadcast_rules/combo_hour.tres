@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+
+[resource]
+script = ExtResource("1_rule")
+id = &"combo_hour"
+title = "COMBO HOUR"
+description = "Double, triple and mayhem multi-kills pay double, and the rating climbs faster."
+bonus_multipliers = {
+&"double": 2.0,
+&"triple": 2.0,
+&"mayhem": 2.0
+}
+rating_gain_multiplier = 1.5

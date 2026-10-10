@@ -11,6 +11,7 @@ extends CanvasLayer
 @onready var _root: Control = $Root
 @onready var _resume_button: Button = $Root/Panel/Margin/Layout/ResumeButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
+@onready var _skip_tutorial_button: Button = $Root/Panel/Margin/Layout/SkipTutorialButton
 @onready var _feedback_button: Button = $Root/Panel/Margin/Layout/FeedbackButton
 @onready var _editor_button: Button = $Root/Panel/Margin/Layout/EditorButton
 @onready var _menu_button: Button = $Root/Panel/Margin/Layout/MenuButton
@@ -24,6 +25,8 @@ func _ready() -> void:
 	_root.visible = false
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
+	_skip_tutorial_button.pressed.connect(_on_skip_tutorial_pressed)
+	_skip_tutorial_button.visible = false
 	_feedback_button.pressed.connect(_on_feedback_pressed)
 	_editor_button.pressed.connect(_on_editor_pressed)
 	_menu_button.pressed.connect(_on_menu_pressed)
@@ -38,6 +41,8 @@ func _on_game_paused(paused: bool) -> void:
 	_root.visible = paused
 	# Only a playtest launched from the arena editor has an editor to go back to.
 	_editor_button.visible = ArenaSession.is_playtesting
+	# Solo mientras corre el tutorial de arranque.
+	_skip_tutorial_button.visible = TutorialHintManager.is_tutorial_running()
 	if paused:
 		_resume_button.grab_focus()
 		return
@@ -50,6 +55,12 @@ func _on_game_paused(paused: bool) -> void:
 
 
 func _on_resume_pressed() -> void:
+	GameManager.set_paused(false)
+
+
+## Saltea el tutorial y vuelve al juego: la primera oleada arranca enseguida.
+func _on_skip_tutorial_pressed() -> void:
+	TutorialHintManager.skip_tutorial()
 	GameManager.set_paused(false)
 
 

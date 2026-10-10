@@ -68,6 +68,11 @@ custom_minimum_size = Vector2(0, 10)
 custom_minimum_size = Vector2(0, 48)
 text = "Resume"
 
+[node name="SkipTutorialButton" type="Button" parent="Root/Panel/Margin/Layout"]
+tooltip_text = "End the tutorial now and start wave one."
+custom_minimum_size = Vector2(0, 44)
+text = "Skip tutorial"
+
 [node name="OptionsButton" type="Button" parent="Root/Panel/Margin/Layout"]
 custom_minimum_size = Vector2(0, 48)
 text = "Options"

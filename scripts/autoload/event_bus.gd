@@ -90,6 +90,12 @@ signal shop_opened()
 signal shop_closed()
 
 # Crowd
+## El rating de la transmision cruzo un escalon (BroadcastRating). Solo los
+## cruces: el valor cambia cada frame y nadie tiene que oir eso por el bus.
+signal rating_tier_changed(tier: int, went_up: bool)
+## Arranco una regla de transmision para esta oleada (BroadcastRules), y termino.
+signal broadcast_rule_started(rule_id: StringName, title: String, description: String)
+signal broadcast_rule_ended()
 ## El publico tiro un gadget a la arena. `landing` es donde va a caer, no donde
 ## esta: quien escuche esto -el Host, el HUD- tiene que poder señalar el lugar
 ## antes de que el objeto llegue, o el aviso llega tarde.

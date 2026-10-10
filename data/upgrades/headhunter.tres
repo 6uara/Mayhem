@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"headshot_kill_refund"
+value = 2.0
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"headhunter"
+display_name = "Headhunter"
+description = "A headshot kill puts 2 free rounds in your magazine."
+cost = 360
+category = 2
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
+max_stacks = 1
+is_rare = true

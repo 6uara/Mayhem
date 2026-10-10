@@ -199,7 +199,8 @@ func _on_kill_scored(enemy_type: StringName, position: Vector3, was_headshot: bo
 	var config: EconomyConfig = EconomyManager.config
 	var total: int = 0
 	for id: StringName in bonuses:
-		total += config.get_kill_bonus(id)
+		# La regla de transmision de la oleada puede multiplicar un bono.
+		total += int(round(float(config.get_kill_bonus(id)) * BroadcastRules.bonus_multiplier(id)))
 	EventBus.kill_payout.emit(reward, bonuses, total, position)
 
 

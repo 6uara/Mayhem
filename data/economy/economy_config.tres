@@ -4,11 +4,6 @@
 
 [resource]
 script = ExtResource("1_economy")
-kill_reward_rusher = 10
-kill_reward_ranger = 14
-kill_reward_elite = 60
-kill_reward_healer = 20
-kill_reward_summoner = 25
 no_damage_bonus = 100
 speed_bonus_tiers = PackedFloat32Array(0.5, 0.75, 1)
 speed_bonus_payouts = PackedInt32Array(150, 100, 50)
@@ -26,5 +21,9 @@ bonus_mayhem = 75
 bonus_priority = 30
 currency_loss_per_damage = 1.0
 currency_loss_max_per_hit = 40
+score_per_kill_reward = 10
+score_per_style = 10
+score_per_wave = 500
+score_victory_bonus = 5000
 currency_multiplier = 1.0
 starting_currency = 0

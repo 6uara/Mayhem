@@ -1,0 +1,108 @@
+[gd_resource type="Resource" script_class="TutorialStepCatalog" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/tutorial_step_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/resources/tutorial_step.gd" id="2_step"]
+
+[sub_resource type="Resource" id="Step_0"]
+script = ExtResource("2_step")
+goal = &"move"
+title = "MOVE"
+text = "Move with {move}."
+duration = 5.0
+max_time = 15.0
+requires_group = &""
+teaches_hint = &"move"
+
+[sub_resource type="Resource" id="Step_1"]
+script = ExtResource("2_step")
+goal = &"jump"
+title = "JUMP"
+text = "Jump with {jump}. Hold it against a ledge to climb."
+duration = 5.0
+max_time = 15.0
+requires_group = &""
+teaches_hint = &"jump"
+
+[sub_resource type="Resource" id="Step_2"]
+script = ExtResource("2_step")
+goal = &"slide"
+title = "SLIDE"
+text = "Run and press {crouch_slide} to slide. A slide keeps your speed - jump out of it to keep going."
+duration = 5.0
+max_time = 20.0
+requires_group = &""
+teaches_hint = &"slide"
+
+[sub_resource type="Resource" id="Step_3"]
+script = ExtResource("2_step")
+goal = &"dash"
+title = "DASH"
+text = "Dash with {dash}, even in the air. Charges refill on their own."
+duration = 5.0
+max_time = 15.0
+requires_group = &""
+teaches_hint = &"dash"
+
+[sub_resource type="Resource" id="Step_4"]
+script = ExtResource("2_step")
+goal = &"grapple"
+title = "GRAPPLE"
+text = "Look at a cyan anchor up high and press {grapple} to swing to it."
+duration = 5.0
+max_time = 25.0
+requires_group = &"grapple_anchor"
+teaches_hint = &"grapple"
+
+[sub_resource type="Resource" id="Step_5"]
+script = ExtResource("2_step")
+goal = &"fire"
+title = "SHOOT"
+text = "Fire with {fire}. Hold {ads} to aim down the sights."
+duration = 5.0
+max_time = 15.0
+requires_group = &""
+teaches_hint = &"ads"
+
+[sub_resource type="Resource" id="Step_6"]
+script = ExtResource("2_step")
+goal = &"reload"
+title = "RELOAD"
+text = "Reload with {reload}. Ammo is limited - amber crates refill it."
+duration = 5.0
+max_time = 15.0
+requires_group = &""
+teaches_hint = &"reload"
+
+[sub_resource type="Resource" id="Step_7"]
+script = ExtResource("2_step")
+goal = &""
+title = "COLORS"
+text = "CYAN is yours to use: pads, anchors, zip lines. ORANGE will hurt you. AMBER is yours to take: ammo, money, crowd gifts. MAGENTA doors are where enemies come from."
+duration = 7.0
+max_time = 0.0
+requires_group = &""
+teaches_hint = &""
+
+[sub_resource type="Resource" id="Step_8"]
+script = ExtResource("2_step")
+goal = &""
+title = "STYLE"
+text = "Kills pay. Style pays more: headshots, kills in the air, on the hook, mid-dash, multi-kills. Your RATING multiplies style - plain kills drag it down."
+duration = 7.0
+max_time = 0.0
+requires_group = &""
+teaches_hint = &""
+
+[sub_resource type="Resource" id="Step_9"]
+script = ExtResource("2_step")
+goal = &""
+title = "BETWEEN WAVES"
+text = "Spend your money in the shop between waves. Getting hit costs money. From wave 3 the Host adds a broadcast rule. Ten waves. One run."
+duration = 6.0
+max_time = 0.0
+requires_group = &""
+teaches_hint = &""
+
+[resource]
+script = ExtResource("1_catalog")
+steps = Array[ExtResource("2_step")]([SubResource("Step_0"), SubResource("Step_1"), SubResource("Step_2"), SubResource("Step_3"), SubResource("Step_4"), SubResource("Step_5"), SubResource("Step_6"), SubResource("Step_7"), SubResource("Step_8"), SubResource("Step_9")])

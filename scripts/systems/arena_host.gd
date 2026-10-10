@@ -36,6 +36,8 @@ func _ready() -> void:
 	# Para que un reporte de feedback diga en que arena paso sin preguntarselo al
 	# jugador, que es la clase de dato que escrito a mano no llega nunca.
 	FeedbackManager.set_arena_name(arena.arena_name)
+	# Y para que la run se anote en la tabla de esta arena y no en otra.
+	RunRecord.set_arena(_arena_id(arena), arena.arena_name)
 	if player_spawn_controller != null:
 		player_spawn_controller.spawn_point = runtime.get_player_spawn()
 
@@ -61,6 +63,21 @@ func _pick_arena() -> ArenaData:
 		if from_settings != null:
 			return from_settings
 	return default_arena
+
+
+## Con que clave se anota esta arena en la tabla. El archivo de donde salio, que
+## es estable; el nombre se puede repetir entre arenas distintas.
+func _arena_id(arena: ArenaData) -> String:
+	if arena.resource_path != "":
+		return arena.resource_path
+	var session: Node = get_node_or_null(^"/root/ArenaSession")
+	if session != null:
+		var path: String = str(session.get(&"run_arena_path"))
+		if bool(session.get(&"is_playtesting")):
+			path = str(session.get(&"current_path"))
+		if path != "":
+			return path
+	return "arena:%s" % arena.arena_name
 
 
 func _pick_catalog() -> PieceCatalog:

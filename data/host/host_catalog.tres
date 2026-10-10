@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HostCatalog" load_steps=15 format=3]
+[gd_resource type="Resource" script_class="HostCatalog" load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/host_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://scripts/resources/host_line_set.gd" id="2_set"]
@@ -99,6 +99,46 @@ tier = 3
 priority = 3
 category_cooldown = 0.0
 
+[sub_resource type="Resource" id="Set_broadcast_rule"]
+script = ExtResource("2_set")
+id = &"broadcast_rule"
+lines = Array[String](["New rule for this one, courtesy of the house: %s.", "The sponsors insist. Tonight, %s.", "Change of format. %s. Try to keep up."])
+tier = 1
+priority = 2
+category_cooldown = 0.0
+
+[sub_resource type="Resource" id="Set_rating_up"]
+script = ExtResource("2_set")
+id = &"rating_up"
+lines = Array[String](["We are %s. Somebody upstairs is paying attention.", "The numbers are climbing. %s.", "%s. The crowd is finally awake."])
+tier = 1
+priority = 1
+category_cooldown = 12.0
+
+[sub_resource type="Resource" id="Set_rating_down"]
+script = ExtResource("2_set")
+id = &"rating_down"
+lines = Array[String](["And the ratings are sliding. Do something worth watching.", "People are changing the channel. Style, please.", "That was efficient. Nobody tunes in for efficient."])
+tier = 1
+priority = 1
+category_cooldown = 25.0
+
+[sub_resource type="Resource" id="Set_second_wind"]
+script = ExtResource("2_set")
+id = &"second_wind"
+lines = Array[String](["Not yet. The house is not done with you.", "Back up. We have airtime to fill."])
+tier = 2
+priority = 2
+category_cooldown = 0.0
+
+[sub_resource type="Resource" id="Set_tutorial_done"]
+script = ExtResource("2_set")
+id = &"tutorial_done"
+lines = Array[String](["That is the tour. Doors open.", "Lesson over. Now it counts."])
+tier = 1
+priority = 2
+category_cooldown = 0.0
+
 [resource]
 script = ExtResource("1_catalog")
-sets = Array[Resource]([SubResource("Set_wave_start"), SubResource("Set_wave_cleared"), SubResource("Set_first_blood"), SubResource("Set_streak"), SubResource("Set_elite_wave"), SubResource("Set_low_health"), SubResource("Set_no_damage"), SubResource("Set_too_slow"), SubResource("Set_purchase"), SubResource("Set_crowd_drop"), SubResource("Set_death"), SubResource("Set_match_won")])
+sets = Array[Resource]([SubResource("Set_wave_start"), SubResource("Set_wave_cleared"), SubResource("Set_first_blood"), SubResource("Set_streak"), SubResource("Set_elite_wave"), SubResource("Set_low_health"), SubResource("Set_no_damage"), SubResource("Set_too_slow"), SubResource("Set_purchase"), SubResource("Set_crowd_drop"), SubResource("Set_death"), SubResource("Set_match_won"), SubResource("Set_broadcast_rule"), SubResource("Set_rating_up"), SubResource("Set_rating_down"), SubResource("Set_second_wind"), SubResource("Set_tutorial_done")])

@@ -248,7 +248,28 @@ func get_fire_rate() -> float:
 
 
 func get_damage() -> float:
-	return _stat(StatsComponent.WEAPON_DAMAGE, data.damage)
+	var damage: float = _stat(StatsComponent.WEAPON_DAMAGE, data.damage)
+	# Air Ace: el tiro en el aire pega mas. Base 1, asi que sin la mejora no cambia.
+	if body != null and not body.is_on_floor():
+		damage *= _stat(StatsComponent.AIRBORNE_DAMAGE_MULTIPLIER, 1.0)
+	return damage
+
+
+## Mete balas en el cargador sin recargar: de la reserva, o gratis. Devuelve
+## cuantas entraron. Lo usan las mejoras que recargan deslizando o con headshots.
+func load_rounds(rounds: int, from_reserve: bool = true) -> int:
+	if data == null or rounds <= 0:
+		return 0
+	var room: int = get_magazine_size() - _ammo
+	var taken: int = mini(rounds, room)
+	if from_reserve:
+		taken = mini(taken, _reserve)
+		_reserve -= maxi(taken, 0)
+	if taken <= 0:
+		return 0
+	_ammo += taken
+	_emit_ammo()
+	return taken
 
 
 # Private

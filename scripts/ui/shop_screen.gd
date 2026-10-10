@@ -162,6 +162,10 @@ func _make_card(offer: Dictionary) -> Control:
 	tag.theme_type_variation = &"HUDLabel"
 	tag.text = _category_label(offer)
 	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# Una rara se anuncia: no es "otra mejora", es una regla nueva para la run.
+	if bool(offer.get("rare", false)):
+		tag.text = "RARE  -  NEW RULE"
+		tag.add_theme_color_override(&"font_color", Tokens.REWARD)
 	header.add_child(tag)
 	card.add_child(header)
 

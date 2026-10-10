@@ -27,3 +27,11 @@ extends Resource
 ## El ambar de `Tokens.WORLD_PICKUP` sigue siendo el marco -toda la casa es
 ## ambar-, asi que esto tiñe el nucleo y no el halo.
 @export var accent_color: Color = Color(1.0, 0.69, 0.13)
+## Vida que cura al levantarlo. Mayor que cero convierte al gadget en un botiquin:
+## no va a ningun slot ni se tira, se usa al agarrarlo. Es la unica curacion que
+## cae de la tribuna - la otra es la mejora de regeneracion de la tienda.
+@export var heal_amount: float = 0.0
+
+
+func is_heal() -> bool:
+	return heal_amount > 0.0

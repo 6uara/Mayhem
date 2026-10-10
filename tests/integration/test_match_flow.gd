@@ -124,9 +124,9 @@ func test_player_death_stops_the_match() -> void:
 	assert_false(_director.is_running)
 
 
-## Morir anota la plata y las oleadas que habia al morir. EconomyManager y
+## Morir anota lo ganado y las oleadas que habia al morir. EconomyManager y
 ## WaveManager escuchan `player_died` antes que el director, y reseteaban todo:
-## las derrotas quedaban con la plata inicial y 0 oleadas.
+## las derrotas quedaban con 0 oleadas.
 func test_a_death_scores_what_the_player_had_when_they_fell() -> void:
 	# Sin spawner, WaveManager no cuenta a nadie vivo y cada oleada se da por
 	# limpia sola: la segunda terminaba el match antes de que el jugador pudiera
@@ -149,8 +149,40 @@ func test_a_death_scores_what_the_player_had_when_they_fell() -> void:
 
 	var params: Array = get_signal_parameters(EventBus, "run_finished")
 	assert_false(params.is_empty(), "la derrota se anuncio")
-	assert_gte(int(params[0]), 5000, "el puntaje incluye la plata que habia")
+	assert_eq(int(params[0]), EconomyManager.config.score_per_wave,
+		"una oleada limpia suma la oleada, y la plata en mano no suma nada")
 	assert_eq(int(params[2]), 1, "una oleada limpia antes de morir")
+
+
+## El bug que motivo el puntaje nuevo: morir a los pocos segundos le ganaba a
+## una victoria, porque el puntaje regalaba un bono por terminar rapido.
+func test_an_early_death_never_outscores_a_cleared_wave() -> void:
+	RunRecord.reset()
+	var early_death: int = RunRecord.get_score(false)
+	EventBus.wave_completed.emit(0, 300.0, 50.0)
+	assert_gt(RunRecord.get_score(false), early_death)
+	assert_gt(RunRecord.get_score(true), RunRecord.get_score(false),
+		"ganar suma su propio premio")
+
+
+## Comprar en la tienda no puede bajar el puntaje: la plata guardada no puntua.
+func test_spending_never_lowers_the_score() -> void:
+	RunRecord.reset()
+	EventBus.kill_credited.emit(10)
+	var before: int = RunRecord.get_score(false)
+	EconomyManager.currency = 1000
+	EconomyManager.try_spend(&"test_item", 900)
+	assert_eq(RunRecord.get_score(false), before)
+
+
+func test_kills_and_style_both_add_to_the_score() -> void:
+	RunRecord.reset()
+	var config: EconomyConfig = EconomyManager.config
+	EventBus.kill_credited.emit(10)
+	assert_eq(RunRecord.get_score(false), 10 * config.score_per_kill_reward)
+	EventBus.kill_payout.emit(10, [&"headshot"], 10, Vector3.ZERO)
+	assert_gt(RunRecord.get_score(false), 10 * config.score_per_kill_reward,
+		"una kill con estilo suma mas que la kill sola")
 
 
 ## La muerte se deja ver: el final se anuncia despues de la caida, no en el mismo

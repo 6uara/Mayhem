@@ -44,8 +44,7 @@ func _ready() -> void:
 	if _weapons.is_empty():
 		push_warning("WeaponHolder on %s has no WeaponComponent children" % get_path())
 		return
-	# The pistol is the starting weapon (CLAUDE.md 5.1): backup, generous ammo.
-	_equip(_weapons[0])
+	_equip(_starting_weapon())
 
 
 func _process(delta: float) -> void:
@@ -132,11 +131,22 @@ func reset() -> void:
 		return
 	for weapon: WeaponComponent in _weapons:
 		weapon.reset()
-	_equip(_weapons[0])
+	_equip(_starting_weapon())
 	weapon_replaced.emit()
 
 
 # Private
+
+## The pistol is the starting weapon (CLAUDE.md 5.1): backup, generous ammo. En el
+## modo de un arma sola, la que se eligio en el menu.
+func _starting_weapon() -> WeaponComponent:
+	var chosen: StringName = GameManager.get_starting_weapon_id()
+	if chosen != &"":
+		var weapon: WeaponComponent = find_by_id(chosen)
+		if weapon != null:
+			return weapon
+	return _weapons[0]
+
 
 func _equip(weapon: WeaponComponent) -> void:
 	if weapon == null:

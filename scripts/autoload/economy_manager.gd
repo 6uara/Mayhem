@@ -89,6 +89,17 @@ func award_wave_bonuses(wave: WaveData, duration: float, took_damage: bool) -> D
 	}
 
 
+## Cuanto rinde un bono de estilo ahora: el rating de la transmision por las
+## mejoras que tocan el estilo. Lo leen la plata y el puntaje, para que los dos
+## digan lo mismo.
+func get_style_multiplier() -> float:
+	var multiplier: float = UpgradeManager.get_stat(StatsComponent.STYLE_PAYOUT_MULTIPLIER, 1.0)
+	var rating: Node = get_node_or_null(^"/root/BroadcastRating")
+	if rating != null:
+		multiplier *= float(rating.call(&"get_multiplier"))
+	return multiplier
+
+
 func can_afford(cost: int) -> bool:
 	return currency >= cost
 
@@ -132,7 +143,7 @@ func _on_kill_payout(_reward: int, _bonus_ids: Array, bonus_total: int,
 	var total: int = bonus_total
 	if total <= 0:
 		return
-	var scaled: int = _scale(total)
+	var scaled: int = _scale(int(round(float(total) * get_style_multiplier())))
 	_wave_kill_income += scaled
 	currency += scaled
 
@@ -157,7 +168,7 @@ func _on_player_damaged(amount: float) -> void:
 
 
 func _on_kill_credited(reward: int) -> void:
-	var scaled: int = _scale(reward)
+	var scaled: int = _scale(int(round(float(reward) * BroadcastRules.kill_reward_multiplier())))
 	_wave_kill_income += scaled
 	currency += scaled
 

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"jump_velocity"
+operation = 1
+value = 1.35
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"air_control"
+operation = 1
+value = 2.0
+
+[resource]
+script = ExtResource("1_rule")
+id = &"moon_boots"
+title = "MOON BOOTS"
+description = "Jump 35% higher and steer twice as hard in the air."
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])

@@ -79,12 +79,16 @@ static func price_ladder(catalog: ShopCatalog) -> PackedInt32Array:
 
 # Private
 
+## Lo que paga cada cuerpo sale del `.tres` del arquetipo, que es lo mismo que
+## lee el juego (`Enemy` emite `kill_credited` con `reward_currency`). Antes salia
+## de una tabla en `EconomyConfig` que solo conocia cinco arquetipos: la curva
+## contaba cero por cada Bomber, Environmental y Flyer.
 static func _kill_income(wave: WaveData, config: EconomyConfig) -> int:
 	var total: int = 0
 	for group: SpawnGroup in wave.spawn_groups:
 		if group == null or group.enemy_data == null:
 			continue
-		total += config.get_kill_reward(group.enemy_data.archetype) * group.count
+		total += group.enemy_data.reward_currency * group.count
 	return int(round(float(total) * config.currency_multiplier))
 
 

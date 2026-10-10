@@ -37,8 +37,18 @@ const MAX_PROFILES: int = 8
 ## or vice versa).
 const TUTORIAL_SAVE_PATH: String = "user://tutorial.json"
 
+## La tabla es por arena: cada arena tiene sus diez mejores.
+##
+## Con el editor de arenas, una arena hecha a medida -sin enemigos que lleguen,
+## con pads por todos lados- competia en la misma tabla que la del juego. Las
+## filas guardan en que arena se jugaron, y las que se guardaron antes de esto
+## son de la arena por defecto, que era la unica.
+const DEFAULT_ARENA_ID: String = "res://data/arenas/default_arena.tres"
+const DEFAULT_ARENA_NAME: String = "The Pit"
+
 ## Array of { "name": String, "score": int, "time": float, "waves": int,
-## "date": String, "trophies": Array[String] }
+## "date": String, "trophies": Array[String], "arena": String,
+## "arena_name": String, "mode": int }
 var _entries: Array[Dictionary] = []
 ## Nombres usados, del mas reciente al mas viejo.
 var _profiles: Array[String] = []
@@ -61,7 +71,8 @@ func _ready() -> void:
 ## ella cuando la fila cae de la tabla. Ver RunRecord.
 func submit_score(score: int, total_time: float, waves_cleared: int,
 		player_name: String = DEFAULT_NAME,
-		trophies: Array = []) -> void:
+		trophies: Array = [], arena_id: String = "", arena_name: String = "",
+		mode: int = 0) -> void:
 	var final_name: String = sanitize_name(player_name)
 	if final_name == "":
 		final_name = DEFAULT_NAME
@@ -79,22 +90,54 @@ func submit_score(score: int, total_time: float, waves_cleared: int,
 		"waves": waves_cleared,
 		"date": Time.get_datetime_string_from_system(false, true),
 		"trophies": trophy_ids,
+		"arena": arena_id if arena_id != "" else DEFAULT_ARENA_ID,
+		"arena_name": arena_name if arena_name != "" else DEFAULT_ARENA_NAME,
+		"mode": mode,
 	})
-	_entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return int(a["score"]) > int(b["score"]))
-	if _entries.size() > MAX_ENTRIES:
-		_entries.resize(MAX_ENTRIES)
+	_sort_and_cap()
 	save_leaderboard()
 
 
+## Todas las filas, de todas las arenas, de mayor a menor.
 func get_entries() -> Array[Dictionary]:
 	return _entries.duplicate(true)
 
 
-func get_best_score() -> int:
-	if _entries.is_empty():
+## Las filas de una arena, de mayor a menor.
+func get_entries_for(arena_id: String) -> Array[Dictionary]:
+	var key: String = arena_id if arena_id != "" else DEFAULT_ARENA_ID
+	var out: Array[Dictionary] = []
+	for entry: Dictionary in _entries:
+		if String(entry["arena"]) == key:
+			out.push_back(entry.duplicate(true))
+	return out
+
+
+## Las arenas que tienen al menos una fila, como [{id, name}], la default primero.
+func get_arenas() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for entry: Dictionary in _entries:
+		var id: String = String(entry["arena"])
+		if seen.has(id):
+			continue
+		seen[id] = true
+		out.push_back({"id": id, "name": String(entry["arena_name"])})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a["id"] == DEFAULT_ARENA_ID:
+			return true
+		if b["id"] == DEFAULT_ARENA_ID:
+			return false
+		return String(a["name"]) < String(b["name"]))
+	return out
+
+
+## El mejor de una arena; sin arena, el mejor de todas.
+func get_best_score(arena_id: String = "") -> int:
+	var rows: Array[Dictionary] = _entries if arena_id == "" else get_entries_for(arena_id)
+	if rows.is_empty():
 		return 0
-	return int(_entries[0]["score"])
+	return int(rows[0]["score"])
 
 
 func clear_leaderboard() -> void:
@@ -120,10 +163,24 @@ func load_leaderboard() -> void:
 			_entries.push_back(row)
 	# El archivo lo puede editar cualquiera: no se confia en que venga ordenado
 	# ni en que respete el tope.
+	_sort_and_cap()
+
+
+## Ordena de mayor a menor y deja `MAX_ENTRIES` por arena: una arena nueva no le
+## saca lugar a otra.
+func _sort_and_cap() -> void:
 	_entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a["score"]) > int(b["score"]))
-	if _entries.size() > MAX_ENTRIES:
-		_entries.resize(MAX_ENTRIES)
+	var per_arena: Dictionary = {}
+	var kept: Array[Dictionary] = []
+	for entry: Dictionary in _entries:
+		var id: String = String(entry["arena"])
+		var count: int = int(per_arena.get(id, 0))
+		if count >= MAX_ENTRIES:
+			continue
+		per_arena[id] = count + 1
+		kept.push_back(entry)
+	_entries = kept
 
 
 ## Una fila del archivo, validada. Vacia si no se puede leer como una run.
@@ -154,7 +211,14 @@ func _read_row(entry: Variant) -> Dictionary:
 			if id is String:
 				trophies.append(id)
 	var date_value: Variant = raw.get("date")
+	# Las filas de antes de la tabla por arena son de la unica arena que habia.
+	var arena_value: Variant = raw.get("arena")
+	var arena_name_value: Variant = raw.get("arena_name")
+	var mode_value: Variant = raw.get("mode")
 	return {
+		"arena": arena_value if arena_value is String and arena_value != "" 			else DEFAULT_ARENA_ID,
+		"arena_name": arena_name_value if arena_name_value is String 			and arena_name_value != "" else DEFAULT_ARENA_NAME,
+		"mode": int(mode_value) if (mode_value is int or mode_value is float) else 0,
 		"name": row_name if row_name != "" else DEFAULT_NAME,
 		"score": int(raw["score"]),
 		"time": float(raw["time"]),

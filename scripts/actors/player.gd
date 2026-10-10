@@ -72,6 +72,8 @@ var is_zip_line_in_range: bool = false
 ## Muerto y cayendo. El cuerpo deja de responder al input y la camara se va al
 ## piso; ver `_play_death()`.
 var is_dead: bool = false
+## Las mejoras que agregan reglas (regeneracion y las raras). Ver PlayerPerks.
+var perks: PlayerPerks
 
 var _hurt_sound_cooldown: float = 0.0
 var _look_yaw: float = 0.0
@@ -102,6 +104,10 @@ func _ready() -> void:
 	# UpgradeManager - the player is what bridges them.
 	UpgradeManager.upgrades_changed.connect(_apply_survivability_stats)
 	_apply_survivability_stats()
+	perks = PlayerPerks.new()
+	perks.name = "Perks"
+	perks.player = self
+	add_child(perks)
 	_apply_view_nodes()
 	EventBus.local_player_spawned.emit(self)
 

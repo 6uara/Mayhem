@@ -69,6 +69,9 @@ const ARC_LANDING_SHARE: float = 0.12
 ## esta distancia: si esa choca, el arco pasa demasiado justo.
 const ARC_CLEARANCE: float = 0.75
 
+## Fraccion de vida por debajo de la cual el publico puede tirar un botiquin.
+const HEAL_DROP_BELOW: float = 0.8
+
 var _seconds_left: float = 0.0
 var _is_running: bool = false
 var _rng := RandomNumberGenerator.new()
@@ -146,6 +149,10 @@ func _on_wave_completed() -> void:
 
 
 func _has_room_for(data: UtilityData, player: Player) -> bool:
+	# Un botiquin solo cae si al jugador le falta vida: tirarselo lleno es tirar
+	# basura a la arena.
+	if data.is_heal():
+		return player.health != null 			and player.health.current_health < player.health.max_health * HEAL_DROP_BELOW
 	var slot: int = player.utility.find_slot(data.id)
 	if slot < 0:
 		return false  # El jugador no lleva este gadget; no hay slot donde ponerlo.
@@ -256,7 +263,9 @@ func _arena_bounds() -> AABB:
 	return AABB(Vector3(-200.0, 0.0, -200.0), Vector3(400.0, 1.0, 400.0))
 
 
+## El rating de la transmision acorta la espera: un publico entusiasmado tira
+## mas. Ver BroadcastRating.
 func _roll_interval() -> float:
 	if table == null:
 		return 20.0
-	return table.roll_interval(maxi(WaveManager.current_index, 0), _rng)
+	return table.roll_interval(maxi(WaveManager.current_index, 0), _rng) 		* BroadcastRating.get_drop_interval_scale() * BroadcastRules.drop_interval_multiplier()

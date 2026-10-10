@@ -11,6 +11,16 @@ extends Resource
 
 @export var upgrades: Array[UpgradeData] = []
 
+@export_group("Rare upgrades")
+## Las mejoras raras, aparte de `upgrades`: no entran en la garantia de una por
+## categoria ni en el sorteo comun. Ver UpgradeData.is_rare.
+@export var rare_upgrades: Array[UpgradeData] = []
+## Probabilidad de que una visita traiga una rara, desde la oleada `rare_from_wave`.
+@export_range(0.0, 1.0) var rare_offer_chance: float = 0.45
+## Primera oleada (1-based) despues de la cual la tienda puede ofrecer una rara:
+## la primera tienda es para lo basico.
+@export var rare_from_wave: int = 2
+
 @export_group("Offer")
 ## How many entries the shop offers per visit. Fewer than the catalogue holds, so
 ## a run does not see everything and purchase order matters.
@@ -42,7 +52,7 @@ func find_weapon(weapon_id: StringName) -> WeaponData:
 
 
 func find_upgrade(upgrade_id: StringName) -> UpgradeData:
-	for upgrade: UpgradeData in upgrades:
+	for upgrade: UpgradeData in upgrades + rare_upgrades:
 		if upgrade != null and upgrade.id == upgrade_id:
 			return upgrade
 	return null

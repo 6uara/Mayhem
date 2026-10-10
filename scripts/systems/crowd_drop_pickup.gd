@@ -122,11 +122,27 @@ func collect(player: Player) -> bool:
 		return false
 	if player == null or player.utility == null:
 		return false
+	if data.is_heal():
+		return _collect_heal(player)
 	# Se pregunta antes de tomarlo: pasar por encima con el slot lleno tiene que
 	# dejar el gadget donde esta, para cuando de verdad haga falta. Es la misma
 	# regla que la caja de municion.
 	if not player.utility.add_charge(data.id):
 		return false
+	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
+	collected.emit(data.id)
+	_set_available(false)
+	ObjectPool.release(self)
+	return true
+
+
+## El botiquin cura al levantarlo. Con la vida llena se queda en el piso, por la
+## misma regla que la caja de municion: pasar por encima sin necesitarlo no puede
+## gastarlo.
+func _collect_heal(player: Player) -> bool:
+	if player.health == null or player.health.current_health >= player.health.max_health:
+		return false
+	player.health.heal(data.heal_amount)
 	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
 	collected.emit(data.id)
 	_set_available(false)

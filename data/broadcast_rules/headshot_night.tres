@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+
+[resource]
+script = ExtResource("1_rule")
+id = &"headshot_night"
+title = "HEADSHOT NIGHT"
+description = "Headshot bonuses pay triple."
+bonus_multipliers = {
+&"headshot": 3.0
+}

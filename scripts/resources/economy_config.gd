@@ -2,13 +2,10 @@
 class_name EconomyConfig
 extends Resource
 ## The single source of economy tuning. All payout numbers live in one .tres.
-
-## Reward per kill, keyed by EnemyData.Archetype index.
-@export var kill_reward_rusher: int = 10
-@export var kill_reward_ranger: int = 14
-@export var kill_reward_elite: int = 60
-@export var kill_reward_healer: int = 20
-@export var kill_reward_summoner: int = 25
+##
+## What a kill pays is not here: it is `EnemyData.reward_currency`, per archetype.
+## There used to be a second copy of those numbers in this file that only the
+## balance editor read, and it did not know half the cast.
 
 @export_group("Bonuses")
 @export var no_damage_bonus: int = 100
@@ -49,19 +46,28 @@ extends Resource
 ## deje la tienda sin sentido. Cero significa sin tope.
 @export var currency_loss_max_per_hit: int = 40
 
+@export_group("Score")
+## El puntaje es kills + estilo + oleadas, nunca tiempo ni plata en mano.
+##
+## Antes era plata guardada x10 mas un bono por terminar rapido, y eso premiaba
+## morir: una muerte a los 30s sumaba casi todo el bono de tiempo, y gastar en la
+## tienda bajaba el puntaje. Ahora todo lo que suma se gano jugando, y morir solo
+## corta lo que se iba a seguir sumando.
+##
+## Puntos por cada moneda de recompensa base de una kill.
+@export var score_per_kill_reward: int = 10
+## Puntos por cada moneda de bono de estilo. El rating de la transmision lo
+## multiplica, igual que a la plata.
+@export var score_per_style: int = 10
+## Puntos por limpiar la oleada N: esto por N. Escala con la oleada porque la
+## decima vale mas que la primera.
+@export var score_per_wave: int = 500
+## Lo que suma ganar la run entera, ademas de la ultima oleada.
+@export var score_victory_bonus: int = 5000
+
 @export_group("Global")
 @export var currency_multiplier: float = 1.0
 @export var starting_currency: int = 0
-
-
-func get_kill_reward(archetype: EnemyData.Archetype) -> int:
-	match archetype:
-		EnemyData.Archetype.RUSHER: return kill_reward_rusher
-		EnemyData.Archetype.RANGER: return kill_reward_ranger
-		EnemyData.Archetype.ELITE: return kill_reward_elite
-		EnemyData.Archetype.HEALER: return kill_reward_healer
-		EnemyData.Archetype.SUMMONER: return kill_reward_summoner
-	return 0
 
 
 ## Payout for clearing a wave in `duration` seconds against `par_time`.

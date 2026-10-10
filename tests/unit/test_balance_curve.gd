@@ -4,7 +4,6 @@ extends GutTest
 
 func _config() -> EconomyConfig:
 	var config := EconomyConfig.new()
-	config.kill_reward_rusher = 10
 	config.no_damage_bonus = 100
 	config.speed_bonus_tiers = PackedFloat32Array([0.5, 1.0])
 	config.speed_bonus_payouts = PackedInt32Array([150, 50])
@@ -15,6 +14,7 @@ func _config() -> EconomyConfig:
 func _wave(index: int, count: int) -> WaveData:
 	var enemy := EnemyData.new()
 	enemy.archetype = EnemyData.Archetype.RUSHER
+	enemy.reward_currency = 10
 	var group := SpawnGroup.new()
 	group.enemy_data = enemy
 	group.count = count
@@ -29,6 +29,21 @@ func _wave(index: int, count: int) -> WaveData:
 func test_kill_income_follows_the_archetype_reward() -> void:
 	var payouts: Array = CurveEvaluator.project([_wave(1, 5)], _config(), 0.0)
 	assert_eq((payouts[0] as CurveEvaluator.WavePayout).kill_income, 50)
+
+
+## Cada arquetipo paga lo que dice su propio `.tres`, tambien los que la tabla
+## vieja de EconomyConfig no conocia.
+func test_every_shipped_archetype_counts_in_the_curve() -> void:
+	for id: String in ["bomber", "environmental", "flyer"]:
+		var enemy: EnemyData = load("res://data/enemies/%s.tres" % id)
+		var group := SpawnGroup.new()
+		group.enemy_data = enemy
+		group.count = 2
+		var wave := WaveData.new()
+		wave.spawn_groups = [group]
+		var payouts: Array = CurveEvaluator.project([wave], _config(), 0.0)
+		assert_eq((payouts[0] as CurveEvaluator.WavePayout).kill_income,
+			enemy.reward_currency * 2, "%s cuenta en la curva" % id)
 
 
 func test_cumulative_series_adds_up_across_waves() -> void:

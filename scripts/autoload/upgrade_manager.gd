@@ -141,6 +141,16 @@ func get_temporary_remaining(id: StringName, weapon_id: StringName = &"") -> flo
 	return float(_temporary_remaining.get(_key(id, weapon_id), 0.0))
 
 
+## Saca una mejora global entera, todas sus stacks. La usan las reglas de
+## transmision, que se aplican como mejora mientras dura la oleada.
+func remove_upgrade(id: StringName, weapon_id: StringName = &"") -> void:
+	var key: StringName = _key(id, weapon_id)
+	if not _owned.has(key):
+		return
+	_remove(key)
+	upgrades_changed.emit()
+
+
 func reset() -> void:
 	_stacks.clear()
 	_owned.clear()

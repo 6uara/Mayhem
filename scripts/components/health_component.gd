@@ -30,6 +30,15 @@ var is_dead: bool = false
 ## haber llegado a cero un frame antes de tiempo.
 var last_attacker: Node = null
 
+## Ganchos opcionales para reglas que dependen del dueño y no de la vida en si.
+##
+## `incoming_scale` devuelve un multiplicador extra para el golpe que entra (la
+## armadura que escala con la velocidad). `death_guard` se pregunta cuando un
+## golpe mataria: si devuelve true, el golpe deja la vida en 1 en vez de matar
+## (el segundo aire). Los dos son del jugador; un enemigo no los usa.
+var incoming_scale: Callable = Callable()
+var death_guard: Callable = Callable()
+
 
 func _ready() -> void:
 	current_health = max_health
@@ -45,7 +54,12 @@ func _ready() -> void:
 func apply_damage(amount: float, attacker: Node = null) -> float:
 	if is_dead or is_invulnerable or amount <= 0.0:
 		return 0.0
-	var applied: float = minf(amount * damage_taken_multiplier, current_health)
+	var scaled: float = amount * damage_taken_multiplier
+	if incoming_scale.is_valid():
+		scaled *= maxf(float(incoming_scale.call()), 0.0)
+	var applied: float = minf(scaled, current_health)
+	if applied >= current_health and death_guard.is_valid() and bool(death_guard.call()):
+		applied = maxf(current_health - 1.0, 0.0)
 	current_health -= applied
 	if attacker != null:
 		last_attacker = attacker

@@ -52,6 +52,10 @@ func _on_body_entered(entered: Node3D) -> void:
 	if preserve_higher_velocity:
 		launch = maxf(launch, player_body.velocity.y)
 	player_body.velocity.y = launch
+	# Pad Charger: el pad tambien devuelve una carga de dash.
+	var player := player_body as Player
+	if player != null and player.movement != null 			and UpgradeManager.get_stat(StatsComponent.PAD_DASH_REFILL, 0.0) > 0.0:
+		player.movement.dash_charges.restore_one()
 	AudioPool.play_3d(bounce_sound, global_position, AudioPool.BUS_WORLD)
 	_pulse()
 

@@ -122,13 +122,54 @@ func _roll() -> void:
 			picked.push_back(chosen)
 			pool.erase(chosen)
 
+	var guaranteed: int = picked.size()
 	while picked.size() < catalog.offers_per_visit and not pool.is_empty():
 		var index: int = _rng.randi_range(0, pool.size() - 1)
 		picked.push_back(pool[index])
 		pool.remove_at(index)
 
+	# Una rara como mucho, y no todas las visitas: si todas trajeran una dejarian
+	# de ser raras. Ocupa el lugar de una oferta comun sorteada, nunca el de una
+	# de las garantizadas por categoria.
+	var rare: Dictionary = _roll_rare()
+	if not rare.is_empty():
+		if picked.size() > guaranteed and picked.size() >= catalog.offers_per_visit:
+			picked[picked.size() - 1] = rare
+		else:
+			picked.push_back(rare)
+
 	offers = picked
 	offers_changed.emit(offers)
+
+
+## Una oferta rara para esta visita, o vacio. Publica la probabilidad por el
+## catalogo y la oleada por WaveManager: desde la oleada `rare_from_wave`.
+func _roll_rare() -> Dictionary:
+	if catalog.rare_upgrades.is_empty():
+		return {}
+	if WaveManager.current_index + 1 < catalog.rare_from_wave:
+		return {}
+	if _rng.randf() >= catalog.rare_offer_chance:
+		return {}
+	var candidates: Array[UpgradeData] = []
+	for upgrade: UpgradeData in catalog.rare_upgrades:
+		if upgrade != null and UpgradeManager.can_add(upgrade):
+			candidates.push_back(upgrade)
+	if candidates.is_empty():
+		return {}
+	return _rare_offer(candidates[_rng.randi_range(0, candidates.size() - 1)])
+
+
+## Las raras son siempre globales: una regla de movilidad o de supervivencia no
+## pertenece a un arma.
+func _rare_offer(upgrade: UpgradeData) -> Dictionary:
+	return {
+		"kind": Kind.UPGRADE, "id": upgrade.id, "name": upgrade.display_name,
+		"description": upgrade.description, "cost": upgrade.cost,
+		"category": int(upgrade.category),
+		"owned": UpgradeManager.get_stacks(upgrade.id),
+		"max_stacks": upgrade.max_stacks, "weapon_id": &"", "rare": true,
+	}
 
 
 func _execute(offer: Dictionary) -> EconomyManager.PurchaseResult:
@@ -188,7 +229,12 @@ func _build_pool() -> Array[Dictionary]:
 			"weapon_id": scope,
 		})
 
+	# En el modo de un arma sola la tienda no vende armas: el arma se eligio en el
+	# menu y es la de toda la run.
+	var sells_weapons: bool = GameManager.shop_sells_weapons()
 	for weapon: WeaponData in catalog.weapons:
+		if not sells_weapons:
+			break
 		if weapon == null or (holder != null and holder.owns(weapon.id)):
 			continue  # Never offer the weapon already equipped.
 		# Replacing the current weapon leaves its WEAPON upgrades behind - the

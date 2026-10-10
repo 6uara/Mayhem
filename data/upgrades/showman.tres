@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"style_payout_multiplier"
+operation = 1
+value = 1.5
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"damage_taken_multiplier"
+operation = 1
+value = 1.15
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"showman"
+display_name = "Showman"
+description = "Style bonuses pay 50% more, in money and in score. You take 15% more damage."
+cost = 300
+category = 2
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
+max_stacks = 1
+is_rare = true

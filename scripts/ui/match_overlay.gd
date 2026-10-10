@@ -70,6 +70,12 @@ func _on_run_finished(score: int, total_time: float, waves_cleared: int,
 	else:
 		_pending_details = "Score %d\nWave %d of %d\nNo revives. No second chances." % [
 			score, waves_cleared + 1, WaveManager.WAVE_COUNT]
+	# De donde salio el numero. Sin esto el puntaje es una cifra que no enseña
+	# nada: lo que el jugador tiene que saber es que el estilo y las oleadas
+	# pesan, y que morir solo corta lo que iba a seguir sumando.
+	_pending_details += "
+Kills %d  -  Style %d  -  Waves %d" % [
+		RunRecord.kill_points, RunRecord.style_points, RunRecord.wave_points]
 	_banner.text = ""
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_score_entry.open(score, total_time, waves_cleared)
@@ -77,7 +83,7 @@ func _on_run_finished(score: int, total_time: float, waves_cleared: int,
 
 func _on_score_saved() -> void:
 	_show_end(_pending_title, "%s\nBest %d" % [
-		_pending_details, SaveManager.get_best_score()])
+		_pending_details, SaveManager.get_best_score(RunRecord.arena_id)])
 
 
 func _show_end(title: String, details: String) -> void:

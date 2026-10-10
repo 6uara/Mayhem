@@ -1,5 +1,5 @@
 extends GutTest
-## Speed-bonus tiering and kill rewards read straight from EconomyConfig.
+## Speed-bonus tiering read straight from EconomyConfig.
 
 
 func _make_config() -> EconomyConfig:
@@ -7,12 +7,6 @@ func _make_config() -> EconomyConfig:
 	config.speed_bonus_tiers = PackedFloat32Array([0.5, 0.75, 1.0])
 	config.speed_bonus_payouts = PackedInt32Array([150, 100, 50])
 	return config
-
-
-func test_kill_reward_per_archetype() -> void:
-	var config := _make_config()
-	assert_eq(config.get_kill_reward(EnemyData.Archetype.RUSHER), config.kill_reward_rusher)
-	assert_eq(config.get_kill_reward(EnemyData.Archetype.ELITE), config.kill_reward_elite)
 
 
 func test_speed_bonus_top_tier() -> void:
