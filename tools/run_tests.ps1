@@ -39,6 +39,8 @@ function Find-Godot {
     # which is what project.godot targets and what CI installs.
     $roots = @(
         "$env:USERPROFILE\Documents\Godot",
+        # El zip oficial se descomprime suelto en Documentos mas de una vez.
+        "$env:USERPROFILE\Documents",
         "$env:LOCALAPPDATA\Programs\Godot",
         "C:\Program Files\Godot"
     ) | Where-Object { Test-Path $_ }
