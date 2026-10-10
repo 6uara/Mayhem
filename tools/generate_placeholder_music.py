@@ -2,7 +2,7 @@
 
 Same reasoning as generate_placeholder_sfx.py: synthesised stand-ins, not final
 tracks, so MusicManager has something real to crossfade between before real music
-gets licensed/composed (backlog tanda E1). Three loops, one per state MusicManager
+gets composed (backlog tanda E1). Three loops, one per state MusicManager
 follows: menu (calm), combat (driving), shop (arpeggiated, mid-energy).
 
 Usage:
@@ -201,7 +201,7 @@ def main() -> None:
     _write("menu.wav", menu_track(rng))
     _write("combat.wav", combat_track(rng))
     _write("shop.wav", shop_track(rng))
-    print("Done. These are placeholders - replace them with licensed/composed tracks.")
+    print("Done. These are placeholders - replace them with composed tracks.")
 
 
 if __name__ == "__main__":

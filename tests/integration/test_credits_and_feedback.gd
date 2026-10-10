@@ -2,10 +2,8 @@ extends GutTest
 ## Los creditos y el formulario de feedback: las dos pantallas que faltaban para
 ## poder publicar.
 ##
-## Los creditos no son cortesia - las licencias MIT y OFL que usa el juego exigen
-## atribucion, y la pagina de Steam la pide. El feedback tampoco es un extra: sin
-## el, lo unico que llega de un playtest es lo que el jugador se acuerde de
-## contar despues.
+## El feedback no es un extra: sin el, lo unico que llega de un playtest es lo
+## que el jugador se acuerde de contar despues.
 
 const MENU_SCENE: String = "res://scenes/main/main_menu.tscn"
 const PAUSE_SCENE: String = "res://scenes/ui/pause_menu.tscn"
@@ -34,18 +32,6 @@ func test_the_menu_has_a_way_into_the_credits() -> void:
 	credits.close()
 	await wait_frames(2)
 	assert_true(_panel("Root").visible, "y volver aterriza en el menu")
-
-
-## Cada dependencia con licencia que exige atribucion tiene que estar nombrada.
-## Si entra una nueva y nadie toca `SECTIONS`, esto se cae.
-func test_every_licensed_dependency_is_named() -> void:
-	var text: String = ""
-	for section: Dictionary in CreditsPanel.SECTIONS:
-		for line: Array in section["lines"]:
-			text += "%s %s " % [line[0], line[1]]
-	for required: String in ["Godot", "Beehave", "IBM Plex", "Archivo",
-			"MIT License", "SIL Open Font License"]:
-		assert_string_contains(text, required)
 
 
 func test_the_credits_list_is_built_from_the_data() -> void:

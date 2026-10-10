@@ -1,39 +1,26 @@
 class_name CreditsPanel
 extends Control
-## Quien hizo esto y sobre que esta hecho.
+## Quien hizo esto y con que.
 ##
 ## El contenido sale de `SECTIONS` y no de labels autorados en el .tscn, por la
-## misma razon por la que `SettingsScreen` sale de su `SCHEMA`: una pantalla de
-## creditos escrita a mano se desincroniza de THIRD_PARTY.md la primera vez que
-## entra una dependencia, y nadie se entera hasta que alguien reclama.
-##
-## No es solo cortesia. Las licencias MIT y OFL que usa el juego exigen
-## atribucion, y la pagina de Steam la pide: esta pantalla es donde se cumple.
+## misma razon por la que `SettingsScreen` sale de su `SCHEMA`: agregar una linea
+## es tocar datos, no una escena.
 
 signal closed()
 
 ## Cada seccion es un titulo y sus lineas. Las lineas son [texto, detalle]: el
-## texto es lo que se nombra y el detalle su licencia o su rol, que es lo que
-## una atribucion tiene que decir para valer como tal.
+## texto es lo que se nombra y el detalle su rol.
 const SECTIONS: Array = [
 	{"title": "MAYHEM", "lines": [
 		["Juan Guaragnini", "Design, code, art and audio"],
-		["(c) 2026 Juan Guaragnini", "All rights reserved"],
 	]},
 	{"title": "BUILT WITH", "lines": [
-		["Godot Engine 4.7", "MIT License - godotengine.org"],
-		["Beehave 2.9.2", "MIT License - enemy behaviour trees"],
-		["GUT", "MIT License - test framework (development only)"],
-		["Phantom Camera", "MIT License (development only)"],
-		["Debug Draw", "MIT License (development only)"],
+		["Godot Engine 4.7", "Engine"],
+		["Beehave", "Enemy behaviour trees"],
 	]},
 	{"title": "TYPEFACES", "lines": [
-		["IBM Plex Sans / Mono", "SIL Open Font License 1.1 - (c) 2017 IBM Corp."],
-		["Archivo", "SIL Open Font License 1.1 - (c) Omnibus-Type"],
-	]},
-	{"title": "ASSETS", "lines": [
-		["Models, textures and shaders", "Original to this project"],
-		["Music and sound effects", "Original - procedurally generated placeholders"],
+		["IBM Plex Sans / Mono", "Interface and numerals"],
+		["Archivo", "Display"],
 	]},
 ]
 
