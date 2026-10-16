@@ -91,7 +91,9 @@ if ($Import) {
 # -gexit is what makes the run return to the shell; without it Godot sits on the
 # results forever and a CI job (or this script) never finishes.
 $gutArgs = @("--headless", "--path", $projectRoot, "-s", "addons/gut/gut_cmdln.gd", "-gexit")
-if ($Script) { $gutArgs += @("-gtest=$Script") }
+# GUT suma -gtest a los `dirs` de .gutconfig.json en vez de reemplazarlos: sin
+# `-gconfig=` un -Script corria la suite entera y despues ese script otra vez.
+if ($Script) { $gutArgs += @("-gconfig=", "-glog=1", "-gtest=$Script") }
 if ($Test) { $gutArgs += @("-gunit_test_name=$Test") }
 
 $output = & $godot @gutArgs 2>&1
