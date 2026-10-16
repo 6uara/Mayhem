@@ -59,6 +59,7 @@ func release(instance: Node) -> void:
 
 ## Release everything currently active - call between runs.
 func release_all() -> void:
+	_forget_freed()
 	for instance: Node in _in_use.keys():
 		release(instance)
 
@@ -83,10 +84,20 @@ func get_free_count(scene: PackedScene) -> int:
 
 
 func get_active_count() -> int:
+	_forget_freed()
 	return _in_use.size()
 
 
 # Private
+
+## Un nodo prestado que alguien libero en vez de devolverlo. Quedaba en `_in_use`
+## para siempre: inflaba el conteo de activos, y `release_all()` lo recorria con
+## una variable tipada, que no acepta un objeto liberado.
+func _forget_freed() -> void:
+	for instance: Variant in _in_use.keys():
+		if not is_instance_valid(instance):
+			_in_use.erase(instance)
+
 
 func _get_free_list(scene: PackedScene) -> Array:
 	if not _free.has(scene):

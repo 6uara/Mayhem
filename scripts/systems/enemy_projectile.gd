@@ -11,6 +11,10 @@ const MAX_LIFETIME: float = 6.0
 var _velocity: Vector3 = Vector3.ZERO
 var _damage: float = 0.0
 var _shooter: Node = null
+## El bando del tirador, leido al disparar. La bala puede sobrevivirle -un
+## enemigo liberado, una escena descartada- y preguntarle el bando o el mundo de
+## fisica a un objeto liberado era un crash en el frame siguiente.
+var _faction: Factions.Id = Factions.Id.HORDE
 var _lifetime: float = 0.0
 var _is_active: bool = false
 ## A copy of someone else's shot, flying on a client so its player can see and
@@ -28,6 +32,7 @@ func launch(from: Vector3, direction: Vector3, damage: float, speed: float,
 	_velocity = direction * speed
 	_damage = damage
 	_shooter = shooter
+	_faction = Factions.of(shooter)
 	_lifetime = 0.0
 	_is_active = true
 	_is_cosmetic = false
@@ -51,6 +56,10 @@ func _physics_process(delta: float) -> void:
 		_expire()
 		return
 
+	# `is_instance_valid` y no `!= null`: un objeto liberado compara igual a null
+	# pero la variable sigue apuntandolo, y pasarlo como atacante es un error.
+	if not is_instance_valid(_shooter):
+		_shooter = null
 	var from: Vector3 = global_position
 	var to: Vector3 = from + _velocity * delta
 	# Las capas de lo que este tirador puede lastimar, y no `PLAYER` cableado. Era
@@ -59,11 +68,12 @@ func _physics_process(delta: float) -> void:
 	# `PLAYER | GLADIATOR`, y como no hay ningún cuerpo en `GLADIATOR` todavía, la
 	# bala vuela exactamente igual que antes.
 	var query := PhysicsRayQueryParameters3D.create(from, to,
-		PhysicsLayers.WORLD | Factions.hostile_mask(Factions.of(_shooter)))
+		PhysicsLayers.WORLD | Factions.hostile_mask(_faction))
 	if _shooter != null and _shooter is CollisionObject3D:
 		query.exclude = [(_shooter as CollisionObject3D).get_rid()]
-	var hit: Dictionary = _shooter.get_world_3d().direct_space_state.intersect_ray(query) \
-		if _shooter != null else {}
+	# El mundo de la bala y no el del tirador: es el mismo, y la bala sigue en el
+	# arbol aunque el tirador ya no exista.
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty():
 		global_position = to
@@ -74,7 +84,8 @@ func _physics_process(delta: float) -> void:
 	# en vez de preguntar por el jugador. Sin esto la máscara de arriba dejaría
 	# pasar la bala hasta el cuerpo y el daño se caería igual, un metro después.
 	var victim := hit["collider"] as Node
-	if not _is_cosmetic and Factions.hostile(_shooter, victim):
+	if not _is_cosmetic and victim != _shooter \
+			and Factions.are_hostile(_faction, Factions.of(victim)):
 		var health: HealthComponent = _find_health(victim)
 		if health != null:
 			health.apply_damage(_damage, _shooter)
