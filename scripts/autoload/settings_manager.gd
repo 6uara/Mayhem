@@ -141,11 +141,35 @@ func load_settings() -> void:
 		return  # First run: defaults already in place.
 	for key: String in DEFAULTS:
 		var parts: PackedStringArray = key.split("/", true, 1)
-		_values[key] = config.get_value(parts[0], parts[1], _values.get(key, DEFAULTS[key]))
+		var fallback: Variant = _values.get(key, DEFAULTS[key])
+		_values[key] = _coerce(key, config.get_value(parts[0], parts[1], fallback), fallback)
 	if config.has_section("bindings"):
 		for action: String in config.get_section_keys("bindings"):
-			_bindings[action] = config.get_value("bindings", action, [])
+			var events: Variant = config.get_value("bindings", action, [])
+			# Un binding que no es lista se descarta: iterar un entero en GDScript
+			# recorre un rango, y un String recorre letras.
+			if events is Array:
+				_bindings[action] = events
 	_apply_bindings()
+
+
+## El valor leido del archivo, si es del tipo del default; si no, `fallback`.
+##
+## `settings.cfg` se puede editar a mano, y un `fov = "ancho"` entraba tal cual:
+## despues `float()` lo leia como 0 y `bool()` sobre un String no es una
+## conversion valida. Entero y float se aceptan entre si -un `fov = 100` escrito
+## a mano es un numero razonable- y se convierten al tipo del default.
+func _coerce(key: String, value: Variant, fallback: Variant) -> Variant:
+	var expected: int = typeof(DEFAULTS[key])
+	var got: int = typeof(value)
+	if got == expected:
+		return value
+	var numeric: Array[int] = [TYPE_INT, TYPE_FLOAT]
+	if numeric.has(got) and numeric.has(expected):
+		return float(value) if expected == TYPE_FLOAT else int(value)
+	push_warning("SettingsManager: '%s' en %s no es %s, uso el valor por defecto"
+		% [key, SETTINGS_PATH, type_string(expected)])
+	return fallback
 
 
 func save_settings() -> void:
