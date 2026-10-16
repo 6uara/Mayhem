@@ -81,7 +81,7 @@ func add_upgrade(data: UpgradeData, weapon_id: StringName = &"") -> bool:
 		return false
 	if not can_add(data, weapon_id):
 		return false
-	var key: StringName = _key(data.id, weapon_id)
+	var key: StringName = _key(data.id, _scope(data, weapon_id))
 	_owned[key] = data
 	_stacks[key] = int(_stacks.get(key, 0)) + 1
 	if data.is_temporary:
@@ -93,7 +93,7 @@ func add_upgrade(data: UpgradeData, weapon_id: StringName = &"") -> bool:
 func can_add(data: UpgradeData, weapon_id: StringName = &"") -> bool:
 	if data == null:
 		return false
-	return get_stacks(data.id, weapon_id) < maxi(data.max_stacks, 1)
+	return get_stacks(data.id, _scope(data, weapon_id)) < maxi(data.max_stacks, 1)
 
 
 ## For a WEAPON-category upgrade, pass the weapon it was (or would be) bought for -
@@ -190,6 +190,13 @@ static func aggregate(base_value: float, modifiers: Array[StatModifier]) -> floa
 ## class docstring.
 func _key(id: StringName, weapon_id: StringName) -> StringName:
 	return id if weapon_id == &"" else StringName("%s::%s" % [id, weapon_id])
+
+
+## El arma solo cuenta para una mejora WEAPON. Una global comprada "con" un arma
+## se guardaba bajo "id::arma", y cada arma le abria otro cupo de max_stacks.
+## EconomyManager.try_purchase_upgrade documenta que el arma se ignora: es aca.
+func _scope(data: UpgradeData, weapon_id: StringName) -> StringName:
+	return weapon_id if data.category == UpgradeData.Category.WEAPON else &""
 
 
 func _remove(key: StringName) -> void:
