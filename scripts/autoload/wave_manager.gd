@@ -15,6 +15,8 @@ var is_wave_active: bool = false
 var _alive_enemies: int = 0
 var _pending_spawns: int = 0
 var _wave_start_time: float = 0.0
+## GameManager.get_paused_seconds() al arrancar la oleada: la pausa no corre el PAR.
+var _wave_paused_at_start: float = 0.0
 var _damage_taken_this_wave: float = 0.0
 ## Bumped on reset so in-flight spawn coroutines from an abandoned wave die off.
 var _run_generation: int = 0
@@ -63,6 +65,7 @@ func start_next_wave() -> bool:
 	_pending_spawns = wave.get_total_enemy_count()
 	_damage_taken_this_wave = 0.0
 	_wave_start_time = _now()
+	_wave_paused_at_start = GameManager.get_paused_seconds()
 	EconomyManager.begin_wave()
 	EventBus.wave_started.emit(current_index, wave)
 	_schedule_wave(wave, _run_generation)
@@ -87,8 +90,11 @@ func get_current_wave() -> WaveData:
 	return waves[current_index]
 
 
+## Tiempo de juego de la oleada: de pared, menos lo que se estuvo en pausa. Es
+## lo que paga el bono de velocidad, asi que pausar no puede costar plata.
 func get_wave_duration() -> float:
-	return _now() - _wave_start_time
+	return _now() - _wave_start_time \
+		- (GameManager.get_paused_seconds() - _wave_paused_at_start)
 
 
 func get_alive_count() -> int:
@@ -128,8 +134,10 @@ func _schedule_wave(wave: WaveData, generation: int) -> void:
 
 
 func _spawn_group(group: SpawnGroup, generation: int) -> void:
+	# `process_always = false` en los dos timers: con el arbol en pausa la oleada
+	# no sigue largando enemigos, que al despausar aparecian todos juntos.
 	if group.delay > 0.0:
-		await get_tree().create_timer(group.delay).timeout
+		await get_tree().create_timer(group.delay, false).timeout
 	if generation != _run_generation or not is_wave_active:
 		return
 
@@ -145,7 +153,7 @@ func _spawn_group(group: SpawnGroup, generation: int) -> void:
 			return
 		_spawn_one(group)
 		if i < group.count - 1 and group.interval > 0.0:
-			await get_tree().create_timer(group.interval).timeout
+			await get_tree().create_timer(group.interval, false).timeout
 
 	if spawner != null and spawner.has_method(&"close_doors"):
 		spawner.call(&"close_doors", group.spawn_door_ids)

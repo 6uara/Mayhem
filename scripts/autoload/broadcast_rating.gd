@@ -100,7 +100,8 @@ func _on_kill_payout(_reward: int, bonus_ids: Array, _bonus_total: int,
 		_position: Vector3) -> void:
 	if not tracking:
 		return
-	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	# Reloj de juego: una pausa en medio de una racha no la enfria.
+	var now: float = GameManager.get_game_clock()
 	while not _recent_kills.is_empty() and now - _recent_kills[0] > config.pace_window:
 		_recent_kills.pop_front()
 	var recent: int = _recent_kills.size()

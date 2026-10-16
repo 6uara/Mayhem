@@ -61,6 +61,15 @@ var run_weapon_id: StringName = &""
 var _freezes: Dictionary = {}
 
 var _run_start_time: float = 0.0
+## El reloj de la pausa: lo que se paso en el menu de pausa desde que arranco el
+## proceso. Los relojes de la run (este, la oleada, la partida) son de pared, y
+## sin restarle esto un Esc -o un alt-tab, que pausa solo- seguia corriendo el
+## PAR de la oleada y el tiempo de la run: se perdia el bono de velocidad y el
+## trofeo RELAMPAGO con el juego congelado. Ver get_paused_seconds().
+var _paused_total: float = 0.0
+## Cuando empezo la pausa en curso, o negativo si no hay ninguna.
+var _paused_since: float = -1.0
+var _run_paused_at_start: float = 0.0
 ## GameManager's own child, not part of whatever scene is being replaced -
 ## survives every change_scene_to_file() call untouched. See
 ## scripts/ui/scene_transition.gd.
@@ -134,9 +143,11 @@ func pause_for_focus_loss() -> void:
 
 
 func start_run() -> void:
+	_set_pause_clock(false)
 	is_paused = false
 	clear_freezes()
 	_run_start_time = _now()
+	_run_paused_at_start = get_paused_seconds()
 	state = State.PLAYING
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -168,6 +179,7 @@ func restart_run() -> void:
 func open_scene(path: String, new_state: State = State.MENU) -> void:
 	var scene: PackedScene = await _prepare_scene(path)
 	clear_freezes()
+	_set_pause_clock(false)
 	is_paused = false
 	state = new_state
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -185,6 +197,7 @@ func open_scene(path: String, new_state: State = State.MENU) -> void:
 func return_to_menu() -> void:
 	var scene: PackedScene = await _prepare_scene(MENU_SCENE_PATH)
 	clear_freezes()
+	_set_pause_clock(false)
 	is_paused = false
 	state = State.MENU
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -225,6 +238,7 @@ func set_paused(paused: bool) -> void:
 	if is_paused == paused:
 		return
 	is_paused = paused
+	_set_pause_clock(paused)
 	set_freeze(FREEZE_PAUSE_MENU, paused)
 	EventBus.game_paused.emit(paused)
 
@@ -261,10 +275,38 @@ func is_frozen_by(reason: StringName) -> bool:
 func get_run_time() -> float:
 	if state == State.MENU:
 		return 0.0
-	return _now() - _run_start_time
+	return _now() - _run_start_time - (get_paused_seconds() - _run_paused_at_start)
+
+
+## Segundos pasados en el menu de pausa desde que arranco el juego, con la pausa
+## en curso incluida. Un reloj de juego guarda este numero al arrancar y se resta
+## la diferencia: asi nadie tiene que enterarse de cuando se pauso.
+##
+## Solo la pausa: la tienda tambien congela el arbol, pero el tiempo de compras
+## es parte de la run y siempre conto.
+func get_paused_seconds() -> float:
+	if _paused_since < 0.0:
+		return _paused_total
+	return _paused_total + (_now() - _paused_since)
+
+
+## Segundos de juego desde que arranco el proceso: el reloj de pared menos la
+## pausa. Para las ventanas cortas que se miden entre dos momentos -una racha de
+## kills, el ritmo del rating-: con esto un Esc en medio de una racha la deja en
+## suspenso en vez de cortarla.
+func get_game_clock() -> float:
+	return _now() - get_paused_seconds()
 
 
 # Private
+
+func _set_pause_clock(paused: bool) -> void:
+	if paused and _paused_since < 0.0:
+		_paused_since = _now()
+	elif not paused and _paused_since >= 0.0:
+		_paused_total += _now() - _paused_since
+		_paused_since = -1.0
+
 
 ## Covers the screen and loads `path` off the main thread, returning the scene
 ## ready to be swapped in - or null if it could not be loaded.

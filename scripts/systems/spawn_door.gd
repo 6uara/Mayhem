@@ -53,10 +53,12 @@ func get_spawn_position() -> Vector3:
 
 
 ## Lights up and sounds off, then resolves after TELEGRAPH_TIME. Callers await this
-## so the first enemy of a group never appears before its tell.
+## so the first enemy of a group never appears before its tell. The timers stop
+## while the tree is paused, like the tween they wait on - otherwise a pause during
+## the tell let the group spawn behind the pause menu.
 func telegraph() -> void:
 	if _is_telegraphing:
-		await get_tree().create_timer(TELEGRAPH_TIME).timeout
+		await get_tree().create_timer(TELEGRAPH_TIME, false).timeout
 		return
 	_is_telegraphing = true
 	AudioPool.play_3d(open_sound, global_position, AudioPool.BUS_WORLD)
@@ -77,7 +79,7 @@ func telegraph() -> void:
 		_material.emission = telegraph_color
 		_material.emission_energy_multiplier = 1.5
 
-	await get_tree().create_timer(TELEGRAPH_TIME).timeout
+	await get_tree().create_timer(TELEGRAPH_TIME, false).timeout
 	_is_telegraphing = false
 
 

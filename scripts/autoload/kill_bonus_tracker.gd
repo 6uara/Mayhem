@@ -263,5 +263,7 @@ func _advance_streak(now: float) -> StringName:
 	return &""
 
 
+## Reloj de juego y no de pared: la pausa no corta una racha ni vence la ventana
+## del dash o del healer. Ver GameManager.get_game_clock().
 func _now() -> float:
-	return float(Time.get_ticks_msec()) / 1000.0
+	return GameManager.get_game_clock()

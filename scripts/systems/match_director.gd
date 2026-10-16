@@ -32,6 +32,9 @@ signal match_state_changed(is_running: bool)
 var is_running: bool = false
 
 var _match_start_time: float = 0.0
+## GameManager.get_paused_seconds() al arrancar: el tiempo de la run no cuenta la
+## pausa, y es el que decide el trofeo RELAMPAGO.
+var _match_paused_at_start: float = 0.0
 ## Guards against a wave_completed arriving after the run already ended.
 var _generation: int = 0
 ## Bumped every time a break opens, so a late ready-up from the previous one
@@ -58,6 +61,7 @@ func start_match() -> void:
 	_generation += 1
 	is_running = true
 	_match_start_time = _now()
+	_match_paused_at_start = GameManager.get_paused_seconds()
 	UpgradeManager.reset()
 	EconomyManager.reset()
 	# Junto a los otros dos y no colgado de la primera oleada: "empezo una
@@ -84,7 +88,8 @@ func _exit_tree() -> void:
 func get_match_time() -> float:
 	if not is_running:
 		return 0.0
-	return _now() - _match_start_time
+	return _now() - _match_start_time \
+		- (GameManager.get_paused_seconds() - _match_paused_at_start)
 
 
 # Private
@@ -99,8 +104,10 @@ func _start_first_wave(generation: int) -> void:
 
 
 func _start_wave_after(delay: float, generation: int) -> void:
+	# Sin `process_always`: una pausa en la espera entre oleadas tambien la frena,
+	# en vez de arrancar la oleada con el juego congelado.
 	if delay > 0.0:
-		await get_tree().create_timer(delay).timeout
+		await get_tree().create_timer(delay, false).timeout
 	if generation != _generation or not is_running:
 		return
 	if not WaveManager.start_next_wave():
