@@ -159,3 +159,39 @@ func test_a_new_run_starts_with_nothing() -> void:
 	assert_eq(RunRecord.kills, 0)
 	assert_eq(RunRecord.get_trophies(), [] as Array[StringName],
 		"los trofeos de la run anterior no pueden anotarse en la siguiente")
+
+
+# --------------------------------------------------------------- MAGNATE
+
+## MAGNATE dice "tres mil monedas" y cuenta las que entraron a la billetera. Antes
+## sumaba las recompensas crudas de cada kill: sin multiplicadores, sin bonos de
+## fin de oleada y sin regalos del publico.
+func test_earnings_are_what_reached_the_wallet() -> void:
+	EconomyManager.reset()
+	RunRecord.reset()
+	var start: int = EconomyManager.currency
+	EconomyManager.currency = start + 250
+	assert_eq(RunRecord.earned, 250)
+	EconomyManager.currency = start + 100
+	assert_eq(RunRecord.earned, 250, "gastar no des-gana lo ganado")
+	EconomyManager.currency = start + 400
+	assert_eq(RunRecord.earned, 550)
+	EconomyManager.reset()
+
+
+func test_kill_income_counts_with_its_multipliers() -> void:
+	EconomyManager.reset()
+	RunRecord.reset()
+	var multiplier: float = EconomyManager.config.currency_multiplier
+	EventBus.kill_credited.emit(10)
+	assert_eq(RunRecord.earned, int(round(10.0 * multiplier)),
+		"lo que pago la billetera, no el numero crudo")
+	EconomyManager.reset()
+
+
+func test_the_starting_wallet_is_not_earnings() -> void:
+	EconomyManager.reset()
+	RunRecord.reset()
+	assert_eq(RunRecord.earned, 0)
+	EconomyManager.reset()
+	assert_eq(RunRecord.earned, 0, "volver a la plata inicial tampoco es ganar")

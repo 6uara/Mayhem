@@ -72,6 +72,12 @@ var flawless_waves: int = 0
 var purchases: int = 0
 ## Todo lo que entro a la billetera, recompensas y recargos. No es la plata que
 ## quedo: gastarla en la tienda es lo que hay que hacer con ella.
+##
+## Se lee de la billetera misma -cada subida de `currency_changed`- y no de las
+## recompensas de cada kill. Esas son los numeros crudos: no llevaban el
+## multiplicador de plata, el del rating ni el de la regla de la oleada, y se
+## perdian los bonos de fin de oleada y los regalos del publico. MAGNATE dice
+## "tres mil monedas" y tiene que contar las monedas que el jugador vio entrar.
 var earned: int = 0
 ## Cuantas veces se cumplio cada bono de kill, por id.
 var bonus_counts: Dictionary = {}
@@ -89,6 +95,8 @@ var wave_points: int = 0
 
 ## Los trofeos de la run terminada. Vacio mientras se juega.
 var _trophies: Array[StringName] = []
+## La billetera la ultima vez que se miro, para sacar cuanto subio.
+var _last_currency: int = 0
 
 
 func _ready() -> void:
@@ -99,6 +107,8 @@ func _ready() -> void:
 	EventBus.wave_completed.connect(_on_wave_completed)
 	EventBus.purchase_made.connect(_on_purchase_made.unbind(2))
 	EventBus.run_finished.connect(_on_run_finished)
+	EventBus.currency_changed.connect(_on_currency_changed)
+	_last_currency = EconomyManager.currency
 
 
 # Public API
@@ -140,6 +150,9 @@ func reset() -> void:
 	flawless_waves = 0
 	purchases = 0
 	earned = 0
+	# La plata inicial no se gano: MatchDirector resetea la billetera antes que
+	# esto, asi que lo que hay ahora es el punto de partida.
+	_last_currency = EconomyManager.currency
 	bonus_counts.clear()
 	kill_points = 0
 	style_points = 0
@@ -213,7 +226,6 @@ func _on_kill_scored(_enemy_type: StringName, _position: Vector3, was_headshot: 
 
 func _on_kill_payout(_reward: int, bonus_ids: Array, bonus_total: int,
 		_position: Vector3) -> void:
-	earned += bonus_total
 	# El estilo puntua con el mismo multiplicador que paga en plata: el rating
 	# de la transmision y las mejoras que lo tocan. Ver EconomyManager.
 	style_points += int(round(float(bonus_total * _config().score_per_style)
@@ -223,7 +235,6 @@ func _on_kill_payout(_reward: int, bonus_ids: Array, bonus_total: int,
 
 
 func _on_kill_credited(reward: int) -> void:
-	earned += reward
 	kill_points += reward * _config().score_per_kill_reward
 
 
@@ -238,6 +249,13 @@ func _on_wave_completed(wave_index: int, _duration: float, wave_damage: float) -
 	wave_points += _config().score_per_wave * (wave_index + 1)
 	if wave_damage <= 0.0:
 		flawless_waves += 1
+
+
+## Solo las subidas: gastar o perder plata por un golpe no des-gana lo ganado.
+func _on_currency_changed(total: int) -> void:
+	if total > _last_currency:
+		earned += total - _last_currency
+	_last_currency = total
 
 
 func _on_purchase_made() -> void:
