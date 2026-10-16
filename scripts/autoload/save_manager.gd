@@ -273,10 +273,13 @@ func sanitize_name(raw: String) -> String:
 	for character: String in raw.strip_edges():
 		if character.is_valid_identifier() or character.is_valid_int() 				or character == " " or character == "_" or character == "-":
 			out += character
-	out = out.strip_edges()
+	# Se recorta y despues se limpia: el corte puede caer justo despues de un
+	# espacio, y "ABCDEFGHIJK " seria otro perfil que "ABCDEFGHIJK". El minimo se
+	# mide sobre lo que queda.
+	out = out.strip_edges().substr(0, NAME_MAX_LENGTH).strip_edges()
 	if out.length() < NAME_MIN_LENGTH:
 		return ""
-	return out.substr(0, NAME_MAX_LENGTH).to_upper()
+	return out.to_upper()
 
 
 func is_valid_name(raw: String) -> bool:
@@ -296,7 +299,11 @@ func load_profiles() -> void:
 		push_warning("SaveManager: %s is not a profile list, ignoring it" % PROFILES_PATH)
 		return
 	for name_value: Variant in parsed:
-		var clean: String = sanitize_name(String(name_value))
+		# El archivo se puede editar a mano: lo que no es texto no es un nombre, y
+		# `String()` sobre un numero o un objeto no es una conversion valida.
+		if not name_value is String:
+			continue
+		var clean: String = sanitize_name(name_value)
 		if clean != "" and not _profiles.has(clean):
 			_profiles.push_back(clean)
 
@@ -342,7 +349,9 @@ func load_tutorial_hints() -> void:
 		push_warning("SaveManager: %s is not a hint list, ignoring it" % TUTORIAL_SAVE_PATH)
 		return
 	for id: Variant in parsed:
-		_seen_hints[StringName(id)] = true
+		# Igual que los perfiles: una entrada que no es un id se descarta.
+		if id is String:
+			_seen_hints[StringName(id)] = true
 
 
 func save_tutorial_hints() -> void:

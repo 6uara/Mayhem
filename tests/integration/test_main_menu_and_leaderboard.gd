@@ -292,8 +292,10 @@ func test_a_name_that_is_too_short_is_refused() -> void:
 	assert_false(SaveManager.is_valid_name("ab"))
 	assert_false(SaveManager.is_valid_name("   "))
 	assert_true(SaveManager.is_valid_name("abc"))
-	assert_eq(SaveManager.sanitize_name("  a very long name indeed  ").length(),
-		SaveManager.NAME_MAX_LENGTH, "se recorta, no se rechaza")
+	assert_eq(SaveManager.sanitize_name("  a very long name indeed  "), "A VERY LONG",
+		"se recorta, no se rechaza, y el corte no deja un espacio colgando")
+	assert_eq(SaveManager.sanitize_name("abcdefghijklmnop").length(),
+		SaveManager.NAME_MAX_LENGTH)
 
 
 func test_the_board_shows_the_name_column() -> void:
