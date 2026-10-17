@@ -128,7 +128,7 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		flask.setup_pool(snare_radius, snare_duration, 0.0)
 	else:
 		flask.setup_pool(pool_radius, pool_duration,
-			enemy.data.damage * pool_damage_fraction)
+			enemy.get_attack_damage() * pool_damage_fraction)
 	flask.launch_with_velocity(origin, _arc_to(origin, target), enemy)
 	AudioPool.play_3d(enemy.data.attack_sound, origin, AudioPool.BUS_ENEMIES)
 	enemy.start_attack_cooldown()

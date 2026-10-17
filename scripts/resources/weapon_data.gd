@@ -77,6 +77,24 @@ extends Resource
 @export var ads_transition_time: float = 0.15
 @export var ads_move_speed_multiplier: float = 0.7
 
+@export_group("Behavior")
+## Lo que hace un tiro ademas de pegar donde apunta. Todo en cero en las cuatro
+## armas de hoy: son las mejoras raras de cada arma (y un arma futura, un rail o
+## un lanzacohetes) las que lo prenden, como StatModifiers sobre esta base.
+##
+## Cuantos enemigos mas atraviesa una bala despues del primero.
+@export var pierce_count: int = 0
+## Cuanto daño conserva despues de atravesar a cada uno.
+@export_range(0.1, 1.0, 0.05) var pierce_damage_falloff: float = 0.7
+## Radio del daño de area en el punto de impacto. 0: sin area.
+@export var splash_radius: float = 0.0
+## Fraccion del daño del tiro que reciben los que estan dentro del area.
+@export_range(0.0, 1.0, 0.05) var splash_damage_fraction: float = 0.5
+## Velocidad, en m/s, con la que el disparo empuja al jugador en contra de donde
+## apunta. Tirar al piso en el aire es un salto: el arma como herramienta de
+## movilidad, que es el pilar del juego.
+@export var self_knockback: float = 0.0
+
 
 ## Damage multiplier from distance falloff.
 func get_falloff_multiplier(distance: float) -> float:

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/attachment_data.gd" id="1_attachment"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"recoil_magnitude"
+operation = 1
+value = 0.75
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"spread_multiplier"
+operation = 1
+value = 1.1
+
+[resource]
+script = ExtResource("1_attachment")
+id = &"smg_muzzle_brake"
+display_name = "Muzzle Brake"
+description = "-25% recoil, +10% spread."
+weapon_id = &"smg"
+slot = 0
+unlock_level = 1
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])

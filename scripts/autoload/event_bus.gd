@@ -10,6 +10,10 @@ signal damage_dealt(target: Node, amount: float, is_headshot: bool)
 signal healed(target: Node, amount: float)
 signal enemy_killed(enemy_type: StringName, position: Vector3, reward: int)
 signal player_damaged(amount: float, remaining: float)
+## El mismo golpe, con de que vino (DamageCause: id del arquetipo, `arena` o
+## `self`). Se emite justo antes de `player_damaged`. Aparte y no como tercer
+## argumento de aquella para no romper a la docena de oyentes que la desatan.
+signal player_hit(amount: float, cause: StringName)
 signal player_died()
 ## A kill this machine's player is being paid for.
 ##
@@ -88,6 +92,10 @@ signal currency_changed(new_total: int)
 signal purchase_made(item_id: StringName, cost: int)
 signal shop_opened()
 signal shop_closed()
+## La tienda armo las ofertas de esta visita (o de un reroll). Cada una es
+## `{ "id": StringName, "rare": bool }`: lo que el log necesita para saber que
+## raras se ofrecieron y no se compraron.
+signal shop_offers_rolled(offers: Array)
 
 # Crowd
 ## El rating de la transmision cruzo un escalon (BroadcastRating). Solo los
@@ -96,6 +104,28 @@ signal rating_tier_changed(tier: int, went_up: bool)
 ## Arranco una regla de transmision para esta oleada (BroadcastRules), y termino.
 signal broadcast_rule_started(rule_id: StringName, title: String, description: String)
 signal broadcast_rule_ended()
+## El Host ofrecio, para la proxima oleada, estas reglas para elegir y este
+## contrato opcional (vacio si no hay). Lo emite BroadcastRules al prepararlas.
+signal broadcast_rules_offered(rule_ids: Array, contract_id: StringName)
+## El jugador firmo un contrato para la oleada que empieza: una restriccion a
+## cambio de `payout` al limpiarla. `settled` dice como termino: `paid` en plata,
+## 0 si la oleada no se limpio.
+signal broadcast_contract_started(contract_id: StringName, title: String, description: String,
+		payout: int)
+signal broadcast_contract_settled(contract_id: StringName, paid: int)
+## El rating llego al escalon mas alto por primera vez en la oleada: el publico
+## regala y el patrocinador paga `bonus`.
+signal rating_peak(bonus: int)
+## El rating paso demasiado tiempo en el piso: el patrocinador se va y el publico
+## deja de tirar regalos hasta que el rating vuelva a subir. `active` false es la
+## vuelta.
+signal rating_sponsor_walkout(active: bool)
+## Un pedido del publico: "queremos un 360". `goal` kills con el bono
+## `bonus_id` en `time_limit` segundos.
+signal crowd_request_started(request_id: StringName, title: String, goal: int,
+		time_limit: float)
+signal crowd_request_progress(request_id: StringName, progress: int, goal: int)
+signal crowd_request_ended(request_id: StringName, success: bool)
 ## El publico tiro un gadget a la arena. `landing` es donde va a caer, no donde
 ## esta: quien escuche esto -el Host, el HUD- tiene que poder señalar el lugar
 ## antes de que el objeto llegue, o el aviso llega tarde.

@@ -32,6 +32,13 @@ var tracking: bool = false
 var _tier: int = 0
 var _recent_kills: Array[float] = []
 var _is_live: bool = false
+## El pico ya pago en esta oleada: subir y bajar del escalon de arriba no puede
+## ser una canilla de plata.
+var _peak_paid: bool = false
+## Segundos seguidos de pelea en el escalon mas bajo.
+var _cold_time: float = 0.0
+## El patrocinador se fue. Ver `RatingConfig.walkout_after`.
+var _walkout: bool = false
 
 
 func _ready() -> void:
@@ -45,9 +52,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not _is_live or value <= 0.0:
+	if not _is_live:
 		return
-	_set_value(value - config.decay_per_second * delta)
+	if value > 0.0:
+		_set_value(value - config.decay_per_second * delta)
+	_tick_walkout(delta)
 
 
 # Public API
@@ -55,7 +64,25 @@ func _process(delta: float) -> void:
 func reset() -> void:
 	_recent_kills.clear()
 	_is_live = false
+	_peak_paid = false
+	_cold_time = 0.0
+	_set_walkout(false)
 	_set_value(0.0)
+
+
+## Sube el rating desde afuera de una kill: un pedido del publico cumplido.
+func boost(amount: float) -> void:
+	if tracking and amount > 0.0:
+		_set_value(value + amount)
+
+
+## Si el patrocinador se fue y el publico dejo de regalar.
+func is_walked_out() -> bool:
+	return _walkout
+
+
+func get_top_tier() -> int:
+	return maxi(config.tier_thresholds.size() - 1, 0)
 
 
 ## Multiplicador de los bonos de estilo, de 1 a `max_multiplier`.
@@ -114,11 +141,49 @@ func _on_kill_payout(_reward: int, bonus_ids: Array, _bonus_total: int,
 
 func _on_wave_started() -> void:
 	_is_live = tracking
+	_peak_paid = false
+	_cold_time = 0.0
 
 
 ## Entre oleadas no hay pelea que mirar: el rating se congela en la tienda.
 func _on_wave_completed() -> void:
 	_is_live = false
+	_cold_time = 0.0
+	# La oleada que viene arranca con el publico de vuelta: castigar el arranque
+	# de la siguiente por como termino esta es castigar dos veces.
+	_set_walkout(false)
+
+
+## En el piso demasiado tiempo, el patrocinador se va; en cuanto el rating sale
+## del piso, vuelve.
+func _tick_walkout(delta: float) -> void:
+	if config.walkout_after <= 0.0 or WaveManager.current_index + 1 < config.walkout_from_wave:
+		return
+	if _tier > 0:
+		_cold_time = 0.0
+		_set_walkout(false)
+		return
+	_cold_time += delta
+	if _cold_time >= config.walkout_after:
+		_set_walkout(true)
+
+
+func _set_walkout(active: bool) -> void:
+	if _walkout == active:
+		return
+	_walkout = active
+	EventBus.rating_sponsor_walkout.emit(active)
+
+
+## El escalon de arriba, una vez por oleada: plata del patrocinador y un regalo
+## (CrowdDropDirector escucha `rating_peak`). Solo en pelea: el rating no se
+## mueve en la tienda, pero una prueba o un boost fuera de oleada no paga.
+func _reach_peak() -> void:
+	if _peak_paid or not _is_live:
+		return
+	_peak_paid = true
+	var paid: int = EconomyManager.award_show_bonus(config.peak_bonus)
+	EventBus.rating_peak.emit(paid)
 
 
 func _player_speed() -> float:
@@ -138,6 +203,8 @@ func _set_value(next: float) -> void:
 		var went_up: bool = tier > _tier
 		_tier = tier
 		EventBus.rating_tier_changed.emit(tier, went_up)
+		if went_up and tier == get_top_tier():
+			_reach_peak()
 	changed.emit(value, _tier)
 
 

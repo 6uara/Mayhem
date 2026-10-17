@@ -89,6 +89,9 @@ func detonate(radius: float, damage: float, sound: AudioStream = null,
 	AudioPool.play_3d(sound, global_position, AudioPool.BUS_ENEMIES)
 
 	var hits: int = 0
+	# Lo que golpea es lo que revento, aunque la muerte sea de otro: el log de
+	# daño del jugador tiene que decir "Bomber", no "vos" por haberle disparado.
+	var cause: StringName = DamageCause.of(source) if is_instance_valid(source) else &""
 	for body: Node3D in _victims(radius):
 		if body == source or not is_instance_valid(body):
 			continue
@@ -102,7 +105,7 @@ func detonate(radius: float, damage: float, sound: AudioStream = null,
 		if health == null:
 			continue
 		health.apply_damage(_damage_at(body.global_position, radius, damage),
-			attacker if is_instance_valid(attacker) else null)
+			attacker if is_instance_valid(attacker) else null, cause)
 		hits += 1
 	detonated.emit(hits)
 	return hits

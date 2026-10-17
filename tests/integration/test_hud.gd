@@ -206,3 +206,27 @@ func test_the_par_label_follows_a_change_of_wave() -> void:
 	await wait_process_frames(3)
 	assert_ne(par.text, first, "otra par_time, otro texto")
 	WaveManager.reset()
+
+
+# ------------------------------------------------------------------ el show
+
+## La regla y el contrato comparten el chip: los dos duran la oleada.
+func test_the_rule_chip_carries_the_contract_too() -> void:
+	EventBus.broadcast_rule_started.emit(&"manhunt", "MANHUNT", "Bounties.")
+	EventBus.broadcast_contract_started.emit(&"grounded", "GROUNDED", "No dash.", 200)
+	var text: String = _hud.call(&"get_rule_text")
+	assert_string_contains(text, "MANHUNT")
+	assert_string_contains(text, "CONTRACT  GROUNDED  (+200)")
+	EventBus.broadcast_contract_settled.emit(&"grounded", 200)
+	assert_false(String(_hud.call(&"get_rule_text")).contains("GROUNDED"))
+	EventBus.broadcast_rule_ended.emit()
+	assert_eq(_hud.call(&"get_rule_text"), "")
+
+
+func test_a_crowd_request_shows_its_count_and_leaves_when_done() -> void:
+	EventBus.crowd_request_started.emit(&"spin", "WE WANT A 360!", 2, 20.0)
+	assert_string_contains(String(_hud.call(&"get_request_text")), "0/2")
+	EventBus.crowd_request_progress.emit(&"spin", 1, 2)
+	assert_string_contains(String(_hud.call(&"get_request_text")), "1/2")
+	EventBus.crowd_request_ended.emit(&"spin", true)
+	assert_eq(_hud.call(&"get_request_text"), "")

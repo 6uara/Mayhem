@@ -56,6 +56,10 @@ var is_paused: bool = false
 ## antes de arrancar y sobrevive a los reinicios: "otra vez" juega lo mismo.
 var run_mode: Mode = Mode.ARSENAL
 var run_weapon_id: StringName = &""
+## La semilla fija de la proxima run, o 0 para sortear una nueva cada vez. La pone
+## el menu cuando el jugador pega un codigo compartido; "reiniciar" la conserva,
+## porque reintentar la misma run es justamente para lo que se pego.
+var run_fixed_seed: int = 0
 
 ## Motivos por los que el arbol esta congelado ahora mismo. Ver set_freeze().
 var _freezes: Dictionary = {}
@@ -121,6 +125,11 @@ func _notification(what: int) -> void:
 func set_run_mode(mode: Mode, weapon_id: StringName = &"") -> void:
 	run_mode = mode
 	run_weapon_id = weapon_id if mode == Mode.SINGLE_WEAPON else &""
+
+
+## 0 vuelve a sortear una semilla por run. Ver RunSeed.
+func set_run_seed(fixed_seed: int) -> void:
+	run_fixed_seed = maxi(fixed_seed, 0)
 
 
 ## El arma con la que arranca la run, o vacio para la de siempre (la pistola).

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"dash_charges"
+operation = 2
+value = 0.0
+
+[resource]
+script = ExtResource("1_rule")
+id = &"grounded"
+title = "GROUNDED"
+description = "No dash for this wave."
+contract_payout = 150
+contract_payout_per_wave = 25
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])

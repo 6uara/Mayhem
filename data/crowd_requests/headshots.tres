@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CrowdRequest" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crowd_request.gd" id="1_request"]
+
+[resource]
+script = ExtResource("1_request")
+id = &"headshots"
+title = "HEADSHOTS! HEADSHOTS!"
+bonus_id = &"headshot"
+goal = 3
+time_limit = 18.0
+reward_rating = 12.0
+reward_currency = 60

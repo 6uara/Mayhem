@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/attachment_data.gd" id="1_attachment"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"recoil_magnitude"
+operation = 1
+value = 0.7
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"weapon_damage"
+operation = 1
+value = 0.95
+
+[resource]
+script = ExtResource("1_attachment")
+id = &"pistol_compensator"
+display_name = "Compensator"
+description = "-30% recoil, -5% damage."
+weapon_id = &"pistol"
+slot = 0
+unlock_level = 1
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])

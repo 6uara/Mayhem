@@ -19,6 +19,7 @@ bonus_double = 15
 bonus_triple = 35
 bonus_mayhem = 75
 bonus_priority = 30
+bonus_marked = 60
 currency_loss_per_damage = 1.0
 currency_loss_max_per_hit = 40
 score_per_kill_reward = 10

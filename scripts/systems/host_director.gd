@@ -32,6 +32,12 @@ func _ready() -> void:
 	EventBus.crowd_drop_thrown.connect(_on_crowd_drop_thrown.unbind(2))
 	EventBus.rating_tier_changed.connect(_on_rating_tier_changed)
 	EventBus.broadcast_rule_started.connect(_on_broadcast_rule_started)
+	EventBus.broadcast_contract_started.connect(_on_contract_started.unbind(2))
+	EventBus.broadcast_contract_settled.connect(_on_contract_settled)
+	EventBus.rating_peak.connect(_on_rating_peak.unbind(1))
+	EventBus.rating_sponsor_walkout.connect(_on_sponsor_walkout)
+	EventBus.crowd_request_started.connect(_on_crowd_request_started.unbind(2))
+	EventBus.crowd_request_ended.connect(_on_crowd_request_ended)
 
 
 # Private
@@ -127,3 +133,32 @@ func _on_rating_tier_changed(tier: int, went_up: bool) -> void:
 		NarratorManager.say(&"rating_up", [BroadcastRating.get_tier_name(tier)])
 	elif tier <= 1:
 		NarratorManager.say(&"rating_down")
+
+
+## El contrato firmado. El Host lo nombra como a la regla: es su show y sus
+## condiciones.
+func _on_contract_started(_contract_id: StringName, title: String) -> void:
+	NarratorManager.say(&"contract_signed", [title])
+
+
+func _on_contract_settled(_contract_id: StringName, paid: int) -> void:
+	if paid > 0:
+		NarratorManager.say(&"contract_paid", [paid])
+
+
+func _on_rating_peak() -> void:
+	NarratorManager.say(&"rating_peak")
+
+
+func _on_sponsor_walkout(active: bool) -> void:
+	if active:
+		NarratorManager.say(&"sponsor_walkout")
+
+
+func _on_crowd_request_started(_request_id: StringName, title: String) -> void:
+	NarratorManager.say(&"crowd_request", [title])
+
+
+func _on_crowd_request_ended(_request_id: StringName, success: bool) -> void:
+	if success:
+		NarratorManager.say(&"crowd_request_met")

@@ -33,6 +33,9 @@ extends Resource
 ## Matar al Healer mientras sostiene a la oleada. Caro a proposito: es la unica
 ## decision de objetivo que el juego pide de verdad.
 @export var bonus_priority: int = 30
+## Matar un enemigo marcado por la regla de Cacería. Alto a proposito: es una
+## recompensa por ir a buscar a uno en particular en medio de la horda.
+@export var bonus_marked: int = 60
 
 @export_group("Damage penalty")
 ## Monedas perdidas por punto de daño recibido.
@@ -99,6 +102,7 @@ func get_kill_bonus(bonus_id: StringName) -> int:
 		&"triple": return bonus_triple
 		&"mayhem": return bonus_mayhem
 		&"priority": return bonus_priority
+		&"marked": return bonus_marked
 	return 0
 
 
