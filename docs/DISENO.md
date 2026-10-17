@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, diseño, brief]
 estado: guia
-actualizado: 2026-10-09
+actualizado: 2026-10-16
 ---
 
 # MAYHEM — Documento de diseño
@@ -27,8 +27,14 @@ del juego en vez de inventar lo que decía el original.
 jugador. Una run atraviesa diez oleadas que escalan; entre oleada y oleada se
 gasta lo ganado; un presentador de transmisión (el Host) narra la actuación del
 jugador quiera o no. Nada se arrastra entre runs: no hay meta-progresión, ni
-desbloqueos, ni perfil (ver `RunRecord`, que guarda trofeos *con la run* y no en
-un perfil por esta misma razón).
+perfil (ver `RunRecord`, que guarda trofeos *con la run* y no en un perfil por
+esta misma razón).
+
+**Excepción, decidida el 2026-10-16:** la maestría de cada arma. Jugar con un arma
+le da experiencia, y cada nivel desbloquea un attachment que se puede llevar a las
+runs siguientes (`Armory`). Para no convertirse en "más fuerte cuanto más jugaste",
+los attachments son de costado: cada uno da algo y cobra algo. Es lo único que se
+guarda entre runs además de la tabla, los perfiles y los hints vistos.
 
 ### 1.1 Modos de juego (2026-10-09, sin cita: decisión posterior al brief)
 
@@ -141,7 +147,8 @@ coliseo nocturno con público, pared de energía y techo. Ver
 - **Se premia la velocidad, no sólo completar.**
 - **El desglose de ganancias se muestra explícito** (kills / completar /
   velocidad / sin daño): esa legibilidad es lo que enseña la economía.
-- **Nada se arrastra entre runs**: morir recarga la escena, no deshace estado.
+- **Nada se arrastra entre runs** (salvo la maestría de armas, ver §1): morir
+  recarga la escena, no deshace estado.
 - Los power-ups temporales muestran su cuenta regresiva.
 
 Agregado el 2026-10-09 (sin cita, decisiones posteriores al brief):
@@ -162,6 +169,28 @@ Agregado el 2026-10-09 (sin cita, decisiones posteriores al brief):
   las olas elite van sin regla.
 - **Tutorial de arranque**: la primera oleada espera a que termine; se saltea con
   una tecla o desde la pausa, y no vuelve a aparecer salvo que se resetee.
+
+Agregado el 2026-10-16 (sin cita, decisiones posteriores al brief):
+
+- **Las reglas se eligen.** En la tienda el Host ofrece dos reglas para la oleada
+  que viene y el jugador elige una. Una regla ahora puede tocar también a los
+  enemigos (vida, velocidad, daño, marcados con recompensa) y a la arena (cada
+  kill deja un charco).
+- **Contratos**: a veces el Host ofrece además una restricción opcional (sin dash,
+  sin gancho, cargadores cortos...) que paga plata si se limpia la oleada con
+  ella. Firmarla es una apuesta que el jugador elige; las olas elite también
+  pueden traer contrato, porque no cambian la oleada.
+- **El rating tiene consecuencias**: llegar arriba paga (una vez por oleada) y
+  hace que el público regale; quedarse en el piso demasiado tiempo, desde la ola 3,
+  hace que el patrocinador se vaya y el público deje de regalar hasta que el
+  rating suba.
+- **Pedidos del público**: desde la ola 2 la tribuna pide algo concreto ("un 360",
+  "tres en el aire") con tiempo límite; cumplirlo paga rating, plata y un regalo.
+- **Mejoras raras por arma**: dos por arma, que agregan una regla al tiro
+  (atraviesa, salpica, empuja, slug). Solo se ofrecen con esa arma en la mano.
+- **Una run tiene semilla**: la tienda, las reglas, los contratos, los pedidos,
+  los regalos y la dispersión salen de ella. Un código compartido vuelve a jugar
+  la misma run (no la misma pelea: la IA y la física no son deterministas).
 
 ## 6. Audio
 

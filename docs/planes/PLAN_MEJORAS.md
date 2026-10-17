@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, plan, gameplay, performance, diseño]
 estado: activo
-actualizado: 2026-10-09
+actualizado: 2026-10-16
 ---
 
 # MAYHEM — Plan de mejoras: profundizar lo hecho
@@ -37,6 +37,21 @@ Decidido con el dueño del proyecto y ejecutado en la misma sesión (detalle en
 | 2.6 | Armas nuevas | **Descartado por ahora** |
 | 2.7, 2.8, 3 | Arena, juice, ampliar | Abiertos |
 | 4 | Performance | **Hecho casi todo** — ver §4.0 |
+
+## Estado al 2026-10-16
+
+Segunda revisión, sistema por sistema, con otra pregunta: **dónde un sistema
+multiplica en vez de pedir una decisión**. Decidido con el dueño del proyecto:
+
+| Propuesta | Estado |
+|---|---|
+| Telemetría para el playtest (daño por origen, quién mató, resumen de muerte, log ampliado) | **Hecho** |
+| Reglas que se eligen en la tienda, que tocan enemigos y arena, y contratos opcionales | **Hecho**. "El piso arde" y "Cacería" (§2.4) entraron como Scorched Earth y Manhunt |
+| Propiedades de arma como dato y raras por arma | **Hecho**, más lo que pidió el dueño: maestría por arma que desbloquea attachments que se llevan entre runs (la primera excepción a "sin meta-progresión", ver DISENO §1) |
+| Pedidos del público y consecuencias del rating | **Hecho** |
+| Semilla por run y código para compartir (base del desafío diario de §3) | **Hecho** |
+| Variantes de enemigo y oleadas con alternativas | **Documentado en §5**, para cuando estén los modelos de todos los enemigos |
+| Némesis y comentarios de estilo del Host | **Descartado por ahora** |
 
 | Prioridad | Qué significa |
 |---|---|
@@ -427,7 +442,67 @@ más.
 
 ---
 
-## 5. Orden sugerido
+## 5. Variedad de enemigos sin arquetipos nuevos (cuando estén los modelos)
+
+**Precondición:** los modelos de todos los enemigos (R1 en
+[ESTADO](../ESTADO.md)). Una variante se tiene que leer en la silueta o en una
+marca sobre el modelo final; diseñarla sobre cápsulas grey-box es diseñarla dos
+veces. Todo lo de abajo es **(propuesta)**.
+
+### 5.1 El problema (medido)
+
+Las diez oleadas son fijas: cada `SpawnGroup` nombra un `EnemyData` y una
+cantidad, sin azar. La ola 7 de la run 5 es la ola 7 de la run 1. Las reglas de
+transmisión dan variedad por oleada, pero la composición —qué preguntas hace la
+horda— es siempre la misma, y de la ola 6 en adelante la escalada es "más de lo
+mismo" (la 10 son 42 enemigos de los mismos siete arquetipos).
+
+### 5.2 Variantes por dato
+
+Un recurso `EnemyVariant` que se aplica encima de un `EnemyData`, igual que
+`EnemyRuleModifier` lo hace hoy para las reglas (el camino ya existe:
+`Enemy.setup()` lee multiplicadores de vida, velocidad y daño). Lo que suma:
+
+| Variante | Qué cambia | Pregunta que agrega | Lectura (forma, no solo color) |
+|---|---|---|---|
+| **Acorazado** | ×2 vida, −20 % velocidad, el cuerpo absorbe la mitad: solo la cabeza paga entero | "¿podés apuntar en movimiento?" | Placas sobre el torso del modelo |
+| **Veloz** | +40 % velocidad, −30 % vida | "¿podés frenar algo que llega antes?" | Estela detrás, silueta inclinada |
+| **Inestable** | Al morir revienta como un Bomber chico (radio 2.5 m) | Cobra posición al matar: no se lo mata encima | El anillo de espoleta del Bomber, en el piso, siempre |
+| **Escoltado** | Spawnea con un Healer atado que lo sigue | Prioridad de objetivo | El haz de cura ya existente |
+
+- Marca de variante con una **forma** encima del modelo (la ley de color: el
+  color nunca solo). El HUD de enemigos restantes la muestra igual.
+- Una variante nunca cambia el árbol de comportamiento: cambia números y suma un
+  efecto al morir o al spawnear. El elenco de preguntas sigue siendo el de
+  [PLAN_ENEMY_BEHAVIOR](../historial/PLAN_ENEMY_BEHAVIOR.md).
+- `KillBonusTracker` puede pagar un bono por variante (el `marked` de Manhunt es
+  el precedente).
+
+### 5.3 Oleadas con alternativas
+
+`SpawnGroup` gana `alternatives: Array[EnemyData]` y `variant_pool:
+Array[EnemyVariant]` con probabilidades; la ola sortea con
+`RunSeed.rng(&"waves")`, así un código compartido sigue jugando la misma
+composición.
+
+- **Lo que no se toca:** el total de enemigos por grupo, las puertas y los
+  tiempos. El `par_time` sigue valiendo porque la cantidad y el ritmo de spawn son
+  los mismos; cambia qué sale por cada puerta.
+- Alternativas con el **mismo rol** del `CombatDirector` (un BRAWLER por otro
+  BRAWLER), para que la composición de la horda no se desarme.
+- Variantes desde la ola 4, a lo sumo una cada N spawns, más densas hacia la 10:
+  esa es la escalada que hoy falta.
+- El Balance Editor tiene que poder mostrar el valor esperado de plata de una ola
+  con alternativas (hoy la curva lee un `EnemyData` fijo por grupo).
+
+### 5.4 Qué medir antes
+
+Con los logs del playtest 1 (`RunLogger` formato 2): qué arquetipo hace más daño
+por ola (`damage_by_cause`), en qué ola se muere y de qué. Si una ola ya es un
+pico, una variante ahí lo empeora; las variantes van donde el log muestre olas
+planas.
+
+## 6. Orden sugerido
 
 1. **§1.1, §1.3, §1.5** — son de una tarde cada uno y cambian lo que el playtest
    mide.

@@ -161,3 +161,45 @@ order; an out-of-order recording silently plays the wrong line in game.
 
 - [ ] `tutorial_done_02.ogg` (STANDARD / STATE) — Lesson over. Now it counts.
 
+## contract_signed
+
+- [ ] `contract_signed_01.ogg` (STANDARD / STATE) — Signed and witnessed. %s. Let us see you honor it.
+
+- [ ] `contract_signed_02.ogg` (STANDARD / STATE) — A contract. %s. The house loves a gambler.
+
+- [ ] `contract_signed_03.ogg` (STANDARD / STATE) — %s. Your word, live on air.
+
+## contract_paid
+
+- [ ] `contract_paid_01.ogg` (STANDARD / STATE) — Contract honored. %d, as promised.
+
+- [ ] `contract_paid_02.ogg` (STANDARD / STATE) — Paid in full: %d. The house keeps its word. Mostly.
+
+## rating_peak
+
+- [ ] `rating_peak_01.ogg` (PUNCHLINE / STATE) — Top of the charts. The sponsors are throwing money at the screen.
+
+- [ ] `rating_peak_02.ogg` (PUNCHLINE / STATE) — Peak ratings. Somebody get this one a gift.
+
+- [ ] `rating_peak_03.ogg` (PUNCHLINE / STATE) — This is the clip they will replay all week.
+
+## sponsor_walkout
+
+- [ ] `sponsor_walkout_01.ogg` (WARNING / STATE) — And the sponsors are walking out. No more gifts until you give them a reason.
+
+- [ ] `sponsor_walkout_02.ogg` (WARNING / STATE) — Dead air. The crowd is keeping its presents.
+
+## crowd_request
+
+- [ ] `crowd_request_01.ogg` (STANDARD / FEEDBACK) — The crowd has a request: %s
+
+- [ ] `crowd_request_02.ogg` (STANDARD / FEEDBACK) — Listen to them. %s
+
+- [ ] `crowd_request_03.ogg` (STANDARD / FEEDBACK) — You hear that? %s
+
+## crowd_request_met
+
+- [ ] `crowd_request_met_01.ogg` (STANDARD / FEEDBACK) — The crowd got what it wanted. Pay the performer.
+
+- [ ] `crowd_request_met_02.ogg` (STANDARD / FEEDBACK) — Request granted. They are on their feet.
+
