@@ -34,7 +34,9 @@ var _weapon_id: StringName = &""
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Anclas y offsets: con solo las anclas Godot conserva el rect de 0x0 con que
+	# nace el nodo, y el panel "centrado" queda en la esquina superior izquierda.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
 
 

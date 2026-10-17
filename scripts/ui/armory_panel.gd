@@ -18,7 +18,8 @@ var _back_button: Button
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Anclas y offsets, como ModeSelect: solo las anclas lo dejan en 0x0.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
 	# Solo los estados, no la grilla entera: rearmarla en medio del `toggled` que
 	# la disparo le saca el foco al boton, y con joystick eso es perderse.

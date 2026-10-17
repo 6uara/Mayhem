@@ -98,6 +98,27 @@ func test_the_mode_screen_reports_what_was_picked() -> void:
 		[GameManager.Mode.SINGLE_WEAPON, &"pistol"])
 
 
+## Las dos pantallas se arman por codigo; con solo las anclas quedaban en 0x0 y el
+## panel aparecia en la esquina superior izquierda.
+func test_the_mode_screen_and_the_armory_open_centered() -> void:
+	var host := Control.new()
+	host.size = Vector2(1920.0, 1080.0)
+	add_child_autofree(host)
+	var select := ModeSelect.new()
+	host.add_child(select)
+	var armory := ArmoryPanel.new()
+	host.add_child(armory)
+	await wait_frames(1)
+	select.open()
+	armory.open()
+	await wait_frames(2)
+	for screen: Control in [select, armory] as Array[Control]:
+		var panel: PanelContainer = screen.find_children("*", "PanelContainer", true, false)[0]
+		var center: Vector2 = panel.get_global_rect().get_center()
+		assert_almost_eq(center.x, 960.0, 2.0, screen.name)
+		assert_almost_eq(center.y, 540.0, 2.0, screen.name)
+
+
 # ------------------------------------------------------------------ tabla por arena
 
 func test_each_arena_keeps_its_own_table() -> void:
