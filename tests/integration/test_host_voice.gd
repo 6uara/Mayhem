@@ -14,7 +14,8 @@ const CATALOG_PATH: String = "res://data/host/host_catalog.tres"
 const REQUIRED: Array[StringName] = [
 	&"wave_start", &"wave_cleared", &"first_blood", &"streak", &"elite_wave",
 	&"low_health", &"no_damage", &"too_slow", &"purchase", &"death", &"match_won",
-	&"crowd_drop",
+	&"crowd_drop", &"contract_signed", &"contract_paid", &"rating_peak",
+	&"sponsor_walkout", &"crowd_request", &"crowd_request_met",
 ]
 
 var _catalog: HostCatalog
@@ -81,6 +82,21 @@ func test_no_two_sets_claim_the_same_occasion() -> void:
 
 ## Format placeholders are content, so a set whose lines take an argument has to
 ## take it in every line - otherwise picking the wrong one throws at runtime.
+## Las ocasiones nuevas del show llevan argumento: el contrato y el pedido su
+## titulo, el pago su monto.
+func test_show_lines_take_their_argument_in_every_line() -> void:
+	var expected: Dictionary = {
+		&"contract_signed": "%s", &"crowd_request": "%s", &"contract_paid": "%d"}
+	for occasion: StringName in expected:
+		var line_set: HostLineSet = _catalog.find(occasion)
+		assert_not_null(line_set, String(occasion))
+		if line_set == null:
+			continue
+		for line: String in line_set.lines:
+			assert_true(line.contains(String(expected[occasion])),
+				"'%s': \"%s\"" % [occasion, line])
+
+
 func test_formatted_sets_are_consistent() -> void:
 	for occasion: StringName in [&"wave_start", &"wave_cleared"]:
 		var line_set: HostLineSet = _catalog.find(occasion)

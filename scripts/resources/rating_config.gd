@@ -27,3 +27,16 @@ extends Resource
 @export var tier_thresholds: PackedFloat32Array = PackedFloat32Array([0.0, 25.0, 50.0, 80.0])
 @export var tier_names: PackedStringArray = PackedStringArray(
 	["OFF AIR", "LOCAL", "PRIME TIME", "MAYHEM"])
+
+@export_group("Consecuencias")
+## Lo que paga el patrocinador la primera vez en la oleada que el rating llega al
+## escalon mas alto. Ademas el publico tira un regalo en el acto.
+@export var peak_bonus: int = 150
+## Segundos de pelea seguidos en el escalon mas bajo antes de que el patrocinador
+## se vaya: el publico deja de tirar regalos hasta que el rating vuelva a subir.
+## 0 lo apaga.
+@export var walkout_after: float = 20.0
+## Primera oleada (1-based) en la que el patrocinador se puede ir. Las primeras
+## son de aprender: un jugador que todavia no sabe que existe el estilo no puede
+## quedarse sin botiquines por no hacerlo.
+@export var walkout_from_wave: int = 3

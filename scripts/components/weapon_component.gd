@@ -89,7 +89,14 @@ var _time_since_shot: float = 999.0
 var _cooldown: float = 0.0
 var _is_trigger_held: bool = false
 var _reload_timer: float = 0.0
-var _rng := RandomNumberGenerator.new()
+## La esfera del daño de area, reusada entre disparos. Ver `_splash()`.
+var _splash_shape: SphereShape3D
+## La dispersion sale de la semilla de la run (RunSeed), una corriente para todas
+## las armas: el recoil es determinista por diseño, y con esto el cono tambien lo
+## es dada la misma secuencia de disparos.
+var _rng: RandomNumberGenerator:
+	get:
+		return RunSeed.rng(&"spread")
 
 var _view: Node3D
 var _view_rest_position: Vector3 = Vector3.ZERO
@@ -108,7 +115,6 @@ func _ready() -> void:
 		push_warning("WeaponComponent on %s has no WeaponData" % get_path())
 		set_process(false)
 		return
-	_rng.randomize()
 	_ammo = get_magazine_size()
 	_reserve = get_reserve_max()
 	_emit_ammo()
@@ -288,18 +294,21 @@ func _try_fire() -> void:
 	var aim_origin: Vector3 = aim_node.global_position
 	var aim: Vector3 = -aim_node.global_transform.basis.z
 	var spread: float = get_current_spread()
-	for _i: int in maxi(data.projectiles_per_shot, 1):
+	var shot_multiplier: float = _shot_damage_multiplier()
+	for _i: int in get_projectiles_per_shot():
 		var direction: Vector3 = _apply_spread(aim, spread)
 		var hit: Dictionary = _aim_hit(aim_origin, direction)
 		var target: Vector3 = _hit_point(aim_origin, direction, hit)
 		var origin: Vector3 = _shot_origin(aim_origin, target)
 		if data.is_hitscan:
-			_resolve_hitscan(origin, target, hit)
+			_resolve_hitscan(origin, target, hit, shot_multiplier)
 			continue
 		var travel: Vector3 = target - origin
 		_spawn_projectile(origin,
-			travel.normalized() if travel.length_squared() > 0.0001 else direction)
+			travel.normalized() if travel.length_squared() > 0.0001 else direction,
+			shot_multiplier)
 
+	_apply_self_knockback(aim)
 	_apply_recoil()
 	_view_kick_offset.z = minf(_view_kick_offset.z + view_kick_back, view_kick_max_back)
 	_view_kick_rot = maxf(_view_kick_rot - view_kick_up_degrees, -view_kick_max_degrees)
@@ -348,28 +357,31 @@ func _hit_point(aim_origin: Vector3, direction: Vector3, hit: Dictionary) -> Vec
 ## trazadora tarda lo suyo en llegar. A 160 m/s son menos de dos decimas a veinte
 ## metros - nadie ve morir al enemigo antes que la bala. Al reves si se notaria:
 ## una bala que ya llego y todavia no hizo nada.
-func _resolve_hitscan(origin: Vector3, target: Vector3, hit: Dictionary) -> void:
+func _resolve_hitscan(origin: Vector3, target: Vector3, hit: Dictionary,
+		shot_multiplier: float = 1.0) -> void:
 	var normal := Vector3.UP
 	var surface: SurfaceMaterialData = null
 	var landed: bool = not hit.is_empty()
+	# get_damage() y no data.damage: ahi es donde entran las mejoras de daño
+	# compradas. El proyectil las recibia por damage_override, y al resolver el
+	# disparo aca hay que volver a pedirlas o la tienda deja de tener efecto sobre
+	# las cuatro armas del jugador.
+	var base_damage: float = get_damage() * shot_multiplier
+	var impact: Vector3 = target
+	# Los que ya recibieron esta bala: ni la perforacion ni el area les pegan dos
+	# veces.
+	var struck: Array[HealthComponent] = []
 	if landed:
 		normal = hit["normal"]
 		var collider: Object = hit["collider"]
 		surface = SurfaceMaterials.resolve(collider)
 		var hitbox := collider as HitboxComponent
 		if hitbox != null:
-			var distance: float = origin.distance_to(target)
-			# get_damage() y no data.damage: ahi es donde entran las mejoras de
-			# daño compradas. El proyectil las recibia por damage_override, y al
-			# resolver el disparo aca hay que volver a pedirlas o la tienda deja
-			# de tener efecto sobre las cuatro armas del jugador.
-			var damage: float = get_damage() * _falloff_at(distance)
-			if hitbox.is_headshot_zone:
-				damage *= data.headshot_multiplier
-			# `body` y no el arma: el dueño de la muerte es el que aprieta el
-			# gatillo, no el fierro. Es el mismo nodo que recibe Projectile.launch()
-			# como shooter, así que hitscan y bala atribuyen igual.
-			hitbox.take_hit(damage, target, body)
+			_hit_hitbox(hitbox, base_damage, origin.distance_to(target), target)
+			struck.append(hitbox.health_component)
+			impact = _pierce(origin, target, hitbox, base_damage, struck)
+	if landed:
+		_splash(impact, base_damage, struck)
 
 	if not _wants_tracer() or data.projectile_scene == null:
 		return
@@ -449,7 +461,7 @@ func _spawn_muzzle_vfx() -> void:
 	shell.eject(Vector3.RIGHT, Vector3.UP)
 
 
-func _spawn_projectile(origin: Vector3, direction: Vector3) -> void:
+func _spawn_projectile(origin: Vector3, direction: Vector3, shot_multiplier: float = 1.0) -> void:
 	if data.projectile_scene == null:
 		push_warning("WeaponComponent: %s has no projectile_scene" % data.id)
 		return
@@ -458,18 +470,151 @@ func _spawn_projectile(origin: Vector3, direction: Vector3) -> void:
 	if typed == null:
 		push_error("WeaponComponent: %s projectile_scene is not a Projectile" % data.id)
 		return
-	typed.launch(origin, direction, data, body, get_damage())
+	typed.launch(origin, direction, data, body, get_damage() * shot_multiplier)
+
+
+## Perdigones por disparo, con las mejoras: el slug de la escopeta los vuelve uno.
+func get_projectiles_per_shot() -> int:
+	return maxi(int(round(_stat(StatsComponent.PROJECTILES_PER_SHOT,
+		float(data.projectiles_per_shot)))), 1)
+
+
+func get_pierce_count() -> int:
+	return maxi(int(round(_stat(StatsComponent.PIERCE_COUNT, float(data.pierce_count)))), 0)
+
+
+func get_splash_radius() -> float:
+	return maxf(_stat(StatsComponent.SPLASH_RADIUS, data.splash_radius), 0.0)
+
+
+func get_self_knockback() -> float:
+	return maxf(_stat(StatsComponent.SELF_KNOCKBACK, data.self_knockback), 0.0)
 
 
 ## Spread cone half-angle in degrees, including ADS, movement and airborne penalties.
+##
+## La penalidad por moverse se escala con `MOVING_SPREAD_PENALTY` (base 1): una
+## mejora la puede borrar sin tocar la dispersion quieto, que es la que define al
+## arma.
 func get_current_spread() -> float:
 	var base: float = lerpf(data.spread_hipfire, data.spread_ads, ads_progress)
 	if body != null:
+		var penalty: float = clampf(_stat(StatsComponent.MOVING_SPREAD_PENALTY, 1.0), 0.0, 1.0)
 		if not body.is_on_floor():
-			base *= data.spread_airborne_multiplier
+			base *= lerpf(1.0, data.spread_airborne_multiplier, penalty)
 		elif body.velocity.length() > 0.1:
-			base *= data.spread_moving_multiplier
+			base *= lerpf(1.0, data.spread_moving_multiplier, penalty)
 	return _stat(StatsComponent.SPREAD_MULTIPLIER, base)
+
+
+## Lo que multiplica el daño de **este** disparo por cuando sale: la ultima bala
+## del cargador y el primer tiro de una rafaga. Las dos bases son 1, asi que sin
+## las mejoras que las mueven no cambia nada. Se lee con el cargador ya
+## descontado: `_ammo == 0` es que esta era la ultima.
+func _shot_damage_multiplier() -> float:
+	var multiplier: float = 1.0
+	if _ammo <= 0:
+		multiplier *= _stat(StatsComponent.LAST_ROUND_DAMAGE, 1.0)
+	if _shot_index == 0:
+		multiplier *= _stat(StatsComponent.FIRST_SHOT_DAMAGE, 1.0)
+	return multiplier
+
+
+## Un impacto en un hitbox, con la caida por distancia y el multiplicador de la
+## cabeza.
+##
+## `body` y no el arma como atacante: el dueño de la muerte es el que aprieta el
+## gatillo, no el fierro. Es el mismo nodo que recibe Projectile.launch() como
+## shooter, así que hitscan y bala atribuyen igual.
+func _hit_hitbox(hitbox: HitboxComponent, damage: float, distance: float, point: Vector3) -> void:
+	var dealt: float = damage * _falloff_at(distance)
+	if hitbox.is_headshot_zone:
+		dealt *= data.headshot_multiplier
+	hitbox.take_hit(dealt, point, body)
+
+
+## La bala sigue de largo despues del primer enemigo, hasta `get_pierce_count()`
+## enemigos mas o hasta la primera pared. Devuelve donde termino.
+##
+## Un enemigo tiene varios hitboxes (cabeza y cuerpo): el rayo que sale de la
+## cabeza puede tocar el cuerpo del mismo, y eso no cuenta como otro enemigo.
+func _pierce(origin: Vector3, from_point: Vector3, first: HitboxComponent,
+		base_damage: float, struck: Array[HealthComponent]) -> Vector3:
+	var remaining: int = get_pierce_count()
+	if remaining <= 0:
+		return from_point
+	var direction: Vector3 = (from_point - origin).normalized()
+	var exclude: Array[RID] = [first.get_rid()]
+	if body != null:
+		exclude.append(body.get_rid())
+	var space: PhysicsDirectSpaceState3D = aim_node.get_world_3d().direct_space_state
+	var point: Vector3 = from_point
+	var damage: float = base_damage
+	# Tope de rayos: cada hitbox del mismo enemigo es un rayo mas, y una bala no
+	# puede costar una cantidad sin techo de consultas.
+	for _attempt: int in remaining * 3 + 2:
+		if remaining <= 0:
+			break
+		var query := PhysicsRayQueryParameters3D.create(point,
+			point + direction * CONVERGE_DISTANCE, PhysicsLayers.WORLD | PhysicsLayers.HITBOX)
+		query.collide_with_areas = true
+		query.exclude = exclude
+		var next: Dictionary = space.intersect_ray(query)
+		if next.is_empty():
+			break
+		var hitbox := next["collider"] as HitboxComponent
+		if hitbox == null:
+			return next["position"]
+		exclude.append(hitbox.get_rid())
+		point = next["position"]
+		if struck.has(hitbox.health_component):
+			continue
+		damage *= data.pierce_damage_falloff
+		_hit_hitbox(hitbox, damage, origin.distance_to(point), point)
+		struck.append(hitbox.health_component)
+		remaining -= 1
+	return point
+
+
+## Daño de area donde termino la bala, a todo enemigo en el radio que la bala no
+## haya tocado ya. Solo hitboxes de cuerpo -la cabeza no paga headshot por estar
+## cerca de una explosion- y uno por enemigo.
+##
+## Sin VFX propio a proposito: el SMG lo dispara quince veces por segundo, y una
+## explosion por bala es ruido, no informacion. El numero de daño ya marca a quien
+## alcanzo.
+func _splash(point: Vector3, base_damage: float, struck: Array[HealthComponent]) -> void:
+	var radius: float = get_splash_radius()
+	if radius <= 0.0:
+		return
+	if _splash_shape == null:
+		_splash_shape = SphereShape3D.new()
+	_splash_shape.radius = radius
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = _splash_shape
+	params.transform = Transform3D(Basis.IDENTITY, point)
+	params.collision_mask = PhysicsLayers.HITBOX
+	params.collide_with_areas = true
+	params.collide_with_bodies = false
+	var space: PhysicsDirectSpaceState3D = aim_node.get_world_3d().direct_space_state
+	var splashed: Array[HealthComponent] = []
+	for result: Dictionary in space.intersect_shape(params, 32):
+		var hitbox := result["collider"] as HitboxComponent
+		if hitbox == null or hitbox.is_headshot_zone or hitbox.health_component == null:
+			continue
+		if struck.has(hitbox.health_component) or splashed.has(hitbox.health_component):
+			continue
+		splashed.append(hitbox.health_component)
+		hitbox.take_hit(base_damage * data.splash_damage_fraction, point, body)
+
+
+## El empujon del disparo, en contra de donde se apunta. Ver
+## `WeaponData.self_knockback`.
+func _apply_self_knockback(aim: Vector3) -> void:
+	var push: float = get_self_knockback()
+	if push <= 0.0 or body == null:
+		return
+	body.velocity += -aim * push
 
 
 ## Random cone deviation. Spread is allowed to be random; the recoil pattern is not.

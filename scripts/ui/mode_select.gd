@@ -21,6 +21,11 @@ var _weapon_row: HBoxContainer
 var _weapon_buttons: Array[Button] = []
 var _play_button: Button
 var _back_button: Button
+var _armory_button: Button
+var _armory: ArmoryPanel
+## Un codigo compartido (o solo la semilla). Vacio: semilla nueva. Ver RunSeed.
+var _seed_input: LineEdit
+var _seed_status: Label
 
 var _mode: GameManager.Mode = GameManager.Mode.ARSENAL
 var _weapon_id: StringName = &""
@@ -34,7 +39,7 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not visible:
+	if not visible or (_armory != null and _armory.visible):
 		return
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_cancel"):
 		close()
@@ -47,6 +52,11 @@ func _input(event: InputEvent) -> void:
 func open() -> void:
 	_mode = GameManager.run_mode
 	_weapon_id = GameManager.run_weapon_id
+	# La semilla fija sobrevive a "reiniciar", pero volver al menu es empezar de
+	# nuevo: el campo muestra la que hay, y vaciarlo vuelve a sortear.
+	_seed_input.text = RunSeed.encode_seed(GameManager.run_fixed_seed) \
+		if GameManager.run_fixed_seed > 0 else ""
+	_seed_status.text = ""
 	if _weapon_id == &"" and not _weapon_buttons.is_empty():
 		_weapon_id = StringName(_weapon_buttons[0].get_meta(&"weapon_id"))
 	_refresh()
@@ -77,8 +87,28 @@ func get_weapon_id() -> StringName:
 
 
 func confirm() -> void:
+	if not apply_seed_text(_seed_input.text):
+		_seed_status.text = "That code is not valid. Clear it to play a fresh run."
+		return
 	visible = false
 	mode_chosen.emit(_mode, _weapon_id if _mode == GameManager.Mode.SINGLE_WEAPON else &"")
+
+
+## Lee el codigo del campo y deja la semilla fija en GameManager. Un codigo con
+## modo cambia tambien el modo y el arma: jugar el codigo de otro es jugar su run.
+## Devuelve false si el texto no es un codigo.
+func apply_seed_text(text: String) -> bool:
+	if text.strip_edges() == "":
+		GameManager.set_run_seed(0)
+		return true
+	var parsed: Dictionary = RunSeed.parse_code(text)
+	if parsed.is_empty():
+		return false
+	var mode: int = int(parsed["mode"])
+	if mode >= 0:
+		choose(mode as GameManager.Mode, StringName(parsed["weapon_id"]))
+	GameManager.set_run_seed(int(parsed["seed"]))
+	return true
 
 
 # Private
@@ -141,10 +171,32 @@ func _build() -> void:
 			_weapon_row.add_child(button)
 			_weapon_buttons.append(button)
 
+	var seed_row := HBoxContainer.new()
+	seed_row.add_theme_constant_override("separation", 10)
+	layout.add_child(seed_row)
+	var seed_label := Label.new()
+	seed_label.theme_type_variation = &"HUDLabel"
+	seed_label.text = "RUN CODE"
+	seed_row.add_child(seed_label)
+	_seed_input = LineEdit.new()
+	_seed_input.placeholder_text = "Paste a friend's code to play their run - leave empty for a new one"
+	_seed_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_seed_input.text_submitted.connect(func(_text: String) -> void: confirm())
+	seed_row.add_child(_seed_input)
+	_seed_status = Label.new()
+	_seed_status.theme_type_variation = &"HUDLabel"
+	_seed_status.add_theme_color_override("font_color", Tokens.HAZARD)
+	layout.add_child(_seed_status)
+
 	var footer := HBoxContainer.new()
 	footer.alignment = BoxContainer.ALIGNMENT_END
 	footer.add_theme_constant_override("separation", 12)
 	layout.add_child(footer)
+	_armory_button = Button.new()
+	_armory_button.text = "Armory"
+	_armory_button.tooltip_text = "Weapon mastery and the attachments it unlocks."
+	_armory_button.pressed.connect(_open_armory)
+	footer.add_child(_armory_button)
 	_back_button = Button.new()
 	_back_button.text = "Back"
 	_back_button.pressed.connect(close)
@@ -153,6 +205,15 @@ func _build() -> void:
 	_play_button.text = "Play"
 	_play_button.pressed.connect(confirm)
 	footer.add_child(_play_button)
+
+
+func _open_armory() -> void:
+	if _armory == null:
+		_armory = ArmoryPanel.new()
+		_armory.name = "Armory"
+		add_child(_armory)
+		_armory.closed.connect(func() -> void: _armory_button.grab_focus())
+	_armory.open()
 
 
 func _mode_button(caption: String, detail: String, mode: GameManager.Mode) -> Button:

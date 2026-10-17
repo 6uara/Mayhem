@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CrowdRequestPool" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crowd_request_pool.gd" id="1_pool"]
+[ext_resource type="Resource" path="res://data/crowd_requests/spin.tres" id="r0"]
+[ext_resource type="Resource" path="res://data/crowd_requests/air_show.tres" id="r1"]
+[ext_resource type="Resource" path="res://data/crowd_requests/headshots.tres" id="r2"]
+[ext_resource type="Resource" path="res://data/crowd_requests/dash_through.tres" id="r3"]
+[ext_resource type="Resource" path="res://data/crowd_requests/hooked.tres" id="r4"]
+[ext_resource type="Resource" path="res://data/crowd_requests/double.tres" id="r5"]
+[ext_resource type="Resource" path="res://data/crowd_requests/up_close.tres" id="r6"]
+[ext_resource type="Resource" path="res://data/crowd_requests/downtown.tres" id="r7"]
+
+[resource]
+script = ExtResource("1_pool")
+requests = Array[Resource]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5"), ExtResource("r6"), ExtResource("r7")])

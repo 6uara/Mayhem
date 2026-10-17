@@ -105,6 +105,7 @@ waves = Array[Resource]([ExtResource("w01"), ExtResource("w02"), ExtResource("w0
 spawner = NodePath("../EnemySpawner")
 shop_screen = NodePath("../ShopScreen")
 broadcast_rules_enabled = true
+attachments_enabled = true
 tutorial = NodePath("../TutorialDirector")
 
 [node name="PauseMenu" parent="." instance=ExtResource("10_pause")]

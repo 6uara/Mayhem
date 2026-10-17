@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/attachment_data.gd" id="1_attachment"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"spread_multiplier"
+operation = 1
+value = 0.7
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"ads_transition_time"
+operation = 1
+value = 1.3
+
+[resource]
+script = ExtResource("1_attachment")
+id = &"rifle_marksman_scope"
+display_name = "Marksman Scope"
+description = "-30% spread, aiming takes 30% longer."
+weapon_id = &"rifle_ak"
+slot = 2
+unlock_level = 3
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])

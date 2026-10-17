@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/attachment_data.gd" id="1_attachment"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"spread_multiplier"
+operation = 1
+value = 0.8
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"recoil_magnitude"
+operation = 1
+value = 0.85
+
+[sub_resource type="Resource" id="Mod_2"]
+script = ExtResource("2_mod")
+stat_key = &"magazine_size"
+operation = 0
+value = -1.0
+
+[resource]
+script = ExtResource("1_attachment")
+id = &"shotgun_laser"
+display_name = "Laser Sight"
+description = "-20% spread and -15% recoil, -1 shell per load."
+weapon_id = &"shotgun"
+slot = 2
+unlock_level = 3
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1"), SubResource("Mod_2")])

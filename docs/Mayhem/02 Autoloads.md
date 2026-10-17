@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, architecture, autoloads]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-16
 ---
 
 # Autoloads
@@ -14,7 +14,8 @@ globals):
 |---|---|---|
 | `Tokens` | `theme_tokens.gd` | Design constants — see [[09 Design Tokens and Color Law]] |
 | `EventBus` | `event_bus.gd` | Cross-system signals |
-| `GameManager` | `game_manager.gd` | Match state machine, pause |
+| `GameManager` | `game_manager.gd` | Match state machine, pause, run mode and fixed seed |
+| `RunSeed` | `run_seed.gd` | The run's seed and one RNG stream per system; share codes — see [[#RunSeed]] |
 | `ObjectPool` | `object_pool.gd` | Pooled instantiation |
 | `AudioPool` | `audio_pool.gd` | 3D/2D voice pool, buses, ducking |
 | `MusicManager` | `music_manager.gd` | Crossfaded music bed, follows match state |
@@ -23,11 +24,13 @@ globals):
 | `EconomyManager` | `economy_manager.gd` | Currency, purchases |
 | `UpgradeManager` | `upgrade_manager.gd` | Owned upgrades, stat modifiers |
 | `KillBonusTracker` | `kill_bonus_tracker.gd` | Judges each player kill for style bonuses |
-| `RunRecord` | `run_record.gd` | What happened this run, and the trophies it earned |
+| `RunRecord` | `run_record.gd` | What happened this run, the trophies it earned, damage by cause |
+| `Armory` | `armory.gd` | Weapon mastery and attachments: the one thing that carries between runs — see [[04 Weapons and Combat#Armory]] |
 | `WaveManager` | `wave_manager.gd` | Wave sequencing, enemy spawn scheduling |
 | `CombatDirector` | `combat_director.gd` | Coordinates the horde: roles, attack tokens, per-frame budget |
 | `BroadcastRating` | `broadcast_rating.gd` | The broadcast rating: style multiplier — see [[06 Waves and Economy#Rating]] |
-| `BroadcastRules` | `broadcast_rules.gd` | The per-wave broadcast rule — see [[06 Waves and Economy#Broadcast rules]] |
+| `BroadcastRules` | `broadcast_rules.gd` | The per-wave broadcast rule, the shop offer and the contract — see [[06 Waves and Economy#Broadcast rules]] |
+| `CrowdRequests` | `crowd_requests.gd` | Crowd requests ("we want a 360") — see [[06 Waves and Economy#Crowd requests]] |
 | `NarratorManager` | `narrator_manager.gd` | Host VO lines, subtitle queue |
 | `TutorialHintManager` | `tutorial_hint_manager.gd` | First-time-mechanic HUD hints |
 | `BalanceHub` | `balance_hub.gd` | Editor-only live reload of balance `.tres` files |
@@ -46,6 +49,7 @@ signal damage_dealt(target: Node, amount: float, is_headshot: bool)
 signal enemy_killed(enemy_type: StringName, position: Vector3, reward: int)
 signal kill_credited(reward: int)   # ...y es tuya: sólo si diste el golpe final
 signal player_damaged(amount: float, remaining: float)
+signal player_hit(amount: float, cause: StringName)   # same hit, with DamageCause; right before player_damaged
 signal player_died()
 
 # Weapons
@@ -70,6 +74,17 @@ signal currency_changed(new_total: int)
 signal purchase_made(item_id: StringName, cost: int)
 signal shop_opened()
 signal shop_closed()
+signal shop_offers_rolled(offers: Array)   # [{id, rare}] per visit/reroll, for the run log
+
+# Crowd (excerpt: the broadcast show)
+signal broadcast_rules_offered(rule_ids: Array, contract_id: StringName)
+signal broadcast_contract_started(contract_id, title, description, payout: int)
+signal broadcast_contract_settled(contract_id: StringName, paid: int)
+signal rating_peak(bonus: int)                 # top tier, once per wave
+signal rating_sponsor_walkout(active: bool)    # too long off air: no gifts
+signal crowd_request_started(request_id, title, goal: int, time_limit: float)
+signal crowd_request_progress(request_id, progress: int, goal: int)
+signal crowd_request_ended(request_id: StringName, success: bool)
 
 # Match state
 signal game_state_changed(new_state: int)
@@ -90,6 +105,25 @@ segunda, nunca de la primera.
 interrupt any state and leaves the run intact underneath, so widening the state
 enum to include it would be wrong. Added when the pause menu was built — see
 [[07 UI and HUD#Pause menu]].
+
+## RunSeed
+
+`scripts/autoload/run_seed.gd`. One seed per run (`begin(fixed_seed)` from
+`MatchDirector.start_match()`, with `GameManager.run_fixed_seed` — 0 rolls a new
+one), and **one stream per system**: `RunSeed.rng(&"shop")`,
+`&"broadcast_rules"`, `&"crowd_drops"`, `&"crowd_requests"`, `&"spread"`. Separate
+streams so that buying one more upgrade doesn't move where the next medkit lands.
+The systems keep a `_rng` property whose getter returns their stream, so the old
+call sites (and the tests that seed `_shop._rng`) didn't change.
+
+What the seed does **not** pin: physics, enemy AI jitter, the Host's line choice
+and the music. Same seed = same offers, rules, contracts, requests, drops and
+spread; not the same fight.
+
+Share codes: `MAYHEM-<ARSENAL|weapon id>-XXXX-XXXX`, 40 bits in Crockford base 32
+(`make_code()` / `parse_code()` / `encode_seed()` / `decode_seed()`). The mode
+screen takes a pasted code; the end screen copies a line with the score and the
+code. The run log stores the seed in the same format.
 
 ## GameManager
 
@@ -324,10 +358,19 @@ late to reconstruct. Bonus ids are stable `StringName`s, emitted on
 
 `scripts/autoload/run_record.gd`. Accumulates what happened in the run from
 `EventBus` alone and awards trophies, which are saved **with the leaderboard
-row**, not in a profile — MAYHEM has no meta-progression on purpose. Trophy ids
-are stable so an old saved run keeps rendering. `RunLogger`
-(`scripts/systems/run_logger.gd`) is its playtest sibling: one JSON per run in
-`user://runs/`.
+row**, not in a profile — trophies stay per run on purpose (the one exception to
+"nothing carries over" is weapon mastery, see [[04 Weapons and Combat#Armory]]).
+Trophy ids are stable so an old saved run keeps rendering. It also adds up damage
+taken **by cause** (`player_hit`, ids from `DamageCause`: the archetype, `arena`
+or `self`) and the cause of the killing hit; `get_death_recap()` feeds the end
+screen ("Killed by Bomber - 62% of your damage came from Ranger").
+
+`RunLogger` (`scripts/systems/run_logger.gd`) is its playtest sibling: one JSON
+per run in `user://runs/`, format 2. Per run: seed (share-code format), mode,
+weapon, worn attachments, shop offers per visit (with `rare`), damage by cause,
+`killed_by`, death position. Per wave: damage by cause, rules offered / picked,
+contract and what it paid, rating peak and average (sampled each second of
+fight), crowd requests and whether they were met.
 
 ## CombatDirector
 

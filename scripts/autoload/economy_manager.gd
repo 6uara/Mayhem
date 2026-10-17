@@ -22,6 +22,10 @@ var _wave_kill_income: int = 0
 ## mostrarlo como una fila propia - ver Tokens.INCOME_COLOR, que ya reserva un
 ## color para "lost".
 var _wave_damage_loss: int = 0
+## Lo que pago el show en esta oleada: el patrocinador con el rating arriba y el
+## publico por un pedido cumplido. Fila propia en el desglose: no es plata de
+## kills, y mezclarla le mentiria a la tienda sobre cuanto rindio la pelea.
+var _wave_show_income: int = 0
 
 
 func _ready() -> void:
@@ -48,11 +52,13 @@ func reset() -> void:
 	currency = config.starting_currency
 	_wave_kill_income = 0
 	_wave_damage_loss = 0
+	_wave_show_income = 0
 
 
 func begin_wave() -> void:
 	_wave_kill_income = 0
 	_wave_damage_loss = 0
+	_wave_show_income = 0
 
 
 func get_wave_kill_income() -> int:
@@ -79,14 +85,31 @@ func award_wave_bonuses(wave: WaveData, duration: float, took_damage: bool) -> D
 	else:
 		push_error("EconomyManager.award_wave_bonuses: null wave, paying no speed or completion bonus")
 	var no_damage_bonus: int = 0 if took_damage else _scale(config.no_damage_bonus)
-	currency += speed_bonus + no_damage_bonus + completion_bonus
+	# El contrato firmado en la tienda paga aca, con la oleada todavia abierta:
+	# BroadcastRules lo cierra recien con `wave_completed`.
+	var contract_bonus: int = _scale(BroadcastRules.get_contract_payout())
+	currency += speed_bonus + no_damage_bonus + completion_bonus + contract_bonus
 	return {
 		"kills": _wave_kill_income,
 		"speed_bonus": speed_bonus,
 		"no_damage_bonus": no_damage_bonus,
 		"completion_bonus": completion_bonus,
+		"contract_bonus": contract_bonus,
+		"show_bonus": _wave_show_income,
 		"damage_loss": _wave_damage_loss,
 	}
+
+
+## Plata que entra fuera de una kill o del cierre de oleada: el patrocinador
+## cuando el rating llega arriba, el publico cuando se le cumple un pedido. Va a
+## su propia fila del desglose de la oleada.
+func award_show_bonus(amount: int) -> int:
+	var scaled: int = _scale(amount)
+	if scaled <= 0:
+		return 0
+	_wave_show_income += scaled
+	currency += scaled
+	return scaled
 
 
 ## Cuanto rinde un bono de estilo ahora: el rating de la transmision por las

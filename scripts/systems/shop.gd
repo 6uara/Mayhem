@@ -24,14 +24,13 @@ enum Kind { UPGRADE, WEAPON }
 var offers: Array[Dictionary] = []
 
 var _player: Player
-var _rng := RandomNumberGenerator.new()
+## La corriente de la semilla de la run (RunSeed): misma semilla, mismas ofertas.
+var _rng: RandomNumberGenerator:
+	get:
+		return RunSeed.rng(&"shop")
 ## Resets to 0 every time `roll_offers()` opens a fresh visit - a reroll only
 ## gets pricier within the SAME visit, per `catalog.reroll_cost_increment`.
 var _rerolls_this_visit: int = 0
-
-
-func _ready() -> void:
-	_rng.randomize()
 
 
 # Public API
@@ -140,6 +139,12 @@ func _roll() -> void:
 
 	offers = picked
 	offers_changed.emit(offers)
+	# Para el log del playtest: una rara que se ofrece siempre y nunca se compra
+	# es una rara cara o aburrida, y eso solo se ve si se anota la oferta.
+	var rolled: Array = []
+	for offer: Dictionary in offers:
+		rolled.append({"id": offer["id"], "rare": bool(offer.get("rare", false))})
+	EventBus.shop_offers_rolled.emit(rolled)
 
 
 ## Una oferta rara para esta visita, o vacio. Publica la probabilidad por el
@@ -151,25 +156,41 @@ func _roll_rare() -> Dictionary:
 		return {}
 	if _rng.randf() >= catalog.rare_offer_chance:
 		return {}
+	var equipped: StringName = _equipped_id()
 	var candidates: Array[UpgradeData] = []
 	for upgrade: UpgradeData in catalog.rare_upgrades:
-		if upgrade != null and UpgradeManager.can_add(upgrade):
+		if upgrade == null or not upgrade.fits_weapon(equipped):
+			continue
+		if UpgradeManager.can_add(upgrade, _rare_scope(upgrade, equipped)):
 			candidates.push_back(upgrade)
 	if candidates.is_empty():
 		return {}
-	return _rare_offer(candidates[_rng.randi_range(0, candidates.size() - 1)])
+	return _rare_offer(candidates[_rng.randi_range(0, candidates.size() - 1)], equipped)
 
 
-## Las raras son siempre globales: una regla de movilidad o de supervivencia no
-## pertenece a un arma.
-func _rare_offer(upgrade: UpgradeData) -> Dictionary:
+## Una rara de movilidad o de supervivencia es global; una de arma (la que solo
+## existe para un arma: el slug, la bala que atraviesa) queda con el arma que la
+## compro, como cualquier mejora de arma.
+func _rare_offer(upgrade: UpgradeData, equipped: StringName) -> Dictionary:
+	var scope: StringName = _rare_scope(upgrade, equipped)
 	return {
 		"kind": Kind.UPGRADE, "id": upgrade.id, "name": upgrade.display_name,
 		"description": upgrade.description, "cost": upgrade.cost,
 		"category": int(upgrade.category),
-		"owned": UpgradeManager.get_stacks(upgrade.id),
-		"max_stacks": upgrade.max_stacks, "weapon_id": &"", "rare": true,
+		"owned": UpgradeManager.get_stacks(upgrade.id, scope),
+		"max_stacks": upgrade.max_stacks, "weapon_id": scope, "rare": true,
 	}
+
+
+func _rare_scope(upgrade: UpgradeData, equipped: StringName) -> StringName:
+	return equipped if upgrade.category == UpgradeData.Category.WEAPON else &""
+
+
+func _equipped_id() -> StringName:
+	var holder: WeaponHolder = _get_holder()
+	if holder == null or holder.current == null or holder.current.data == null:
+		return &""
+	return holder.current.data.id
 
 
 func _execute(offer: Dictionary) -> EconomyManager.PurchaseResult:

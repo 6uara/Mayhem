@@ -31,6 +31,8 @@ const BONUS_DOUBLE: StringName = &"double"
 const BONUS_TRIPLE: StringName = &"triple"
 const BONUS_MAYHEM: StringName = &"mayhem"
 const BONUS_PRIORITY: StringName = &"priority"
+## Un enemigo marcado por la regla de Cacería (BroadcastRules).
+const BONUS_MARKED: StringName = &"marked"
 
 ## Como se llama cada bono en pantalla. Vive aca y no en la HUD porque el nombre
 ## es parte de la regla: si un bono se renombra, se renombra en un solo lugar.
@@ -47,6 +49,7 @@ const BONUS_LABEL: Dictionary = {
 	BONUS_TRIPLE: "TRIPLE",
 	BONUS_MAYHEM: "MAYHEM",
 	BONUS_PRIORITY: "PRIORIDAD",
+	BONUS_MARKED: "RECOMPENSA",
 }
 
 ## Metros desde los que un tiro cuenta como lejano, y hasta los que cuenta como
@@ -212,6 +215,10 @@ func _evaluate(enemy_type: StringName, position: Vector3, was_headshot: bool) ->
 		bonuses.append(BONUS_HEADSHOT)
 
 	var now: float = _now()
+	# Se consume siempre, haya jugador o no: la marca es de esta kill y de
+	# ninguna otra.
+	if BroadcastRules.take_marked_kill():
+		bonuses.append(BONUS_MARKED)
 	if enemy_type == HEALER_ID and now - _last_heal_time <= PRIORITY_WINDOW:
 		bonuses.append(BONUS_PRIORITY)
 	if _player != null and is_instance_valid(_player):

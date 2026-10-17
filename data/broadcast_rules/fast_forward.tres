@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+[ext_resource type="Script" path="res://scripts/resources/enemy_rule_modifier.gd" id="3_enemy"]
+
+[sub_resource type="Resource" id="Enemy_0"]
+script = ExtResource("3_enemy")
+enemy_id = &""
+health_multiplier = 1.0
+speed_multiplier = 1.3
+damage_multiplier = 1.0
+
+[resource]
+script = ExtResource("1_rule")
+id = &"fast_forward"
+title = "FAST FORWARD"
+description = "Enemies move 30% faster. The rating climbs 50% faster."
+rating_gain_multiplier = 1.5
+enemy_modifiers = Array[ExtResource("3_enemy")]([SubResource("Enemy_0")])

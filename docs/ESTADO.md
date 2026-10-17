@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, estado, backlog]
 estado: vivo
-actualizado: 2026-10-09
+actualizado: 2026-10-16
 ---
 
 # MAYHEM — Estado del proyecto
@@ -12,8 +12,8 @@ abiertos de [PLAN_PULIDO](historial/PLAN_PULIDO.md) (septiembre), que quedan en
 el historial. Cuando algo se cierra se borra de acá y se anota en el commit; cuando
 aparece algo nuevo, se agrega acá y no en un plan suelto.
 
-Base: rama `docs/regularizacion` sobre `develop` @ `1a37794`. Suite: **1117 tests,
-1117 en verde** (2026-10-09, Godot 4.7.1, ver [TESTING.md](TESTING.md#estado-actual-de-la-suite)).
+Base: rama `feat/systems-expansion` sobre `develop` @ `5bc7109`. Suite: ver
+[TESTING.md](TESTING.md#estado-actual-de-la-suite).
 
 ---
 
@@ -46,13 +46,31 @@ opciones gráficas, log de runs para playtest.
 | Sin menciones de licencias: LICENSE, THIRD_PARTY, OFL y créditos de música fuera | — |
 | Performance (ver §5) | — |
 
+### Lo que entró el 2026-10-16
+
+Revisión de sistemas con el dueño del proyecto: de las propuestas se hicieron la
+telemetría, las reglas elegibles con contratos, las armas, los pedidos del
+público y la semilla. Las variantes de enemigo quedaron documentadas para cuando
+estén los modelos ([PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md)).
+
+| Qué | Dónde |
+|---|---|
+| Telemetría: daño por origen, quién mató, resumen en la pantalla de muerte; el log guarda semilla, ofertas de la tienda, reglas ofrecidas y elegidas, contratos, rating por ola y pedidos | `DamageCause`, `EventBus.player_hit`, `RunRecord.get_death_recap()`, `RunLogger` (formato 2) |
+| Reglas elegibles: el Host ofrece dos en la tienda; las reglas pueden tocar enemigos (vida, velocidad, daño, Cacería) y la arena (charcos por kill). 4 reglas nuevas | `BroadcastRules.prepare_offer()`, `EnemyRuleModifier`, `data/broadcast_rules/` |
+| Contratos: restricción opcional que paga al limpiar la ola. 5 contratos | `data/broadcast_rules/contracts/`, fila "Contract" del desglose |
+| Consecuencias del rating: pico (paga y regala, una vez por ola) y retiro del patrocinador (sin regalos) | `BroadcastRating`, `rating_config.tres` grupo Consecuencias |
+| Pedidos del público: 8, desde la ola 2 | `CrowdRequests`, `data/crowd_requests/` |
+| Comportamiento de tiro como dato (perforar, área, empuje) y 2 raras por arma | `WeaponData` grupo Behavior, `WeaponComponent._pierce()/_splash()` |
+| Maestría de armas y attachments (12), que se llevan entre runs; Armería en la pantalla de modo | `Armory`, `ArmoryPanel`, `data/attachments/` |
+| Semilla por run, corrientes por sistema, código para compartir (copiar al final, pegar en el menú) | `RunSeed`, `ModeSelect`, `MatchOverlay` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
 | R1 | **Modelos** de todo lo que no es arma: brazos, piezas de arena, interactuables, gadgets, y tres enemigos (Elite, Environmental, Summoner). Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas e impactos** sigue siendo el sintetizado por `tools/generate_placeholder_sfx.py` | Audio |
-| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio | Balance |
+| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment | Balance |
 
 ## 3. Abierto — necesita una decisión
 
@@ -70,16 +88,30 @@ opciones gráficas, log de runs para playtest.
 - **Phantom Camera**: habilitarlo para algo concreto o borrarlo ([ADDONS.md](ADDONS.md)).
 - **¿La tabla separa por modo?** Hoy es por arena y cada fila dice su modo; una
   run de ONE GUN con escopeta compite con una de ARSENAL.
+- **Attachments y la tabla.** Una run con attachments compite con una sin. Son de
+  costado, pero un jugador con todo desbloqueado elige su mejor combinación. La
+  fila no guarda los attachments (el log sí). Opciones: anotarlos en la fila,
+  separar la tabla, o dejarlo así.
+- **Semilla y tabla.** Una run jugada con un código pegado compite igual que una
+  con semilla nueva; con la misma semilla se puede practicar la tienda. ¿Se marca
+  la fila?
+- **El área del SMG no tiene VFX** a propósito (15 por segundo); si el playtest
+  dice que no se lee, un anillo chico y barato.
 
 ## 4. Abierto — necesita un asset o una persona
 
 - **Voz del Host.** `assets/audio/voice/` vacío; el guion está en
-  [host_script/](host_script/host_script.md). Las líneas nuevas (reglas, rating,
-  tutorial, Second Wind) entran en el próximo `tools/export_host_script.gd`.
+  [host_script/](host_script/host_script.md). Las líneas de reglas, rating, tutorial,
+  Second Wind, contratos, pedidos del público, pico y retiro del patrocinador ya
+  están en el guion exportado (2026-10-16).
 - **Arte de VFX.** Impactos, dash y slide siguen grey-box; decals por superficie
   en `null`; los flipbooks del pack sin usar (y fuera del build, ver EXPORT).
 - **Mezcla de audio real** (oídos, auriculares y parlantes).
 - **URL del formulario de feedback** vacía en `data/feedback/feedback_config.tres`.
+- **Iconos de las raras por arma (8) y del bono RECOMPENSA**: geométricos
+  provisorios, en el mismo lenguaje que los de las raras globales.
+- **Variantes de enemigo y oleadas con alternativas**: esperan los modelos de
+  todos los enemigos (R1). Diseño en [PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md).
 - **Iconos** de menús (11) y del editor de arenas (21):
   [HANDOFF_ICONOGRAPHY §3.6-3.7](handoffs/HANDOFF_ICONOGRAPHY.md). Los 9 de las
   mejoras nuevas son geométricos provisorios en el mismo lenguaje.

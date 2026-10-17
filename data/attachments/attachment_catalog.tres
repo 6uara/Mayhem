@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AttachmentCatalog" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/attachment_catalog.gd" id="1_catalog"]
+[ext_resource type="Resource" path="res://data/attachments/pistol_compensator.tres" id="a0"]
+[ext_resource type="Resource" path="res://data/attachments/pistol_extended_mag.tres" id="a1"]
+[ext_resource type="Resource" path="res://data/attachments/pistol_red_dot.tres" id="a2"]
+[ext_resource type="Resource" path="res://data/attachments/smg_muzzle_brake.tres" id="a3"]
+[ext_resource type="Resource" path="res://data/attachments/smg_drum_mag.tres" id="a4"]
+[ext_resource type="Resource" path="res://data/attachments/smg_holo_sight.tres" id="a5"]
+[ext_resource type="Resource" path="res://data/attachments/rifle_heavy_barrel.tres" id="a6"]
+[ext_resource type="Resource" path="res://data/attachments/rifle_quick_mag.tres" id="a7"]
+[ext_resource type="Resource" path="res://data/attachments/rifle_marksman_scope.tres" id="a8"]
+[ext_resource type="Resource" path="res://data/attachments/shotgun_choke.tres" id="a9"]
+[ext_resource type="Resource" path="res://data/attachments/shotgun_side_saddle.tres" id="a10"]
+[ext_resource type="Resource" path="res://data/attachments/shotgun_laser.tres" id="a11"]
+
+[resource]
+script = ExtResource("1_catalog")
+attachments = Array[Resource]([ExtResource("a0"), ExtResource("a1"), ExtResource("a2"), ExtResource("a3"), ExtResource("a4"), ExtResource("a5"), ExtResource("a6"), ExtResource("a7"), ExtResource("a8"), ExtResource("a9"), ExtResource("a10"), ExtResource("a11")])

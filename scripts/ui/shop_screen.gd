@@ -30,6 +30,14 @@ const CARD_ICON_BOX: float = 28.0
 
 var is_open: bool = false
 
+## La oferta del Host para la proxima oleada: elegir la regla y, si hay, firmar
+## el contrato. Armada por codigo, como la fila del rating en la HUD.
+var _broadcast_box: VBoxContainer
+var _broadcast_header: Label
+var _rule_row: HBoxContainer
+var _rule_group: ButtonGroup
+var _contract_toggle: CheckButton
+
 var _time_left: float = 0.0
 
 
@@ -43,6 +51,7 @@ func _ready() -> void:
 		shop.offers_changed.connect(_rebuild_cards)
 		shop.reroll_cost_changed.connect(_on_reroll_cost_changed)
 		_reroll_button.visible = shop.catalog != null and shop.catalog.reroll_base_cost > 0
+	_build_broadcast_box()
 
 
 func _process(delta: float) -> void:
@@ -65,6 +74,7 @@ func open(breakdown: Dictionary, wave_index: int, duration_seconds: float) -> vo
 	_root.visible = true
 	_breakdown.text = _format_breakdown(breakdown, wave_index, duration_seconds)
 	_on_currency_changed(EconomyManager.currency)
+	_refresh_broadcast_box()
 	if shop != null:
 		shop.roll_offers()
 	# Por GameManager y no por get_tree() directo: el menu de pausa puede abrirse
@@ -104,7 +114,74 @@ func _format_breakdown(breakdown: Dictionary, wave_index: int, seconds: float) -
 		"Speed bonus      %s" % ("%d" % speed if speed > 0 else "- (too slow)"),
 		"No damage        %s" % ("%d" % no_damage if no_damage > 0 else "- (took damage)"),
 	]
+	# Solo cuando pagaron: una fila en cero de algo que no se jugo es ruido.
+	var contract: int = int(breakdown.get("contract_bonus", 0))
+	if contract > 0:
+		lines.append("Contract         %d" % contract)
+	var show_money: int = int(breakdown.get("show_bonus", 0))
+	if show_money > 0:
+		lines.append("Show             %d" % show_money)
 	return "\n".join(lines)
+
+
+func _build_broadcast_box() -> void:
+	var column: Node = _skip_button.get_parent()
+	_broadcast_box = VBoxContainer.new()
+	_broadcast_box.name = "Broadcast"
+	_broadcast_box.add_theme_constant_override(&"separation", 8)
+	_broadcast_header = Label.new()
+	_broadcast_header.theme_type_variation = &"HUDLabel"
+	_broadcast_header.add_theme_color_override(&"font_color", Tokens.REWARD)
+	_broadcast_box.add_child(_broadcast_header)
+	_rule_row = HBoxContainer.new()
+	_rule_row.add_theme_constant_override(&"separation", 10)
+	_broadcast_box.add_child(_rule_row)
+	_contract_toggle = CheckButton.new()
+	_contract_toggle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_contract_toggle.toggled.connect(func(on: bool) -> void:
+		BroadcastRules.set_contract_signed(on))
+	_broadcast_box.add_child(_contract_toggle)
+	column.add_child(_broadcast_box)
+	column.move_child(_broadcast_box, _skip_button.get_index())
+	_broadcast_box.visible = false
+
+
+## Lo que el Host ofrece para la oleada que viene. Sin oferta (primeras oleadas,
+## una prueba sin director) la caja no aparece.
+func _refresh_broadcast_box() -> void:
+	if _broadcast_box == null:
+		return
+	for child: Node in _rule_row.get_children():
+		child.queue_free()
+	var rules: Array[BroadcastRule] = BroadcastRules.get_offered_rules()
+	var offered_contract: BroadcastRule = BroadcastRules.get_offered_contract()
+	_broadcast_box.visible = BroadcastRules.has_offer()
+	if not _broadcast_box.visible:
+		return
+	var wave_number: int = BroadcastRules.get_offer_wave() + 1
+	_broadcast_header.text = "WAVE %d  -  %s" % [wave_number,
+		"PICK THE HOUSE RULE" if rules.size() > 1 else "HOUSE RULE"]
+	_rule_group = ButtonGroup.new()
+	for rule: BroadcastRule in rules:
+		var button := Button.new()
+		button.toggle_mode = true
+		button.button_group = _rule_group
+		button.text = "%s\n%s" % [rule.title, rule.description]
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.button_pressed = rule == BroadcastRules.get_chosen_rule()
+		# Con una sola no hay nada que elegir: se muestra para que se sepa.
+		button.disabled = rules.size() < 2
+		button.pressed.connect(BroadcastRules.choose_rule.bind(rule))
+		_rule_row.add_child(button)
+	_rule_row.visible = not rules.is_empty()
+	_contract_toggle.visible = offered_contract != null
+	if offered_contract != null:
+		_contract_toggle.set_pressed_no_signal(BroadcastRules.is_contract_signed())
+		_contract_toggle.text = "CONTRACT  %s  -  %s  -  +%d if you clear the wave" % [
+			offered_contract.title, offered_contract.description,
+			offered_contract.get_contract_payout(BroadcastRules.get_offer_wave())]
 
 
 func _on_currency_changed(total: int) -> void:

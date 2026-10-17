@@ -37,6 +37,21 @@ const STYLE_PAYOUT_MULTIPLIER: StringName = &"style_payout_multiplier"
 const SECOND_WIND_CHARGES: StringName = &"second_wind_charges"
 const PAD_DASH_REFILL: StringName = &"pad_dash_refill"
 
+## Mejoras raras de un arma y attachments. Por arma (se piden con el id del arma,
+## como el resto de los stats de arma), y con base en WeaponData o neutra.
+const PIERCE_COUNT: StringName = &"pierce_count"
+const SPLASH_RADIUS: StringName = &"splash_radius"
+const SELF_KNOCKBACK: StringName = &"self_knockback"
+const PROJECTILES_PER_SHOT: StringName = &"projectiles_per_shot"
+## Multiplica el daño de la ultima bala del cargador. Base 1.
+const LAST_ROUND_DAMAGE: StringName = &"last_round_damage"
+## Multiplica el daño del primer tiro de una rafaga (con el patron de recoil en
+## cero). Base 1.
+const FIRST_SHOT_DAMAGE: StringName = &"first_shot_damage"
+## Multiplica la penalidad de dispersion por moverse o estar en el aire: 0 la
+## borra. Base 1.
+const MOVING_SPREAD_PENALTY: StringName = &"moving_spread_penalty"
+
 signal stats_changed()
 
 ## stat_key -> base value, authored per owner.

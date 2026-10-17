@@ -130,13 +130,22 @@ func test_later_shops_offer_at_most_one_rare() -> void:
 	assert_gt(seen, 0, "en sesenta visitas aparece alguna")
 
 
-func test_every_rare_upgrade_is_global_and_rare() -> void:
+## Una rara de arma (el slug, la bala que atraviesa) existe para un arma: tiene
+## que decir cual, o se ofreceria con cualquiera. Las demas son globales.
+func test_every_rare_upgrade_is_rare_and_weapon_ones_name_their_weapon() -> void:
 	var catalog: ShopCatalog = load(CATALOG_PATH)
 	assert_gt(catalog.rare_upgrades.size(), 0)
 	for upgrade: UpgradeData in catalog.rare_upgrades:
 		assert_true(upgrade.is_rare, String(upgrade.id))
-		assert_ne(upgrade.category, UpgradeData.Category.WEAPON,
-			"%s no puede quedar atada a un arma" % upgrade.id)
+		if upgrade.category == UpgradeData.Category.WEAPON:
+			assert_false(upgrade.weapon_ids.is_empty(),
+				"%s es de arma y no dice de cual" % upgrade.id)
+			for weapon_id: StringName in upgrade.weapon_ids:
+				assert_not_null(catalog.find_weapon(weapon_id),
+					"%s apunta a un arma que no existe: %s" % [upgrade.id, weapon_id])
+		else:
+			assert_true(upgrade.weapon_ids.is_empty(),
+				"%s es global y no puede pedir un arma" % upgrade.id)
 
 
 # ------------------------------------------------------------------ las reglas

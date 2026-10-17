@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="AttachmentData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/attachment_data.gd" id="1_attachment"]
+[ext_resource type="Script" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"ads_transition_time"
+operation = 1
+value = 0.6
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"spread_multiplier"
+operation = 1
+value = 0.85
+
+[sub_resource type="Resource" id="Mod_2"]
+script = ExtResource("2_mod")
+stat_key = &"reserve_ammo_max"
+operation = 1
+value = 0.9
+
+[resource]
+script = ExtResource("1_attachment")
+id = &"smg_holo_sight"
+display_name = "Holo Sight"
+description = "Aim 40% faster and 15% tighter, -10% reserve ammo."
+weapon_id = &"smg"
+slot = 2
+unlock_level = 3
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1"), SubResource("Mod_2")])

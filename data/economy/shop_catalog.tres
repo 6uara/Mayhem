@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ShopCatalog" load_steps=34 format=3]
+[gd_resource type="Resource" script_class="ShopCatalog" load_steps=42 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/shop_catalog.gd" id="1_catalog"]
 [ext_resource type="Resource" path="res://data/weapons/rifle_ak.tres" id="2_rifle_ak"]
@@ -34,13 +34,21 @@
 [ext_resource type="Resource" path="res://data/upgrades/showman.tres" id="31_showman"]
 [ext_resource type="Resource" path="res://data/upgrades/second_wind.tres" id="31_second_wind"]
 [ext_resource type="Resource" path="res://data/upgrades/pad_charger.tres" id="31_pad_charger"]
+[ext_resource type="Resource" path="res://data/upgrades/penetrator.tres" id="32_penetrator"]
+[ext_resource type="Resource" path="res://data/upgrades/last_word.tres" id="32_last_word"]
+[ext_resource type="Resource" path="res://data/upgrades/hot_rounds.tres" id="32_hot_rounds"]
+[ext_resource type="Resource" path="res://data/upgrades/run_and_gun.tres" id="32_run_and_gun"]
+[ext_resource type="Resource" path="res://data/upgrades/ap_rounds.tres" id="32_ap_rounds"]
+[ext_resource type="Resource" path="res://data/upgrades/marksman_trigger.tres" id="32_marksman_trigger"]
+[ext_resource type="Resource" path="res://data/upgrades/slug.tres" id="32_slug"]
+[ext_resource type="Resource" path="res://data/upgrades/blast_jump.tres" id="32_blast_jump"]
 
 [resource]
 script = ExtResource("1_catalog")
 weapons = Array[Resource]([ExtResource("2_rifle_ak"), ExtResource("3_shotgun"), ExtResource("4_smg"), ExtResource("5_pistol")])
 weapon_prices = PackedInt32Array(400, 450, 380, 150)
 upgrades = Array[Resource]([ExtResource("6_dash_charge"), ExtResource("7_dash_cooldown"), ExtResource("8_move_speed"), ExtResource("9_jump_height"), ExtResource("10_air_control"), ExtResource("11_grapple_range"), ExtResource("12_grapple_cooldown"), ExtResource("13_magazine"), ExtResource("14_fire_rate"), ExtResource("15_recoil_control"), ExtResource("16_stability"), ExtResource("17_reload_speed"), ExtResource("18_ads_speed"), ExtResource("19_reserve_ammo"), ExtResource("20_damage"), ExtResource("21_max_health"), ExtResource("22_damage_reduction"), ExtResource("23_adrenaline"), ExtResource("24_grapple_aim_assist"), ExtResource("30_nanoweave")])
-rare_upgrades = Array[Resource]([ExtResource("31_slide_loader"), ExtResource("31_ram_dash"), ExtResource("31_air_ace"), ExtResource("31_headhunter"), ExtResource("31_momentum_plating"), ExtResource("31_showman"), ExtResource("31_second_wind"), ExtResource("31_pad_charger")])
+rare_upgrades = Array[Resource]([ExtResource("31_slide_loader"), ExtResource("31_ram_dash"), ExtResource("31_air_ace"), ExtResource("31_headhunter"), ExtResource("31_momentum_plating"), ExtResource("31_showman"), ExtResource("31_second_wind"), ExtResource("31_pad_charger"), ExtResource("32_penetrator"), ExtResource("32_last_word"), ExtResource("32_hot_rounds"), ExtResource("32_run_and_gun"), ExtResource("32_ap_rounds"), ExtResource("32_marksman_trigger"), ExtResource("32_slug"), ExtResource("32_blast_jump")])
 offers_per_visit = 4
 guarantee_one_per_category = true
 reroll_base_cost = 50

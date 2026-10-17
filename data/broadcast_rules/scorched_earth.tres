@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BroadcastRule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/broadcast_rule.gd" id="1_rule"]
+
+[resource]
+script = ExtResource("1_rule")
+id = &"scorched_earth"
+title = "SCORCHED EARTH"
+description = "Every kill leaves a burning pool for 4s. It burns everyone. Kills pay 20% more."
+kill_reward_multiplier = 1.2
+kill_hazard_damage = 12.0
+kill_hazard_radius = 2.5
+kill_hazard_duration = 4.0

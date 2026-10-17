@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, weapons, combat]
 estado: referencia
-actualizado: 2026-08-19
+actualizado: 2026-10-16
 ---
 
 # Weapons and Combat
@@ -166,3 +166,52 @@ upgrade-aware read goes through: `get_stat_from(stat_key, base_value)` asks
 value. Covered by `tests/unit/test_stats_component.gd` (13 tests), and end to end
 by `test_a_damage_upgrade_reaches_a_hitscan_shot`, which is the one that proves a
 purchased upgrade survives all the way to a fired shot.
+
+## Shot behaviour: pierce, splash, knockback
+
+`WeaponData` group *Behavior*: `pierce_count`, `pierce_damage_falloff`,
+`splash_radius`, `splash_damage_fraction`, `self_knockback`. All zero on the four
+weapons; the per-weapon rare upgrades switch them on through StatModifiers on
+weapon-scoped stats (`StatsComponent.PIERCE_COUNT`, `SPLASH_RADIUS`,
+`SELF_KNOCKBACK`, `PROJECTILES_PER_SHOT`, `LAST_ROUND_DAMAGE`,
+`FIRST_SHOT_DAMAGE`, `MOVING_SPREAD_PENALTY`).
+
+- **Pierce** (`WeaponComponent._pierce()`): after the first hitbox the ray keeps
+  going, excluding what it already hit, until `pierce_count` more enemies or the
+  first wall. A second hitbox of the same enemy (head → body) is not another enemy.
+  Bounded at `count * 3 + 2` rays.
+- **Splash** (`_splash()`): a sphere query on `HITBOX` at the impact point, body
+  hitboxes only, one per enemy, skipping the ones the round already hit. No VFX on
+  purpose (the SMG fires it 15 times a second); the damage number shows it.
+- **Knockback** (`_apply_self_knockback()`): `body.velocity += -aim * push`. In
+  the air that is a jump; on the ground friction eats it.
+- Per-shot multiplier (`_shot_damage_multiplier()`), read after the round is
+  taken from the magazine: last round and first shot of a burst.
+
+Per-weapon rares carry `UpgradeData.weapon_ids`; `Shop._roll_rare()` only offers
+them with that weapon equipped and scopes the purchase to it. Pistol: Penetrator,
+Last Word. SMG: Hot Rounds, Run & Gun. Rifle: AP Rounds, Marksman Trigger.
+Shotgun: Slug, Blast Jump.
+
+## Armory
+
+`Armory` (autoload) + `AttachmentData` / `AttachmentCatalog`
+(`data/attachments/`). **The one thing that carries between runs** (owner's
+decision, 2026-10-16; DISENO §1).
+
+- **Mastery XP**, counted only while a run started with
+  `MatchDirector.attachments_enabled` (true in `game.tscn`) is going: per kill,
+  per style bonus, per wave cleared (to the weapon equipped at the time) and for
+  winning. Committed on `run_finished`, death included; abandoning the game
+  mid-run saves nothing. `level_thresholds` turn XP into levels.
+- **Attachments**: three per weapon, one per slot (MUZZLE, MAGAZINE, OPTIC),
+  unlocked at levels 1-3. Each one gives and costs (a test pins that every
+  attachment has at least two modifiers). Worn ones enter the run in
+  `Armory.begin_run()` as WEAPON-scoped upgrades `att_<id>`, and the local
+  player's weapons are reset so the first magazine already has the new size.
+- **Storage**: `user://armory.json` (`{xp, equipped}`), separate from the
+  leaderboard. Under GUT it switches to `user://armory_test.json` and starts
+  empty, so tests that load `game.tscn` don't play with whatever the developer
+  unlocked.
+- **UI**: `ArmoryPanel`, opened from the mode screen. The end screen lists the XP
+  each weapon gained and what it unlocked (`MatchOverlay.mastery_lines()`).

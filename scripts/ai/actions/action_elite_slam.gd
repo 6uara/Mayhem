@@ -37,5 +37,5 @@ func _leave_pool(enemy: Enemy) -> void:
 		push_error("ActionEliteSlam: hazard_scene is not a HazardZone")
 		return
 	zone.global_position = enemy.global_position
-	zone.setup(enemy.data.damage * pool_damage_fraction,
+	zone.setup(enemy.get_attack_damage() * pool_damage_fraction,
 		enemy.data.attack_range * pool_radius_multiplier, pool_duration, enemy)

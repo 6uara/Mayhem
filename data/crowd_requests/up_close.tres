@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CrowdRequest" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crowd_request.gd" id="1_request"]
+
+[resource]
+script = ExtResource("1_request")
+id = &"up_close"
+title = "UP CLOSE AND PERSONAL!"
+bonus_id = &"point_blank"
+goal = 2
+time_limit = 20.0
+reward_rating = 10.0
+reward_currency = 50

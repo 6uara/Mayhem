@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BroadcastRulePool" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="BroadcastRulePool" load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/broadcast_rule_pool.gd" id="1_pool"]
 [ext_resource type="Resource" path="res://data/broadcast_rules/headshot_night.tres" id="r0"]
@@ -8,7 +8,17 @@
 [ext_resource type="Resource" path="res://data/broadcast_rules/crowd_frenzy.tres" id="r4"]
 [ext_resource type="Resource" path="res://data/broadcast_rules/glass_cannon.tres" id="r5"]
 [ext_resource type="Resource" path="res://data/broadcast_rules/combo_hour.tres" id="r6"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/scorched_earth.tres" id="r7"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/manhunt.tres" id="r8"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/heavyweights.tres" id="r9"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/fast_forward.tres" id="r10"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/contracts/grounded.tres" id="c0"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/contracts/no_hook.tres" id="c1"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/contracts/short_mags.tres" id="c2"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/contracts/paper_armor.tres" id="c3"]
+[ext_resource type="Resource" path="res://data/broadcast_rules/contracts/lead_boots.tres" id="c4"]
 
 [resource]
 script = ExtResource("1_pool")
-rules = Array[Resource]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5"), ExtResource("r6")])
+rules = Array[Resource]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5"), ExtResource("r6"), ExtResource("r7"), ExtResource("r8"), ExtResource("r9"), ExtResource("r10")])
+contracts = Array[Resource]([ExtResource("c0"), ExtResource("c1"), ExtResource("c2"), ExtResource("c3"), ExtResource("c4")])

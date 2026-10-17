@@ -74,19 +74,28 @@ const HEAL_DROP_BELOW: float = 0.8
 
 var _seconds_left: float = 0.0
 var _is_running: bool = false
-var _rng := RandomNumberGenerator.new()
+var _rng: RandomNumberGenerator:
+	get:
+		return RunSeed.rng(&"crowd_drops")
 var _crowd: CrowdStands
 
 
 func _ready() -> void:
-	_rng.randomize()
 	EventBus.wave_started.connect(_on_wave_started.unbind(2))
 	EventBus.wave_completed.connect(_on_wave_completed.unbind(3))
 	EventBus.player_died.connect(_on_wave_completed)
+	# Los regalos que no salen del reloj: el pico del rating y un pedido cumplido.
+	EventBus.rating_peak.connect(_on_rating_peak.unbind(1))
+	EventBus.crowd_request_ended.connect(_on_crowd_request_ended)
 
 
 func _process(delta: float) -> void:
 	if not _is_running:
+		return
+	# Con el patrocinador afuera el reloj se queda en cero: el publico no tira,
+	# y en cuanto el rating sale del piso el primer regalo sale enseguida.
+	if BroadcastRating.is_walked_out():
+		_seconds_left = minf(_seconds_left, 0.0)
 		return
 	_seconds_left -= delta
 	if _seconds_left > 0.0:
@@ -146,6 +155,19 @@ func _on_wave_started() -> void:
 func _on_wave_completed() -> void:
 	_is_running = false
 	_seconds_left = 0.0
+
+
+func _on_rating_peak() -> void:
+	if _is_running:
+		throw_now()
+
+
+func _on_crowd_request_ended(request_id: StringName, success: bool) -> void:
+	if not success or not _is_running:
+		return
+	var request: CrowdRequest = CrowdRequests.find(request_id)
+	if request != null and request.throws_gift:
+		throw_now()
 
 
 func _has_room_for(data: UtilityData, player: Player) -> bool:

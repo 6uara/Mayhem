@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, waves, economy, shop]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-16
 ---
 
 # Waves and Economy
@@ -178,9 +178,65 @@ and shortens the crowd's drop interval. Only measures while a match runs
 
 `BroadcastRules` (autoload) + `BroadcastRule` resources in
 `data/broadcast_rules/`, pooled by `rule_pool.tres`. From wave `from_wave` (3),
-never on elite waves, one rule per wave, no repeats until the pool runs out. A
-rule can multiply kill bonuses, the base kill reward, the rating gain and the
-drop interval, and apply StatModifiers as a temporary global upgrade
-(`rule_<id>`) removed at wave end. Only draws when
-`MatchDirector.broadcast_rules_enabled` (true in `game.tscn`). HUD: a chip under
-the wave number and an announcement.
+never on elite waves, no repeats until the pool runs out. Only active when
+`MatchDirector.broadcast_rules_enabled` (true in `game.tscn`).
+
+**Offer and pick.** When the break opens, `MatchDirector._open_break()` calls
+`BroadcastRules.prepare_offer(next_wave)`: `offer_size` (2) distinct rules and,
+with `contract_chance`, one contract. The shop screen shows them
+(`ShopScreen._refresh_broadcast_box()`); the player picks a rule
+(`choose_rule()`, default the first) and may sign the contract
+(`set_contract_signed()`). `wave_started` starts what was picked. With no offer
+(wave 1, tests that emit `wave_started` by hand) it falls back to a random
+`pick_for()`.
+
+**What a rule can touch** (all data):
+
+| Group | Fields | Used by |
+|---|---|---|
+| Economy | `bonus_multipliers`, `kill_reward_multiplier`, `rating_gain_multiplier` | `KillBonusTracker`, `EconomyManager`, `BroadcastRating` |
+| Arena | `drop_interval_multiplier`; `kill_hazard_*` (every kill leaves a pooled `HazardZone`, ownerless) | `CrowdDropDirector`; `BroadcastRules._on_enemy_killed()` |
+| Enemies | `enemy_modifiers: Array[EnemyRuleModifier]` (health/speed/damage per archetype or all); `mark_every` / `mark_limit` (Manhunt) | `Enemy.setup()` → `BroadcastRules.enemy_multipliers()` / `should_mark_spawn()` |
+| Player | `stat_modifiers`, applied as a temporary global upgrade (`rule_<id>` / `contract_<id>`) | `UpgradeManager` |
+| Contract | `contract_payout` + `contract_payout_per_wave` (> 0 makes it a contract) | `EconomyManager.award_wave_bonuses()` (`contract_bonus` row) |
+
+Rule and contract stack: every accessor multiplies the active rule by the
+contract. A contract settles on `wave_completed` (paid) or `player_died` (0) with
+`broadcast_contract_settled`.
+
+**Manhunt.** A marked enemy wears an amber ring (`Enemy._set_marked()`, REWARD
+colour + circle, the "this pays" law). On death by the player, the enemy calls
+`BroadcastRules.note_marked_kill()` right before `kill_scored`, and
+`KillBonusTracker` consumes it as the `marked` bonus
+(`EconomyConfig.bonus_marked`). The kill signal carries no body, so the flag is
+synchronous within the frame.
+
+Rules today: Headshot Night, Air Show, Moon Boots, Sponsored Reloads, Crowd
+Frenzy, Glass Cannon, Combo Hour, Scorched Earth, Manhunt, Heavyweights, Fast
+Forward. Contracts (`data/broadcast_rules/contracts/`): Grounded, No Hook, Short
+Mags, Paper Armor, Lead Boots.
+
+HUD: one chip under the wave number with the rule and the contract.
+
+## Rating consequences
+
+On top of the multiplier (see [[#Rating]]), two events in `BroadcastRating`,
+numbers in `rating_config.tres` group *Consecuencias*:
+
+- **Peak** — the first time per wave the rating reaches the top tier:
+  `EconomyManager.award_show_bonus(peak_bonus)` (the `show_bonus` row of the
+  breakdown) and `rating_peak`, on which `CrowdDropDirector` throws a gift at once.
+- **Sponsor walkout** — `walkout_after` seconds of fight in the bottom tier, from
+  wave `walkout_from_wave` (3): `rating_sponsor_walkout(true)` and the crowd stops
+  throwing until the rating leaves the floor; then the first gift comes right away.
+
+## Crowd requests
+
+`CrowdRequests` (autoload) + `CrowdRequest` resources in `data/crowd_requests/`,
+pooled by `request_pool.tres`. From wave `from_wave` (2), one request at a time:
+`goal` kills carrying `bonus_id` (any `KillBonusTracker` id) within `time_limit`.
+Counted from `kill_payout`. Met → `BroadcastRating.boost(reward_rating)`,
+`award_show_bonus(reward_currency)` and, if `throws_gift`, a gift from
+`CrowdDropDirector`. Failing or the wave ending just closes it. Turned on with the
+broadcast rules by `MatchDirector`. HUD: a chip under the rule chip with progress
+and seconds left; the Host announces and celebrates.

@@ -30,6 +30,11 @@ var is_dead: bool = false
 ## haber llegado a cero un frame antes de tiempo.
 var last_attacker: Node = null
 
+## De que vino el **ultimo** golpe, como id de DamageCause. A diferencia de
+## `last_attacker`, un golpe sin atacante si lo pisa (queda en `arena`): esto
+## describe el golpe, no a quien se le debe la muerte.
+var last_hit_cause: StringName = &""
+
 ## Ganchos opcionales para reglas que dependen del dueño y no de la vida en si.
 ##
 ## `incoming_scale` devuelve un multiplicador extra para el golpe que entra (la
@@ -51,7 +56,10 @@ func _ready() -> void:
 ## `attacker` es quien lo causó. Opcional a propósito: las fuentes que todavía no
 ## saben de quién son siguen andando igual, y lo peor que pasa es que la muerte
 ## quede sin dueño.
-func apply_damage(amount: float, attacker: Node = null) -> float:
+##
+## `cause` nombra el origen cuando el atacante no lo dice: la explosion de un
+## Bomber se atribuye a quien lo mato, pero lo que golpeo fue el Bomber.
+func apply_damage(amount: float, attacker: Node = null, cause: StringName = &"") -> float:
 	if is_dead or is_invulnerable or amount <= 0.0:
 		return 0.0
 	var scaled: float = amount * damage_taken_multiplier
@@ -63,6 +71,7 @@ func apply_damage(amount: float, attacker: Node = null) -> float:
 	current_health -= applied
 	if attacker != null:
 		last_attacker = attacker
+	last_hit_cause = cause if cause != &"" else DamageCause.of(attacker)
 	damaged.emit(applied, current_health)
 	if current_health <= 0.0:
 		is_dead = true
@@ -99,3 +108,4 @@ func reset() -> void:
 	# Pooleado: sin esto el próximo ocupante del cuerpo nace debiéndole la muerte
 	# a quien mató al anterior.
 	last_attacker = null
+	last_hit_cause = &""

@@ -81,6 +81,13 @@ var purchases: int = 0
 var earned: int = 0
 ## Cuantas veces se cumplio cada bono de kill, por id.
 var bonus_counts: Dictionary = {}
+## Daño recibido por origen (DamageCause): id -> daño. Lo que la pantalla de
+## muerte resume y el log guarda.
+var damage_by_cause: Dictionary = {}
+## De que vino el golpe que mato, o vacio si la run no termino en muerte.
+var killed_by: StringName = &""
+## El ultimo golpe, para saber cual fue el que mato: `player_died` no trae nada.
+var _last_hit_cause: StringName = &""
 
 ## Las tres partes del puntaje. Ver `EconomyConfig` grupo Score: todo lo que
 ## suma se gano jugando, y morir solo deja de sumar.
@@ -104,6 +111,8 @@ func _ready() -> void:
 	EventBus.kill_payout.connect(_on_kill_payout)
 	EventBus.kill_credited.connect(_on_kill_credited)
 	EventBus.player_damaged.connect(_on_player_damaged.unbind(1))
+	EventBus.player_hit.connect(_on_player_hit)
+	EventBus.player_died.connect(_on_player_died)
 	EventBus.wave_completed.connect(_on_wave_completed)
 	EventBus.purchase_made.connect(_on_purchase_made.unbind(2))
 	EventBus.run_finished.connect(_on_run_finished)
@@ -154,6 +163,9 @@ func reset() -> void:
 	# esto, asi que lo que hay ahora es el punto de partida.
 	_last_currency = EconomyManager.currency
 	bonus_counts.clear()
+	damage_by_cause.clear()
+	killed_by = &""
+	_last_hit_cause = &""
 	kill_points = 0
 	style_points = 0
 	wave_points = 0
@@ -215,7 +227,39 @@ func evaluate(total_time: float, victory: bool) -> Array[StringName]:
 	return won
 
 
+## El resumen de la muerte: que mato y quien hizo la mayor parte del daño, con su
+## parte del total. `{ "killed_by", "top_cause", "top_share" }`; las claves de
+## origen vienen vacias si no hubo daño.
+##
+## Lo que enseña al jugador es lo mismo que necesita el log: "te mato un Bomber,
+## pero el 60 % del daño fue de Rangers" dice que mirar en la proxima run.
+func get_death_recap() -> Dictionary:
+	var top_cause: StringName = &""
+	var top_damage: float = 0.0
+	var total: float = 0.0
+	for cause: StringName in damage_by_cause:
+		var amount: float = float(damage_by_cause[cause])
+		total += amount
+		if amount > top_damage:
+			top_damage = amount
+			top_cause = cause
+	return {
+		"killed_by": killed_by,
+		"top_cause": top_cause,
+		"top_share": top_damage / total if total > 0.0 else 0.0,
+	}
+
+
 # Private
+
+func _on_player_hit(amount: float, cause: StringName) -> void:
+	_last_hit_cause = cause
+	damage_by_cause[cause] = float(damage_by_cause.get(cause, 0.0)) + amount
+
+
+func _on_player_died() -> void:
+	killed_by = _last_hit_cause
+
 
 func _on_kill_scored(_enemy_type: StringName, _position: Vector3, was_headshot: bool,
 		_reward: int) -> void:

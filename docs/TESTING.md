@@ -1,7 +1,7 @@
 ---
 tags: [mayhem]
 estado: guia
-actualizado: 2026-10-09
+actualizado: 2026-10-16
 ---
 
 # Testing
@@ -155,6 +155,8 @@ Un worktree nunca trae `.godot`, así que arranca con caché fresca por definici
 | 2026-09-30 | `develop` @ `7844c92` | 1028 tests, **1028 en verde** (Godot 4.7.2, `tools/run_tests.ps1`) |
 | 2026-10-09 | `develop` @ `1a37794` | 1052 tests, **1052 en verde** (Godot 4.7.1) |
 | 2026-10-09 | `docs/regularizacion` (sin commitear) | 1117 tests, **1117 en verde** (Godot 4.7.1) |
+| 2026-10-16 | `develop` @ `5bc7109` | 1184 tests, **1184 en verde** (Godot 4.7.1) |
+| 2026-10-16 | `feat/systems-expansion` (sin commitear) | 1264 tests, **1264 en verde** (Godot 4.7.1) |
 
 Actualizar esta tabla con cada corrida completa que se registre; las corridas
 viejas quedan en git.

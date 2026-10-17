@@ -130,6 +130,12 @@ func _ready() -> void:
 	TutorialHintManager.tutorial_ended.connect(_on_tutorial_ended)
 	EventBus.broadcast_rule_started.connect(_on_broadcast_rule_started)
 	EventBus.broadcast_rule_ended.connect(_on_broadcast_rule_ended)
+	EventBus.broadcast_contract_started.connect(_on_contract_started)
+	EventBus.broadcast_contract_settled.connect(_on_contract_settled)
+	_build_request_chip()
+	EventBus.crowd_request_started.connect(_on_crowd_request_started)
+	EventBus.crowd_request_progress.connect(_on_crowd_request_progress)
+	EventBus.crowd_request_ended.connect(_on_crowd_request_ended)
 	_bind_player.call_deferred()
 
 
@@ -147,6 +153,10 @@ func _build_rating_meter() -> void:
 ## numero de oleada. Una regla que solo se anuncia una vez se olvida a la mitad.
 var _rule_chip: PanelContainer
 var _rule_label: Label
+## La regla y el contrato van en el mismo chip, en dos lineas: los dos duran la
+## oleada y los dos cambian como se juega.
+var _rule_text: String = ""
+var _contract_text: String = ""
 
 
 func _build_rule_chip() -> void:
@@ -232,9 +242,8 @@ func get_rule_text() -> String:
 
 
 func _on_broadcast_rule_started(_rule_id: StringName, title: String, description: String) -> void:
-	_rule_label.text = "RULE  %s
-%s" % [title, description]
-	_rule_chip.visible = true
+	_rule_text = "RULE  %s\n%s" % [title, description]
+	_refresh_rule_chip()
 	# Despues del cartel de la oleada, no encima: los dos usan la misma banda.
 	if is_inside_tree():
 		get_tree().create_timer(Tokens.ANNOUNCE_LIFE).timeout.connect(func() -> void:
@@ -243,10 +252,93 @@ func _on_broadcast_rule_started(_rule_id: StringName, title: String, description
 
 
 func _on_broadcast_rule_ended() -> void:
-	_rule_chip.visible = false
+	_rule_text = ""
+	_refresh_rule_chip()
+
+
+func _on_contract_started(_contract_id: StringName, title: String, description: String,
+		payout: int) -> void:
+	_contract_text = "CONTRACT  %s  (+%d)\n%s" % [title, payout, description]
+	_refresh_rule_chip()
+
+
+func _on_contract_settled(_contract_id: StringName, _paid: int) -> void:
+	_contract_text = ""
+	_refresh_rule_chip()
+
+
+func _refresh_rule_chip() -> void:
+	var parts: PackedStringArray = []
+	for text: String in [_rule_text, _contract_text]:
+		if text != "":
+			parts.append(text)
+	_rule_label.text = "\n".join(parts)
+	_rule_chip.visible = not parts.is_empty()
+
+
+## El pedido del publico en curso: que quieren, cuantos van y cuanto queda. Debajo
+## del chip de la regla, con el mismo tratamiento - es otra voz del show.
+var _request_chip: PanelContainer
+var _request_label: Label
+var _request_title: String = ""
+var _request_goal: int = 0
+var _request_progress: int = 0
+var _request_time_left: float = 0.0
+
+
+func _build_request_chip() -> void:
+	_request_chip = PanelContainer.new()
+	_request_chip.name = "CrowdRequestChip"
+	_request_chip.theme_type_variation = &"HUDPanel"
+	_request_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_request_chip.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_request_label = Label.new()
+	_request_label.theme_type_variation = &"HUDLabel"
+	_request_label.add_theme_color_override("font_color", Tokens.REWARD)
+	_request_label.custom_minimum_size = Vector2(320.0, 0.0)
+	_request_chip.add_child(_request_label)
+	_wave_number.get_parent().get_parent().add_child(_request_chip)
+	_request_chip.visible = false
+
+
+func get_request_text() -> String:
+	return _request_label.text if _request_chip != null and _request_chip.visible else ""
+
+
+func _on_crowd_request_started(_request_id: StringName, title: String, goal: int,
+		time_limit: float) -> void:
+	_request_title = title
+	_request_goal = goal
+	_request_progress = 0
+	_request_time_left = time_limit
+	_refresh_request_chip()
+	_request_chip.visible = true
+
+
+func _on_crowd_request_progress(_request_id: StringName, progress: int, goal: int) -> void:
+	_request_progress = progress
+	_request_goal = goal
+	_refresh_request_chip()
+
+
+func _on_crowd_request_ended(_request_id: StringName, success: bool) -> void:
+	_request_chip.visible = false
+	_request_time_left = 0.0
+	if success:
+		announce("THE CROWD LOVES IT", _request_title, Tokens.REWARD)
+
+
+func _refresh_request_chip() -> void:
+	_request_label.text = "CROWD  %s   %d/%d   %ds" % [_request_title, _request_progress,
+		_request_goal, ceili(maxf(_request_time_left, 0.0))]
 
 
 func _process(delta: float) -> void:
+	if _request_time_left > 0.0 and _request_chip != null and _request_chip.visible:
+		var shown: int = ceili(_request_time_left)
+		_request_time_left -= delta
+		if ceili(maxf(_request_time_left, 0.0)) != shown:
+			_refresh_request_chip()
 	if _announce_timer > 0.0:
 		_announce_timer -= delta
 		if _announce_timer <= 0.0:

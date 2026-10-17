@@ -24,6 +24,9 @@ signal match_state_changed(is_running: bool)
 ## Si el Host sortea reglas de transmision en esta partida (BroadcastRules). Solo
 ## en la escena de juego: un director armado a mano en una prueba no las quiere.
 @export var broadcast_rules_enabled: bool = false
+## Si la run lleva los attachments de la Armeria y cuenta maestria. Mismo
+## criterio que las reglas: solo la escena de juego.
+@export var attachments_enabled: bool = false
 ## El tutorial de arranque. Si corresponde mostrarlo, la primera oleada espera a
 ## que termine o se saltee: la partida no empieza con alguien que todavia no sabe
 ## dashear. Sin tutorial (pruebas, escenas armadas a mano) arranca directo.
@@ -62,7 +65,13 @@ func start_match() -> void:
 	is_running = true
 	_match_start_time = _now()
 	_match_paused_at_start = GameManager.get_paused_seconds()
+	# Primero que todo lo que sortea: la tienda, las reglas y el publico sacan de
+	# las corrientes de esta semilla desde el primer frame de la run.
+	RunSeed.begin(GameManager.run_fixed_seed)
 	UpgradeManager.reset()
+	# Despues de vaciar las mejoras: los attachments entran como mejoras de arma.
+	if attachments_enabled:
+		Armory.begin_run()
 	EconomyManager.reset()
 	# Junto a los otros dos y no colgado de la primera oleada: "empezo una
 	# partida" es una decision de este director, no un efecto secundario.
@@ -71,6 +80,10 @@ func start_match() -> void:
 	BroadcastRating.tracking = true
 	BroadcastRules.reset()
 	BroadcastRules.enabled = broadcast_rules_enabled
+	# Los pedidos del publico van con las reglas: son las dos voces del show, y
+	# una escena armada a mano para una prueba no quiere ninguna.
+	CrowdRequests.reset()
+	CrowdRequests.enabled = broadcast_rules_enabled
 	WaveManager.reset()
 	WaveManager.setup(waves)
 	GameManager.start_run()
@@ -83,6 +96,8 @@ func _exit_tree() -> void:
 	BroadcastRating.reset()
 	BroadcastRules.enabled = false
 	BroadcastRules.end_rule()
+	CrowdRequests.enabled = false
+	CrowdRequests.reset()
 
 
 func get_match_time() -> float:
@@ -144,6 +159,11 @@ func _open_break(wave_index: int, duration: float) -> void:
 	_in_break = true
 	_break_generation += 1
 	GameManager.state = GameManager.State.SHOPPING
+	# Las reglas de la proxima oleada se eligen en la tienda: se arman antes de
+	# abrirla para que la pantalla las encuentre listas.
+	var next_index: int = wave_index + 1
+	if next_index < waves.size():
+		BroadcastRules.prepare_offer(next_index, waves[next_index])
 	shop_screen.call(&"open", WaveManager.get_last_breakdown(), wave_index, duration)
 
 

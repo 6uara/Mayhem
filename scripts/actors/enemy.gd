@@ -168,6 +168,17 @@ var is_moving: bool = false
 ## is being asked to dodge something it cannot see coming.
 var windup_progress: float = 0.0
 
+## Marcado por la regla de Cacería: matarlo paga el bono `marked`. Lo decide
+## BroadcastRules al salir del pool.
+var is_marked: bool = false
+## Lo que la regla de transmision de la oleada le cambio al salir del pool. Ver
+## EnemyRuleModifier.
+var _rule_speed: float = 1.0
+var _rule_damage: float = 1.0
+## El anillo de recompensa sobre la cabeza de un marcado. Se crea la primera vez
+## que este cuerpo sale marcado y despues solo se prende y apaga.
+var _mark_ring: MeshInstance3D
+
 ## Contra quién está peleando. Era `_player` y se llamaba así porque no había otra
 ## cosa que pudiera ser; ahora es el hostil más cercano, que para la horda de hoy
 ## sigue dando el jugador siempre.
@@ -474,11 +485,17 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_apply_silhouette_markers()
 	_apply_fuse_ring()
 
+	# La regla de transmision de la oleada, si toca enemigos. Antes de la vida y
+	# del agente: los dos leen lo que esto deja.
+	var rule: Vector3 = BroadcastRules.enemy_multipliers(data.id)
+	_rule_speed = rule.y
+	_rule_damage = rule.z
 	if health != null:
-		health.max_health = data.max_health
+		health.max_health = data.max_health * rule.x
 		health.reset()
 	if agent != null:
-		agent.max_speed = data.move_speed
+		agent.max_speed = data.move_speed * _rule_speed
+	_set_marked(BroadcastRules.should_mark_spawn())
 	_set_hitboxes_enabled(true)
 	_rebuild_behavior_tree()
 
@@ -845,7 +862,12 @@ func get_hitbox_radius() -> float:
 
 func get_move_speed() -> float:
 	var speed: float = data.move_speed if data != null else 5.0
-	return speed * _slow_multiplier
+	return speed * _slow_multiplier * _rule_speed
+
+
+## El daño de un golpe o un disparo, con lo que la regla de la oleada le sume.
+func get_attack_damage() -> float:
+	return (data.damage if data != null else 0.0) * _rule_damage
 
 
 ## Melee hit on whatever it is fighting, applied only if it is still in range.
@@ -862,7 +884,7 @@ func deal_melee_damage() -> void:
 		return
 	var victim_health: HealthComponent = _find_health(victim)
 	if victim_health != null:
-		victim_health.apply_damage(data.damage, self)
+		victim_health.apply_damage(get_attack_damage(), self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -982,7 +1004,7 @@ func _check_leap_contact() -> void:
 	_leap_hit_landed = true
 	var victim_health: HealthComponent = _find_health(victim)
 	if victim_health != null:
-		victim_health.apply_damage(data.damage, self)
+		victim_health.apply_damage(get_attack_damage(), self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 
 
@@ -1045,7 +1067,7 @@ func _spawn_blast() -> void:
 	# segundo estallido hereda el mismo dueño por el mismo camino, porque el golpe
 	# que lo mató ya venía atribuido.
 	var owner_of_the_blast: Node = health.last_attacker if health != null else null
-	blast.detonate(data.explosion_radius, data.explosion_damage, data.explosion_sound,
+	blast.detonate(data.explosion_radius, data.explosion_damage * _rule_damage, data.explosion_sound,
 		self, owner_of_the_blast)
 
 
@@ -1106,7 +1128,7 @@ func fire_projectile() -> void:
 		push_error("Enemy: %s projectile_scene is not an EnemyProjectile" % data.id)
 		return
 	var direction: Vector3 = (target - origin).normalized()
-	typed.launch(origin, direction, data.damage, data.projectile_speed, self)
+	typed.launch(origin, direction, get_attack_damage(), data.projectile_speed, self)
 	AudioPool.play_3d(data.attack_sound, global_position, AudioPool.BUS_ENEMIES)
 	# The shot itself is not in the snapshot - snapshots carry who is standing
 
@@ -2279,6 +2301,29 @@ func _apply_silhouette_markers() -> void:
 		healer_tether.configure(data.has_tether, data.head_offset * 0.9)
 
 
+## La marca de la Cacería: un anillo ambar sobre la cabeza. Ambar y circulo
+## porque es la ley de color de REWARD ("esto paga"), no la del enemigo: lo que
+## cambia de un marcado no es cuanto peligro tiene sino cuanto vale.
+func _set_marked(marked: bool) -> void:
+	is_marked = marked
+	if not marked:
+		if _mark_ring != null:
+			_mark_ring.visible = false
+		return
+	if _mark_ring == null:
+		_mark_ring = MeshInstance3D.new()
+		_mark_ring.name = "MarkRing"
+		var ring := TorusMesh.new()
+		ring.inner_radius = 0.42
+		ring.outer_radius = 0.55
+		_mark_ring.mesh = ring
+		_mark_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_tint(_mark_ring, Tokens.REWARD)
+		add_child(_mark_ring)
+	_mark_ring.position.y = float(Tokens.ENEMY_HEIGHT.get(String(data.id), 2.0)) + 0.6
+	_mark_ring.visible = true
+
+
 func _tint(mesh: MeshInstance3D, tint: Color) -> void:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = tint
@@ -2474,6 +2519,10 @@ func _on_died() -> void:
 	# kill_credited es "y es tuyo", que a partir de ahora no siempre es cierto.
 	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
 	if _killed_by_the_player():
+		# Antes de kill_scored: KillBonusTracker juzga esa kill en el mismo
+		# frame y es quien consume la marca.
+		if is_marked:
+			BroadcastRules.note_marked_kill()
 		EventBus.kill_credited.emit(data.reward_currency)
 		# Pegado a la anterior y no en su lugar: una paga, la otra describe. Ver
 		# EventBus.kill_scored.

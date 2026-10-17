@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HostCatalog" load_steps=20 format=3]
+[gd_resource type="Resource" script_class="HostCatalog" load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/host_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://scripts/resources/host_line_set.gd" id="2_set"]
@@ -139,6 +139,54 @@ tier = 1
 priority = 2
 category_cooldown = 0.0
 
+[sub_resource type="Resource" id="Set_contract_signed"]
+script = ExtResource("2_set")
+id = &"contract_signed"
+lines = Array[String](["Signed and witnessed. %s. Let us see you honor it.", "A contract. %s. The house loves a gambler.", "%s. Your word, live on air."])
+tier = 1
+priority = 2
+category_cooldown = 0.0
+
+[sub_resource type="Resource" id="Set_contract_paid"]
+script = ExtResource("2_set")
+id = &"contract_paid"
+lines = Array[String](["Contract honored. %d, as promised.", "Paid in full: %d. The house keeps its word. Mostly."])
+tier = 1
+priority = 2
+category_cooldown = 0.0
+
+[sub_resource type="Resource" id="Set_rating_peak"]
+script = ExtResource("2_set")
+id = &"rating_peak"
+lines = Array[String](["Top of the charts. The sponsors are throwing money at the screen.", "Peak ratings. Somebody get this one a gift.", "This is the clip they will replay all week."])
+tier = 3
+priority = 2
+category_cooldown = 0.0
+
+[sub_resource type="Resource" id="Set_sponsor_walkout"]
+script = ExtResource("2_set")
+id = &"sponsor_walkout"
+lines = Array[String](["And the sponsors are walking out. No more gifts until you give them a reason.", "Dead air. The crowd is keeping its presents."])
+tier = 2
+priority = 2
+category_cooldown = 30.0
+
+[sub_resource type="Resource" id="Set_crowd_request"]
+script = ExtResource("2_set")
+id = &"crowd_request"
+lines = Array[String](["The crowd has a request: %s", "Listen to them. %s", "You hear that? %s"])
+tier = 1
+priority = 1
+category_cooldown = 10.0
+
+[sub_resource type="Resource" id="Set_crowd_request_met"]
+script = ExtResource("2_set")
+id = &"crowd_request_met"
+lines = Array[String](["The crowd got what it wanted. Pay the performer.", "Request granted. They are on their feet."])
+tier = 1
+priority = 1
+category_cooldown = 8.0
+
 [resource]
 script = ExtResource("1_catalog")
-sets = Array[Resource]([SubResource("Set_wave_start"), SubResource("Set_wave_cleared"), SubResource("Set_first_blood"), SubResource("Set_streak"), SubResource("Set_elite_wave"), SubResource("Set_low_health"), SubResource("Set_no_damage"), SubResource("Set_too_slow"), SubResource("Set_purchase"), SubResource("Set_crowd_drop"), SubResource("Set_death"), SubResource("Set_match_won"), SubResource("Set_broadcast_rule"), SubResource("Set_rating_up"), SubResource("Set_rating_down"), SubResource("Set_second_wind"), SubResource("Set_tutorial_done")])
+sets = Array[Resource]([SubResource("Set_wave_start"), SubResource("Set_wave_cleared"), SubResource("Set_first_blood"), SubResource("Set_streak"), SubResource("Set_elite_wave"), SubResource("Set_low_health"), SubResource("Set_no_damage"), SubResource("Set_too_slow"), SubResource("Set_purchase"), SubResource("Set_crowd_drop"), SubResource("Set_death"), SubResource("Set_match_won"), SubResource("Set_broadcast_rule"), SubResource("Set_rating_up"), SubResource("Set_rating_down"), SubResource("Set_second_wind"), SubResource("Set_tutorial_done"), SubResource("Set_contract_signed"), SubResource("Set_contract_paid"), SubResource("Set_rating_peak"), SubResource("Set_sponsor_walkout"), SubResource("Set_crowd_request"), SubResource("Set_crowd_request_met")])

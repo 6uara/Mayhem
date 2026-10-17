@@ -349,6 +349,8 @@ func _on_damaged(amount: float, remaining: float) -> void:
 	if remaining > 0.0 and _hurt_sound_cooldown <= 0.0:
 		_hurt_sound_cooldown = HURT_SOUND_INTERVAL
 		AudioPool.play_2d(hurt_sound, AudioPool.BUS_SFX, -2.0, randf_range(0.92, 1.08))
+	if health != null:
+		EventBus.player_hit.emit(amount, health.last_hit_cause)
 	EventBus.player_damaged.emit(amount, remaining)
 
 
