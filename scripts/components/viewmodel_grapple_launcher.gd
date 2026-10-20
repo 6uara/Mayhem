@@ -126,7 +126,9 @@ func _update_cable() -> void:
 	var direction: Vector3 = (end - start) / length
 	var aim := Basis.looking_at(direction,
 		Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
-	cable.global_transform = Transform3D(aim.scaled(Vector3(1.0, 1.0, length)),
+	# Estirado sobre su propio Z (scaled_local): `scaled()` escala en ejes globales
+	# y torcia el cable hacia cualquier lado.
+	cable.global_transform = Transform3D(aim.scaled_local(Vector3(1.0, 1.0, length)),
 		start.lerp(end, 0.5))
 
 

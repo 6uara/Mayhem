@@ -104,7 +104,10 @@ blender -b assets/models/Arms/arms_rig.blend --python tools/blender/build_fp_arm
 **Grapple launcher.** `ViewmodelGrappleLauncher` hangs off the left forearm
 (a `BoneAttachment3D`, so it follows the IK). On `EventBus.grapple_started` the
 visible one kicks back, brightens its cyan accents and draws a cyan cable to the
-anchor; `grapple_ended` takes it down. The cable lives in the *game* world —
+anchor; `grapple_ended` takes it down. While grappling the left hand lets go of
+the weapon and swings forward, wrist bent down (`GRAPPLE_HAND` and friends in
+`viewmodel_arms.gd`): with the pistol both hands sit together and the left
+forearm is otherwise off screen, so the launcher would fire unseen. The cable lives in the *game* world —
 the anchor is there — starting from the world point that the game camera sees
 where the viewmodel camera sees the nozzle: the nozzle's camera-space X/Y are
 stretched by `tan(world_fov/2) / tan(viewmodel_fov/2)`, since the two cameras

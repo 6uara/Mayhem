@@ -65,6 +65,17 @@ const EQUIP_DROP: Vector3 = Vector3(0.0, -0.32, 0.12)
 const RELOAD_RIGHT_DROP: Vector3 = Vector3(0.03, -0.06, 0.06)
 const RELOAD_BELT: Vector3 = Vector3(-0.12, -0.38, 0.2)
 const RELOAD_MAGWELL: Vector3 = Vector3(0.0, -0.09, 0.02)
+## Al tirar el gancho la izquierda suelta el arma y se adelanta, con el dorso
+## arriba: el lanzador va en el dorso del antebrazo, y con la pistola (las dos
+## manos juntas, el antebrazo fuera de cuadro) es la unica forma de que se vea
+## salir el cable. En el espacio de la camara.
+const GRAPPLE_HAND: Vector3 = Vector3(-0.07, -0.12, -0.52)
+## La mano se dobla hacia abajo: con la muñeca recta los dedos tapaban la boca
+## del lanzador y el cable parecia salir de la mano.
+const GRAPPLE_FORWARD: Vector3 = Vector3(0.2, -0.45, -1.0)
+const GRAPPLE_PALM: Vector3 = Vector3(0.4, -1.0, 0.0)
+## Lo que tarda la mano en ir y en volver.
+const GRAPPLE_RAISE_TIME: float = 0.12
 
 const CLIP_IDLE: StringName = &"grip_idle"
 const CLIP_FIRE: StringName = &"fire"
@@ -80,6 +91,9 @@ var _support: Vector3 = Vector3.ZERO
 var _shoulder_centre: Vector3 = Vector3.ZERO
 var _reload_progress: float = 0.0
 var _equip_left: float = 0.0
+var _launcher: Node3D
+## 0 con la mano en el arma, 1 con el brazo adelante tirando el gancho.
+var _grapple_blend: float = 0.0
 
 
 func _ready() -> void:
@@ -182,6 +196,9 @@ func _process(delta: float) -> void:
 	if _ik == null:
 		return
 	_equip_left = maxf(_equip_left - delta, 0.0)
+	var grappling: bool = _launcher != null and bool(_launcher.call(&"is_grappling"))
+	_grapple_blend = move_toward(_grapple_blend, 1.0 if grappling else 0.0,
+		delta / GRAPPLE_RAISE_TIME)
 	_update_targets()
 	_update_clip()
 
@@ -223,6 +240,7 @@ func _mount_grapple_launcher() -> void:
 	launcher.name = &"GrappleLauncher"
 	launcher.transform = forearm_rest.affine_inverse() * mount
 	attachment.add_child(launcher)
+	_launcher = launcher
 
 
 func _bone_rest_origin(bone_name: String) -> Vector3:
@@ -240,7 +258,11 @@ func _update_targets() -> void:
 	var right_palm: Vector3 = _grip + RELOAD_RIGHT_DROP * sin(PI * p) + drop
 	var left_palm: Vector3 = _reload_left_hand(p) + drop
 	_aim_hand(_ik.right, right_palm, RIGHT_FORWARD, RIGHT_PALM)
-	_aim_hand(_ik.left, left_palm, LEFT_FORWARD, LEFT_PALM)
+	var raise: float = smoothstep(0.0, 1.0, _grapple_blend)
+	# De la camara a este nodo: lo mismo que se le resto a los hombros.
+	var grapple_palm: Vector3 = GRAPPLE_HAND + (_shoulder_centre - SHOULDER_CENTRE)
+	_aim_hand(_ik.left, left_palm.lerp(grapple_palm, raise),
+		LEFT_FORWARD.lerp(GRAPPLE_FORWARD, raise), LEFT_PALM.lerp(GRAPPLE_PALM, raise))
 
 	var half_width: float = absf(_shoulder_from_rig("upper_arm.R").x
 		- _shoulder_from_rig("upper_arm.L").x) * 0.5

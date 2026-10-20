@@ -102,3 +102,18 @@ func test_only_the_visible_arms_fire_the_grapple() -> void:
 	assert_false(_launcher(hidden).call(&"is_grappling"), "el guardado no")
 	EventBus.grapple_ended.emit()
 	assert_false(_launcher(shown).call(&"is_grappling"), "y suelta al terminar")
+
+
+## Con la pistola las dos manos van juntas y el antebrazo izquierdo queda fuera
+## de cuadro: al tirar el gancho la izquierda suelta el arma y se adelanta, que es
+## lo que pone el lanzador en pantalla. Al soltar, vuelve.
+func test_grappling_brings_the_left_arm_forward() -> void:
+	var arms: ARMS_SCRIPT = _build()
+	await wait_seconds(ARMS_SCRIPT.EQUIP_TIME + 0.1)
+	var holding: Vector3 = arms.get_wrist_targets()[1]
+	EventBus.grapple_started.emit(Vector3(0.0, 8.0, -20.0))
+	await wait_seconds(ARMS_SCRIPT.GRAPPLE_RAISE_TIME + 0.1)
+	assert_gt(arms.get_wrist_targets()[1].distance_to(holding), 0.05, "la mano se fue del arma")
+	EventBus.grapple_ended.emit()
+	await wait_seconds(ARMS_SCRIPT.GRAPPLE_RAISE_TIME + 0.1)
+	assert_almost_eq(arms.get_wrist_targets()[1], holding, Vector3.ONE * 0.001, "y volvio")
