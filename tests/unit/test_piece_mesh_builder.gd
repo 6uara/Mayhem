@@ -91,7 +91,21 @@ func test_elevated_ground_reads_brighter_than_the_floor() -> void:
 	autofree(ground)
 	var raised: Node3D = PieceMeshBuilder.build(piece, _catalog, false, true)
 	autofree(raised)
-	var ground_material := (ground.get_child(0) as MeshInstance3D).material_override as StandardMaterial3D
-	var raised_material := (raised.get_child(0) as MeshInstance3D).material_override as StandardMaterial3D
-	assert_gt(raised_material.albedo_color.v, ground_material.albedo_color.v)
-	assert_lt(raised_material.roughness, ground_material.roughness)
+	var ground_material := (ground.get_child(0) as MeshInstance3D).material_override as ShaderMaterial
+	var raised_material := (raised.get_child(0) as MeshInstance3D).material_override as ShaderMaterial
+	assert_gt((raised_material.get_shader_parameter(&"albedo") as Color).v,
+		(ground_material.get_shader_parameter(&"albedo") as Color).v)
+	assert_lt(float(raised_material.get_shader_parameter(&"roughness")),
+		float(ground_material.get_shader_parameter(&"roughness")))
+
+
+## La pasarela lleva chapa antideslizante; el piso del nivel 0 es liso. Es la
+## otra senal, ademas del filete, de que eso esta en el aire.
+func test_only_elevated_ground_gets_the_tread_plate() -> void:
+	var piece: PieceDefinition = _piece(&"floor_3x3")
+	var ground: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, false))
+	var raised: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, true))
+	var ground_material := (ground.get_child(0) as MeshInstance3D).material_override as ShaderMaterial
+	var raised_material := (raised.get_child(0) as MeshInstance3D).material_override as ShaderMaterial
+	assert_eq(float(ground_material.get_shader_parameter(&"tread_strength")), 0.0)
+	assert_gt(float(raised_material.get_shader_parameter(&"tread_strength")), 0.0)

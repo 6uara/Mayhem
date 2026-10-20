@@ -23,6 +23,11 @@ const EDGE_LIFT: float = 0.01
 const ELEVATED_LIGHTEN: float = 0.22
 const ELEVATED_ROUGHNESS: float = 0.45
 const GROUND_ROUGHNESS: float = 0.9
+## La chapa de placas de todas las piezas greybox (ver el shader). Lo elevado
+## ademas lleva diamante antideslizante: otra senal, aparte del filete, de que
+## eso es una pasarela y no el piso.
+const SURFACE_SHADER: Shader = preload("res://assets/shaders/arena_surface.gdshader")
+const ELEVATED_TREAD: float = 0.8
 ## Marca de las piezas armadas aca, para que el cargador sepa cuales puede juntar
 ## en un MultiMesh (ver ArenaGeometryBatcher). Una pieza con escena propia no la
 ## lleva: su geometria es de quien la modelo.
@@ -53,7 +58,7 @@ static func build_greybox(piece: PieceDefinition, catalog: PieceCatalog,
 		with_collision: bool, elevated: bool = false) -> Node3D:
 	var root: Node3D = StaticBody3D.new() if with_collision else Node3D.new()
 	root.set_meta(GREYBOX_META, true)
-	var material: StandardMaterial3D = _surface_material(piece.greybox_color, elevated)
+	var material: ShaderMaterial = _surface_material(piece.greybox_color, elevated)
 	var size: Vector3 = catalog.cell_size * piece.greybox_extents
 	# Built up from the cell floor, never centred on the cell: a 0.25-high floor
 	# tile has to be the ground of its cell, not a slab hanging in the middle of
@@ -139,12 +144,16 @@ static func _box(size: Vector3) -> BoxMesh:
 	return _boxes[key]
 
 
-static func _surface_material(color: Color, elevated: bool) -> StandardMaterial3D:
+static func _surface_material(color: Color, elevated: bool) -> ShaderMaterial:
 	var key: String = "surface|%s|%s" % [color.to_html(), elevated]
 	if not _materials.has(key):
-		var material := StandardMaterial3D.new()
-		material.albedo_color = color.lightened(ELEVATED_LIGHTEN) if elevated else color
-		material.roughness = ELEVATED_ROUGHNESS if elevated else GROUND_ROUGHNESS
+		var material := ShaderMaterial.new()
+		material.shader = SURFACE_SHADER
+		material.set_shader_parameter(&"albedo",
+			color.lightened(ELEVATED_LIGHTEN) if elevated else color)
+		material.set_shader_parameter(&"roughness",
+			ELEVATED_ROUGHNESS if elevated else GROUND_ROUGHNESS)
+		material.set_shader_parameter(&"tread_strength", ELEVATED_TREAD if elevated else 0.0)
 		_materials[key] = material
 	return _materials[key]
 
