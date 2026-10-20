@@ -177,3 +177,26 @@ func test_lighting_up_works_with_a_model_and_without_one() -> void:
 	bare.show_windup(1.0)
 	bare.clear_windup()
 	pass_test("neither path errors")
+
+
+## El Summoner trae sus propios clips (idle, move, cast) y el motor de animacion
+## los toma por nombre. La invocacion es la que dispara el cast.
+func test_the_summoner_plays_its_cast_clip_when_it_summons() -> void:
+	var enemy: Enemy = await _spawn("summoner")
+	assert_not_null(enemy.data.model_scene, "el summoner tiene modelo")
+	assert_not_null(enemy._motion, "y animacion")
+	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	for clip: StringName in [&"idle", &"move", &"cast"]:
+		assert_has(clips, clip, "trae el clip %s" % clip)
+	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
+	enemy.ability_used.emit()
+	assert_eq(player.current_animation, "cast", "invocar clava el baculo")
+
+
+## Parado como el Healer: llega acostado y lo para model_pitch_degrees.
+func test_the_summoner_stands_at_its_fit_height() -> void:
+	var enemy: Enemy = await _spawn("summoner")
+	var bounds: AABB = _body_space_bounds(enemy)
+	assert_almost_eq(bounds.size.y, enemy.data.model_fit_height, 0.2,
+		"mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
+	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")

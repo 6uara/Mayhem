@@ -20,5 +20,8 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		WaveManager.spawn_summoned(enemy.data.summon_data, enemy.global_position + offset)
 
 	AudioPool.play_3d(enemy.data.attack_sound, enemy.global_position, AudioPool.BUS_ENEMIES)
+	# Lo que dispara el clip "cast" del modelo: clava el baculo en el instante en
+	# que aparecen los adds, igual que el Healer se infla cuando cura.
+	enemy.ability_used.emit()
 	enemy.start_attack_cooldown()
 	return SUCCESS

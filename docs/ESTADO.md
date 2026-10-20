@@ -68,7 +68,7 @@ estén los modelos ([PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md)).
 
 | # | Qué | Tipo |
 |---|---|---|
-| R1 | **Modelos** de todo lo que no es arma: brazos, piezas de arena, interactuables, gadgets, y tres enemigos (Elite, Environmental, Summoner). Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
+| R1 | **Modelos** de todo lo que no es arma: piezas de arena, interactuables, gadgets, y dos enemigos (Elite, Environmental). Brazos y Summoner ya tienen modelo y clips (2026-10-19); a los brazos les falta un pase mirando cada arma en juego, la pistola queda chica entre las manos. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas e impactos** sigue siendo el sintetizado por `tools/generate_placeholder_sfx.py` | Audio |
 | R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment | Balance |
 
