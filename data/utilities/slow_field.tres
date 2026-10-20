@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="UtilityData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="UtilityData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/utility_data.gd" id="1_utility"]
 [ext_resource type="PackedScene" path="res://scenes/utilities/slow_field.tscn" id="2_scene"]
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/gadget_slow_field.res" id="9_pickup"]
 
 [resource]
 script = ExtResource("1_utility")
@@ -15,3 +16,4 @@ throw_force = 14.0
 effect_radius = 6.5
 effect_duration = 6.0
 accent_color = Color(0.7, 0.4, 1, 1)
+pickup_mesh = ExtResource("9_pickup")

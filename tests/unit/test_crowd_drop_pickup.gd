@@ -123,13 +123,46 @@ func test_the_arc_lands_where_it_was_aimed() -> void:
 func test_the_core_wears_the_colour_of_what_it_is() -> void:
 	# Tres gadgets que se ven iguales de lejos convierten el pickup en una
 	# sorpresa, y la decision de si vale la pena cruzar la arena se toma antes de
-	# llegar, no al llegar.
+	# llegar, no al llegar. Con forma propia, lo que se tiñe son sus acentos.
 	var pickup: CrowdDropPickup = _pickup()
 	var data: UtilityData = _stun_grenade()
 	pickup.throw_from_stands(Vector3.ZERO, Vector3.UP, data)
-	var material := pickup.core.material_override as StandardMaterial3D
-	assert_not_null(material, "el nucleo se tiñe con el color del gadget")
-	assert_eq(material.albedo_color, data.accent_color)
+	var mesh := pickup.core.mesh as ArrayMesh
+	var tinted: int = 0
+	for surface: int in mesh.get_surface_count():
+		if mesh.surface_get_name(surface) != "accent":
+			continue
+		var material := pickup.core.get_surface_override_material(surface) as StandardMaterial3D
+		assert_not_null(material, "el acento se tiñe con el color del gadget")
+		assert_eq(material.albedo_color, data.accent_color)
+		tinted += 1
+	assert_gt(tinted, 0, "la malla tiene una superficie de acento")
+
+
+## La forma es lo que separa a los cuatro de lejos, y para un daltonico, lo
+## unico: cada uno trae su malla, ninguna repetida.
+func test_each_gadget_has_its_own_shape() -> void:
+	var seen: Array[Mesh] = []
+	for id: String in ["stun_grenade", "temp_wall", "slow_field", "medkit"]:
+		var data := load("res://data/utilities/%s.tres" % id) as UtilityData
+		assert_not_null(data.pickup_mesh, "%s tiene forma propia" % id)
+		assert_false(seen.has(data.pickup_mesh), "%s no repite la de otro" % id)
+		seen.append(data.pickup_mesh)
+		var pickup: CrowdDropPickup = _pickup()
+		pickup.throw_from_stands(Vector3.ZERO, Vector3.UP, data)
+		assert_eq(pickup.core.mesh, data.pickup_mesh, "y es la que se ve")
+
+
+## El pool reusa el objeto con otro gadget: soltarlo devuelve la esfera y le saca
+## los materiales, para que el siguiente no herede forma ni color.
+func test_a_released_pickup_forgets_its_shape() -> void:
+	var pickup: CrowdDropPickup = _pickup()
+	var sphere: Mesh = pickup.core.mesh
+	pickup.throw_from_stands(Vector3.ZERO, Vector3.UP, _stun_grenade())
+	assert_ne(pickup.core.mesh, sphere)
+	pickup._on_released()
+	assert_eq(pickup.core.mesh, sphere, "vuelve la esfera")
+	assert_null(pickup.core.get_surface_override_material(0), "sin materiales viejos")
 
 
 func test_the_three_gadgets_do_not_look_alike() -> void:
