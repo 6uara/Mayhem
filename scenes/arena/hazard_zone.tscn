@@ -2,26 +2,22 @@
 
 [ext_resource type="Script" uid="uid://c03w83jkf274f" path="res://scripts/systems/hazard_zone.gd" id="1_hazard"]
 [ext_resource type="Script" uid="uid://c0ke45fsofd5a" path="res://scripts/components/telegraph_component.gd" id="2_tel"]
-[ext_resource type="Shader" uid="uid://dd4bbdvxq5eqd" path="res://assets/shaders/lava_pool.gdshader" id="3_lava_shader"]
+[ext_resource type="Shader" path="res://assets/shaders/acid_pool.gdshader" id="3_acid_shader"]
 [ext_resource type="AudioStream" uid="uid://f4ox1mxp376q" path="res://assets/audio/sfx/world/hazard_warning.wav" id="3_warn"]
 [ext_resource type="Texture2D" uid="uid://cajnhjxyd0vt8" path="res://assets/textures/Noise128x128/Cracks/Cracks_04-128x128.png" id="4_noise"]
 
-[sub_resource type="ShaderMaterial" id="Mat_lava"]
+[sub_resource type="ShaderMaterial" id="Mat_acid"]
+resource_local_to_scene = true
 render_priority = 0
-shader = ExtResource("3_lava_shader")
+shader = ExtResource("3_acid_shader")
 shader_parameter/noise_texture = ExtResource("4_noise")
-shader_parameter/crust_color = Color(0.02, 0.05, 0.015, 1)
+shader_parameter/liquid_color = Color(0.03, 0.07, 0.02, 1)
 shader_parameter/glow_color = Color(0.776, 1, 0.239, 1)
 shader_parameter/glow_energy = 0.6
-shader_parameter/crack_threshold = 0.55
-shader_parameter/flow_speed = 0.05
-shader_parameter/roughness_value = 0.3
+shader_parameter/flow_speed = 0.04
 
-[sub_resource type="CylinderMesh" id="Mesh_decal"]
-top_radius = 1.0
-bottom_radius = 1.0
-height = 0.08
-radial_segments = 24
+[sub_resource type="PlaneMesh" id="Mesh_decal"]
+size = Vector2(2.3, 2.3)
 
 [sub_resource type="CylinderShape3D" id="Shape_zone"]
 resource_local_to_scene = true
@@ -36,9 +32,12 @@ telegraph = NodePath("Telegraph")
 decal_mesh = NodePath("Decal")
 collision = NodePath("CollisionShape3D")
 warning_sound = ExtResource("3_warn")
+shape_irregularity = 0.3
 
 [node name="Decal" type="MeshInstance3D" parent="." unique_id=84821409]
-material_override = SubResource("Mat_lava")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+cast_shadow = 0
+material_override = SubResource("Mat_acid")
 mesh = SubResource("Mesh_decal")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1534205945]

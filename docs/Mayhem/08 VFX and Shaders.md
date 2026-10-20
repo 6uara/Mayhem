@@ -1,12 +1,12 @@
 ---
 tags: [mayhem, vfx, shaders]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-20
 ---
 
 # VFX and Shaders
 
-Three custom `.gdshader` files, all in `assets/shaders/`.
+Custom `.gdshader` files, all in `assets/shaders/`.
 
 ## `arena_glitch_panel.gdshader`
 
@@ -25,25 +25,62 @@ uniform sheen.
 
 ## `lava_pool.gdshader`
 
-Drives the hazard pool decal (`scenes/arena/hazard_zone.tscn`) and the snare
-pool (`scenes/arena/snare_zone.tscn`). Two copies of a crack-noise texture
-(`assets/textures/Noise128x128/Cracks/`) scroll at different speeds and multiply
-together — one texture alone loops obviously; two drifting against each other
-almost never realign, which is what reads as something flowing rather than a
-sliding image. Crust color (dark) mixes toward glow color (bright) based on
-where the multiplied noise crosses `crack_threshold`.
+Drives the snare pool (`scenes/arena/snare_zone.tscn`). Two copies of a
+crack-noise texture (`assets/textures/Noise128x128/Cracks/`) scroll at different
+speeds and multiply together — one texture alone loops obviously; two drifting
+against each other almost never realign, which is what reads as something
+flowing rather than a sliding image. Crust color (dark) mixes toward glow color
+(bright) based on where the multiplied noise crosses `crack_threshold`.
 
 Uniforms: `noise_texture`, `crust_color`, `glow_color`, `glow_energy`,
 `crack_threshold`, `flow_speed`, `roughness_value`.
 
-**Colour-agnostic, and now carrying two skins.** The file is still named for
-the molten look it was written for, but nothing in it is: the palette is
-entirely in the two colour uniforms. `hazard_zone.tscn` is **acid** — dark
-green crust, `#C6FF3D` glow, `roughness_value = 0.3` so it reads wet rather
-than igneous — and `snare_zone.tscn` keeps the original dark-red molten
-parameters. Retinting a pool is a `.tscn` parameter change, never a shader
-edit. See [[09 Design Tokens and Color Law#Accent colors and their shapes]] for
-why the acid green does *not* pull `Tokens.HAZARD` with it.
+The hazard pool used to wear this shader too, retinted to acid; it now has its
+own (below) and this one keeps only the dark-red molten skin.
+
+## `acid_pool.gdshader`
+
+The hazard pool (`scenes/arena/hazard_zone.tscn`): arena traps, the Elite's slam
+and the flasks. A flat 2.3×2.3 quad (radius 1 = damage radius, the margin is for the stain) that `HazardZone`
+scales to the damage radius — it replaced a 0.08 m `CylinderMesh` that read as a
+coin lying on the floor.
+
+- **A puddle outline, and damage follows it.** The edge is three angular
+  harmonics (2, 3, 5) with random phases per spawn, normalised so the longest
+  lobe touches `radius` and the shortest sits at `1 - shape_irregularity`
+  (0.3 on the acid pool). `HazardZone.reach_at()` evaluates the same formula,
+  and `_is_standing_in_it()` uses it: the dry floor between a lobe and the
+  trigger cylinder does not burn. `radius` is the furthest reach, so the
+  burning area is roughly 70% of the old disc at the same radius. A fine
+  world-anchored wobble on top only ever moves the edge inward (3%).
+  The corroded stain around the liquid is dark and unlit — it is floor, not
+  warning; the glow ends where the damage ends. The snare pool keeps
+  `shape_irregularity = 0`, a circle, because its drawing is still a disc.
+- **Reads as liquid:** low roughness, rippling normal, a glowing meniscus along
+  the edge, thin veins (the same two-layer crack-noise trick as `lava_pool`)
+  and bubbles that grow and pop with an emissive ring.
+- **`spread` / `evaporate`**, driven by `HazardZone`: the pool spreads from the
+  centre during the 0.6 s warning (`Tokens.HAZARD_WARNING`), and a temporary
+  pool dries up over `Tokens.HAZARD_EVAPORATE` before going back to the pool.
+  It stops damaging the moment it expires, not when it finishes drying
+  (`is_evaporating`).
+- **The material is `resource_local_to_scene`.** Shared, every pooled pool
+  would spread, blink and dry in step with the last one spawned.
+
+Uniforms: `noise_texture`, `liquid_color`, `glow_color`, `stain_color`, `shape_*` (written by `HazardZone`),
+`glow_energy`, `spread`, `evaporate`, `edge_wobble`, `edge_scale`, `stain_width`,
+`stain_opacity`, `flow_speed`, `vein_threshold`, `ripple_strength`,
+`bubble_cell`, `bubble_density`, `bubble_speed`.
+
+## `arena_surface.gdshader`
+
+Every greybox arena piece (`PieceMeshBuilder`): bolted metal plates with
+bevelled seams, per-plate brightness variation and grime, procedural in world
+space so seams run continuously across adjacent pieces and land on cell edges.
+Elevated pieces add a diamond tread plate (`tread_strength`) as a second cue,
+next to the edge trim, that they are walkways. Colour still comes from each
+piece's `greybox_color`. Fine detail fades with screen-space footprint so it
+does not shimmer at distance.
 
 ## `portal_spawn.gdshader`
 

@@ -49,12 +49,16 @@ var _life_left: float = 0.0
 var _bob_time: float = 0.0
 var _rest_height: float = 0.0
 var _idle_player: AudioStreamPlayer3D
+## La esfera con que vino la escena: vuelve a ponerse al soltarlo al pool, para
+## que un gadget sin `pickup_mesh` no herede la forma del anterior.
+var _default_mesh: Mesh
 
 
 func _ready() -> void:
 	add_to_group(&"crowd_drop")
 	if core != null:
 		_rest_height = core.position.y
+		_default_mesh = core.mesh
 	if hitbox != null:
 		hitbox.body_entered.connect(_on_body_entered)
 	_build_idle_player()
@@ -211,18 +215,36 @@ func _set_available(available: bool) -> void:
 ## Tiñe el nucleo con el color del gadget. El halo no se toca: ese es ambar
 ## siempre, porque lo que dice es "esto se levanta", y eso no cambia con el
 ## contenido.
+##
+## Con `pickup_mesh` se tiñe solo la superficie "accent" y el cuerpo queda
+## neutro: la forma es la que dice cual es, y el brillo en tiras la deja leerse
+## de noche sin volverla una bola de luz. Sin malla, la esfera entera, como antes.
 func _apply_accent() -> void:
 	if core == null or data == null:
 		return
-	var material := StandardMaterial3D.new()
-	material.albedo_color = data.accent_color
-	material.emission_enabled = true
-	material.emission = data.accent_color
-	material.emission_energy_multiplier = 1.6
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	core.material_override = material
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = data.accent_color
+	glow.emission_enabled = true
+	glow.emission = data.accent_color
+	glow.emission_energy_multiplier = 1.6
+	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	if light != null:
 		light.light_color = data.accent_color
+	if data.pickup_mesh == null:
+		core.mesh = _default_mesh
+		core.material_override = glow
+		return
+	core.mesh = data.pickup_mesh
+	core.material_override = null
+	var body := StandardMaterial3D.new()
+	body.albedo_color = Tokens.LINE
+	body.roughness = 0.7
+	body.metallic = 0.3
+	var array_mesh := data.pickup_mesh as ArrayMesh
+	for surface: int in data.pickup_mesh.get_surface_count():
+		var is_accent: bool = array_mesh != null \
+			and array_mesh.surface_get_name(surface) == "accent"
+		core.set_surface_override_material(surface, glow if is_accent else body)
 
 
 ## Un reproductor propio en loop y no una voz del pool: el zumbido tiene que
@@ -264,3 +286,6 @@ func _on_released() -> void:
 	data = null
 	if core != null:
 		core.material_override = null
+		for surface: int in core.get_surface_override_material_count():
+			core.set_surface_override_material(surface, null)
+		core.mesh = _default_mesh

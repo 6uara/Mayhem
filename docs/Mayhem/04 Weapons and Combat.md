@@ -73,6 +73,47 @@ space to `_view.position`/`rotation_degrees` — **not** on `CameraFeelComponent
 because it's specific to the currently-equipped weapon's own child node, not the
 shared camera rig.
 
+**Arms.** `ViewmodelArms` (`scripts/components/viewmodel_arms.gd`) instances
+`assets/models/Arms/fp_arms.glb` next to the weapon pivot (not under it, so the
+reload spin does not carry them). The hands are not animated into place:
+`ViewmodelArmIK`, a `SkeletonModifier3D`, solves shoulder-elbow-wrist toward
+the grip and handguard measured from the weapon's mesh, and turns each hand to
+face it. The clips only move fingers and wrists — `grip_idle` loops, `fire`
+plays on each shot, `reload` and `equip` are scrubbed by progress (reload
+progress from `WeaponComponent`, equip from the arms becoming visible). During
+a reload the left hand also travels procedurally: down to the belt, back under
+the gun, into the handguard.
+
+Placement constants (shoulder anchor, `ARM_SCALE`, hand orientations) live at
+the top of `viewmodel_arms.gd`. The weapons are sized to the hands, not the
+other way round: each `viewmodel_scale` (pistol 1.7, SMG 1.35, rifle and
+shotgun 1.15) is what makes its grip fill a fist — the source `.fbx` files came
+in at mismatched sizes, and the pistol at 1.0 disappeared inside the hands. Tune them by looking, with
+`godot --path . -s res://tools/preview_viewmodel.gd -- rifle_ak [idle|reload|equip] [progress] [side|top]`.
+
+`fp_arms.glb` is generated, not authored: `tools/blender/build_fp_arms.py`
+reads `arms_rig.blend` (the full Rigify rig), keeps only the 39 deform bones
+that matter, applies the mirror, folds twist weights into their parents, swaps
+the Diffuse BSDF for a Principled one glTF can read and keys the clips, taking
+the "closed finger" pose from the rig's own fist. Edit the `.blend`, then:
+
+```
+blender -b assets/models/Arms/arms_rig.blend --python tools/blender/build_fp_arms.py
+```
+
+**Grapple launcher.** `ViewmodelGrappleLauncher` hangs off the left forearm
+(a `BoneAttachment3D`, so it follows the IK). On `EventBus.grapple_started` the
+visible one kicks back, brightens its cyan accents and draws a cyan cable to the
+anchor; `grapple_ended` takes it down. While grappling the left hand lets go of
+the weapon and swings forward, open and with the wrist straight along the
+forearm (`grapple` clip, `ViewmodelArmIK.Arm.straighten`; `GRAPPLE_HAND` in
+`viewmodel_arms.gd`): with the pistol both hands sit together and the left
+forearm is otherwise off screen, so the launcher would fire unseen. The cable lives in the *game* world —
+the anchor is there — starting from the world point that the game camera sees
+where the viewmodel camera sees the nozzle: the nozzle's camera-space X/Y are
+stretched by `tan(world_fov/2) / tan(viewmodel_fov/2)`, since the two cameras
+have different FOVs.
+
 A separate HUD-layer `SubViewport` gun placeholder existed earlier in the
 project's history and was removed — it duplicated this system with a generic
 grey box, never fed the equipped weapon, and silently overlaid the real

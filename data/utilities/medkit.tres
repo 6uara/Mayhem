@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="UtilityData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="UtilityData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/utility_data.gd" id="1_utility"]
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/gadget_medkit.res" id="9_pickup"]
 
 [resource]
 script = ExtResource("1_utility")
@@ -13,4 +14,5 @@ throw_force = 0.0
 effect_radius = 0.0
 effect_duration = 0.0
 accent_color = Color(0.541, 0.941, 0.769, 1)
+pickup_mesh = ExtResource("9_pickup")
 heal_amount = 35.0

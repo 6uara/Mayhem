@@ -6,9 +6,9 @@
 
 [sub_resource type="StandardMaterial3D" id="Mat_pad"]
 emission_enabled = true
-emission = Color(0.15, 0.8, 0.5, 1)
+emission = Color(0.208, 0.878, 0.831, 1)
 emission_energy_multiplier = 0.6
-albedo_color = Color(0.12, 0.5, 0.35, 1)
+albedo_color = Color(0.208, 0.878, 0.831, 1)
 
 [sub_resource type="CylinderMesh" id="Mesh_pad"]
 material = SubResource("Mat_pad")

@@ -10,6 +10,16 @@ actualizado: 2026-10-09
 
 - `bake_navmesh.gd` — see [[05 Enemies and AI#Navmesh baking]].
 - `bake_enemy_meshes.gd` — see below.
+- `build_gadget_meshes.gd` — builds the four crowd-gadget pickup shapes and the
+  wrist grapple launcher from Godot primitives into `assets/models/meshes/`
+  (`gadget_<id>.res`, `grapple_launcher.res`). Each mesh has a `body` and an
+  `accent` surface; the game tints the accent. Rerun headless after changing a
+  shape.
+- `blender/build_fp_arms.py`, `blender/build_summoner.py` — turn the art `.blend`
+  files into the `.glb` the game loads. See [[04 Weapons and Combat#Viewmodel]]
+  and [[05 Enemies and AI#Models and model motion]].
+- `preview_viewmodel.gd` — renders weapon + arms from the player's camera (or
+  `side`/`top`) to PNG.
 - `build_theme.gd` — generates `ui/mayhem_theme.tres` from the design tokens.
 - `export_host_script.gd` — see [[07 UI and HUD]] / dumps `data/host/host_catalog.tres`
   to a checklist for external VO recording. See below.

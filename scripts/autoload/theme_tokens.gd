@@ -100,6 +100,7 @@ const ANNOUNCE_LIFE      := 3.00
 const LOW_HEALTH_PULSE   := 1.10  ## continuous, ease-in-out
 const LOW_AMMO_BLINK     := 0.90  ## continuous, step (on/off)
 const HAZARD_WARNING     := 0.60  ## telegraph before a hazard can damage
+const HAZARD_EVAPORATE   := 0.40  ## a temporary pool drying up after it stops damaging
 const STATE_SETTLE_MAX   := 0.40  ## nothing else may animate longer than this
 
 # ---------------------------------------------------------------- Crosshair

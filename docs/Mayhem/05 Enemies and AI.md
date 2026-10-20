@@ -38,8 +38,8 @@ proportions and the halo is what separates their silhouettes at range),
 
 Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber,environmental,flyer}.tres`.
 
-**Models today:** Rusher, Ranger, Bomber, Healer and Flyer have a `model_scene`;
-Elite, Environmental and Summoner are still the grey-box primitive.
+**Models today:** Rusher, Ranger, Bomber, Healer, Flyer and Summoner have a `model_scene`;
+Elite and Environmental are still the grey-box primitive.
 Behavior trees: `scenes/enemies/ai/tree_{archetype}.tscn`.
 
 `EnemyData.mesh` is the grey-box silhouette and is drawn centred on the body
@@ -61,12 +61,25 @@ still adds on top for fine tuning.
 `EnemyModelMotion` (`scripts/components/enemy_model_motion.gd`) animates the
 model with no clips, driven by the "Model motion" group of `EnemyData`: hover,
 bob, spin, lean into movement, breathing, and a pop on `Enemy.ability_used`
-(the Healer emits it when it heals). With the fuse armed everything speeds up
+(the Healer emits it when it heals, the Summoner when it summons). With the fuse armed everything speeds up
 and shakes. If the model ships an `AnimationPlayer`, its clips are picked by
 name (idle/hover, walk/run/fly, cast/heal/attack) and played from the same
 state. It is cosmetic only: the body, capsule and hitboxes never move, so a
 floating archetype (the Bomber) still walks the navmesh, and its hitboxes
 (`head_offset`) are authored for where the model is drawn.
+
+The Summoner is the first archetype whose model ships its own clips (`idle`,
+`move`, `cast`). Its source `Summoner.blend` is six loose rigid pieces with no
+rig; `tools/blender/build_summoner.py` adds a six-bone skeleton, skins each
+piece to one bone (the robe hem to the root, so it bends instead of swinging
+like a board), keys the clips and writes `Summoner.glb`, which is what
+`summoner.tres` references. Edit the `.blend`, then rerun:
+
+```
+blender -b assets/models/enemies/Summoner/Summoner.blend --python tools/blender/build_summoner.py
+```
+
+`ActionSummonAdds` emits `ability_used`, which is what plays `cast`.
 
 ## Movement fields — a contract, not taste
 

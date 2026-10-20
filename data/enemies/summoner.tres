@@ -7,6 +7,7 @@
 [ext_resource type="AudioStream" uid="uid://c3qnk5s6tq1yw" path="res://assets/audio/sfx/enemies/summoner_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://dabk8tlghujpe" path="res://assets/audio/sfx/enemies/summoner_death.wav" id="6_death"]
 [ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="7_summon"]
+[ext_resource type="PackedScene" uid="uid://ccph4t65knlqb" path="res://assets/models/enemies/Summoner/Summoner.glb" id="8_model"]
 
 [sub_resource type="CylinderMesh" id="Mesh_summoner"]
 top_radius = 0.18
@@ -33,12 +34,19 @@ approach_bearing_degrees = 100.0
 approach_bearing_weight = 0.55
 summon_data = ExtResource("7_summon")
 mesh = SubResource("Mesh_summoner")
+model_scene = ExtResource("8_model")
+model_yaw_degrees = 180.0
+model_pitch_degrees = 90.0
+model_fit_height = 2.2
 body_color = Color(1, 0.231, 0.757, 1)
 collision_height = 2.2
 collision_radius = 0.55
 hitbox_radius = 0.8
 head_offset = 1.95
 head_radius = 0.3
+model_lean_degrees = 6.0
+model_breathe = 0.02
+model_cast_pop = 0.08
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
