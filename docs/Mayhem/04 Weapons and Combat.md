@@ -101,6 +101,15 @@ the "closed finger" pose from the rig's own fist. Edit the `.blend`, then:
 blender -b assets/models/Arms/arms_rig.blend --python tools/blender/build_fp_arms.py
 ```
 
+**Grapple launcher.** `ViewmodelGrappleLauncher` hangs off the left forearm
+(a `BoneAttachment3D`, so it follows the IK). On `EventBus.grapple_started` the
+visible one kicks back, brightens its cyan accents and draws a cyan cable to the
+anchor; `grapple_ended` takes it down. The cable lives in the *game* world —
+the anchor is there — starting from the world point that the game camera sees
+where the viewmodel camera sees the nozzle: the nozzle's camera-space X/Y are
+stretched by `tan(world_fov/2) / tan(viewmodel_fov/2)`, since the two cameras
+have different FOVs.
+
 A separate HUD-layer `SubViewport` gun placeholder existed earlier in the
 project's history and was removed — it duplicated this system with a generic
 grey box, never fed the equipped weapon, and silently overlaid the real

@@ -73,3 +73,32 @@ func test_equipping_brings_the_hands_up_from_below() -> void:
 	var start: float = arms.get_wrist_targets()[0].y
 	await wait_seconds(ARMS_SCRIPT.EQUIP_TIME + 0.1)
 	assert_gt(arms.get_wrist_targets()[0].y, start + 0.1, "suben hasta el agarre")
+
+
+func _launcher(arms: ARMS_SCRIPT) -> Node3D:
+	return arms.find_child("GrappleLauncher", true, false) as Node3D
+
+
+## El gancho sale de la muñeca izquierda: el lanzador va colgado del antebrazo
+## izquierdo y lo sigue a donde lo lleve la IK.
+func test_the_grapple_launcher_rides_the_left_forearm() -> void:
+	var arms: ARMS_SCRIPT = _build()
+	var launcher: Node3D = _launcher(arms)
+	assert_not_null(launcher, "hay lanzador")
+	var mount := launcher.get_parent() as BoneAttachment3D
+	assert_not_null(mount, "colgado de un hueso")
+	assert_eq(mount.bone_name, "forearm.L", "el antebrazo izquierdo")
+
+
+## Hay un juego de brazos por arma y todos escuchan el EventBus: solo el que se
+## ve dispara el gancho.
+func test_only_the_visible_arms_fire_the_grapple() -> void:
+	var shown: ARMS_SCRIPT = _build()
+	var hidden: ARMS_SCRIPT = _build()
+	hidden.visible = false
+	await wait_process_frames(1)
+	EventBus.grapple_started.emit(Vector3(0.0, 8.0, -20.0))
+	assert_true(_launcher(shown).call(&"is_grappling"), "el visible engancha")
+	assert_false(_launcher(hidden).call(&"is_grappling"), "el guardado no")
+	EventBus.grapple_ended.emit()
+	assert_false(_launcher(shown).call(&"is_grappling"), "y suelta al terminar")

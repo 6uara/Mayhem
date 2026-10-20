@@ -20,6 +20,16 @@ extends Node3D
 
 const ARMS_SCENE: PackedScene = preload("res://assets/models/Arms/fp_arms.glb")
 const IK_SCRIPT := preload("res://scripts/components/viewmodel_arm_ik.gd")
+const LAUNCHER_SCRIPT := preload("res://scripts/components/viewmodel_grapple_launcher.gd")
+
+## El lanzador del gancho, sobre el dorso del antebrazo izquierdo: que fraccion
+## del antebrazo hacia la muñeca, y cuanto sobresale de la manga (en metros del
+## rig sin escalar).
+const LAUNCHER_ALONG: float = 0.7
+const LAUNCHER_LIFT: float = 0.04
+## Pegado al ojo como esta el antebrazo izquierdo, a tamaño real tapaba medio
+## guardamanos.
+const LAUNCHER_SCALE: float = 0.8
 
 ## Entre los dos hombros, en el espacio de la camara del viewmodel. Atras y abajo
 ## del ojo: el brazo entra en cuadro desde el borde, y lo que se ve es antebrazo y
@@ -111,6 +121,7 @@ func build(weapon_bounds: AABB, pivot_offset: Vector3) -> void:
 	_skeleton.add_child(_ik)
 	_ik.bind_arm(_ik.right, _skeleton, "R", true)
 	_ik.bind_arm(_ik.left, _skeleton, "L", false)
+	_mount_grapple_launcher()
 
 	if _player != null and _player.has_animation(CLIP_IDLE):
 		_player.get_animation(CLIP_IDLE).loop_mode = Animation.LOOP_LINEAR
@@ -186,6 +197,32 @@ func _place_rig() -> void:
 	var right_shoulder: Vector3 = to_rig * _bone_rest_origin("upper_arm.R")
 	var centre: Vector3 = (left_shoulder + right_shoulder) * 0.5
 	_rig.transform = Transform3D(orient, _shoulder_centre - orient * centre)
+
+
+## Cuelga el lanzador del antebrazo izquierdo, apuntando a la mano. Se ubica en la
+## pose de reposo (brazos en T, palmas abajo: el dorso mira a +Y) y despues el
+## BoneAttachment3D lo lleva con el hueso, IK incluida.
+func _mount_grapple_launcher() -> void:
+	var forearm: int = _skeleton.find_bone("forearm.L")
+	var hand: int = _skeleton.find_bone("hand.L")
+	if forearm < 0 or hand < 0:
+		return
+	var forearm_rest: Transform3D = _skeleton.get_bone_global_rest(forearm)
+	var wrist: Vector3 = _skeleton.get_bone_global_rest(hand).origin
+	var along: Vector3 = (wrist - forearm_rest.origin).normalized()
+	var at: Vector3 = forearm_rest.origin.lerp(wrist, LAUNCHER_ALONG) \
+		+ Vector3.UP * LAUNCHER_LIFT
+	var mount := Transform3D(Basis.looking_at(along, Vector3.UP).scaled(
+		Vector3.ONE * LAUNCHER_SCALE), at)
+
+	var attachment := BoneAttachment3D.new()
+	attachment.name = &"LauncherMount"
+	_skeleton.add_child(attachment)
+	attachment.bone_name = "forearm.L"
+	var launcher: Node3D = LAUNCHER_SCRIPT.new()
+	launcher.name = &"GrappleLauncher"
+	launcher.transform = forearm_rest.affine_inverse() * mount
+	attachment.add_child(launcher)
 
 
 func _bone_rest_origin(bone_name: String) -> Vector3:

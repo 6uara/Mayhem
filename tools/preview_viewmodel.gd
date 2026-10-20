@@ -14,10 +14,13 @@ extends SceneTree
 
 const OUTPUT: String = "user://viewmodel_preview.png"
 const FOV: float = 62.0
-const ARMS_SCRIPT := preload("res://scripts/components/viewmodel_arms.gd")
+## Por load() y no preload: los brazos usan autoloads (EventBus, Tokens), y un
+## script de SceneTree se compila antes de que esten registrados.
+const ARMS_PATH: String = "res://scripts/components/viewmodel_arms.gd"
 
 var _frames: int = 0
-var _arms: ARMS_SCRIPT
+var _arms: Node3D
+var _equip_time: float = 0.32
 var _pivot: Node3D
 var _state: String = "idle"
 var _progress: float = 0.5
@@ -69,10 +72,12 @@ func _initialize() -> void:
 	model.rotation_degrees = data.viewmodel_rotation_degrees
 	model.scale = Vector3.ONE * data.viewmodel_scale
 
-	_arms = ARMS_SCRIPT.new()
+	var arms_script: GDScript = load(ARMS_PATH)
+	_arms = arms_script.new()
+	_equip_time = arms_script.get_script_constant_map()["EQUIP_TIME"]
 	camera.add_child(_arms)
 	_arms.position = data.viewmodel_offset
-	_arms.build(_bounds(model), data.viewmodel_offset)
+	_arms.call(&"build", _bounds(model), data.viewmodel_offset)
 	# "side" y "top" miran desde afuera, para ver codos y muñecas.
 	for view: String in ["side", "top"]:
 		if not args.has(view):
@@ -85,7 +90,7 @@ func _initialize() -> void:
 			Vector3.UP if view == "side" else Vector3.FORWARD)
 		outside.current = true
 	if _state == "reload":
-		_arms.set_reload_progress(_progress)
+		_arms.call(&"set_reload_progress", _progress)
 		# El arma gira en la recarga igual que en WeaponComponent.
 		_pivot.rotation_degrees.x = -360.0 * smoothstep(0.0, 1.0, _progress)
 
@@ -93,9 +98,9 @@ func _initialize() -> void:
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _state == "equip":
-		_arms._equip_left = ARMS_SCRIPT.EQUIP_TIME * (1.0 - _progress)
+		_arms.set(&"_equip_left", _equip_time * (1.0 - _progress))
 	else:
-		_arms._equip_left = 0.0
+		_arms.set(&"_equip_left", 0.0)
 	if _frames == 18 and OS.get_cmdline_user_args().has("debug"):
 		var skeleton := _arms.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
 		# Lo que deja un modificador solo existe hasta el fin del update del
@@ -112,7 +117,7 @@ func _process(_delta: float) -> bool:
 ## Objetivos contra donde quedaron los huesos, en el espacio de los brazos.
 func _print_debug(skeleton: Skeleton3D) -> void:
 	var to_arms: Transform3D = _arms.global_transform.affine_inverse() * skeleton.global_transform
-	print("targets ", _arms.get_wrist_targets())
+	print("targets ", _arms.call(&"get_wrist_targets"))
 	for bone_name: String in ["upper_arm.R", "forearm.R", "hand.R", "upper_arm.L", "forearm.L",
 			"hand.L", "f_middle.01.R", "f_middle.01.L"]:
 		var bone: int = skeleton.find_bone(bone_name)
