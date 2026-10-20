@@ -92,6 +92,16 @@ func test_a_high_rating_makes_the_crowd_throw_sooner() -> void:
 
 # ------------------------------------------------------------------ reglas
 
+## Los charcos pooleados que ya volvieron siguen en el arbol y en el grupo, asi
+## que contar el grupo entero no ve un charco reusado del pool.
+func _live_hazards() -> int:
+	var count: int = 0
+	for node: Node in get_tree().get_nodes_in_group(&"hazard"):
+		if not node.is_in_group(ObjectPool.RELEASED_GROUP):
+			count += 1
+	return count
+
+
 func _wave(elite: bool = false) -> WaveData:
 	var wave := WaveData.new()
 	wave.is_elite_wave = elite
@@ -307,10 +317,10 @@ func test_killing_a_marked_enemy_pays_the_bounty_once() -> void:
 
 func test_scorched_earth_leaves_a_burning_pool_where_the_enemy_fell() -> void:
 	BroadcastRules.start_rule(load("res://data/broadcast_rules/scorched_earth.tres"))
-	var before: int = get_tree().get_nodes_in_group(&"hazard").size()
+	var before: int = _live_hazards()
 	EventBus.enemy_killed.emit(&"rusher", Vector3(3.0, 0.0, 3.0), 10)
 	await wait_physics_frames(1)
-	assert_gt(get_tree().get_nodes_in_group(&"hazard").size(), before)
+	assert_gt(_live_hazards(), before)
 	BroadcastRules.end_rule()
 	ObjectPool.release_all()
 

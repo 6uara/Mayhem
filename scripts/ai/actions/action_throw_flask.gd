@@ -198,7 +198,8 @@ func _live_enemy_pools(enemy: Enemy) -> Array[HazardZone]:
 		if node.is_in_group(ObjectPool.RELEASED_GROUP):
 			continue
 		var zone := node as HazardZone
-		if zone != null and is_instance_valid(zone.attacker):
+		# Uno que se esta secando ya no lastima: no ocupa lugar en el tope.
+		if zone != null and is_instance_valid(zone.attacker) and not zone.is_evaporating:
 			found.push_back(zone)
 	return found
 

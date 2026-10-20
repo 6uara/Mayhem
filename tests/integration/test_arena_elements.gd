@@ -119,6 +119,77 @@ func test_hazard_warns_before_it_can_damage() -> void:
 	assert_eq(hazard.telegraph.state, TelegraphComponent.State.ACTIVE)
 
 
+## El charco se esparce mientras avisa y llega entero justo cuando se arma: lo
+## que lastima ya esta dibujado completo.
+func test_the_pool_spreads_during_its_warning() -> void:
+	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	var material := hazard.decal_mesh.material_override as ShaderMaterial
+	await wait_physics_frames(2)
+	assert_lt(float(material.get_shader_parameter(&"spread")), 1.0, "todavia avisando")
+	await wait_seconds(Tokens.HAZARD_WARNING + 0.15)
+	assert_almost_eq(float(material.get_shader_parameter(&"spread")), 1.0, 0.001,
+		"armado, el dibujo cubre todo el radio")
+
+
+## Cada charco tiene su material. Compartido, todos los charcos pooleados se
+## esparcian, parpadeaban y se secaban a la vez que el ultimo que aparecio.
+func test_each_pool_owns_its_own_material() -> void:
+	var first: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	var second: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	assert_ne(first.decal_mesh.material_override, second.decal_mesh.material_override)
+
+
+## Al vencer se seca en vez de desaparecer, pero desde el primer instante del
+## secado ya no lastima ni cuenta como charco vivo.
+func test_an_expired_pool_evaporates_harmlessly_then_goes_home() -> void:
+	var hazard := ObjectPool.acquire(load("res://scenes/arena/hazard_zone.tscn")) as HazardZone
+	hazard.setup(10.0, 2.0, 0.1)
+	await wait_seconds(Tokens.HAZARD_WARNING + 0.2)
+	assert_true(hazard.is_evaporating)
+	assert_false(hazard.is_armed, "secandose no lastima")
+	assert_false(hazard.is_in_group(ObjectPool.RELEASED_GROUP), "todavia se ve")
+	await wait_seconds(Tokens.HAZARD_EVAPORATE + 0.15)
+	assert_true(hazard.is_in_group(ObjectPool.RELEASED_GROUP), "y despues vuelve al pool")
+	ObjectPool.release_all()
+
+
+## El charco no es un disco, y el dano tampoco: entre un lobulo y el cilindro del
+## volumen hay piso seco, y ahi no quema. Lo que se dibuja y lo que lastima son
+## el mismo contorno.
+func test_the_pool_only_burns_inside_its_own_outline() -> void:
+	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
+	hazard.radius = 4.0
+	await wait_physics_frames(2)
+	assert_gt(hazard.shape_irregularity, 0.0, "el charco de acido no es un circulo")
+
+	var driest: float = 0.0
+	var widest: float = 0.0
+	for i: int in 96:
+		var angle: float = TAU * float(i) / 96.0
+		if hazard.reach_at(angle) < hazard.reach_at(driest):
+			driest = angle
+		if hazard.reach_at(angle) > hazard.reach_at(widest):
+			widest = angle
+	assert_almost_eq(hazard.reach_at(widest), 1.0, 0.01, "en algun lado llega al radio")
+
+	var target: CharacterBody3D = _make_target()
+	var dry: float = hazard.radius * (hazard.reach_at(driest) + 1.0) * 0.5
+	target.global_position = hazard.global_position + Vector3(cos(driest), 0.0, sin(driest)) * dry
+	assert_false(hazard._is_standing_in_it(target), "dentro del cilindro pero fuera del charco")
+	var wet: float = hazard.radius * hazard.reach_at(widest) * 0.95
+	target.global_position = hazard.global_position + Vector3(cos(widest), 0.0, sin(widest)) * wet
+	assert_true(hazard._is_standing_in_it(target), "dentro del lobulo mas largo")
+
+
+## El snare sigue siendo redondo: su dibujo es un disco y el dano tiene que
+## coincidir con el dibujo.
+func test_the_snare_pool_stays_round() -> void:
+	var snare: HazardZone = _instance("res://scenes/arena/snare_zone.tscn")
+	await wait_physics_frames(1)
+	assert_eq(snare.shape_irregularity, 0.0)
+	assert_eq(snare.reach_at(1.234), 1.0)
+
+
 func test_hazard_damages_whatever_stands_in_it() -> void:
 	var hazard: HazardZone = _instance("res://scenes/arena/hazard_zone.tscn")
 	hazard.tick_interval = 0.05

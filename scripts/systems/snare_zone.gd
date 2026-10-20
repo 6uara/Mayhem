@@ -54,6 +54,7 @@ func setup(hazard_damage: float, hazard_radius: float, hazard_duration: float,
 
 
 func _on_released() -> void:
+	super()
 	_release_all()
 
 

@@ -25,6 +25,12 @@ signal expired()
 	set(value):
 		radius = maxf(value, 0.1)
 		_apply_radius()
+## Cuanto se mete el contorno hacia adentro del radio, como fraccion. Cero es un
+## circulo, que es lo que sigue usando el snare. Con mas, el charco tiene
+## lobulos y deja de ser un disco - y el dano sigue ese mismo contorno, no el
+## circulo: `radius` pasa a ser lo mas lejos que llega, no por donde pasa el
+## borde en todos lados.
+@export_range(0.0, 0.5, 0.01) var shape_irregularity: float = 0.0
 
 @export var telegraph: TelegraphComponent
 @export var decal_mesh: MeshInstance3D
@@ -40,7 +46,25 @@ var is_armed: bool = false
 ## reusa, el enemigo no.
 var attacker: Node = null
 
+## Ya vencio y se esta secando: no lastima ni cuenta como charco vivo, pero
+## todavia se ve.
+var is_evaporating: bool = false
+
 var _time_left: float = 0.0
+## Esparcirse y secarse. Se guarda para matarlo: un charco que vuelve al pool y
+## se reusa no puede heredar el secado del anterior, que lo soltaria a mitad de
+## su vida nueva.
+var _look_tween: Tween
+## El contorno: tres armonicos en angulo con fases al azar por charco. Lo mismo
+## evalua `acid_pool.gdshader`; si no coinciden, el dibujo miente.
+var _shape_phase: Vector3 = Vector3.ZERO
+var _shape_min: float = -1.0
+var _shape_span: float = 2.0
+
+## Peso de los armonicos 2, 3 y 5. El 2 estira el charco hacia un lado, el 3 y
+## el 5 le hacen los lobulos. Sin armonico 1: desplazaria el charco del centro.
+const SHAPE_WEIGHTS: Vector3 = Vector3(0.5, 0.3, 0.2)
+const SHAPE_SAMPLES: int = 96
 var _tick_timer: float = 0.0
 var _bodies_inside: Array[Node3D] = []
 
@@ -78,10 +102,13 @@ func _physics_process(delta: float) -> void:
 ## timing so every hazard in the game warns for exactly the same 0.6s.
 func arm() -> void:
 	is_armed = false
+	is_evaporating = false
 	_time_left = duration
 	if telegraph != null:
 		telegraph.set_blink_step(0.15)
 		telegraph.state = TelegraphComponent.State.WARNING
+	_roll_shape()
+	_spread_in()
 	AudioPool.play_3d(warning_sound, global_position, AudioPool.BUS_WORLD,
 		0.0, 1.0, AudioPool.Priority.TELEGRAPH)
 
@@ -125,6 +152,76 @@ func _apply_radius() -> void:
 		decal_mesh.scale = Vector3(radius, 1.0, radius)
 
 
+## El charco se esparce desde el centro mientras avisa. No lastima durante el
+## aviso, asi que crecer no miente sobre nada, y es movimiento: avisa tambien a
+## quien no distingue el verde del parpadeo.
+func _spread_in() -> void:
+	_kill_look_tween()
+	_set_look(0.15, 0.0)
+	if not is_inside_tree():
+		_set_look(1.0, 0.0)
+		return
+	_look_tween = create_tween()
+	_look_tween.tween_method(func(value: float) -> void: _set_look(value, 0.0),
+		0.15, 1.0, Tokens.HAZARD_WARNING).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+## Fraccion del radio a la que llega el borde en `angle` (radianes, en el plano
+## XZ local, desde +X hacia +Z). Entre 1 - shape_irregularity y 1.
+func reach_at(angle: float) -> float:
+	if shape_irregularity <= 0.0:
+		return 1.0
+	var s: float = _shape_wave(angle)
+	return 1.0 - shape_irregularity * clampf((s - _shape_min) / _shape_span, 0.0, 1.0)
+
+
+func _shape_wave(angle: float) -> float:
+	return SHAPE_WEIGHTS.x * sin(2.0 * angle + _shape_phase.x) \
+		+ SHAPE_WEIGHTS.y * sin(3.0 * angle + _shape_phase.y) \
+		+ SHAPE_WEIGHTS.z * sin(5.0 * angle + _shape_phase.z)
+
+
+## Contorno nuevo en cada aparicion, normalizado para que en algun angulo toque
+## el radio: el charco llega exactamente hasta `radius`, ni mas ni menos.
+func _roll_shape() -> void:
+	_shape_phase = Vector3(randf() * TAU, randf() * TAU, randf() * TAU)
+	var low: float = INF
+	var high: float = -INF
+	for i: int in SHAPE_SAMPLES:
+		var s: float = _shape_wave(TAU * float(i) / float(SHAPE_SAMPLES))
+		low = minf(low, s)
+		high = maxf(high, s)
+	_shape_min = low
+	_shape_span = maxf(high - low, 0.001)
+	var material := decal_mesh.material_override as ShaderMaterial if decal_mesh != null else null
+	if material == null:
+		return
+	material.set_shader_parameter(&"shape_inset", shape_irregularity)
+	material.set_shader_parameter(&"shape_phase", _shape_phase)
+	material.set_shader_parameter(&"shape_weights", SHAPE_WEIGHTS)
+	material.set_shader_parameter(&"shape_min", _shape_min)
+	material.set_shader_parameter(&"shape_span", _shape_span)
+
+
+func _set_look(spread: float, evaporate: float) -> void:
+	var material := decal_mesh.material_override as ShaderMaterial if decal_mesh != null else null
+	if material == null:
+		return
+	material.set_shader_parameter(&"spread", spread)
+	material.set_shader_parameter(&"evaporate", evaporate)
+
+
+func _kill_look_tween() -> void:
+	if _look_tween != null and _look_tween.is_valid():
+		_look_tween.kill()
+	_look_tween = null
+
+
+func _on_released() -> void:
+	_kill_look_tween()
+	is_evaporating = false
+
+
 func _damage(body: Node3D) -> void:
 	if not body.is_in_group(&"player") and not body.is_in_group(&"enemy"):
 		return
@@ -149,6 +246,12 @@ func _damage(body: Node3D) -> void:
 func _is_standing_in_it(body: Node3D) -> bool:
 	var height_above: float = body.global_position.y - global_position.y
 	if height_above < -0.5 or height_above > damage_height:
+		return false
+	# El volumen es el cilindro del radio entero; el charco, no. Lo que queda
+	# entre un lobulo y el cilindro es piso seco, y pisarlo no quema.
+	var local: Vector3 = global_transform.affine_inverse() * body.global_position
+	var flat := Vector2(local.x, local.z)
+	if flat.length() > radius * reach_at(flat.angle()):
 		return false
 
 	# Anything solid between the pool and the body means the body is standing on it.
@@ -175,5 +278,12 @@ func _expire() -> void:
 	expired.emit()
 	if telegraph != null:
 		telegraph.state = TelegraphComponent.State.IDLE
+	# Se seca antes de volver al pool. Ya no lastima desde la linea de arriba:
+	# lo que queda es solo la imagen, y dura menos que STATE_SETTLE_MAX.
+	is_evaporating = true
+	_kill_look_tween()
+	_look_tween = create_tween()
+	_look_tween.tween_method(func(value: float) -> void: _set_look(1.0, value),
+		0.0, 1.0, Tokens.HAZARD_EVAPORATE)
 	# Pooled hazards go home; arena traps are placed by hand and stay.
-	ObjectPool.release(self)
+	_look_tween.tween_callback(ObjectPool.release.bind(self))
