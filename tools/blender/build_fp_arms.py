@@ -27,6 +27,7 @@ huesos de twist sumados a su padre, y estos clips:
              tiempo (ver ViewmodelArms).
 - equip      de mano abierta a mano cerrada, al sacar el arma.
 - open       mano abierta y relajada, una sola pose.
+- grapple    la derecha en el arma, la izquierda abierta tirando el gancho.
 
 Los clips solo mueven dedos y muñeca: donde va cada mano lo resuelve la IK de
 Godot contra el arma que este en mano, que cambia de largo de una a otra. Los
@@ -286,6 +287,13 @@ def main():
         "open": (True, [
             (0, merge(OPEN_R, OPEN_L)),
             (1, merge(OPEN_R, OPEN_L)),
+        ]),
+        # Tirando el gancho: la derecha sigue en el arma y la izquierda se abre,
+        # dedos casi rectos, la mano que apunta. Muñeca neutra: la orientacion la
+        # pone la IK de Godot, alineada con el antebrazo.
+        "grapple": (True, [
+            (0, merge(GRIP_R, hand_pose("L", 0.06, 0.0))),
+            (1, merge(GRIP_R, hand_pose("L", 0.06, 0.0))),
         ]),
     }
 

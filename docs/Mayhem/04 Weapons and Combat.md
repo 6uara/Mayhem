@@ -105,7 +105,8 @@ blender -b assets/models/Arms/arms_rig.blend --python tools/blender/build_fp_arm
 (a `BoneAttachment3D`, so it follows the IK). On `EventBus.grapple_started` the
 visible one kicks back, brightens its cyan accents and draws a cyan cable to the
 anchor; `grapple_ended` takes it down. While grappling the left hand lets go of
-the weapon and swings forward, wrist bent down (`GRAPPLE_HAND` and friends in
+the weapon and swings forward, open and with the wrist straight along the
+forearm (`grapple` clip, `ViewmodelArmIK.Arm.straighten`; `GRAPPLE_HAND` in
 `viewmodel_arms.gd`): with the pistol both hands sit together and the left
 forearm is otherwise off screen, so the launcher would fire unseen. The cable lives in the *game* world —
 the anchor is there — starting from the world point that the game camera sees

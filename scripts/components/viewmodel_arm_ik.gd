@@ -30,6 +30,9 @@ class Arm:
 	## orientar la mano", y queda la del clip.
 	var forward: Vector3 = Vector3.ZERO
 	var palm: Vector3 = Vector3.ZERO
+	## 0 a 1: cuanto se reemplaza `forward` por la direccion del antebrazo. En 1 la
+	## muñeca queda recta, que es lo que pide una mano que apunta en vez de agarrar.
+	var straighten: float = 0.0
 
 	func is_valid() -> bool:
 		return upper >= 0 and lower >= 0 and hand >= 0
@@ -112,8 +115,11 @@ func _solve(skeleton: Skeleton3D, arm: Arm, to_skeleton: Transform3D) -> void:
 		return
 	var hand_pose: Transform3D = skeleton.get_bone_global_pose(arm.hand)
 	var current: Basis = _hand_frame(skeleton, arm, hand_pose.origin)
-	var wanted: Basis = _frame((to_skeleton.basis * arm.forward).normalized(),
-		(to_skeleton.basis * arm.palm).normalized())
+	var forward: Vector3 = (to_skeleton.basis * arm.forward).normalized()
+	if arm.straighten > 0.0:
+		var forearm: Vector3 = (hand_pose.origin - lower_pose.origin).normalized()
+		forward = forward.slerp(forearm, clampf(arm.straighten, 0.0, 1.0)).normalized()
+	var wanted: Basis = _frame(forward, (to_skeleton.basis * arm.palm).normalized())
 	hand_pose.basis = (wanted * current.inverse()) * hand_pose.basis
 	skeleton.set_bone_global_pose(arm.hand, hand_pose)
 

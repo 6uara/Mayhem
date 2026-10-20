@@ -68,12 +68,15 @@ const RELOAD_MAGWELL: Vector3 = Vector3(0.0, -0.09, 0.02)
 ## Al tirar el gancho la izquierda suelta el arma y se adelanta, con el dorso
 ## arriba: el lanzador va en el dorso del antebrazo, y con la pistola (las dos
 ## manos juntas, el antebrazo fuera de cuadro) es la unica forma de que se vea
-## salir el cable. En el espacio de la camara.
-const GRAPPLE_HAND: Vector3 = Vector3(-0.07, -0.12, -0.52)
-## La mano se dobla hacia abajo: con la muñeca recta los dedos tapaban la boca
-## del lanzador y el cable parecia salir de la mano.
-const GRAPPLE_FORWARD: Vector3 = Vector3(0.2, -0.45, -1.0)
-const GRAPPLE_PALM: Vector3 = Vector3(0.4, -1.0, 0.0)
+## salir el cable. A la izquierda y abajo, fuera del centro: abierta delante de
+## la mira tapaba la mira y el cable. En el espacio de la camara.
+const GRAPPLE_HAND: Vector3 = Vector3(-0.24, -0.16, -0.46)
+## La muñeca va recta, alineada con el antebrazo (`straighten` de la IK), y la
+## palma abajo: el dorso, con el lanzador, mira arriba, y la mano no queda
+## doblada mirando al arma como cuando la agarra. Esto solo da la orientacion
+## de partida que la IK endereza.
+const GRAPPLE_FORWARD: Vector3 = Vector3(0.0, 0.1, -1.0)
+const GRAPPLE_PALM: Vector3 = Vector3(-0.1, -1.0, 0.0)
 ## Lo que tarda la mano en ir y en volver.
 const GRAPPLE_RAISE_TIME: float = 0.12
 
@@ -81,6 +84,7 @@ const CLIP_IDLE: StringName = &"grip_idle"
 const CLIP_FIRE: StringName = &"fire"
 const CLIP_RELOAD: StringName = &"reload"
 const CLIP_EQUIP: StringName = &"equip"
+const CLIP_GRAPPLE: StringName = &"grapple"
 
 var _rig: Node3D
 var _skeleton: Skeleton3D
@@ -146,7 +150,9 @@ func build(weapon_bounds: AABB, pivot_offset: Vector3) -> void:
 
 ## Lo llama WeaponComponent en cada disparo: el indice aprieta el gatillo.
 func play_fire() -> void:
-	if _player == null or _reload_progress > 0.0 or not _player.has_animation(CLIP_FIRE):
+	# Con el gancho tirado el clip de disparo cerraria la izquierda en el aire.
+	if _player == null or _reload_progress > 0.0 or _grapple_blend > 0.5 \
+			or not _player.has_animation(CLIP_FIRE):
 		return
 	_player.play(CLIP_FIRE)
 	_player.seek(0.0, true)
@@ -263,6 +269,7 @@ func _update_targets() -> void:
 	var grapple_palm: Vector3 = GRAPPLE_HAND + (_shoulder_centre - SHOULDER_CENTRE)
 	_aim_hand(_ik.left, left_palm.lerp(grapple_palm, raise),
 		LEFT_FORWARD.lerp(GRAPPLE_FORWARD, raise), LEFT_PALM.lerp(GRAPPLE_PALM, raise))
+	_ik.left.straighten = raise
 
 	var half_width: float = absf(_shoulder_from_rig("upper_arm.R").x
 		- _shoulder_from_rig("upper_arm.L").x) * 0.5
@@ -311,12 +318,18 @@ func _shoulder_from_rig(bone_name: String) -> Vector3:
 func _update_clip() -> void:
 	if _player == null:
 		return
-	if _reload_progress > 0.0 and _player.has_animation(CLIP_RELOAD):
+	# El gancho manda sobre todo: es la izquierda la que se va, y la recarga o el
+	# equipar la dejarian cerrada en el aire, agarrando un arma que no esta.
+	if _grapple_blend > 0.5 and _player.has_animation(CLIP_GRAPPLE):
+		if _player.current_animation != CLIP_GRAPPLE:
+			_player.play(CLIP_GRAPPLE, 0.08)
+	elif _reload_progress > 0.0 and _player.has_animation(CLIP_RELOAD):
 		_seek(CLIP_RELOAD, _reload_progress)
 	elif _equip_left > 0.0 and _player.has_animation(CLIP_EQUIP):
 		_seek(CLIP_EQUIP, 1.0 - _equip_left / EQUIP_TIME)
 	elif not _player.is_playing() or _player.current_animation == CLIP_EQUIP \
-			or _player.current_animation == CLIP_RELOAD:
+			or _player.current_animation == CLIP_RELOAD \
+			or _player.current_animation == CLIP_GRAPPLE:
 		_player.play(CLIP_IDLE, 0.1)
 
 
