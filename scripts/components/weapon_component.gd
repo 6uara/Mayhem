@@ -106,8 +106,8 @@ var _view_rest_position: Vector3 = Vector3.ZERO
 var _muzzle_marker: Node3D
 var _view_kick_offset: Vector3 = Vector3.ZERO
 var _view_kick_rot: float = 0.0
-## Los brazos placeholder, hermanos de `_view` y no hijos. Ver ViewmodelArms.
-var _arms: Node3D
+## Los brazos, hermanos de `_view` y no hijos. Ver ViewmodelArms.
+var _arms: ARMS_SCRIPT
 
 
 func _ready() -> void:
@@ -313,6 +313,8 @@ func _try_fire() -> void:
 	_view_kick_offset.z = minf(_view_kick_offset.z + view_kick_back, view_kick_max_back)
 	_view_kick_rot = maxf(_view_kick_rot - view_kick_up_degrees, -view_kick_max_degrees)
 	_spawn_muzzle_vfx()
+	if _arms != null:
+		_arms.play_fire()
 	AudioPool.play_3d(fire_sound, global_position, AudioPool.BUS_WEAPONS)
 	fired.emit(_shot_index)
 	EventBus.weapon_fired.emit(data.id)
@@ -799,10 +801,12 @@ func _tick_viewmodel(delta: float) -> void:
 	var reload_progress: float = get_reload_progress()
 	_view.position = _view_rest_position + _view_kick_offset 		+ Vector3.DOWN * (reload_dip * sin(PI * reload_progress))
 	_view.rotation_degrees.x = _view_kick_rot + _reload_spin(reload_progress)
-	# Los brazos siguen el kick y la bajada, pero no la vuelta de recarga.
+	# Los brazos siguen el kick y la bajada, pero no la vuelta de recarga: esa la
+	# leen como progreso, para soltar el arma y volver a agarrarla.
 	if _arms != null:
 		_arms.position = _view.position
 		_arms.rotation_degrees.x = _view_kick_rot
+		_arms.set_reload_progress(reload_progress)
 
 
 ## El giro de recarga, derivado del progreso en vez de animado por un Tween.

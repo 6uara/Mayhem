@@ -1,34 +1,79 @@
 class_name ViewmodelArms
 extends Node3D
-## Brazos placeholder que sostienen el arma del viewmodel.
+## Los brazos que sostienen el arma del viewmodel: el rig de fp_arms.glb, con IK.
 ##
-## Sin ellos el arma flotaba sola delante de la camara. Son cilindros y cajas a
-## proposito: lo que resuelven es la lectura ("alguien la esta sosteniendo"), no
-## la anatomia, y se reemplazan enteros el dia que haya un rig de brazos de
-## verdad.
-##
-## No se cuelgan del pivot del arma sino al lado, y `WeaponComponent` les copia
-## la posicion y el kick pero no el giro de recarga: la recarga es una vuelta
-## entera del arma, y unos brazos atornillados a ella girarian por toda la
-## pantalla. Mientras el arma gira, las manos la sueltan y la esperan.
+## Reemplaza a los cilindros placeholder. Lo que se conserva de ellos es el
+## contrato con `WeaponComponent`: los brazos no se cuelgan del pivot del arma sino
+## al lado, y les copia la posicion y el kick pero no el giro de recarga. La
+## recarga es una vuelta entera del arma; unos brazos atornillados a ella girarian
+## por toda la pantalla. Mientras el arma gira, las manos la sueltan y la esperan.
 ##
 ## Las manos se ubican midiendo la malla del arma, igual que la boca del cañon en
 ## `WeaponComponent._align_muzzle_to_barrel()`: la derecha en la empuñadura, la
-## izquierda bajo el guardamanos. Un arma nueva queda agarrada sin tocar nada.
+## izquierda bajo el guardamanos. Un arma nueva queda agarrada sin tocar nada. El
+## codo lo pone `ViewmodelArmIK`; los dedos, los clips del glb.
+##
+## Lo que se anima por estado y no por clip - igual que el giro de recarga - es a
+## donde va cada mano: el clip de recarga se recorre por el progreso de la
+## recarga, no por reloj, asi que una recarga mas rapida por mejora sigue cuadrando
+## y una cortada vuelve al agarre sin estado que limpiar.
 
-## Donde nacen los brazos, en el espacio de la camara del viewmodel. Abajo y un
-## poco detras del ojo, fuera de cuadro: solo se ve el antebrazo entrando.
-const RIGHT_SHOULDER: Vector3 = Vector3(0.30, -0.50, 0.10)
-const LEFT_SHOULDER: Vector3 = Vector3(-0.26, -0.52, 0.05)
+const ARMS_SCENE: PackedScene = preload("res://assets/models/Arms/fp_arms.glb")
+const IK_SCRIPT := preload("res://scripts/components/viewmodel_arm_ik.gd")
+
+## Entre los dos hombros, en el espacio de la camara del viewmodel. Atras y abajo
+## del ojo: el brazo entra en cuadro desde el borde, y lo que se ve es antebrazo y
+## mano. Mas adelante, el codo se pliega hasta salir por arriba del arma.
+const SHOULDER_CENTRE: Vector3 = Vector3(0.03, -0.3, -0.19)
+## El rig mide como una persona, y el rifle pide estirar la izquierda hasta el
+## guardamanos a casi 60 cm del ojo. Un poco mas largo que real llega sin trabarse
+## recto, que es lo que se nota.
+const ARM_SCALE: float = 0.75
+## Hacia donde salen los codos, desde cada hombro: abajo y hacia afuera.
+const RIGHT_POLE: Vector3 = Vector3(0.45, -0.6, 0.1)
+const LEFT_POLE: Vector3 = Vector3(-0.5, -0.55, 0.0)
 ## Un arma mas corta que esto se sostiene con las dos manos juntas (pistola).
 const TWO_HAND_REACH: float = 0.32
 
-const ARM_RADIUS: float = 0.038
-const WRIST_RADIUS: float = 0.03
-const HAND_SIZE: Vector3 = Vector3(0.07, 0.055, 0.1)
+## Orientacion de cada mano en el agarre, en el espacio de la camara: hacia donde
+## van los nudillos y hacia donde mira la palma. La derecha envuelve la empuñadura
+## con la palma hacia el centro del arma; la izquierda la sostiene desde abajo.
+const RIGHT_FORWARD: Vector3 = Vector3(-0.1, 0.25, -1.0)
+const RIGHT_PALM: Vector3 = Vector3(-1.0, 0.0, -0.1)
+const LEFT_FORWARD: Vector3 = Vector3(0.65, 0.2, -0.75)
+const LEFT_PALM: Vector3 = Vector3(0.25, 1.0, 0.15)
+## De la muñeca al centro de la palma, en metros del rig sin escalar: el punto de
+## agarre es donde va la palma, y el IK mueve la muñeca.
+const PALM_REACH: float = 0.09
+const PALM_DEPTH: float = 0.035
 
-@export var sleeve_color: Color = Color(0.15, 0.17, 0.21)
-@export var glove_color: Color = Color(0.07, 0.07, 0.08)
+## Sacar el arma: las manos suben desde abajo hasta el agarre.
+const EQUIP_TIME: float = 0.32
+const EQUIP_DROP: Vector3 = Vector3(0.0, -0.32, 0.12)
+## Recarga: la derecha se abre y baja un poco; la izquierda baja a buscar el
+## cargador fuera de cuadro y vuelve por abajo del arma.
+const RELOAD_RIGHT_DROP: Vector3 = Vector3(0.03, -0.06, 0.06)
+const RELOAD_BELT: Vector3 = Vector3(-0.12, -0.38, 0.2)
+const RELOAD_MAGWELL: Vector3 = Vector3(0.0, -0.09, 0.02)
+
+const CLIP_IDLE: StringName = &"grip_idle"
+const CLIP_FIRE: StringName = &"fire"
+const CLIP_RELOAD: StringName = &"reload"
+const CLIP_EQUIP: StringName = &"equip"
+
+var _rig: Node3D
+var _skeleton: Skeleton3D
+var _player: AnimationPlayer
+var _ik: IK_SCRIPT
+var _grip: Vector3 = Vector3.ZERO
+var _support: Vector3 = Vector3.ZERO
+var _shoulder_centre: Vector3 = Vector3.ZERO
+var _reload_progress: float = 0.0
+var _equip_left: float = 0.0
+
+
+func _ready() -> void:
+	visibility_changed.connect(_on_visibility_changed)
 
 
 ## Arma los dos brazos para un arma cuya malla ocupa `weapon_bounds`, medida en
@@ -37,15 +82,58 @@ const HAND_SIZE: Vector3 = Vector3(0.07, 0.055, 0.1)
 func build(weapon_bounds: AABB, pivot_offset: Vector3) -> void:
 	for child: Node in get_children():
 		child.queue_free()
+	_rig = null
+	_skeleton = null
+	_player = null
+	_ik = null
 	if weapon_bounds.size == Vector3.ZERO:
 		return
 
-	var right_hand: Vector3 = grip_point(weapon_bounds)
-	var left_hand: Vector3 = support_point(weapon_bounds)
-	var sleeve: StandardMaterial3D = _material(sleeve_color)
-	var glove: StandardMaterial3D = _material(glove_color)
-	_add_arm(RIGHT_SHOULDER - pivot_offset, right_hand, sleeve, glove)
-	_add_arm(LEFT_SHOULDER - pivot_offset, left_hand, sleeve, glove)
+	_grip = grip_point(weapon_bounds)
+	_support = support_point(weapon_bounds)
+	_shoulder_centre = SHOULDER_CENTRE - pivot_offset
+
+	_rig = ARMS_SCENE.instantiate() as Node3D
+	_rig.name = &"Rig"
+	add_child(_rig)
+	_skeleton = _find(_rig, "Skeleton3D") as Skeleton3D
+	_player = _find(_rig, "AnimationPlayer") as AnimationPlayer
+	for mesh: Node in _rig.find_children("*", "MeshInstance3D", true, false):
+		(mesh as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if _skeleton == null:
+		push_warning("ViewmodelArms: fp_arms.glb has no Skeleton3D")
+		return
+	_place_rig()
+
+	_ik = IK_SCRIPT.new()
+	_ik.name = &"ArmIK"
+	_ik.space = self
+	_skeleton.add_child(_ik)
+	_ik.bind_arm(_ik.right, _skeleton, "R", true)
+	_ik.bind_arm(_ik.left, _skeleton, "L", false)
+
+	if _player != null and _player.has_animation(CLIP_IDLE):
+		_player.get_animation(CLIP_IDLE).loop_mode = Animation.LOOP_LINEAR
+		_player.play(CLIP_IDLE)
+	_equip_left = EQUIP_TIME
+	_update_targets()
+
+
+## Lo llama WeaponComponent en cada disparo: el indice aprieta el gatillo.
+func play_fire() -> void:
+	if _player == null or _reload_progress > 0.0 or not _player.has_animation(CLIP_FIRE):
+		return
+	_player.play(CLIP_FIRE)
+	_player.seek(0.0, true)
+	_player.queue(CLIP_IDLE)
+
+
+## 0 sin recargar, 1 al terminar. Ver `WeaponComponent.get_reload_progress()`.
+func set_reload_progress(progress: float) -> void:
+	var was_reloading: bool = _reload_progress > 0.0
+	_reload_progress = clampf(progress, 0.0, 1.0)
+	if was_reloading and _reload_progress <= 0.0 and _player != null:
+		_player.play(CLIP_IDLE, 0.1)
 
 
 ## La empuñadura: tercio de atras, parte baja. Adelante es -Z.
@@ -57,63 +145,148 @@ static func grip_point(bounds: AABB) -> Vector3:
 
 
 ## El guardamanos, o la otra mano pegada a la primera si el arma es corta.
+##
+## A media altura de la caja y no abajo: la caja del rifle incluye el cargador,
+## que cuelga muy por debajo del guardamanos, y una palma puesta al 30% del alto
+## sostenia el aire bajo el caño.
 static func support_point(bounds: AABB) -> Vector3:
 	var grip: Vector3 = grip_point(bounds)
 	if bounds.size.z < TWO_HAND_REACH:
 		return grip + Vector3(-0.035, -0.035, -0.01)
 	var centre: Vector3 = bounds.get_center()
 	return Vector3(centre.x,
-		bounds.position.y + bounds.size.y * 0.3,
-		bounds.position.z + bounds.size.z * 0.35)
+		bounds.position.y + bounds.size.y * 0.55,
+		bounds.position.z + bounds.size.z * 0.3)
+
+
+## Donde tiene que estar cada muñeca ahora mismo, en el espacio de este nodo.
+## Publico para los tests: es lo unico de los brazos que se puede medir sin ver.
+func get_wrist_targets() -> Array[Vector3]:
+	if _ik == null:
+		return []
+	return [_ik.right.wrist, _ik.left.wrist]
+
+
+func _process(delta: float) -> void:
+	if _ik == null:
+		return
+	_equip_left = maxf(_equip_left - delta, 0.0)
+	_update_targets()
+	_update_clip()
 
 
 # Private
 
-func _add_arm(shoulder: Vector3, hand: Vector3, sleeve: Material, glove: Material) -> void:
-	var along: Vector3 = hand - shoulder
-	var length: float = along.length()
-	if length < 0.01:
+## Gira el rig para que mire a -Z (llega mirando a +Z, como sale de Blender) y lo
+## mueve para que el punto medio entre los hombros caiga en `_shoulder_centre`.
+func _place_rig() -> void:
+	var orient := Basis(Vector3.UP, PI).scaled(Vector3.ONE * ARM_SCALE)
+	var to_rig: Transform3D = _relative_transform(_rig, _skeleton)
+	var left_shoulder: Vector3 = to_rig * _bone_rest_origin("upper_arm.L")
+	var right_shoulder: Vector3 = to_rig * _bone_rest_origin("upper_arm.R")
+	var centre: Vector3 = (left_shoulder + right_shoulder) * 0.5
+	_rig.transform = Transform3D(orient, _shoulder_centre - orient * centre)
+
+
+func _bone_rest_origin(bone_name: String) -> Vector3:
+	var bone: int = _skeleton.find_bone(bone_name)
+	if bone < 0:
+		return Vector3.ZERO
+	return _skeleton.get_bone_global_rest(bone).origin
+
+
+func _update_targets() -> void:
+	var equip: float = 1.0 - smoothstep(0.0, 1.0, 1.0 - _equip_left / EQUIP_TIME)
+	var drop: Vector3 = EQUIP_DROP * equip
+	var p: float = _reload_progress
+
+	var right_palm: Vector3 = _grip + RELOAD_RIGHT_DROP * sin(PI * p) + drop
+	var left_palm: Vector3 = _reload_left_hand(p) + drop
+	_aim_hand(_ik.right, right_palm, RIGHT_FORWARD, RIGHT_PALM)
+	_aim_hand(_ik.left, left_palm, LEFT_FORWARD, LEFT_PALM)
+
+	var half_width: float = absf(_shoulder_from_rig("upper_arm.R").x
+		- _shoulder_from_rig("upper_arm.L").x) * 0.5
+	_ik.right.pole = _shoulder_centre + Vector3(half_width, 0.0, 0.0) + RIGHT_POLE
+	_ik.left.pole = _shoulder_centre - Vector3(half_width, 0.0, 0.0) + LEFT_POLE
+
+
+## La mano izquierda durante la recarga: suelta, baja al cinturon, vuelve con el
+## cargador por abajo del arma, lo mete y regresa al guardamanos. Cada tramo con
+## smoothstep para que no arranque ni frene de golpe.
+func _reload_left_hand(p: float) -> Vector3:
+	if p <= 0.0:
+		return _support
+	var belt: Vector3 = _grip + RELOAD_BELT
+	var magwell: Vector3 = _grip.lerp(_support, 0.4) + RELOAD_MAGWELL
+	var seated: Vector3 = _grip.lerp(_support, 0.4) + Vector3(0.0, -0.04, 0.0)
+	var keys: Array[Vector3] = [_support, _support, belt, belt, magwell, seated, _support, _support]
+	var times: Array[float] = [0.0, 0.1, 0.32, 0.42, 0.62, 0.72, 0.9, 1.0]
+	for i: int in range(1, times.size()):
+		if p <= times[i]:
+			var t: float = smoothstep(times[i - 1], times[i], p)
+			return keys[i - 1].lerp(keys[i], t)
+	return _support
+
+
+## Pone la muñeca de modo que la palma caiga en `palm_point`, con la mano
+## orientada como piden `forward` y `palm`.
+func _aim_hand(arm: IK_SCRIPT.Arm, palm_point: Vector3, forward: Vector3,
+		palm: Vector3) -> void:
+	var f: Vector3 = forward.normalized()
+	var n: Vector3 = (palm - f * palm.dot(f)).normalized()
+	arm.forward = f
+	arm.palm = n
+	arm.wrist = palm_point - (f * PALM_REACH + n * PALM_DEPTH) * ARM_SCALE
+
+
+func _shoulder_from_rig(bone_name: String) -> Vector3:
+	if _rig == null:
+		return Vector3.ZERO
+	return _rig.transform * (_relative_transform(_rig, _skeleton)
+		* _bone_rest_origin(bone_name))
+
+
+## El clip de dedos que toca: recarga y equipar se recorren por progreso, el
+## resto corre solo (reposo en loop, disparo encima).
+func _update_clip() -> void:
+	if _player == null:
 		return
-	var basis: Basis = _basis_along(along / length)
-
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = WRIST_RADIUS
-	cylinder.bottom_radius = ARM_RADIUS
-	cylinder.height = length
-	cylinder.radial_segments = 10
-	cylinder.rings = 1
-	var arm := MeshInstance3D.new()
-	arm.name = "Arm"
-	arm.mesh = cylinder
-	arm.material_override = sleeve
-	arm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# El cilindro crece sobre su eje Y, centrado: la punta de arriba es la muñeca.
-	arm.transform = Transform3D(basis, shoulder + along * 0.5)
-	add_child(arm)
-
-	var box := BoxMesh.new()
-	box.size = HAND_SIZE
-	var hand_mesh := MeshInstance3D.new()
-	hand_mesh.name = "Hand"
-	hand_mesh.mesh = box
-	hand_mesh.material_override = glove
-	hand_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	hand_mesh.transform = Transform3D(basis, hand)
-	add_child(hand_mesh)
+	if _reload_progress > 0.0 and _player.has_animation(CLIP_RELOAD):
+		_seek(CLIP_RELOAD, _reload_progress)
+	elif _equip_left > 0.0 and _player.has_animation(CLIP_EQUIP):
+		_seek(CLIP_EQUIP, 1.0 - _equip_left / EQUIP_TIME)
+	elif not _player.is_playing() or _player.current_animation == CLIP_EQUIP \
+			or _player.current_animation == CLIP_RELOAD:
+		_player.play(CLIP_IDLE, 0.1)
 
 
-## Una base ortonormal con Y apuntando a `direction`.
-func _basis_along(direction: Vector3) -> Basis:
-	var reference: Vector3 = Vector3.FORWARD
-	if absf(direction.dot(reference)) > 0.95:
-		reference = Vector3.RIGHT
-	var x: Vector3 = reference.cross(direction).normalized()
-	var z: Vector3 = x.cross(direction).normalized()
-	return Basis(x, direction, z)
+func _seek(clip: StringName, progress: float) -> void:
+	if _player.assigned_animation != clip:
+		_player.play(clip)
+	_player.pause()
+	_player.seek(_player.get_animation(clip).length * progress, true)
 
 
-func _material(color: Color) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.8
-	return material
+func _on_visibility_changed() -> void:
+	if is_visible_in_tree():
+		_equip_left = EQUIP_TIME
+
+
+func _find(node: Node, type_name: String) -> Node:
+	if node.is_class(type_name):
+		return node
+	for child: Node in node.get_children():
+		var found: Node = _find(child, type_name)
+		if found != null:
+			return found
+	return null
+
+
+func _relative_transform(root: Node3D, target: Node3D) -> Transform3D:
+	var result := Transform3D.IDENTITY
+	var node: Node3D = target
+	while node != null and node != root:
+		result = node.transform * result
+		node = node.get_parent() as Node3D
+	return result
