@@ -253,7 +253,7 @@ maneja `TelegraphComponent` (reposo → aviso → activo); el modelo tiene que
 
 | Objeto | Significado | Comportamiento que el diseño tiene que contar |
 |---|---|---|
-| **Bounce pad** | Cian / cuadrado | Lanza ~8 m hacia arriba. Tope 6 por arena. ⚠ Hoy su cuerpo es **verde**: el modelo nuevo lo corrige a cian |
+| **Bounce pad** | Cian / cuadrado | Lanza ~8 m hacia arriba. Tope 6 por arena. En juego ya es cian (`bounce_pad.gd` lo tiñe); el verde que quedaba en la escena se corrigió el 2026-10-20 |
 | **Grapple anchor** | Cian / cuadrado | Siempre a 6 m o más de altura. Se apunta desde 28 m: silueta clara contra el cielo y las gradas |
 | **Zip line** | Cian | Dos postes y un cable; se recorre a 16 m/s |
 | **Jump link** | Cian | Marca un salto entre dos puntos que los enemigos también usan |
@@ -262,7 +262,7 @@ maneja `TelegraphComponent` (reposo → aviso → activo); el modelo tiene que
 | **Hazard pool** | Ácido `#C6FF3D` + marco naranja / triángulo | Charco de ácido; daña sólo a quien está parado en su piso |
 | **Snare field** | Naranja / triángulo | Campo que ralentiza; no inmoviliza |
 | **Ammo crate** | Ámbar / círculo | Recarga munición; se escucha a 26 m. Tope 16 |
-| **Spawn door** | Magenta | Portal en el borde de la arena; se enciende 1,2 s antes de que salga algo. Pasa un enemigo de 2,8 m. ⚠ Hoy su luz es naranja: el modelo nuevo la pone en magenta |
+| **Spawn door** | Magenta | Portal en el borde de la arena; se enciende 1,2 s antes de que salga algo. Pasa un enemigo de 2,8 m. La luz ya se enciende magenta (`telegraph_color`); el naranja de reposo de la escena se corrigió el 2026-10-20 |
 
 ```text
 BOARD 4 - INTERACTIVE ARENA ELEMENTS. Ten objects for the night arena, each

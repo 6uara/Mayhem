@@ -45,7 +45,7 @@ mesh = SubResource("Mesh_opening")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 1)
-light_color = Color(1, 0.35, 0.2, 1)
+light_color = Color(1, 0.231, 0.757, 1)
 light_energy = 0.0
 omni_range = 9.0
 
