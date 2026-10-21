@@ -124,11 +124,12 @@ what's nearest) and confirm line of sight with a second raycast against
 `PhysicsLayers.WORLD` — the assist can never grapple through a wall, which is
 the one guarantee the old single-raycast version gave for free. Both paths
 return the same `{position, collider}` shape, so `try_fire()` doesn't care
-which one answered. `aim_assist_degrees: float = 4.0` is an `@export` read
+which one answered. `aim_assist_degrees: float = 6.4` is an `@export` read
 through `get_aim_assist_degrees()` (same pattern as `get_cooldown()` /
 `get_max_range()`), stat-scaled by `StatsComponent.GRAPPLE_AIM_ASSIST` via the
 **Magnet Hook** upgrade (`data/upgrades/grapple_aim_assist.tres`, ×1.6, 2
-stacks: 4° → 6.4° → 10.2°).
+stacks: 6.4° → 10.2° → 16.4°). The base was 4° until the 2026-10-21
+feedback asked for the one-stack feel by default.
 
 ## CameraFeelComponent
 

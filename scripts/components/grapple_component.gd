@@ -32,10 +32,11 @@ const LINE_OF_SIGHT_MARGIN: float = 0.5
 ## El apuntado era un solo raycast: o el centro exacto de la reticula tocaba el
 ## collider, o no habia grapple. Con anclas de medio metro a veinte de distancia
 ## eso pide una punteria que el juego no pide para nada mas, y el playtest lo
-## reporto como "el grapple no engancha" y no como "fallé". Cuatro grados es
-## deliberadamente poco: corrige el pixel de diferencia, no apunta por el
-## jugador. Las mejoras del shop lo ensanchan desde aca.
-@export var aim_assist_degrees: float = 4.0
+## reporto como "el grapple no engancha" y no como "fallé". Arrancaba en cuatro
+## grados; el feedback de los profesores (2026-10-21) pidio que el gancho de base
+## se sienta como con un stack de Magnet Hook. 6.4 sigue corrigiendo la
+## diferencia sin apuntar por el jugador. Las mejoras del shop lo ensanchan desde aca.
+@export var aim_assist_degrees: float = 6.4
 @export var arrive_distance: float = 2.5
 ## Small upward kick on release so ledge exits feel generous, not sticky.
 @export var release_up_boost: float = 2.0
