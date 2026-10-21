@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, estado, backlog]
 estado: vivo
-actualizado: 2026-10-16
+actualizado: 2026-10-21
 ---
 
 # MAYHEM — Estado del proyecto
@@ -64,16 +64,34 @@ estén los modelos ([PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md)).
 | Maestría de armas y attachments (12), que se llevan entre runs; Armería en la pantalla de modo | `Armory`, `ArmoryPanel`, `data/attachments/` |
 | Semilla por run, corrientes por sistema, código para compartir (copiar al final, pegar en el menú) | `RunSeed`, `ModeSelect`, `MatchOverlay` |
 
+### Lo que entró el 2026-10-21
+
+Feedback de los profesores. Rama `feat/teacher-feedback`.
+
+| Qué | Dónde |
+|---|---|
+| Hitstop suave: un impacto común frena al 30 % durante 30 ms, no se re-dispara a mitad de otro, espera 0.15 s y se saltea por debajo de 45 FPS; headshots y kills mantienen el frenazo completo. Era la causa del freeze al disparar con FPS bajos | `HitstopController` |
+| El gancho arranca con la asistencia de un stack de Magnet Hook (6.4°) | `GrappleComponent.aim_assist_degrees` |
+| La tienda reserva un lugar para un arma en el 60 % de las visitas | `ShopCatalog.weapon_offer_chance` |
+| El brillo del Summoner, con tope de 2.0 (su `.glb` trae 10) | `EnemyData.model_emission_max` |
+| Mantle automático, sin mantener saltar | `MovementComponent._tick_airborne()` |
+| Caída rápida: agacharse en el aire pica a 28 m/s; aterrizar agachado sale deslizando con 3 m/s por metro caído (tope +10 sobre la carrera) | `MovementComponent` grupo Fast fall |
+| Sin dash. El bono pasa a DESLIZANDO, el pedido a SLIDE THROUGH THEM!, Ram Dash a Ram Slide, Pad Charger recarga el gancho; el paso del tutorial, el golpe de cámara, la estela y el sonido pasan a la caída rápida. Salen Extra Dash, Dash Cooldown, el contrato GROUNDED y los pips del HUD | ver [03 Player and Movement](Mayhem/03%20Player%20and%20Movement.md#no-dash) |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
 | R1 | **Modelos** de piezas de arena, interactuables y dos enemigos (Elite, Environmental). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas e impactos** sigue siendo el sintetizado por `tools/generate_placeholder_sfx.py` | Audio |
-| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment | Balance |
+| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, del hitstop suave, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 
 ## 3. Abierto — necesita una decisión
 
+- **El charco de atrapado en una ola con el contrato NO HOOK** no tiene salida:
+  desde que salió el dash (2026-10-21) el gancho es la única forma de romperlo, por
+  decisión del dueño. O el contrato se excluye cuando hay Environmental en la ola,
+  o se acepta como parte del precio del contrato.
 - **Curva de oleadas.** La 5 tiene `par_time` 95 y bonus 150; la 6 baja a 85 y
   110. Si la 5 es un pico a propósito, documentarlo. Mejor con logs de
   `RunLogger` en la mano.
@@ -104,7 +122,7 @@ estén los modelos ([PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md)).
   [host_script/](host_script/host_script.md). Las líneas de reglas, rating, tutorial,
   Second Wind, contratos, pedidos del público, pico y retiro del patrocinador ya
   están en el guion exportado (2026-10-16).
-- **Arte de VFX.** Impactos, dash y slide siguen grey-box; decals por superficie
+- **Arte de VFX.** Impactos, picada y slide siguen grey-box; decals por superficie
   en `null`; los flipbooks del pack sin usar (y fuera del build, ver EXPORT).
 - **Mezcla de audio real** (oídos, auriculares y parlantes).
 - **URL del formulario de feedback** vacía en `data/feedback/feedback_config.tres`.
@@ -115,7 +133,7 @@ estén los modelos ([PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md)).
 - **Iconos** de menús (11) y del editor de arenas (21):
   [HANDOFF_ICONOGRAPHY §3.6-3.7](handoffs/HANDOFF_ICONOGRAPHY.md). Los 9 de las
   mejoras nuevas son geométricos provisorios en el mismo lenguaje.
-- **Probar a mano:** punch del dash, FSR a 50-67 %, MSAA/TAA, sombras en Bajo, una
+- **Probar a mano:** punch de la picada, FSR a 50-67 %, MSAA/TAA, sombras en Bajo, una
   oleada con joystick, el tutorial completo, el giro de los enemigos con la IA a
   ritmo espaciado.
 - **`export_presets.cfg` local** no sigue [EXPORT.md](EXPORT.md): tiene presets

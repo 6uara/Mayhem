@@ -5,14 +5,14 @@
 
 [sub_resource type="Resource" id="Mod_0"]
 script = ExtResource("2_mod")
-stat_key = &"dash_ram_damage"
+stat_key = &"slide_ram_damage"
 value = 45.0
 
 [resource]
 script = ExtResource("1_upgrade")
-id = &"ram_dash"
-display_name = "Ram Dash"
-description = "Dashing through an enemy deals 45 damage and stuns it for 0.6 seconds."
+id = &"ram_slide"
+display_name = "Ram Slide"
+description = "Sliding fast through an enemy deals 45 damage and stuns it for 0.6 seconds."
 cost = 400
 category = 0
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])

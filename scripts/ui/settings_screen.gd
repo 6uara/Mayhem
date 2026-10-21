@@ -96,7 +96,7 @@ const TOOLTIPS: Dictionary = {
 	"video/shadow_quality": "Sharpness of the shadows. Lower it if the game runs slow.",
 	"audio/vo_volume": "The Host's voice.",
 	"accessibility/screenshake_enabled":
-		"Camera shake from hits, explosions, landings and dashes.",
+		"Camera shake from hits, explosions, landings and dives.",
 	"accessibility/view_bob_enabled":
 		"The camera rocking with each step. Turn off if it makes you queasy.",
 	"accessibility/subtitles_enabled": "Show what the Host says.",

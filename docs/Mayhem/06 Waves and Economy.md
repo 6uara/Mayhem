@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, waves, economy, shop]
 estado: referencia
-actualizado: 2026-10-16
+actualizado: 2026-10-21
 ---
 
 # Waves and Economy
@@ -69,6 +69,13 @@ equipped and upgrades maxed out for their scope, see
 to `_buy_weapon()` / `_buy_utility()` / `_buy_upgrade()` (threads the currently
 equipped `weapon_id` into `EconomyManager.try_purchase_upgrade()` for
 `Category.WEAPON` offers, empty otherwise).
+
+Weapons are not in the common draw. After the one-per-category guarantee,
+`_roll()` reserves a slot for one weapon with `ShopCatalog.weapon_offer_chance`
+(0.6), only in modes where `GameManager.shop_sells_weapons()`; that slot counts
+as guaranteed, so a rare never replaces it. A visit can then show five cards
+(three categories, a weapon, a rare). Before 2026-10-21 weapons competed with
+every upgrade for the single free slot and showed up in under one visit in ten.
 
 `offers_per_visit = 4` (down from the catalogue's full size) plus
 `reroll()`: spends currency (`ShopCatalog.reroll_base_cost`, rising by

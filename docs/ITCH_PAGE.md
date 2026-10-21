@@ -1,7 +1,7 @@
 ---
 tags: [mayhem]
 estado: guia
-actualizado: 2026-10-09
+actualizado: 2026-10-21
 ---
 
 # itch.io page — copy to paste
@@ -32,7 +32,7 @@ CONTROLS
   WASD            move                Mouse       look
   Space           jump                LMB         fire
   Ctrl            crouch / slide      RMB         aim down sights
-  Shift           dash                R           reload
+  Ctrl (in air)   dive into a slide   R           reload
   E               grapple             F           interact
   Q / X / C       utilities           1-4         weapons
   Wheel           cycle weapons       Esc         pause

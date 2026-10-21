@@ -9,14 +9,14 @@ extends Resource
 ## es tocar `data/tutorial/tutorial_steps.tres`.
 
 ## Lo que el jugador tiene que hacer para pasar el paso. Vacio = paso informativo.
-## Los que entiende el director: move, jump, slide, dash, grapple, fire, ads,
+## Los que entiende el director: move, jump, slide, fast_fall, grapple, fire, ads,
 ## reload.
 @export var goal: StringName = &""
-## Titulo corto: "MOVE", "DASH", "COLORS".
+## Titulo corto: "MOVE", "DIVE", "COLORS".
 @export var title: String = ""
 ## El texto. `{accion}` entre llaves se reemplaza por la tecla que tenga
 ## asignada esa accion del InputMap ahora mismo, asi que un rebind no lo deja
-## mintiendo: "Dash with {dash}." -> "Dash with SHIFT.".
+## mintiendo: "Grapple with {grapple}." -> "Grapple with E.".
 @export_multiline var text: String = ""
 ## Segundos en pantalla de un paso informativo.
 @export var duration: float = 5.0

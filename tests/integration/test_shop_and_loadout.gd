@@ -134,16 +134,16 @@ func test_replacing_a_weapon_does_not_carry_its_upgrades_forward() -> void:
 
 func test_mobility_and_survivability_upgrades_stay_global() -> void:
 	EconomyManager.currency = 100000
-	var dash: UpgradeData = _shop.catalog.find_upgrade(&"dash_charge")
-	assert_eq(dash.category, UpgradeData.Category.MOBILITY)
+	var speed: UpgradeData = _shop.catalog.find_upgrade(&"move_speed")
+	assert_eq(speed.category, UpgradeData.Category.MOBILITY)
 
-	assert_eq(EconomyManager.try_purchase_upgrade(dash), EconomyManager.PurchaseResult.OK)
-	assert_true(UpgradeManager.has_upgrade(&"dash_charge"))
+	assert_eq(EconomyManager.try_purchase_upgrade(speed), EconomyManager.PurchaseResult.OK)
+	assert_true(UpgradeManager.has_upgrade(&"move_speed"))
 
 	var holder: WeaponHolder = _player.weapon_holder
 	holder.acquire(&"shotgun")
 	await wait_seconds(holder.swap_time + 0.1)
-	assert_true(UpgradeManager.has_upgrade(&"dash_charge"),
+	assert_true(UpgradeManager.has_upgrade(&"move_speed"),
 		"a global upgrade must survive a weapon swap untouched")
 
 
@@ -219,11 +219,10 @@ func test_a_null_catalogue_entry_is_skipped_rather_than_crashing() -> void:
 
 
 func test_shop_never_offers_the_weapon_currently_equipped() -> void:
-	# Weapon offers fill the random remainder of the visit, not a guaranteed
-	# slot - with offers_per_visit down to 4, 12 unseeded rolls could
-	# occasionally never surface one at all, leaving the assert below
-	# unexercised (a GUT "Risky: did not assert", not a real pass). A fixed
-	# seed plus more rolls makes this deterministic instead.
+	# A weapon slot is reserved by chance (ShopCatalog.weapon_offer_chance), so
+	# unseeded rolls could occasionally never surface one, leaving the assert
+	# below unexercised (a GUT "Risky: did not assert", not a real pass). A
+	# fixed seed plus more rolls makes this deterministic instead.
 	_shop._rng.seed = 1
 	var saw_a_weapon_offer: bool = false
 	for i: int in 40:
@@ -240,8 +239,7 @@ func test_shop_offers_a_previously_equipped_weapon_again() -> void:
 	holder.acquire(&"shotgun")
 	await wait_seconds(holder.swap_time + 0.1)
 
-	# Weapon offers fill the random remainder of the visit, not a guaranteed
-	# slot (only the three upgrade categories are guaranteed) - a fixed seed
+	# The weapon slot is reserved by chance, not guaranteed - a fixed seed
 	# makes this deterministic instead of an occasional-miss flake.
 	_shop._rng.seed = 1
 	var saw_pistol: bool = false
@@ -254,9 +252,9 @@ func test_shop_offers_a_previously_equipped_weapon_again() -> void:
 
 
 func test_weapon_offers_warn_that_they_replace_the_current_weapon() -> void:
-	# Same reasoning as test_shop_offers_a_previously_equipped_weapon_again: a
-	# weapon offer fills the random remainder of a visit, not a guaranteed
-	# slot, so unseeded rolls could occasionally never surface one.
+	# Same reasoning as test_shop_offers_a_previously_equipped_weapon_again: the
+	# weapon slot is reserved by chance, so unseeded rolls could occasionally
+	# never surface one.
 	_shop._rng.seed = 1
 	var saw_a_weapon_offer: bool = false
 	for i: int in 40:
@@ -270,7 +268,7 @@ func test_weapon_offers_warn_that_they_replace_the_current_weapon() -> void:
 
 
 func test_shop_never_offers_a_maxed_upgrade() -> void:
-	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"dash_charge")
+	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"move_speed")
 	EconomyManager.currency = 100000
 	for i: int in upgrade.max_stacks:
 		UpgradeManager.add_upgrade(upgrade)
@@ -278,7 +276,7 @@ func test_shop_never_offers_a_maxed_upgrade() -> void:
 	for i: int in 12:
 		_shop.roll_offers()
 		for offer: Dictionary in _shop.offers:
-			assert_ne(offer["id"], &"dash_charge", "maxed upgrades must not be offered")
+			assert_ne(offer["id"], &"move_speed", "maxed upgrades must not be offered")
 
 
 func test_shop_never_offers_a_weapon_upgrade_maxed_for_the_equipped_weapon() -> void:
@@ -386,3 +384,30 @@ func test_a_reroll_still_offers_one_of_each_category() -> void:
 			func(offer: Dictionary) -> bool:
 				return int(offer["kind"]) == Shop.Kind.UPGRADE and int(offer["category"]) == category)
 		assert_true(has_category, "a reroll dropped the guarantee for category %d" % category)
+
+
+## The teachers' feedback (2026-10-21): weapons were in the common draw against
+## twenty upgrades for a single free slot, and a rare could take that slot, so
+## under one visit in ten showed one. The reserved slot is what fixes that.
+func test_most_visits_offer_a_weapon() -> void:
+	_shop._rng.seed = 1
+	var visits_with_a_weapon: int = 0
+	for i: int in 100:
+		_shop.roll_offers()
+		for offer: Dictionary in _shop.offers:
+			if int(offer["kind"]) == Shop.Kind.WEAPON:
+				visits_with_a_weapon += 1
+				break
+	assert_gt(visits_with_a_weapon, 40,
+		"with weapon_offer_chance at 0.6, around six visits in ten bring a weapon")
+
+
+func test_no_weapon_offer_when_the_chance_is_zero() -> void:
+	_shop.catalog = _shop.catalog.duplicate()
+	_shop.catalog.weapon_offer_chance = 0.0
+	_shop._rng.seed = 1
+	for i: int in 40:
+		_shop.roll_offers()
+		for offer: Dictionary in _shop.offers:
+			assert_ne(int(offer["kind"]), Shop.Kind.WEAPON as int,
+				"only the reserved slot offers weapons; the common draw has none left")

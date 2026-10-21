@@ -61,15 +61,16 @@ signal weapon_switched(weapon_id: StringName)
 signal weapon_ads_changed(is_ads: bool)
 
 # Movement
-signal dash_used(charges_remaining: int)
+## Una caida rapida toco el piso y salio deslizando. Reemplaza a dash_used.
+signal fast_fall_landed()
 ## El charco de atrapado agarró al jugador, o lo soltó.
 ##
 ## Existe porque estar atrapado no se veía ni se oía: `apply_snare()` bajaba la
 ## velocidad y nada más, así que el jugador no tenía cómo saber **por qué** estaba
-## lento - y sin eso la salida que el charco tiene (dash o gancho) no se le ocurre
+## lento - y sin eso la salida que el charco tiene (el gancho) no se le ocurre
 ## a nadie, y el sistema entero se lee como que el juego se trabó.
 signal player_snared(multiplier: float)
-## `was_broken` distingue las dos salidas: romperlo a propósito (dash o gancho) o
+## `was_broken` distingue las dos salidas: romperlo a propósito (con el gancho) o
 ## simplemente haberse ido caminando. Sólo la primera enseña algo.
 signal player_snare_ended(was_broken: bool)
 signal grapple_started(anchor: Vector3)

@@ -3,7 +3,7 @@ extends Node3D
 ## El techo del estadio: anillo estructural, vigas, y un oculo abierto al cielo.
 ##
 ## Existe por una razon de juego antes que de imagen. El gancho llega a 28 metros
-## y sube con upgrades, y ademas hay dash, bounce pads y zip lines: un limite
+## y sube con upgrades, y ademas hay picadas, bounce pads y zip lines: un limite
 ## abierto arriba obliga a decidir que pasa cuando alguien lo supera, y esa
 ## decision siempre termina siendo un teletransporte o una muerte que el jugador
 ## no entiende. Cerrando, no hay ningun caso raro que explicar.

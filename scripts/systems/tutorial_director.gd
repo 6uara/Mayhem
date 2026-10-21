@@ -1,7 +1,7 @@
 class_name TutorialDirector
 extends Node
 ## El tutorial de arranque: antes de la primera oleada, un recorrido corto por lo
-## que el juego tiene - moverse, saltar, deslizar, dash, gancho, disparar,
+## que el juego tiene - moverse, saltar, deslizar, la picada, gancho, disparar,
 ## recargar, los colores, el estilo y la tienda.
 ##
 ## La partida no empieza hasta que termina: `MatchDirector` espera `finished`
@@ -46,7 +46,7 @@ func _ready() -> void:
 		catalog = load(STEPS_PATH) as TutorialStepCatalog
 	if catalog != null:
 		_steps = catalog.steps
-	EventBus.dash_used.connect(_on_goal.bind(&"dash").unbind(1))
+	EventBus.fast_fall_landed.connect(_on_goal.bind(&"fast_fall"))
 	EventBus.grapple_started.connect(_on_goal.bind(&"grapple").unbind(1))
 	EventBus.weapon_fired.connect(_on_goal.bind(&"fire").unbind(1))
 	EventBus.weapon_reloaded.connect(_on_goal.bind(&"reload").unbind(1))

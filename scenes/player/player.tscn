@@ -47,16 +47,16 @@
 radius = 0.4
 height = 1.8
 
-[sub_resource type="StandardMaterial3D" id="Mat_dash_trail"]
+[sub_resource type="StandardMaterial3D" id="Mat_dive_trail"]
 transparency = 1
 shading_mode = 0
 albedo_color = Color(0.4, 0.85, 1, 0.6)
 
-[sub_resource type="QuadMesh" id="Mesh_dash_trail"]
-material = SubResource("Mat_dash_trail")
+[sub_resource type="QuadMesh" id="Mesh_dive_trail"]
+material = SubResource("Mat_dive_trail")
 size = Vector2(0.5, 0.5)
 
-[sub_resource type="ParticleProcessMaterial" id="Proc_dash_trail"]
+[sub_resource type="ParticleProcessMaterial" id="Proc_dive_trail"]
 emission_shape = 1
 emission_sphere_radius = 0.35
 direction = Vector3(0, 0, 1)
@@ -216,7 +216,7 @@ stats = NodePath("../StatsComponent")
 grapple = NodePath("../GrappleComponent")
 jump_sound = ExtResource("12_jump")
 land_sound = ExtResource("13_land")
-dash_sound = ExtResource("14_dash")
+fast_fall_sound = ExtResource("14_dash")
 snare_caught_sound = ExtResource("45_snare_caught")
 snare_break_sound = ExtResource("46_snare_break")
 slide_sound = ExtResource("15_slide")
@@ -249,15 +249,15 @@ body = NodePath("..")
 movement = NodePath("../MovementComponent")
 view_node = NodePath("../HeadPivot/ViewBob")
 
-[node name="DashTrail" type="GPUParticles3D" parent="."]
+[node name="DiveTrail" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 emitting = false
 amount = 16
 lifetime = 0.3
 one_shot = true
 explosiveness = 0.6
-process_material = SubResource("Proc_dash_trail")
-draw_pass_1 = SubResource("Mesh_dash_trail")
+process_material = SubResource("Proc_dive_trail")
+draw_pass_1 = SubResource("Mesh_dive_trail")
 
 [node name="SlideSparks" type="GPUParticles3D" parent="."]
 emitting = false
@@ -266,10 +266,10 @@ lifetime = 0.4
 process_material = SubResource("Proc_slide_sparks")
 draw_pass_1 = SubResource("Mesh_slide_sparks")
 
-[node name="MovementVfxComponent" type="Node" parent="." node_paths=PackedStringArray("movement", "dash_trail", "slide_sparks")]
+[node name="MovementVfxComponent" type="Node" parent="." node_paths=PackedStringArray("movement", "dive_trail", "slide_sparks")]
 script = ExtResource("42_movement_vfx")
 movement = NodePath("../MovementComponent")
-dash_trail = NodePath("../DashTrail")
+dive_trail = NodePath("../DiveTrail")
 slide_sparks = NodePath("../SlideSparks")
 
 [node name="ViewmodelLayer" type="CanvasLayer" parent="."]

@@ -4,7 +4,7 @@ extends GutTest
 ##
 ## Lo que se prueba acá no es que frene -eso es un número- sino las tres cosas que
 ## lo hacen justo: que herede la telegrafía del `HazardZone` en vez de esquivarla,
-## que **no** inmovilice y tenga salida (dash o gancho), y que soltar al que se
+## que **no** inmovilice y tenga salida (el gancho), y que soltar al que se
 ## fue sea automático, porque un charco que expira dejando al jugador lento para
 ## siempre es el peor bug posible de este arquetipo.
 
@@ -82,7 +82,7 @@ func test_being_snared_slows_but_never_stops() -> void:
 
 
 ## La salida. Sin esto el charco es un castigo; con esto es una pregunta - "¿gasto
-## una carga de dash?" - que el jugador ya sabe contestar.
+## el gancho?" - que el jugador ya sabe contestar.
 func test_breaking_the_snare_restores_full_speed() -> void:
 	var movement: MovementComponent = _movement()
 	var free_speed: float = movement.get_move_speed()
@@ -93,7 +93,7 @@ func test_breaking_the_snare_restores_full_speed() -> void:
 		"y recupera toda su velocidad")
 
 
-## Romperlo dashando no sirve de nada si el charco te vuelve a agarrar antes de
+## Romperlo con el gancho no sirve de nada si el charco te vuelve a agarrar antes de
 ## que llegues al borde: la salida dura hasta que estés afuera.
 func test_the_pool_cannot_re_snare_during_the_grace() -> void:
 	var movement: MovementComponent = _movement()
@@ -104,7 +104,7 @@ func test_the_pool_cannot_re_snare_during_the_grace() -> void:
 		"el charco no vuelve a agarrar mientras dura la gracia")
 
 
-## Y la gracia se acaba: volver a entrar al charco cuesta otra carga.
+## Y la gracia se acaba: volver a entrar al charco cuesta otro gancho.
 func test_the_grace_expires() -> void:
 	var movement: MovementComponent = _movement()
 	movement.break_snare()
@@ -131,7 +131,7 @@ func test_the_environmental_alternates_payloads() -> void:
 # ------------------------------------------------- el atrapado se ve y se oye
 
 ## Estar atrapado tiene que anunciarse. Sin esto, el jugador no sabe por que esta
-## lento y la salida que el charco tiene -dash o gancho- no se le ocurre nunca:
+## lento y la salida que el charco tiene -el gancho- no se le ocurre nunca:
 ## el sistema entero se lee como que el juego se trabo.
 func test_being_caught_announces_itself() -> void:
 	var movement: MovementComponent = _movement()

@@ -38,6 +38,7 @@ model_scene = ExtResource("8_model")
 model_yaw_degrees = 180.0
 model_pitch_degrees = 90.0
 model_fit_height = 2.2
+model_emission_max = 2.0
 body_color = Color(1, 0.231, 0.757, 1)
 collision_height = 2.2
 collision_radius = 0.55

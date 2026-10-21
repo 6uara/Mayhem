@@ -1,6 +1,6 @@
 extends Node
 ## Shows a one-line HUD overlay the first time the player performs each core
-## mechanic - move, jump, mantle, slide, dash, grapple, ADS, reload, first shop
+## mechanic - move, jump, mantle, slide, fast fall, grapple, ADS, reload, first shop
 ## visit. Content lives in TutorialHint resources (data/tutorial/), never as
 ## string literals here.
 ##
@@ -43,7 +43,7 @@ var _tutorial: Node
 func _ready() -> void:
 	_load_catalog()
 	EventBus.game_state_changed.connect(_on_game_state_changed)
-	EventBus.dash_used.connect(_on_dash_used)
+	EventBus.fast_fall_landed.connect(_on_fast_fall_landed)
 	EventBus.grapple_started.connect(_on_grapple_started)
 	EventBus.weapon_reloaded.connect(_on_weapon_reloaded)
 	EventBus.weapon_ads_changed.connect(_on_weapon_ads_changed)
@@ -62,8 +62,8 @@ func _process(delta: float) -> void:
 
 # Signal handlers - EventBus
 
-func _on_dash_used(_charges_remaining: int) -> void:
-	_fire(&"dash")
+func _on_fast_fall_landed() -> void:
+	_fire(&"fast_fall")
 
 
 func _on_grapple_started(_anchor: Vector3) -> void:

@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, player, movement]
 estado: referencia
-actualizado: 2026-09-28
+actualizado: 2026-10-21
 ---
 
 # Player and Movement
@@ -26,7 +26,9 @@ asserts the aim transform doesn't move.
 ## MovementComponent
 
 `scripts/components/movement_component.gd`. Owns **all** player physics. State
-machine: `State` enum `GROUNDED / AIRBORNE / SLIDING / DASHING / GRAPPLING`.
+machine: `State` enum `GROUNDED / AIRBORNE / SLIDING / GRAPPLING`. There was a
+`DASHING` until 2026-10-21: the teacher feedback took the dash out and the burst
+of speed moved to the fast fall (below), which lands into a slide.
 
 Design law from the source's own comments: **momentum is a resource the player
 builds and keeps** — nothing here caps speed "for fairness" (enemies are
@@ -45,11 +47,26 @@ chaining is intentional.
   turning the mouse builds speed, up to `bhop_max_speed`, and holding forward
   builds nothing. Then air control (`air_control`) redirects velocity but never
   accelerates past current speed. Mantling
-  (`_try_mantle()`) triggers automatically while airborne, moving toward a wall,
-  holding jump: a chest-height ray finds the wall, a head-height ray confirms
-  clearance, and finding both boosts `velocity.y` — geometry snags that would
-  otherwise kill momentum are a bug by design decree. Emits `mantled()` only on
-  a successful boost, not on every probe.
+  (`_try_mantle()`) triggers automatically while airborne and moving toward a
+  wall, with no button held (it needed jump held until 2026-10-21): a
+  chest-height ray finds the wall, a head-height ray confirms clearance, and
+  finding both boosts `velocity.y` — geometry snags that would otherwise kill
+  momentum are a bug by design decree. Emits `mantled()` only on a successful
+  boost, not on every probe. Skipped during a fast fall.
+
+### Fast fall
+
+`crouch_slide` pressed while `AIRBORNE` calls `_start_fast_fall()`: vertical
+velocity drops to `-fast_fall_speed` (28), horizontal is untouched, and
+`fast_fell()` fires. Landing with crouch still held runs `_land_fast_fall()`
+before the usual landing slide: it adds `fast_fall_boost_per_meter` (3 m/s) per
+metre dropped since the press, along the current heading (or the facing when
+nearly still), capped at `fast_fall_boost_max` (10) above run speed and never
+taking from a speed that was already higher. Measured by metres dropped, not
+impact speed, because the dive starts at full speed: a hop would pay as much as
+a platform. Released crouch on landing means no boost. A bounce pad or grapple
+cancels the fast fall. Asked for by the 2026-10-21 teacher feedback
+("majestic leap").
 
 `started_moving()` / `jumped()` / `mantled()` exist solely as
 `TutorialHintManager`'s hook for each mechanic's first-time hint (see
@@ -97,15 +114,16 @@ run (`_slide_boost_spent` guards re-triggering it via crouch-spam). Landing with
 crouch held re-enters a slide at full speed with **no** boost — that's the chain
 that makes downhill routes and pad-to-slide flow work.
 
-### Dash
+### No dash
 
-Flat, gravity-free burst (`dash_speed`, `dash_duration`) that goes wherever you
-point, including mid-air. `dash_charges` (a `DashCharges` value object — see
-`tests/unit/test_dash_charges.gd`) tracks up to `dash_charges_max = 3`
-(`Tokens.DASH_CHARGES` — the HUD reserves exactly three pips for it) with
-independent per-charge cooldowns. On dash end, `dash_exit_speed_fraction = 0.75`
-of dash speed carries into the next state — the momentum handoff that makes
-dash→slide chains worth learning.
+Removed 2026-10-21 with everything that hung off it: the `dash` input, the
+HUD pips, `DashCharges`, the `dash_charge` / `dash_cooldown` upgrades and the
+GROUNDED contract. What it fed was moved, not dropped: the style bonus is now
+`slide` (DESLIZANDO), the crowd request is SLIDE THROUGH THEM!, Ram Dash is
+Ram Slide (`PlayerPerks.RAM_MIN_SPEED` 9 m/s), Pad Charger resets the grapple
+(`GrappleComponent.refresh_cooldown()`), and the camera punch (`surge_*` in
+`CameraFeelComponent`), the trail (`DiveTrail`) and the sound answer
+`fast_fall_landed`. The snare pool is broken only by the grapple now.
 
 ### Grapple
 
@@ -124,11 +142,12 @@ what's nearest) and confirm line of sight with a second raycast against
 `PhysicsLayers.WORLD` — the assist can never grapple through a wall, which is
 the one guarantee the old single-raycast version gave for free. Both paths
 return the same `{position, collider}` shape, so `try_fire()` doesn't care
-which one answered. `aim_assist_degrees: float = 4.0` is an `@export` read
+which one answered. `aim_assist_degrees: float = 6.4` is an `@export` read
 through `get_aim_assist_degrees()` (same pattern as `get_cooldown()` /
 `get_max_range()`), stat-scaled by `StatsComponent.GRAPPLE_AIM_ASSIST` via the
 **Magnet Hook** upgrade (`data/upgrades/grapple_aim_assist.tres`, ×1.6, 2
-stacks: 4° → 6.4° → 10.2°).
+stacks: 6.4° → 10.2° → 16.4°). The base was 4° until the 2026-10-21
+feedback asked for the one-stack feel by default.
 
 ## CameraFeelComponent
 
@@ -171,7 +190,7 @@ that are not the same thing:
 
 `Player._tick_speed_fov()` — widens FOV above `movement.base_move_speed`, capped
 at `SPEED_FOV_MAX = 12.0`, suppressed while aiming (`* (1.0 - weapon.ads_progress)`).
-Exists because the movement system hands out real momentum through slides, dashes
+Exists because the movement system hands out real momentum through slides, fast falls
 and pads, but without a visible consequence the screen looks identical at 7 m/s
 and 14 — the reward for chaining well was otherwise invisible.
 

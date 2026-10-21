@@ -21,16 +21,16 @@ func _reset_queue() -> void:
 
 
 func test_each_hint_fires_only_the_first_time_its_mechanic_happens() -> void:
-	assert_false(SaveManager.has_seen_hint(&"dash"))
+	assert_false(SaveManager.has_seen_hint(&"fast_fall"))
 	watch_signals(TutorialHintManager)
 
-	EventBus.dash_used.emit(3)
+	EventBus.fast_fall_landed.emit()
 	assert_signal_emit_count(TutorialHintManager, "hint_shown", 0,
 		"queued, not yet shown - _process hasn't ticked")
-	assert_true(SaveManager.has_seen_hint(&"dash"), "marked seen the moment it queues")
+	assert_true(SaveManager.has_seen_hint(&"fast_fall"), "marked seen the moment it queues")
 
-	EventBus.dash_used.emit(3)
-	EventBus.dash_used.emit(3)
+	EventBus.fast_fall_landed.emit()
+	EventBus.fast_fall_landed.emit()
 	assert_eq(TutorialHintManager._queue.size(), 1,
 		"a mechanic that already fired must not queue a second hint")
 
@@ -39,7 +39,7 @@ func test_each_hint_fires_only_the_first_time_its_mechanic_happens() -> void:
 ## "Seen" persists across every future run, so marking a dropped hint seen meant
 ## the player never got that hint again - the mechanic stayed untaught for good.
 func test_a_hint_dropped_by_a_full_queue_is_not_marked_seen() -> void:
-	for id: StringName in [&"dash", &"grapple", &"reload", &"ads"]:
+	for id: StringName in [&"fast_fall", &"grapple", &"reload", &"ads"]:
 		TutorialHintManager._fire(id)
 	assert_eq(TutorialHintManager._queue.size(), TutorialHintManager.MAX_QUEUED,
 		"the queue is full")
@@ -72,7 +72,7 @@ func test_clearing_tutorial_hints_forgets_everything() -> void:
 
 func test_hints_never_overlap_on_screen() -> void:
 	watch_signals(TutorialHintManager)
-	EventBus.dash_used.emit(3)
+	EventBus.fast_fall_landed.emit()
 	EventBus.grapple_started.emit(Vector3.ZERO)
 	EventBus.weapon_reloaded.emit(&"pistol")
 	assert_eq(TutorialHintManager._queue.size(), 3, "all three queued")
@@ -95,12 +95,12 @@ func test_hints_never_overlap_on_screen() -> void:
 
 func test_a_hint_shows_the_currently_bound_key() -> void:
 	watch_signals(TutorialHintManager)
-	EventBus.dash_used.emit(3)
+	EventBus.fast_fall_landed.emit()
 	TutorialHintManager._try_show_next()
 
 	var params: Array = get_signal_parameters(TutorialHintManager, "hint_shown", 0)
 	var shown_text: String = params[0]
 	assert_false(shown_text.contains("{action}"), "the placeholder must be substituted")
 	assert_true(shown_text.contains(OS.get_keycode_string(
-		(InputMap.action_get_events(&"dash")[0] as InputEventKey).physical_keycode)),
+		(InputMap.action_get_events(&"crouch_slide")[0] as InputEventKey).physical_keycode)),
 		"the hint must name the actual bound key, not a hardcoded one")

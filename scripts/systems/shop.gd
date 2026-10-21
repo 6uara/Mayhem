@@ -121,6 +121,18 @@ func _roll() -> void:
 			picked.push_back(chosen)
 			pool.erase(chosen)
 
+	# El arma va con las garantizadas y no en el sorteo comun: compite con una
+	# sola carta y no con veinte, y la rara de abajo nunca la reemplaza. Sale del
+	# sorteo comun del todo para que `weapon_offer_chance` sea la probabilidad
+	# real y no un piso.
+	var weapons: Array[Dictionary] = pool.filter(
+		func(entry: Dictionary) -> bool: return entry["kind"] == Kind.WEAPON)
+	for weapon: Dictionary in weapons:
+		pool.erase(weapon)
+	if not weapons.is_empty() and picked.size() < catalog.offers_per_visit \
+			and _rng.randf() < catalog.weapon_offer_chance:
+		picked.push_back(weapons[_rng.randi_range(0, weapons.size() - 1)])
+
 	var guaranteed: int = picked.size()
 	while picked.size() < catalog.offers_per_visit and not pool.is_empty():
 		var index: int = _rng.randi_range(0, pool.size() - 1)

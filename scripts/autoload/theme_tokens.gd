@@ -12,7 +12,7 @@ const MUTED  := Color("#8A90A3")  ## labels, secondary text
 const TEXT   := Color("#E6E8EF")  ## primary text, crosshair
 
 # ---------------------------------------------------------------- Colour: accents
-const PLAYER := Color("#35E0D4")  ## yours: health, ammo, dash, grapple. Shape: square
+const PLAYER := Color("#35E0D4")  ## yours: health, ammo, grapple. Shape: square
 const ENEMY  := Color("#FF3B54")  ## threat, damage in, hitmarkers. Shape: diamond/chevron
 const REWARD := Color("#FFB020")  ## currency, pickups, Host voice. Shape: circle
 ## Lava orange, not the acid green this shipped with - the pool material is meant to
@@ -66,10 +66,6 @@ const SUBTITLE_MAX_LINES := 2
 const HEALTH_SEGMENTS   := 10
 const HEALTH_SEG_SIZE   := Vector2(41, 14)
 const HEALTH_SEG_GAP    := 3
-const DASH_CHARGES      := 3
-const DASH_PIP_SIZE     := Vector2(52, 10)
-const DASH_PIP_SKEW     := 8
-const DASH_PIP_GAP      := 8
 const AMMO_PIP_SIZE     := Vector2(8, 12)
 const AMMO_PIP_GAP      := 3
 const AMMO_PIP_MAX      := 40   ## above this, one pip per 2 rounds
@@ -124,7 +120,6 @@ const SHAPE_FOR := {
 const ARM_BRAND      := Color("#B45CFF")  ## arcane binding on the player's arms
 const ARM_PLATE      := Color("#2C3140")
 const ARM_SLEEVE     := Color("#1E212B")
-const ARM_PULSE_TIME := 1.4  ## seconds, on dash spend
 
 ## Enemy dominant colours. Silhouette is the primary read; colour confirms.
 const ENEMY_RUSHER   := Color("#FF3B54")

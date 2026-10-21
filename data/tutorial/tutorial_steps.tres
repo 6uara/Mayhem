@@ -35,13 +35,13 @@ teaches_hint = &"slide"
 
 [sub_resource type="Resource" id="Step_3"]
 script = ExtResource("2_step")
-goal = &"dash"
-title = "DASH"
-text = "Dash with {dash}, even in the air. Charges refill on their own."
+goal = &"fast_fall"
+title = "DIVE"
+text = "In the air, press {crouch_slide} to dive. Keep it held as you land to slide out fast."
 duration = 5.0
 max_time = 15.0
 requires_group = &""
-teaches_hint = &"dash"
+teaches_hint = &"fast_fall"
 
 [sub_resource type="Resource" id="Step_4"]
 script = ExtResource("2_step")
@@ -87,7 +87,7 @@ teaches_hint = &""
 script = ExtResource("2_step")
 goal = &""
 title = "STYLE"
-text = "Kills pay. Style pays more: headshots, kills in the air, on the hook, mid-dash, multi-kills. Your RATING multiplies style - plain kills drag it down."
+text = "Kills pay. Style pays more: headshots, kills in the air, on the hook, mid-slide, multi-kills. Your RATING multiplies style - plain kills drag it down."
 duration = 7.0
 max_time = 0.0
 requires_group = &""

@@ -29,7 +29,7 @@ signal match_state_changed(is_running: bool)
 @export var attachments_enabled: bool = false
 ## El tutorial de arranque. Si corresponde mostrarlo, la primera oleada espera a
 ## que termine o se saltee: la partida no empieza con alguien que todavia no sabe
-## dashear. Sin tutorial (pruebas, escenas armadas a mano) arranca directo.
+## deslizar. Sin tutorial (pruebas, escenas armadas a mano) arranca directo.
 @export var tutorial: TutorialDirector
 
 var is_running: bool = false

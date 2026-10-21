@@ -8,6 +8,12 @@ extends Resource
 ## than modifying a stat - so they carry their price here.
 @export var weapons: Array[WeaponData] = []
 @export var weapon_prices: PackedInt32Array = PackedInt32Array()
+## Probabilidad de que una visita reserve un lugar para un arma, en los modos
+## donde la tienda vende armas. Antes las armas entraban al sorteo comun contra
+## veinte mejoras por el unico lugar libre, y una rara podia pisarlo: salia un
+## arma en menos de una visita de cada diez. El feedback de los profesores
+## (2026-10-21) pidio verlas mas seguido.
+@export_range(0.0, 1.0) var weapon_offer_chance: float = 0.6
 
 @export var upgrades: Array[UpgradeData] = []
 

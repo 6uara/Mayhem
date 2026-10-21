@@ -208,7 +208,7 @@ func rebind_action(action: StringName, events: Array[InputEvent]) -> void:
 const REBINDABLE_ACTIONS: Array = [
 	[&"move_forward", "Move forward"], [&"move_back", "Move back"],
 	[&"move_left", "Move left"], [&"move_right", "Move right"],
-	[&"jump", "Jump"], [&"crouch_slide", "Crouch / slide"], [&"dash", "Dash"],
+	[&"jump", "Jump"], [&"crouch_slide", "Crouch / slide / dive"],
 	[&"grapple", "Grapple"], [&"fire", "Fire"], [&"ads", "Aim down sights"],
 	[&"reload", "Reload"], [&"interact", "Interact"],
 	[&"utility_1", "Gadget 1"], [&"utility_2", "Gadget 2"], [&"utility_3", "Gadget 3"],

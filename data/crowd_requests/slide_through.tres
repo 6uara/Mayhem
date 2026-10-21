@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1_request")
-id = &"dash_through"
-title = "DASH THROUGH THEM!"
-bonus_id = &"dash"
+id = &"slide_through"
+title = "SLIDE THROUGH THEM!"
+bonus_id = &"slide"
 goal = 2
 time_limit = 20.0
 reward_rating = 12.0

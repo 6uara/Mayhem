@@ -1,7 +1,7 @@
 class_name BouncePad
 extends Area3D
 ## Static momentum source: launches anything in the player group straight up while
-## leaving horizontal velocity alone, so pads combo with dash and slide by design.
+## leaving horizontal velocity alone, so pads combo with fast fall and slide by design.
 
 ## Every pad in the arena launches at this, and none of them override it.
 ##
@@ -52,10 +52,12 @@ func _on_body_entered(entered: Node3D) -> void:
 	if preserve_higher_velocity:
 		launch = maxf(launch, player_body.velocity.y)
 	player_body.velocity.y = launch
-	# Pad Charger: el pad tambien devuelve una carga de dash.
+	# Pad Charger: el pad tambien recarga el gancho. Devolvia una carga de dash
+	# hasta que el dash salio (2026-10-21).
 	var player := player_body as Player
-	if player != null and player.movement != null 			and UpgradeManager.get_stat(StatsComponent.PAD_DASH_REFILL, 0.0) > 0.0:
-		player.movement.dash_charges.restore_one()
+	if player != null and player.grapple != null \
+			and UpgradeManager.get_stat(StatsComponent.PAD_GRAPPLE_REFILL, 0.0) > 0.0:
+		player.grapple.refresh_cooldown()
 	AudioPool.play_3d(bounce_sound, global_position, AudioPool.BUS_WORLD)
 	_pulse()
 

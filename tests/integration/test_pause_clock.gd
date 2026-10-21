@@ -117,7 +117,7 @@ func test_starting_a_run_while_paused_closes_the_pause_clock() -> void:
 	assert_gt(GameManager.get_run_time(), 0.25)
 
 
-## Las ventanas cortas -la racha de kills, el ritmo del rating, el dash reciente-
+## Las ventanas cortas -la racha de kills, el ritmo del rating, el slide reciente-
 ## se miden con el reloj de juego. Con el de pared, un Esc en medio de una racha
 ## la cortaba: la kill siguiente caia afuera de la ventana.
 func test_the_game_clock_stands_still_while_paused() -> void:

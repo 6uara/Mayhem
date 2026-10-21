@@ -259,24 +259,6 @@ filled = 10
 segment_size = Vector2(41, 14)
 gap = 3.0
 
-[node name="DashRow" type="HBoxContainer" parent="Root/VitalsCluster"]
-theme_override_constants/separation = 14
-
-[node name="Label" type="Label" parent="Root/VitalsCluster/DashRow"]
-theme_type_variation = &"HUDLabel"
-vertical_alignment = 1
-text = "DASH"
-
-[node name="Pips" type="Control" parent="Root/VitalsCluster/DashRow"]
-script = ExtResource("3_strip")
-count = 3
-filled = 3
-segment_size = Vector2(52, 10)
-gap = 8.0
-shape = 1
-skew = 8.0
-size_flags_vertical = 4
-
 [node name="AbilityBar" type="HBoxContainer" parent="Root"]
 anchors_preset = 7
 anchor_left = 0.5

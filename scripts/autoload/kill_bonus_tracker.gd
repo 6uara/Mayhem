@@ -12,7 +12,7 @@ extends Node
 ## regla aca y un numero alla, nunca un numero aca.
 ##
 ## Nada de lo que mide se pregunta al morir el enemigo salvo la posicion: el
-## estado del jugador (aire, gancho, dash, cargador, giro de camara) se sigue
+## estado del jugador (aire, gancho, slide, cargador, giro de camara) se sigue
 ## frame a frame, porque en el instante de la kill ya es tarde para reconstruir
 ## de donde venia.
 
@@ -23,7 +23,8 @@ const BONUS_HEADSHOT: StringName = &"headshot"
 const BONUS_AIRBORNE: StringName = &"airborne"
 const BONUS_SPIN: StringName = &"spin"
 const BONUS_GRAPPLE: StringName = &"grapple"
-const BONUS_DASH: StringName = &"dash"
+## Era BONUS_DASH (&"dash") hasta que el dash salio (2026-10-21).
+const BONUS_SLIDE: StringName = &"slide"
 const BONUS_LONG_SHOT: StringName = &"long_shot"
 const BONUS_POINT_BLANK: StringName = &"point_blank"
 const BONUS_LAST_ROUND: StringName = &"last_round"
@@ -41,7 +42,7 @@ const BONUS_LABEL: Dictionary = {
 	BONUS_AIRBORNE: "EN EL AIRE",
 	BONUS_SPIN: "360",
 	BONUS_GRAPPLE: "EN EL GANCHO",
-	BONUS_DASH: "EN EL DASH",
+	BONUS_SLIDE: "DESLIZANDO",
 	BONUS_LONG_SHOT: "A DISTANCIA",
 	BONUS_POINT_BLANK: "A QUEMARROPA",
 	BONUS_LAST_ROUND: "ULTIMA BALA",
@@ -69,9 +70,10 @@ const SPIN_IDLE_RESET: float = 0.35
 ## Por debajo de esto (grados por frame) la camara se considera quieta.
 const SPIN_EPSILON: float = 0.05
 
-## Ventana en la que un dash sigue contando como "mate dashando". Un dash dura
-## 0.16s: esto cubre el dash mas los pasos que salen de el.
-const DASH_WINDOW: float = 0.55
+## Ventana despues de terminar un slide en la que una kill sigue contando como
+## "mate deslizando": cubre el salto que sale del slide y el par de pasos al
+## pararse, que es justo cuando se dispara.
+const SLIDE_WINDOW: float = 0.4
 ## Ventana en la que varias kills cuentan como una sola racha.
 const MULTI_WINDOW: float = 1.5
 
@@ -100,8 +102,8 @@ var _spin_idle_time: float = 0.0
 var _last_yaw: float = 0.0
 var _has_yaw: bool = false
 
-## Cuando se gasto el ultimo dash, en segundos de reloj del juego.
-var _last_dash_time: float = -999.0
+## El ultimo momento en que el jugador estaba deslizando, en reloj del juego.
+var _last_slide_time: float = -999.0
 ## Cuando entro la ultima cura a cualquier enemigo.
 var _last_heal_time: float = -999.0
 ## Momento de la kill anterior y cuantas van en esta racha.
@@ -111,7 +113,6 @@ var _streak: int = 0
 
 func _ready() -> void:
 	EventBus.local_player_spawned.connect(_on_player_spawned)
-	EventBus.dash_used.connect(_on_dash_used.unbind(1))
 	EventBus.kill_scored.connect(_on_kill_scored)
 	EventBus.healed.connect(_on_healed.unbind(2))
 	EventBus.wave_started.connect(_on_wave_started.unbind(2))
@@ -120,6 +121,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_tick_spin(delta)
+	_tick_slide()
 
 
 # Public API
@@ -134,7 +136,7 @@ func reset() -> void:
 	_spin_accum = 0.0
 	_spin_idle_time = 0.0
 	_has_yaw = false
-	_last_dash_time = -999.0
+	_last_slide_time = -999.0
 	_last_heal_time = -999.0
 	_last_kill_time = -999.0
 	_streak = 0
@@ -148,8 +150,10 @@ func _on_player_spawned(player: Node3D) -> void:
 	reset()
 
 
-func _on_dash_used() -> void:
-	_last_dash_time = _now()
+func _tick_slide() -> void:
+	if _player != null and is_instance_valid(_player) and _player.movement != null \
+			and _player.movement.is_sliding():
+		_last_slide_time = _now()
 
 
 func _on_healed() -> void:
@@ -229,8 +233,9 @@ func _evaluate(enemy_type: StringName, position: Vector3, was_headshot: bool) ->
 			# aire, y cobrar los dos por la misma situacion paga dos veces lo
 			# mismo.
 			bonuses.append(BONUS_AIRBORNE)
-		if now - _last_dash_time <= DASH_WINDOW:
-			bonuses.append(BONUS_DASH)
+		if _player.movement != null and (_player.movement.is_sliding() \
+				or now - _last_slide_time <= SLIDE_WINDOW):
+			bonuses.append(BONUS_SLIDE)
 		if absf(_spin_accum) >= SPIN_DEGREES:
 			bonuses.append(BONUS_SPIN)
 			# Se consume: la misma vuelta no paga dos kills.
@@ -271,6 +276,6 @@ func _advance_streak(now: float) -> StringName:
 
 
 ## Reloj de juego y no de pared: la pausa no corta una racha ni vence la ventana
-## del dash o del healer. Ver GameManager.get_game_clock().
+## del slide o del healer. Ver GameManager.get_game_clock().
 func _now() -> float:
 	return GameManager.get_game_clock()

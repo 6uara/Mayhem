@@ -31,7 +31,7 @@ func _step(goal: StringName, title: String, duration: float = 1.0) -> TutorialSt
 	var step := TutorialStep.new()
 	step.goal = goal
 	step.title = title
-	step.text = "%s with {dash}" % title
+	step.text = "%s with {crouch_slide}" % title
 	step.duration = duration
 	step.max_time = 30.0
 	step.teaches_hint = goal
@@ -55,21 +55,21 @@ func test_the_shipped_tutorial_is_short_and_covers_the_basics() -> void:
 		goals.append(step.goal)
 		if step.goal == &"":
 			info_time += step.duration
-	for goal: StringName in [&"move", &"jump", &"slide", &"dash", &"grapple", &"fire", &"reload"]:
+	for goal: StringName in [&"move", &"jump", &"slide", &"fast_fall", &"grapple", &"fire", &"reload"]:
 		assert_true(goals.has(goal), "enseña %s" % goal)
 	assert_lt(info_time, 30.0, "lo que se lee sin hacer nada tiene que ser poco")
 
 
 func test_an_action_step_waits_for_the_action() -> void:
-	var director: TutorialDirector = _director([_step(&"dash", "DASH"), _step(&"", "INFO")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE"), _step(&"", "INFO")])
 	director.begin()
 	assert_true(director.is_running)
 	director._process(5.0)
 	assert_eq(director.get_step_index(), 0, "no pasa solo")
-	EventBus.dash_used.emit(2)
+	EventBus.fast_fall_landed.emit()
 	director._process(TutorialDirector.STEP_GAP + 0.01)
 	assert_eq(director.get_step_index(), 1)
-	assert_true(SaveManager.has_seen_hint(&"dash"), "el hint de primera vez queda aprendido")
+	assert_true(SaveManager.has_seen_hint(&"fast_fall"), "el hint de primera vez queda aprendido")
 
 
 func test_an_info_step_passes_on_its_own() -> void:
@@ -94,13 +94,13 @@ func test_no_step_can_trap_the_player() -> void:
 func test_a_step_the_arena_cannot_teach_is_skipped() -> void:
 	var step: TutorialStep = _step(&"grapple", "GRAPPLE")
 	step.requires_group = &"no_such_thing_in_this_test"
-	var director: TutorialDirector = _director([step, _step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([step, _step(&"fast_fall", "DIVE")])
 	director.begin()
-	assert_eq(director.current_step().goal, &"dash")
+	assert_eq(director.current_step().goal, &"fast_fall")
 
 
 func test_skipping_ends_it_and_remembers() -> void:
-	var director: TutorialDirector = _director([_step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE")])
 	watch_signals(director)
 	director.begin()
 	TutorialHintManager.skip_tutorial()
@@ -110,7 +110,7 @@ func test_skipping_ends_it_and_remembers() -> void:
 
 
 func test_the_skip_key_skips() -> void:
-	var director: TutorialDirector = _director([_step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE")])
 	director.begin()
 	var press := InputEventAction.new()
 	press.action = &"skip_tutorial"
@@ -121,7 +121,7 @@ func test_the_skip_key_skips() -> void:
 
 func test_a_completed_tutorial_does_not_run_again() -> void:
 	SaveManager.mark_hint_seen(TutorialDirector.COMPLETED_ID)
-	var director: TutorialDirector = _director([_step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE")])
 	watch_signals(director)
 	director.begin()
 	assert_false(director.is_running)
@@ -129,13 +129,13 @@ func test_a_completed_tutorial_does_not_run_again() -> void:
 
 
 func test_the_text_names_the_bound_key() -> void:
-	var text: String = TutorialDirector.resolve_text("Dash with {dash}. Move with {move}.")
+	var text: String = TutorialDirector.resolve_text("Dive with {crouch_slide}. Move with {move}.")
 	assert_false(text.contains("{"), text)
-	assert_true(text.contains(TutorialHintManager.key_label(&"dash")))
+	assert_true(text.contains(TutorialHintManager.key_label(&"crouch_slide")))
 
 
 func test_first_time_hints_stay_quiet_during_the_tutorial() -> void:
-	var director: TutorialDirector = _director([_step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE")])
 	director.begin()
 	TutorialHintManager._queue.clear()
 	TutorialHintManager._fire(&"reload")
@@ -145,7 +145,7 @@ func test_first_time_hints_stay_quiet_during_the_tutorial() -> void:
 
 ## La partida no empieza hasta que el tutorial termina.
 func test_the_first_wave_waits_for_the_tutorial() -> void:
-	var director: TutorialDirector = _director([_step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE")])
 	var wave := WaveData.new()
 	var group := SpawnGroup.new()
 	group.enemy_data = EnemyData.new()
@@ -171,7 +171,7 @@ func test_the_pause_menu_offers_the_skip_only_during_the_tutorial() -> void:
 	var button: Button = pause.get_node("Root/Panel/Margin/Layout/SkipTutorialButton")
 	EventBus.game_paused.emit(true)
 	assert_false(button.visible)
-	var director: TutorialDirector = _director([_step(&"dash", "DASH")])
+	var director: TutorialDirector = _director([_step(&"fast_fall", "DIVE")])
 	director.begin()
 	EventBus.game_paused.emit(true)
 	assert_true(button.visible)

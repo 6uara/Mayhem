@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, handoff, iconography, ui, design]
 estado: activo
-actualizado: 2026-09-25
+actualizado: 2026-10-21
 ---
 
 # Handoff — Iconografía de UI
@@ -169,7 +169,7 @@ Definidos en [`kill_bonus_tracker.gd`](../../scripts/autoload/kill_bonus_tracker
 | `airborne` | EN EL AIRE | Sin pisar piso |
 | `spin` | 360 | ≥330° girados sin frenar |
 | `grapple` | EN EL GANCHO | Colgado del gancho |
-| `dash` | EN EL DASH | Dentro de 0.55s del dash |
+| `slide` | DESLIZANDO | Deslizando, o dentro de 0.4s de terminar el slide (era `dash` hasta 2026-10-21) |
 | `long_shot` | A DISTANCIA | ≥32m |
 | `point_blank` | A QUEMARROPA | ≤4.5m |
 | `last_round` | ÚLTIMA BALA | Cargador en cero |
@@ -195,8 +195,7 @@ tarjetas de la tienda hoy son texto puro.
 
 Las 19 mejoras en [`data/upgrades/`](../../data/upgrades):
 
-- **Movilidad** — `move_speed`, `jump_height`, `air_control`, `dash_charge`,
-  `dash_cooldown`, `grapple_cooldown`, `grapple_range`, `grapple_aim_assist`
+- **Movilidad** — `move_speed`, `jump_height`, `air_control`, `grapple_cooldown`, `grapple_range`, `grapple_aim_assist`
 - **Arma** — `damage`, `fire_rate`, `magazine`, `reserve_ammo`, `reload_speed`,
   `recoil_control`, `stability`, `ads_speed`
 - **Supervivencia** — `max_health`, `damage_reduction`, `adrenaline`

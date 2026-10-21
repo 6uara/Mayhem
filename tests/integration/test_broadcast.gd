@@ -243,18 +243,18 @@ func test_an_unsigned_contract_does_nothing() -> void:
 
 
 func test_dying_under_contract_pays_nothing() -> void:
-	BroadcastRules.start_contract(load("res://data/broadcast_rules/contracts/grounded.tres"))
+	BroadcastRules.start_contract(load("res://data/broadcast_rules/contracts/no_hook.tres"))
 	watch_signals(EventBus)
 	EventBus.player_died.emit()
 	assert_signal_emitted_with_parameters(EventBus, "broadcast_contract_settled",
-		[&"grounded", 0])
+		[&"no_hook", 0])
 
 
-func test_grounded_takes_the_dash_away_and_gives_it_back() -> void:
-	BroadcastRules.start_contract(load("res://data/broadcast_rules/contracts/grounded.tres"))
-	assert_eq(UpgradeManager.get_stat(StatsComponent.DASH_CHARGES, 3.0), 0.0)
+func test_no_hook_takes_the_hook_away_and_gives_it_back() -> void:
+	BroadcastRules.start_contract(load("res://data/broadcast_rules/contracts/no_hook.tres"))
+	assert_eq(UpgradeManager.get_stat(StatsComponent.GRAPPLE_RANGE, 28.0), 0.0)
 	BroadcastRules.end_rule()
-	assert_eq(UpgradeManager.get_stat(StatsComponent.DASH_CHARGES, 3.0), 3.0)
+	assert_eq(UpgradeManager.get_stat(StatsComponent.GRAPPLE_RANGE, 28.0), 28.0)
 
 
 func test_every_contract_has_a_price_and_says_what_it_takes() -> void:

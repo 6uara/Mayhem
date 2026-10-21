@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, ui, hud]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-21
 ---
 
 # UI and HUD
@@ -19,7 +19,7 @@ clusters intersect.
 **The HUD never polls.** Every value on screen arrives via an `EventBus` signal
 connection made in `_ready()` — there is no `_process()` reading gameplay state.
 Clusters: Wave, Timer (par-time bar + no-damage indicator), Currency
-(+ `PowerUpChip` list), Vitals (health segments, dash pips), Ability bar, Weapon
+(+ `PowerUpChip` list), Vitals (health segments; the dash pips left with the dash on 2026-10-21), Ability bar, Weapon
 (ammo readout), plus the always-present `Reticle`, `BroadcastBug`, `AnnounceLayer`,
 `SubtitleBox`.
 
@@ -38,8 +38,8 @@ world affordance (not just HUD) runs on.
 
 ### Small single-purpose widgets
 
-- `SegmentStrip` — health segments, dash pips, ammo pips: one widget, three
-  configurations (count + size), not three separate scripts.
+- `SegmentStrip` — health segments and ammo pips (and the dash pips, until the
+  dash left): one widget, several configurations (count + size), not three separate scripts.
 - `StripeBar` — the 45° hazard stripe, drawn procedurally rather than a tiled
   texture; reused for the elite-wave banner stripe and hazard floor cues.
 - `MayhemIcon` — all 25 HUD icons drawn procedurally via `_draw()` (rectangles,
@@ -247,7 +247,7 @@ proves this without actually waiting out the real 3-second default.
 
 `TutorialDirector` (node in `game.tscn`) + `TutorialStep` data
 (`data/tutorial/tutorial_steps.tres`): ten steps — seven to do (move, jump,
-slide, dash, grapple, fire/ADS, reload), three to read (colors, style and rating,
+slide, dive (fast fall), grapple, fire/ADS, reload), three to read (colors, style and rating,
 shop and rules). `MatchDirector` holds the first wave until `finished`. Action
 steps end when the action happens or after `max_time`; a step whose
 `requires_group` is missing from the arena is skipped. Done or skipped, it is

@@ -63,8 +63,6 @@ func _physics_process(delta: float) -> void:
 			_play("Crouch_Fwd" if speed > idle_speed else "Crouch_Idle")
 		MovementComponent.State.AIRBORNE, MovementComponent.State.GRAPPLING:
 			_tick_airborne()
-		MovementComponent.State.DASHING:
-			_play("Sprint")
 		_:
 			_play(_grounded_clip(speed))
 	_was_airborne = movement.state in [MovementComponent.State.AIRBORNE, MovementComponent.State.GRAPPLING]
