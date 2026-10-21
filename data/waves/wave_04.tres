@@ -2,35 +2,46 @@
 
 [ext_resource type="Script" uid="uid://bjqajg2b4inv3" path="res://scripts/resources/wave_data.gd" id="1_wave"]
 [ext_resource type="Script" uid="uid://bau4pganyp7m" path="res://scripts/resources/spawn_group.gd" id="2_group"]
-[ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="3_rusher"]
-[ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="4_ranger"]
-[ext_resource type="Resource" uid="uid://cdi5iigv8qtk4" path="res://data/enemies/healer.tres" id="5_healer"]
+[ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="e_rusher"]
+[ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="e_ranger"]
+[ext_resource type="Resource" uid="uid://cdi5iigv8qtk4" path="res://data/enemies/healer.tres" id="e_healer"]
+[ext_resource type="Resource" uid="uid://bk401winjlkty" path="res://data/enemies/summoner.tres" id="e_summoner"]
 
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")
-enemy_data = ExtResource("3_rusher")
-count = 9
+enemy_data = ExtResource("e_rusher")
+count = 11
 spawn_door_ids = Array[StringName]([&"door_01", &"door_04"])
-interval = 0.6
+delay = 0.0
+interval = 0.5
 
 [sub_resource type="Resource" id="Group_1"]
 script = ExtResource("2_group")
-enemy_data = ExtResource("4_ranger")
-count = 4
+enemy_data = ExtResource("e_ranger")
+count = 5
 spawn_door_ids = Array[StringName]([&"door_05", &"door_06"])
 delay = 4.0
-interval = 1.0
+interval = 0.9
 
 [sub_resource type="Resource" id="Group_2"]
 script = ExtResource("2_group")
-enemy_data = ExtResource("5_healer")
-spawn_door_ids = Array[StringName]([&"door_03"])
+enemy_data = ExtResource("e_healer")
+count = 2
+spawn_door_ids = Array[StringName]([&"door_03", &"door_07"])
 delay = 10.0
-interval = 0.0
+interval = 2.0
+
+[sub_resource type="Resource" id="Group_3"]
+script = ExtResource("2_group")
+enemy_data = ExtResource("e_summoner")
+count = 2
+spawn_door_ids = Array[StringName]([&"door_05"])
+delay = 16.0
+interval = 4.0
 
 [resource]
 script = ExtResource("1_wave")
 wave_index = 3
-spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2")])
-par_time = 75.0
+spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_3")])
+par_time = 88.0
 completion_bonus = 90
