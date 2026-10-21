@@ -2242,8 +2242,22 @@ func _collect_model_meshes(node: Node) -> void:
 			_glow_material.albedo_color = Color(flash_color, 0.0)
 		mesh_node.material_overlay = null
 		_model_meshes.append(mesh_node)
+		_cap_emission(mesh_node)
 	for child: Node in node.get_children():
 		_collect_model_meshes(child)
+
+
+## Baja la emision del modelo a `data.model_emission_max`. Toca el material
+## importado, que comparten todas las instancias del modelo: el tope es el mismo
+## para todas y aplicarlo dos veces no cambia nada.
+func _cap_emission(mesh_node: MeshInstance3D) -> void:
+	if data.model_emission_max <= 0.0 or mesh_node.mesh == null:
+		return
+	for surface: int in mesh_node.mesh.get_surface_count():
+		var material := mesh_node.get_active_material(surface) as BaseMaterial3D
+		if material != null and material.emission_enabled:
+			material.emission_energy_multiplier = minf(
+				material.emission_energy_multiplier, data.model_emission_max)
 
 
 ## One knob for "this enemy is lit up", whichever way it is being drawn: the

@@ -227,6 +227,13 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL,
 ## escala a este alto, se apoya con la base en el piso y se centra sobre el
 ## cuerpo; `model_offset` sigue sumando encima, para el ajuste fino.
 @export var model_fit_height: float = 0.0
+## Tope de la energia de emision de los materiales del modelo. 0 deja lo que trae.
+##
+## Existe por el Summoner: su .glb llego con emissiveStrength 10, que con el
+## bloom encandila y tapa el destello de impacto (que llega a 3.0). El feedback
+## de los profesores (2026-10-21) lo marco. Va aca y no en el import para que
+## sobreviva a la proxima exportacion desde Blender.
+@export var model_emission_max: float = 0.0
 @export var body_color: Color = Color(0.6, 0.62, 0.66)
 @export var body_scale: float = 1.0
 ## Capsule collision, kept in sync with the mesh by hand while grey-boxing.

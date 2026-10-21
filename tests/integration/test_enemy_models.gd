@@ -200,3 +200,18 @@ func test_the_summoner_stands_at_its_fit_height() -> void:
 	assert_almost_eq(bounds.size.y, enemy.data.model_fit_height, 0.2,
 		"mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
 	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")
+
+
+## Su .glb trae emissiveStrength 10, que encandila y tapa el destello de impacto.
+func test_the_summoner_glow_is_capped_below_the_hit_flash() -> void:
+	var enemy: Enemy = await _spawn("summoner")
+	var glowing: int = 0
+	for mesh_node: MeshInstance3D in enemy._model_meshes:
+		for surface: int in mesh_node.mesh.get_surface_count():
+			var material := mesh_node.get_active_material(surface) as BaseMaterial3D
+			if material == null or not material.emission_enabled:
+				continue
+			glowing += 1
+			assert_lte(material.emission_energy_multiplier, enemy.data.model_emission_max,
+				"%s queda en el tope del arquetipo" % material.resource_name)
+	assert_gt(glowing, 0, "precondicion: el modelo tiene partes que brillan")
