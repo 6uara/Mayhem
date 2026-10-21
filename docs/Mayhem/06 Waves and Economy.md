@@ -86,17 +86,26 @@ Still respects `guarantee_one_per_category` — the whole point of that
 guarantee is that bad luck can't lock a run out of a track, and a reroll that
 bypassed it would just reintroduce the same problem at a price.
 
-`ShopScreen` itself: `open(breakdown, wave_index, duration_seconds)` formats the
-wave-clear breakdown (kills / completion / speed bonus / no-damage bonus —
-shown explicitly, because that legibility is what makes the economy teachable),
-pauses the tree, shows the cursor. Cards are built procedurally
-(`_make_card()`) from a `ChamferStyleBox` panel per offer — see
-[[07 UI and HUD#Theme system]]. A `Category.WEAPON` upgrade card is labelled
-with the weapon it applies to (`_category_label()` → `_weapon_name()`), and a
-weapon offer's description warns it replaces the current weapon before the
-player spends money on a surprise. `duration` (default from `Tokens.SHOP_TIMER`)
-is a self-closing timer; the shop is skippable, but banking the speed bonus by
-leaving quickly is a real decision the player can make.
+`ShopScreen` itself is two pages (since 2026-10-21; it was one crowded column
+that the teacher playtest read as noise). `open(breakdown, wave_index,
+duration_seconds)` fills **step 1, the shop**: a side column with the wave
+report (`_fill_report()`: one aligned row per income source, rows for
+contract, show and `damage_loss` only when they moved money, and an EARNED
+total) and the build (`BonusList`), and the offers in the middle. Cards are
+built procedurally (`_make_card()`) from a `ChamferStyleBox` panel whose rail is
+the category colour (`Tokens.CATEGORY_COLOR`, text colour for a weapon): key
+hint, icon, category, name, description, stacks as `SegmentStrip` pips, then
+the price large and apart from the BUY button. A weapon card says which weapon
+it replaces; a `Category.WEAPON` upgrade names the weapon it applies to. Reroll
+sits under the cards as a secondary button. **Step 2, the next wave**
+(`_build_next_wave_page()`): the offered rules as selectable cards and the
+contract as a card with SIGN / SIGNED. With no Host offer there is no step 2
+and the shop's button reads START WAVE. Keys, in `_input` so a focused card
+cannot eat Enter: 1-5 buy (or pick a rule on step 2), R reroll, Enter
+advance / start, Backspace back, C sign; ignored while the pause menu is up.
+`duration` (`Tokens.SHOP_TIMER`) runs across both pages and turns `ENEMY`
+under `SHOP_TIMER_URGENT`; leaving early to bank the speed bonus is still one
+button. `tools/capture_shop.tscn` renders both pages to PNG.
 
 ## EconomyManager / UpgradeManager
 
@@ -191,7 +200,7 @@ never on elite waves, no repeats until the pool runs out. Only active when
 **Offer and pick.** When the break opens, `MatchDirector._open_break()` calls
 `BroadcastRules.prepare_offer(next_wave)`: `offer_size` (2) distinct rules and,
 with `contract_chance`, one contract. The shop screen shows them
-(`ShopScreen._refresh_broadcast_box()`); the player picks a rule
+(`ShopScreen._build_next_wave_page()`, step 2); the player picks a rule
 (`choose_rule()`, default the first) and may sign the contract
 (`set_contract_signed()`). `wave_started` starts what was picked. With no offer
 (wave 1, tests that emit `wave_started` by hand) it falls back to a random

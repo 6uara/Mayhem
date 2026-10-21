@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/shop_screen.gd" id="1_shop"]
 [ext_resource type="Script" path="res://scripts/systems/shop.gd" id="2_shop_logic"]
@@ -20,39 +20,71 @@ rail_side = 3
 tick_length = 28.0
 tick_color = Color(0.208, 0.878, 0.831, 1)
 
+[sub_resource type="StyleBox" id="StyleBox_side"]
+script = ExtResource("5_chamfer")
+fill_color = Color(0.118, 0.129, 0.169, 1)
+fill_alpha = 0.6
+border_color = Color(0.173, 0.192, 0.251, 1)
+border_width = 1.0
+chamfer = 12.0
+content_margin_left = 20.0
+content_margin_top = 18.0
+content_margin_right = 20.0
+content_margin_bottom = 18.0
+
 [sub_resource type="StyleBox" id="StyleBox_reroll"]
 script = ExtResource("5_chamfer")
 fill_color = Color(1, 0.69, 0.125, 1)
-fill_alpha = 0.1
-border_color = Color(1, 0.69, 0.125, 1)
-border_width = 2.0
-chamfer = 12.0
-rail_width = 4.0
-rail_color = Color(1, 0.69, 0.125, 1)
-rail_side = 0
-content_margin_left = 28.0
-content_margin_right = 28.0
+fill_alpha = 0.0
+border_color = Color(1, 0.69, 0.125, 0.6)
+border_width = 1.0
+chamfer = 10.0
+content_margin_left = 20.0
+content_margin_right = 20.0
 
 [sub_resource type="StyleBox" id="StyleBox_reroll_hover"]
 script = ExtResource("5_chamfer")
 fill_color = Color(1, 0.69, 0.125, 1)
-fill_alpha = 0.24
+fill_alpha = 0.14
 border_color = Color(1, 0.8, 0.4, 1)
-border_width = 2.0
-chamfer = 12.0
-rail_width = 4.0
-rail_color = Color(1, 0.8, 0.4, 1)
-rail_side = 0
-content_margin_left = 28.0
-content_margin_right = 28.0
+border_width = 1.0
+chamfer = 10.0
+content_margin_left = 20.0
+content_margin_right = 20.0
 
 [sub_resource type="StyleBox" id="StyleBox_reroll_disabled"]
 script = ExtResource("5_chamfer")
 fill_color = Color(0.086, 0.098, 0.125, 1)
-fill_alpha = 0.85
+fill_alpha = 0.0
 border_color = Color(0.173, 0.192, 0.251, 1)
 border_width = 1.0
+chamfer = 10.0
+content_margin_left = 20.0
+content_margin_right = 20.0
+
+[sub_resource type="StyleBox" id="StyleBox_primary"]
+script = ExtResource("5_chamfer")
+fill_color = Color(0.208, 0.878, 0.831, 1)
+fill_alpha = 0.16
+border_color = Color(0.208, 0.878, 0.831, 1)
+border_width = 2.0
 chamfer = 12.0
+rail_width = 4.0
+rail_color = Color(0.208, 0.878, 0.831, 1)
+rail_side = 0
+content_margin_left = 28.0
+content_margin_right = 28.0
+
+[sub_resource type="StyleBox" id="StyleBox_primary_hover"]
+script = ExtResource("5_chamfer")
+fill_color = Color(0.208, 0.878, 0.831, 1)
+fill_alpha = 0.3
+border_color = Color(0.208, 0.878, 0.831, 1)
+border_width = 2.0
+chamfer = 12.0
+rail_width = 4.0
+rail_color = Color(0.208, 0.878, 0.831, 1)
+rail_side = 0
 content_margin_left = 28.0
 content_margin_right = 28.0
 
@@ -99,47 +131,122 @@ theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 28
 
 [node name="VBox" type="VBoxContainer" parent="Root/Panel"]
-theme_override_constants/separation = 20
+theme_override_constants/separation = 24
 
 [node name="Header" type="HBoxContainer" parent="Root/Panel/VBox"]
 theme_override_constants/separation = 24
 
-[node name="Title" type="Label" parent="Root/Panel/VBox/Header"]
+[node name="Titles" type="VBoxContainer" parent="Root/Panel/VBox/Header"]
 size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Steps" type="Label" parent="Root/Panel/VBox/Header/Titles"]
+theme_type_variation = &"HUDLabel"
+text = "1  SHOP     2  NEXT WAVE"
+
+[node name="Title" type="Label" parent="Root/Panel/VBox/Header/Titles"]
 text = "ARMOURY"
 theme_override_font_sizes/font_size = 32
 theme_override_colors/font_color = Color(0.902, 0.91, 0.937, 1)
 
-[node name="Currency" type="Label" parent="Root/Panel/VBox/Header"]
+[node name="Money" type="VBoxContainer" parent="Root/Panel/VBox/Header"]
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Root/Panel/VBox/Header/Money"]
+theme_type_variation = &"HUDLabel"
+horizontal_alignment = 2
+text = "CREDITS"
+
+[node name="Currency" type="Label" parent="Root/Panel/VBox/Header/Money"]
 theme_type_variation = &"NumCluster"
+horizontal_alignment = 2
 text = "0"
 theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
 
-[node name="Timer" type="Label" parent="Root/Panel/VBox/Header"]
-theme_type_variation = &"NumSecond"
-custom_minimum_size = Vector2(90, 0)
+[node name="Clock" type="VBoxContainer" parent="Root/Panel/VBox/Header"]
+custom_minimum_size = Vector2(110, 0)
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Root/Panel/VBox/Header/Clock"]
+theme_type_variation = &"HUDLabel"
+horizontal_alignment = 2
+text = "TIME LEFT"
+
+[node name="Timer" type="Label" parent="Root/Panel/VBox/Header/Clock"]
+theme_type_variation = &"NumCluster"
 horizontal_alignment = 2
 text = "30s"
 
-[node name="Breakdown" type="Label" parent="Root/Panel/VBox"]
-theme_type_variation = &"HUDLabel"
-theme_override_font_sizes/font_size = 16
-
-[node name="Cards" type="HBoxContainer" parent="Root/Panel/VBox"]
+[node name="ShopPage" type="HBoxContainer" parent="Root/Panel/VBox"]
 size_flags_vertical = 3
+theme_override_constants/separation = 32
+
+[node name="Side" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage"]
+custom_minimum_size = Vector2(320, 0)
+theme_override_constants/separation = 20
+
+[node name="Report" type="PanelContainer" parent="Root/Panel/VBox/ShopPage/Side"]
+theme_override_styles/panel = SubResource("StyleBox_side")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage/Side/Report"]
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Root/Panel/VBox/ShopPage/Side/Report/VBox"]
+theme_type_variation = &"HUDLabel"
+text = "WAVE CLEAR"
+
+[node name="Rows" type="GridContainer" parent="Root/Panel/VBox/ShopPage/Side/Report/VBox"]
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="Line" type="ColorRect" parent="Root/Panel/VBox/ShopPage/Side/Report/VBox"]
+custom_minimum_size = Vector2(0, 1)
+color = Color(0.173, 0.192, 0.251, 1)
+
+[node name="Total" type="HBoxContainer" parent="Root/Panel/VBox/ShopPage/Side/Report/VBox"]
+
+[node name="Label" type="Label" parent="Root/Panel/VBox/ShopPage/Side/Report/VBox/Total"]
+theme_type_variation = &"HUDLabel"
+size_flags_horizontal = 3
+text = "EARNED"
+
+[node name="Value" type="Label" parent="Root/Panel/VBox/ShopPage/Side/Report/VBox/Total"]
+theme_type_variation = &"DisplaySmall"
+horizontal_alignment = 2
+text = "0"
+
+[node name="Build" type="PanelContainer" parent="Root/Panel/VBox/ShopPage/Side"]
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBox_side")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage/Side/Build"]
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Root/Panel/VBox/ShopPage/Side/Build/VBox"]
+theme_type_variation = &"HUDLabel"
+text = "YOUR BUILD"
+
+[node name="List" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage/Side/Build/VBox"]
+script = ExtResource("6_bonus_list")
+
+[node name="Main" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="Cards" type="HBoxContainer" parent="Root/Panel/VBox/ShopPage/Main"]
+custom_minimum_size = Vector2(0, 380)
 theme_override_constants/separation = 16
 
-[node name="RerollRow" type="HBoxContainer" parent="Root/Panel/VBox"]
-theme_override_constants/separation = 12
-alignment = 1
+[node name="RerollRow" type="HBoxContainer" parent="Root/Panel/VBox/ShopPage/Main"]
 
-[node name="RerollButton" type="Button" parent="Root/Panel/VBox/RerollRow"]
-custom_minimum_size = Vector2(420, 64)
+[node name="RerollButton" type="Button" parent="Root/Panel/VBox/ShopPage/Main/RerollRow"]
+custom_minimum_size = Vector2(0, 52)
 tooltip_text = "New offers. Costs more each time this visit."
 shortcut = SubResource("Shortcut_reroll")
 shortcut_in_tooltip = false
-text = "[R]  REROLL OFFERS   50"
-theme_override_font_sizes/font_size = 24
+text = "[R]  REROLL   50"
+theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(1, 0.69, 0.125, 1)
 theme_override_colors/font_hover_color = Color(1, 0.8, 0.4, 1)
 theme_override_colors/font_pressed_color = Color(1, 0.8, 0.4, 1)
@@ -150,20 +257,70 @@ theme_override_styles/pressed = SubResource("StyleBox_reroll_hover")
 theme_override_styles/focus = SubResource("StyleBox_reroll_hover")
 theme_override_styles/disabled = SubResource("StyleBox_reroll_disabled")
 
-[node name="ActiveBonuses" type="VBoxContainer" parent="Root/Panel/VBox"]
-theme_override_constants/separation = 10
+[node name="Gap" type="Control" parent="Root/Panel/VBox/ShopPage/Main"]
+size_flags_vertical = 3
 
-[node name="Title" type="Label" parent="Root/Panel/VBox/ActiveBonuses"]
+[node name="Footer" type="HBoxContainer" parent="Root/Panel/VBox/ShopPage/Main"]
+theme_override_constants/separation = 16
+
+[node name="Spacer" type="Control" parent="Root/Panel/VBox/ShopPage/Main/Footer"]
+size_flags_horizontal = 3
+
+[node name="NextButton" type="Button" parent="Root/Panel/VBox/ShopPage/Main/Footer"]
+custom_minimum_size = Vector2(360, 60)
+tooltip_text = "Done shopping. Pick the rule for the next wave."
+text = "NEXT: HOUSE RULE  [ENTER]"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.208, 0.878, 0.831, 1)
+theme_override_colors/font_hover_color = Color(0.902, 0.91, 0.937, 1)
+theme_override_colors/font_focus_color = Color(0.902, 0.91, 0.937, 1)
+theme_override_styles/normal = SubResource("StyleBox_primary")
+theme_override_styles/hover = SubResource("StyleBox_primary_hover")
+theme_override_styles/pressed = SubResource("StyleBox_primary_hover")
+theme_override_styles/focus = SubResource("StyleBox_primary_hover")
+
+[node name="NextPage" type="VBoxContainer" parent="Root/Panel/VBox"]
+visible = false
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="RuleTitle" type="Label" parent="Root/Panel/VBox/NextPage"]
 theme_type_variation = &"HUDLabel"
-text = "ACTIVE BONUSES"
-theme_override_colors/font_color = Color(0.541, 0.565, 0.639, 1)
+text = "PICK THE HOUSE RULE  -  ONE OF THEM PLAYS NEXT WAVE"
 
-[node name="List" type="VBoxContainer" parent="Root/Panel/VBox/ActiveBonuses"]
-script = ExtResource("6_bonus_list")
-show_empty_categories = true
-horizontal = true
+[node name="Rules" type="HBoxContainer" parent="Root/Panel/VBox/NextPage"]
+theme_override_constants/separation = 16
 
-[node name="SkipButton" type="Button" parent="Root/Panel/VBox"]
+[node name="ContractTitle" type="Label" parent="Root/Panel/VBox/NextPage"]
+theme_type_variation = &"HUDLabel"
+text = "OPTIONAL CONTRACT  -  A HANDICAP THAT PAYS IF YOU CLEAR THE WAVE"
+
+[node name="Contract" type="HBoxContainer" parent="Root/Panel/VBox/NextPage"]
+theme_override_constants/separation = 16
+
+[node name="Spacer" type="Control" parent="Root/Panel/VBox/NextPage"]
+size_flags_vertical = 3
+
+[node name="Footer" type="HBoxContainer" parent="Root/Panel/VBox/NextPage"]
+theme_override_constants/separation = 16
+
+[node name="BackButton" type="Button" parent="Root/Panel/VBox/NextPage/Footer"]
+custom_minimum_size = Vector2(0, 52)
+tooltip_text = "Back to the offers. The clock keeps running."
+text = "<  SHOP  [BACKSPACE]"
+
+[node name="Spacer" type="Control" parent="Root/Panel/VBox/NextPage/Footer"]
+size_flags_horizontal = 3
+
+[node name="StartButton" type="Button" parent="Root/Panel/VBox/NextPage/Footer"]
+custom_minimum_size = Vector2(360, 60)
 tooltip_text = "Start the next wave now. The run clock keeps ticking while you shop, and a faster run scores more."
-custom_minimum_size = Vector2(0, 44)
-text = "Back to the arena  (bank the speed bonus)"
+text = "START WAVE  [ENTER]"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.208, 0.878, 0.831, 1)
+theme_override_colors/font_hover_color = Color(0.902, 0.91, 0.937, 1)
+theme_override_colors/font_focus_color = Color(0.902, 0.91, 0.937, 1)
+theme_override_styles/normal = SubResource("StyleBox_primary")
+theme_override_styles/hover = SubResource("StyleBox_primary_hover")
+theme_override_styles/pressed = SubResource("StyleBox_primary_hover")
+theme_override_styles/focus = SubResource("StyleBox_primary_hover")
