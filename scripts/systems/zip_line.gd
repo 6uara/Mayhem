@@ -15,7 +15,7 @@ const GROUP: StringName = &"zip_line"
 
 @export var end_point: Node3D
 @export var speed: float = 16.0
-## Fraction of ride speed kept on dismount - the same momentum handoff as the dash.
+## Fraction of ride speed kept on dismount - the same momentum handoff as a slide.
 @export var exit_speed_fraction: float = 0.8
 @export var telegraph: TelegraphComponent
 @export var cable_mesh: MeshInstance3D

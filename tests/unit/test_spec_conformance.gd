@@ -63,15 +63,6 @@ func test_the_elite_shares_the_hazard_accent() -> void:
 		"the Elite is the HUD's elite-wave colour")
 
 
-func test_dash_charges_match_the_hud_pip_count() -> void:
-	var player: Player = add_child_autofree(
-		load("res://scenes/player/player.tscn").instantiate())
-	await wait_physics_frames(2)
-	assert_eq(player.movement.dash_charges_max, Tokens.DASH_CHARGES,
-		"the HUD reserves %d pips, so the player gets %d charges" % [
-			Tokens.DASH_CHARGES, Tokens.DASH_CHARGES])
-
-
 func test_shop_timer_matches_the_spec() -> void:
 	var shop: CanvasLayer = add_child_autofree(
 		load("res://scenes/ui/shop_screen.tscn").instantiate())

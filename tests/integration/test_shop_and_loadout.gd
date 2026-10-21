@@ -134,16 +134,16 @@ func test_replacing_a_weapon_does_not_carry_its_upgrades_forward() -> void:
 
 func test_mobility_and_survivability_upgrades_stay_global() -> void:
 	EconomyManager.currency = 100000
-	var dash: UpgradeData = _shop.catalog.find_upgrade(&"dash_charge")
-	assert_eq(dash.category, UpgradeData.Category.MOBILITY)
+	var speed: UpgradeData = _shop.catalog.find_upgrade(&"move_speed")
+	assert_eq(speed.category, UpgradeData.Category.MOBILITY)
 
-	assert_eq(EconomyManager.try_purchase_upgrade(dash), EconomyManager.PurchaseResult.OK)
-	assert_true(UpgradeManager.has_upgrade(&"dash_charge"))
+	assert_eq(EconomyManager.try_purchase_upgrade(speed), EconomyManager.PurchaseResult.OK)
+	assert_true(UpgradeManager.has_upgrade(&"move_speed"))
 
 	var holder: WeaponHolder = _player.weapon_holder
 	holder.acquire(&"shotgun")
 	await wait_seconds(holder.swap_time + 0.1)
-	assert_true(UpgradeManager.has_upgrade(&"dash_charge"),
+	assert_true(UpgradeManager.has_upgrade(&"move_speed"),
 		"a global upgrade must survive a weapon swap untouched")
 
 
@@ -268,7 +268,7 @@ func test_weapon_offers_warn_that_they_replace_the_current_weapon() -> void:
 
 
 func test_shop_never_offers_a_maxed_upgrade() -> void:
-	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"dash_charge")
+	var upgrade: UpgradeData = _shop.catalog.find_upgrade(&"move_speed")
 	EconomyManager.currency = 100000
 	for i: int in upgrade.max_stacks:
 		UpgradeManager.add_upgrade(upgrade)
@@ -276,7 +276,7 @@ func test_shop_never_offers_a_maxed_upgrade() -> void:
 	for i: int in 12:
 		_shop.roll_offers()
 		for offer: Dictionary in _shop.offers:
-			assert_ne(offer["id"], &"dash_charge", "maxed upgrades must not be offered")
+			assert_ne(offer["id"], &"move_speed", "maxed upgrades must not be offered")
 
 
 func test_shop_never_offers_a_weapon_upgrade_maxed_for_the_equipped_weapon() -> void:

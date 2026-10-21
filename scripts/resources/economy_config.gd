@@ -23,7 +23,7 @@ extends Resource
 @export var bonus_airborne: int = 15
 @export var bonus_spin: int = 40
 @export var bonus_grapple: int = 20
-@export var bonus_dash: int = 15
+@export var bonus_slide: int = 15
 @export var bonus_long_shot: int = 25
 @export var bonus_point_blank: int = 10
 @export var bonus_last_round: int = 20
@@ -94,7 +94,7 @@ func get_kill_bonus(bonus_id: StringName) -> int:
 		&"airborne": return bonus_airborne
 		&"spin": return bonus_spin
 		&"grapple": return bonus_grapple
-		&"dash": return bonus_dash
+		&"slide": return bonus_slide
 		&"long_shot": return bonus_long_shot
 		&"point_blank": return bonus_point_blank
 		&"last_round": return bonus_last_round

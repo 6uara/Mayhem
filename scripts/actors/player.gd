@@ -56,7 +56,7 @@ const DEATH_SOUND_PATH: String = "res://assets/audio/sfx/player/player_death.wav
 @export var movement: MovementComponent
 @export var grapple: GrappleComponent
 @export var utility: UtilityComponent
-## Adds the dash's FOV punch on top of ours; see `_apply_fov()`.
+## Adds the fast-fall landing's FOV punch on top of ours; see `_apply_fov()`.
 @export var camera_feel: CameraFeelComponent
 
 ## The equipped weapon. Everything that used to read `player.weapon` still can;
@@ -309,7 +309,7 @@ func _apply_fov(delta: float) -> void:
 ## Widens the view as ground speed climbs past a normal run.
 ##
 ## Sense of speed is a camera property, not a physics one. The movement system hands
-## out real momentum through slides, dashes and pads, but without this the screen
+## out real momentum through slides, fast falls and pads, but without this the screen
 ## looks identical at 7 m/s and 14 - so the reward for chaining well is invisible,
 ## and the whole thing reads as gliding. Suppressed while aiming, where a drifting
 ## FOV would fight the sight picture rather than sell anything.

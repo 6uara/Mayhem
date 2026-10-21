@@ -217,14 +217,49 @@ func test_without_second_wind_a_lethal_hit_kills() -> void:
 	assert_true(player.health.is_dead)
 
 
-func test_pad_charger_gives_a_dash_back() -> void:
-	var charges := DashCharges.new()
-	charges.setup(2, 5.0)
-	charges.try_consume()
-	assert_eq(charges.get_available(), 1)
-	assert_true(charges.restore_one())
-	assert_eq(charges.get_available(), 2)
-	assert_false(charges.restore_one(), "lleno no hay nada que devolver")
+## Devolvia una carga de dash; desde que el dash salio (2026-10-21) recarga el gancho.
+func test_pad_charger_resets_the_grapple() -> void:
+	var player: Player = _player()
+	var pad: BouncePad = load("res://scenes/arena/bounce_pad.tscn").instantiate()
+	add_child_autofree(pad)
+	await wait_physics_frames(1)
+	player.grapple._cooldown_left = 4.0
+	pad._on_body_entered(player)
+	assert_gt(player.grapple._cooldown_left, 0.0, "sin la mejora el pad no toca el gancho")
+
+	_buy("pad_charger")
+	pad._on_body_entered(player)
+	assert_eq(player.grapple._cooldown_left, 0.0, "con la mejora el gancho queda listo")
+
+
+func _rusher_next_to(player: Player) -> Enemy:
+	var enemy: Enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
+	add_child_autofree(enemy)
+	await wait_physics_frames(1)
+	enemy.setup(load("res://data/enemies/rusher.tres"), player.global_position + Vector3(1.0, 0, 0))
+	await wait_physics_frames(1)
+	return enemy
+
+
+## Era el Ram Dash. Pega deslizando rapido, no deslizando lento.
+func test_ram_slide_hits_only_a_fast_slide() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(1)
+	var enemy: Enemy = await _rusher_next_to(player)
+	var full: float = enemy.health.current_health
+	_buy("ram_slide")
+
+	player.movement.state = MovementComponent.State.SLIDING
+	player.velocity = Vector3(PlayerPerks.RAM_MIN_SPEED - 2.0, 0, 0)
+	player.perks._tick_ram()
+	assert_eq(enemy.health.current_health, full, "un slide que ya se arrastra no atropella")
+
+	player.velocity = Vector3(PlayerPerks.RAM_MIN_SPEED + 2.0, 0, 0)
+	player.perks._tick_ram()
+	assert_lt(enemy.health.current_health, full, "uno rapido si")
+	var after_first: float = enemy.health.current_health
+	player.perks._tick_ram()
+	assert_eq(enemy.health.current_health, after_first, "una vez por enemigo por slide")
 
 
 func test_showman_multiplies_style() -> void:

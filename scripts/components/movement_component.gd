@@ -1,6 +1,6 @@
 class_name MovementComponent
 extends Node
-## The movement state machine: GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING.
+## The movement state machine: GROUNDED, AIRBORNE, SLIDING, GRAPPLING.
 ## Owns all of the player's physics; the Player script keeps look and weapon input.
 ##
 ## Design intent from CLAUDE.md 5.2: momentum is a resource the player builds and
@@ -16,18 +16,21 @@ signal jumped()
 ## Fires only when a mantle actually boosts the player up a ledge - a probe that
 ## finds nothing mantleable is not "mantling".
 signal mantled()
-## Fires on the frame a dash starts, with its horizontal world direction. The
-## camera answers this one and not EventBus.dash_used, which carries no direction.
-signal dashed(direction: Vector3)
 ## Fires on the frame crouch in the air starts a fast fall.
 signal fast_fell()
+## Fires when a fast fall lands into a slide, with the slide's horizontal world
+## direction. The camera answers this one and not EventBus.fast_fall_landed,
+## which carries no direction.
+signal fast_fall_landed(direction: Vector3)
 
-enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
+## Hubo un DASHING: el dash salio con el feedback de los profesores (2026-10-21),
+## y la rafaga de velocidad pasa a ser la caida rapida que termina en slide.
+enum State { GROUNDED, AIRBORNE, SLIDING, GRAPPLING }
 
 ## Cuánto dura la inmunidad al atrapado después de romperlo. Tiene que alcanzar
-## para salir del charco: un dash son 0.16s a 16 m/s, o sea ~2.5m, y el charco de
-## atrapado mide 2.6m de radio - así que la gracia tiene que cubrir también el par
-## de pasos que siguen al dash, o el borde te agarra de nuevo al salir.
+## para salir del charco: el charco mide 2.6m de radio, y la gracia tiene que
+## cubrir el tirón del gancho más el par de pasos que siguen, o el borde te
+## agarra de nuevo al salir.
 const SNARE_GRACE: float = 0.9
 
 @export var body: CharacterBody3D
@@ -82,7 +85,7 @@ const SNARE_GRACE: float = 0.9
 ## y lo que controla de verdad es cuanto frena pedir hacia atras.
 @export var air_strafe_accel: float = 10.0
 ## Velocidad horizontal maxima que el air-strafe puede construir. No frena nada
-## que venga de otro lado (dash, pad, gancho): solo deja de sumar.
+## que venga de otro lado (picada, pad, gancho): solo deja de sumar.
 @export var bhop_max_speed: float = 24.0
 
 @export_group("Slide")
@@ -109,16 +112,6 @@ const SNARE_GRACE: float = 0.9
 ## Encadenar picadas mantiene la velocidad, nunca la acumula sin techo.
 @export var fast_fall_boost_max: float = 10.0
 
-@export_group("Dash")
-@export var dash_speed: float = 16.0
-@export var dash_duration: float = 0.16
-## Tokens.DASH_CHARGES - the HUD reserves three pips, so three is the design.
-@export var dash_charges_max: int = 3
-@export var dash_cooldown: float = 5.0
-## Fraction of dash speed kept when the dash ends - this is the momentum handoff
-## that makes dash -> slide chains worth learning.
-@export var dash_exit_speed_fraction: float = 0.75
-
 @export_group("Mantle")
 ## Forward distance probed for a wall at chest height.
 @export var mantle_reach: float = 1.0
@@ -129,12 +122,13 @@ const SNARE_GRACE: float = 0.9
 @export_group("Audio")
 @export var jump_sound: AudioStream
 @export var land_sound: AudioStream
-@export var dash_sound: AudioStream
 ## El charco de atrapado agarrando, y el tirón de romperlo. El segundo es el que
 ## más enseña: es el que dice que había una salida.
 @export var snare_caught_sound: AudioStream
 @export var snare_break_sound: AudioStream
 @export var slide_sound: AudioStream
+## El golpe de la picada al tocar el piso y salir deslizando.
+@export var fast_fall_sound: AudioStream
 
 var state: State = State.GROUNDED:
 	set(value):
@@ -143,19 +137,15 @@ var state: State = State.GROUNDED:
 		state = value
 		state_changed.emit(value)
 
-var dash_charges := DashCharges.new()
-
 ## El frasco de atrapado del Environmental (PLAN_NEW_ENEMY_TYPES §4.2). Es lo
 ## único del juego que le baja la velocidad al jugador, y por eso tiene salida:
 ## ver `apply_snare()`.
 var _snare_multiplier: float = 1.0
-## Segundos de inmunidad al charco después de romperlo. Sin esto, salir dashando
-## de un charco de 3m no sirve de nada - el refresco del charco te vuelve a
+## Segundos de inmunidad al charco después de romperlo. Sin esto, salir con el
+## gancho de un charco de 3m no sirve de nada - el refresco del charco te vuelve a
 ## agarrar en el aire, dentro del mismo charco del que estás saliendo.
 var _snare_grace_left: float = 0.0
 
-var _dash_time_left: float = 0.0
-var _dash_direction: Vector3 = Vector3.ZERO
 var _head_rest_height: float = 0.0
 var _was_on_floor: bool = true
 ## Set when a slide entry already paid its boost; cleared on standing up.
@@ -169,20 +159,16 @@ var _fast_fall_from_y: float = 0.0
 
 
 func _ready() -> void:
-	dash_charges.setup(get_dash_charges_max(), get_dash_cooldown())
-	if stats != null:
-		stats.stats_changed.connect(_on_stats_changed)
 	if head != null:
 		_head_rest_height = head.position.y
 
 
 func _physics_process(delta: float) -> void:
-	# Antes del `body == null`: la gracia del atrapado corre igual que el reloj de
-	# la carga de dash, sin depender de que haya un cuerpo al que mover.
+	# Antes del `body == null`: la gracia del atrapado corre sin depender de que
+	# haya un cuerpo al que mover.
 	_snare_grace_left = maxf(_snare_grace_left - delta, 0.0)
 	if body == null:
 		return
-	dash_charges.tick(delta)
 
 	if Input.is_action_just_pressed("jump"):
 		_jump_buffer_left = jump_buffer_time
@@ -196,7 +182,7 @@ func _physics_process(delta: float) -> void:
 		_has_moved = true
 		started_moving.emit()
 
-	_handle_action_input(wish_direction)
+	_handle_action_input()
 
 	match state:
 		State.GROUNDED:
@@ -205,8 +191,6 @@ func _physics_process(delta: float) -> void:
 			_tick_airborne(wish_direction, delta)
 		State.SLIDING:
 			_tick_sliding(wish_direction, delta)
-		State.DASHING:
-			_tick_dashing(delta)
 		State.GRAPPLING:
 			_tick_grappling(delta)
 
@@ -216,18 +200,6 @@ func _physics_process(delta: float) -> void:
 
 
 # Public API
-
-func get_dash_charges_available() -> int:
-	return dash_charges.get_available()
-
-
-func get_dash_charges_max() -> int:
-	return int(round(_stat(StatsComponent.DASH_CHARGES, float(dash_charges_max))))
-
-
-func get_dash_cooldown() -> float:
-	return maxf(_stat(StatsComponent.DASH_COOLDOWN, dash_cooldown), 0.1)
-
 
 func get_move_speed() -> float:
 	var speed: float = _stat(StatsComponent.MOVE_SPEED, base_move_speed)
@@ -254,7 +226,7 @@ func is_snared() -> bool:
 ## hostil que puede hacer un shooter, y este se apoya entero en movilidad
 ## (CLAUDE.md 5.2): un charco que congela pelea contra el pilar del juego. Lo que
 ## hace es volver caro caminar, con dos salidas que el jugador ya tiene en los
-## dedos - el dash y el gancho, ver `break_snare()`. Siempre hay algo que hacer.
+## dedos - el gancho, ver `break_snare()`. Siempre hay algo que hacer.
 ##
 ## Se ignora durante la gracia: si no, romperlo no significaría nada.
 func apply_snare(multiplier: float) -> void:
@@ -275,9 +247,10 @@ func clear_snare() -> void:
 		EventBus.player_snare_ended.emit(false)
 
 
-## La salida. El dash y el gancho lo rompen y compran unos segundos de gracia,
-## que es lo que convierte al charco en una pregunta ("¿gasto una carga?") en vez
-## de en un castigo. Las dos son acciones que ya existían y cuestan un recurso.
+## La salida. El gancho lo rompe y compra unos segundos de gracia, que es lo que
+## convierte al charco en una pregunta ("¿gasto el gancho?") en vez de en un
+## castigo. El dash tambien lo rompia; cuando salio (2026-10-21) el dueño decidio
+## que el gancho quede como la unica salida.
 func break_snare() -> void:
 	var was_snared: bool = is_snared()
 	_snare_multiplier = 1.0
@@ -375,17 +348,6 @@ func _tick_sliding(wish_direction: Vector3, delta: float) -> void:
 		_stand_up()
 
 
-func _tick_dashing(delta: float) -> void:
-	_dash_time_left -= delta
-	# Flat, gravity-free burst: dashes go where you point, including in air.
-	body.velocity = _dash_direction * dash_speed
-	if _dash_time_left <= 0.0:
-		_set_horizontal(_dash_direction * dash_speed * dash_exit_speed_fraction)
-		body.velocity.y = 0.0
-		state = State.SLIDING if Input.is_action_pressed("crouch_slide") \
-			and body.is_on_floor() else _fallback_state()
-
-
 func _tick_grappling(delta: float) -> void:
 	if grapple == null or grapple.should_release():
 		if grapple != null:
@@ -400,12 +362,8 @@ func _tick_grappling(delta: float) -> void:
 
 # Transitions
 
-func _handle_action_input(wish_direction: Vector3) -> void:
-	if state == State.DASHING or state == State.GRAPPLING:
-		return
-
-	if Input.is_action_just_pressed("dash"):
-		_try_dash(wish_direction)
+func _handle_action_input() -> void:
+	if state == State.GRAPPLING:
 		return
 
 	if Input.is_action_just_pressed("grapple") and grapple != null and grapple.try_fire():
@@ -419,24 +377,6 @@ func _handle_action_input(wish_direction: Vector3) -> void:
 			_try_slide(true)
 		elif state == State.AIRBORNE and not _fast_falling:
 			_start_fast_fall()
-
-
-func _try_dash(wish_direction: Vector3) -> void:
-	dash_charges.set_max_charges(get_dash_charges_max())
-	dash_charges.set_cooldown(get_dash_cooldown())
-	if not dash_charges.try_consume():
-		return
-	# Dash follows input; with no input it goes where the player faces.
-	_dash_direction = wish_direction if wish_direction != Vector3.ZERO \
-		else -(body.global_transform.basis.z)
-	_dash_direction.y = 0.0
-	_dash_direction = _dash_direction.normalized()
-	_dash_time_left = dash_duration
-	state = State.DASHING
-	break_snare()
-	AudioPool.play_3d(dash_sound, body.global_position, AudioPool.BUS_WORLD)
-	dashed.emit(_dash_direction)
-	EventBus.dash_used.emit(dash_charges.get_available())
 
 
 ## Cancela la subida y tira al piso. La velocidad horizontal no se toca: la
@@ -463,6 +403,9 @@ func _land_fast_fall() -> void:
 	var ceiling: float = maxf(horizontal.length(), get_move_speed() + fast_fall_boost_max)
 	var speed: float = minf(horizontal.length() + boost, ceiling)
 	_set_horizontal(direction * speed)
+	AudioPool.play_3d(fast_fall_sound, body.global_position, AudioPool.BUS_WORLD)
+	fast_fall_landed.emit(direction)
+	EventBus.fast_fall_landed.emit()
 
 
 func _try_slide(with_boost: bool) -> void:
@@ -559,7 +502,7 @@ func _air_strafe(horizontal: Vector3, wish_direction: Vector3, delta: float) -> 
 	var accel: float = minf(air_strafe_accel * base_move_speed * delta, add)
 	var result: Vector3 = horizontal + wish_direction * accel
 	# El tope solo corta lo que el strafe sumo: una velocidad que ya venia por
-	# encima (dash, pad) se conserva, pero no crece.
+	# encima (picada, pad) se conserva, pero no crece.
 	var ceiling: float = maxf(horizontal.length(), bhop_max_speed)
 	if result.length() > ceiling:
 		result = result.normalized() * ceiling
@@ -624,8 +567,3 @@ func _stat(stat_key: StringName, base_value: float) -> float:
 	if stats == null:
 		return base_value
 	return stats.get_stat_from(stat_key, base_value)
-
-
-func _on_stats_changed() -> void:
-	dash_charges.set_max_charges(get_dash_charges_max())
-	dash_charges.set_cooldown(get_dash_cooldown())

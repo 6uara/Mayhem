@@ -5,7 +5,7 @@ extends Node
 ##
 ## Ya no se sortean a ciegas. En la tienda, el Host **ofrece** dos reglas para la
 ## oleada que viene y el jugador elige una (`prepare_offer` / `choose_rule`); a
-## veces trae ademas un **contrato**: una restriccion opcional -sin dash, sin
+## veces trae ademas un **contrato**: una restriccion opcional -sin
 ## gancho, cargadores cortos- que paga plata si se limpia la oleada con ella. Una
 ## loteria pasa a ser una decision, que es la fantasia del game show.
 ##

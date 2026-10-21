@@ -13,7 +13,7 @@ extends HazardZone
 ## §4.2). Si algún día se le quiere poner daño, la clase base ya lo hace.
 ##
 ## No inmoviliza: ralentiza fuerte y tiene salida (`MovementComponent.break_snare()`
-## - dash o gancho). Ver el comentario de `apply_snare()` para el porqué.
+## - el gancho). Ver el comentario de `apply_snare()` para el porqué.
 
 ## Cada cuánto se vuelve a mirar quién está adentro.
 ##

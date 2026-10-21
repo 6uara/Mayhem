@@ -32,7 +32,7 @@ func test_every_cluster_the_script_reads_exists() -> void:
 			"Root/TimerCluster/NoDamageRow/Mark", "Root/TimerCluster/NoDamageRow/Text",
 			"Root/CurrencyCluster/CurrencyRow/Amount", "Root/CurrencyCluster/PowerUpList",
 			"Root/VitalsCluster/HealthRow/Value", "Root/VitalsCluster/HealthRow/CriticalTag",
-			"Root/VitalsCluster/HealthSegments", "Root/VitalsCluster/DashRow/Pips",
+			"Root/VitalsCluster/HealthSegments",
 			"Root/AbilityBar",
 			"Root/WeaponCluster/AmmoRow/Magazine", "Root/WeaponCluster/AmmoRow/Reserve",
 			"Root/WeaponCluster/AmmoRow/ReloadPrompt", "Root/WeaponCluster/AmmoPips",
@@ -48,7 +48,6 @@ func test_every_cluster_the_script_reads_exists() -> void:
 func test_custom_widgets_kept_their_scripts() -> void:
 	assert_true(_node("Root/Reticle") is Reticle, "reticle script")
 	assert_true(_node("Root/VitalsCluster/HealthSegments") is SegmentStrip, "health strip")
-	assert_true(_node("Root/VitalsCluster/DashRow/Pips") is SegmentStrip, "dash pips")
 	assert_true(_node("Root/CurrencyCluster/CurrencyRow/Ring") is MayhemIcon, "currency ring")
 	assert_true(_node("Root/StateOverlays/EliteStripe") is StripeBar, "elite stripe")
 
@@ -108,12 +107,9 @@ func test_currency_reaches_the_cluster() -> void:
 	assert_eq(_node("Root/CurrencyCluster/CurrencyRow/Amount").text, "1480")
 
 
-func test_dash_pips_track_the_movement_component() -> void:
-	var pips: SegmentStrip = _node("Root/VitalsCluster/DashRow/Pips")
-	await wait_physics_frames(2)
-	assert_eq(pips.count, _player.movement.get_dash_charges_max(),
-		"one pip per charge, however many upgrades granted")
-	assert_eq(pips.filled, pips.count, "all charges start ready")
+## La fila del dash salio con el dash (2026-10-21).
+func test_the_hud_has_no_dash_row() -> void:
+	assert_null(_node("Root/VitalsCluster/DashRow"), "sin dash no hay cargas que mostrar")
 
 
 func test_elite_wave_raises_the_stripe() -> void:
@@ -213,12 +209,12 @@ func test_the_par_label_follows_a_change_of_wave() -> void:
 ## La regla y el contrato comparten el chip: los dos duran la oleada.
 func test_the_rule_chip_carries_the_contract_too() -> void:
 	EventBus.broadcast_rule_started.emit(&"manhunt", "MANHUNT", "Bounties.")
-	EventBus.broadcast_contract_started.emit(&"grounded", "GROUNDED", "No dash.", 200)
+	EventBus.broadcast_contract_started.emit(&"no_hook", "NO HOOK", "No grappling hook.", 200)
 	var text: String = _hud.call(&"get_rule_text")
 	assert_string_contains(text, "MANHUNT")
-	assert_string_contains(text, "CONTRACT  GROUNDED  (+200)")
-	EventBus.broadcast_contract_settled.emit(&"grounded", 200)
-	assert_false(String(_hud.call(&"get_rule_text")).contains("GROUNDED"))
+	assert_string_contains(text, "CONTRACT  NO HOOK  (+200)")
+	EventBus.broadcast_contract_settled.emit(&"no_hook", 200)
+	assert_false(String(_hud.call(&"get_rule_text")).contains("NO HOOK"))
 	EventBus.broadcast_rule_ended.emit()
 	assert_eq(_hud.call(&"get_rule_text"), "")
 

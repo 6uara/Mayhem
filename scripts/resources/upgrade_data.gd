@@ -16,7 +16,7 @@ enum Category { MOBILITY, WEAPON, SURVIVABILITY }
 @export var is_temporary: bool = false
 ## Only meaningful when `is_temporary` is true.
 @export var duration: float = 0.0
-## Rara: agrega una regla en vez de mover un numero (deslizar recarga, el dash
+## Rara: agrega una regla en vez de mover un numero (deslizar recarga, el slide
 ## atropella...). Sigue siendo solo StatModifiers - sobre stats cuya base neutra
 ## deja la regla apagada (ver StatsComponent). La tienda ofrece como mucho una por
 ## visita y no todas las visitas: ver ShopCatalog.rare_upgrades.

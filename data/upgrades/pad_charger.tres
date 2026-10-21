@@ -5,14 +5,14 @@
 
 [sub_resource type="Resource" id="Mod_0"]
 script = ExtResource("2_mod")
-stat_key = &"pad_dash_refill"
+stat_key = &"pad_grapple_refill"
 value = 1.0
 
 [resource]
 script = ExtResource("1_upgrade")
 id = &"pad_charger"
 display_name = "Pad Charger"
-description = "Bounce pads give you back a dash charge."
+description = "Bounce pads reset your grappling hook cooldown."
 cost = 280
 category = 0
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])

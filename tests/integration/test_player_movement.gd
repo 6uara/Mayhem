@@ -361,29 +361,30 @@ func test_the_bob_node_sits_under_the_aim_pivot() -> void:
 		"the cosmetic node has to hang below the aim pivot, not above it")
 
 
-# ---------------------------------------------------------------- dash reaction
+# ------------------------------------------------------------ surge reaction
 
-## The dash is the most explosive move in the kit; the camera has to answer it with
-## a punch that goes out and comes back, not a drift.
-func test_a_dash_punches_the_fov_out_and_back() -> void:
+## A fast fall landing into a slide is the most explosive move in the kit (the
+## dash was, until 2026-10-21); the camera has to answer it with a punch that
+## goes out and comes back, not a drift.
+func test_a_fast_fall_landing_punches_the_fov_out_and_back() -> void:
 	var shake: Variant = SettingsManager.get_value("accessibility/screenshake_enabled")
 	SettingsManager.set_value("accessibility/screenshake_enabled", true)
-	_player.movement.dashed.emit(Vector3.FORWARD)
+	_player.movement.fast_fall_landed.emit(Vector3.FORWARD)
 	var peak: float = 0.0
 	for _i: int in 8:
 		await wait_physics_frames(1)
 		peak = maxf(peak, _feel.get_fov_offset())
-	assert_gt(peak, _feel.dash_fov_punch * 0.8, "the punch reaches close to its full size")
+	assert_gt(peak, _feel.surge_fov_punch * 0.8, "the punch reaches close to its full size")
 	await wait_physics_frames(60)
 	assert_almost_eq(_feel.get_fov_offset(), 0.0, 0.05, "and settles back within a second")
 	SettingsManager.set_value("accessibility/screenshake_enabled", shake)
 
 
 ## It is a shake, so it answers to the same switch the landing punch does.
-func test_the_dash_punch_respects_the_screenshake_switch() -> void:
+func test_the_surge_punch_respects_the_screenshake_switch() -> void:
 	var shake: Variant = SettingsManager.get_value("accessibility/screenshake_enabled")
 	SettingsManager.set_value("accessibility/screenshake_enabled", false)
-	_player.movement.dashed.emit(Vector3.FORWARD)
+	_player.movement.fast_fall_landed.emit(Vector3.FORWARD)
 	await wait_physics_frames(4)
 	assert_eq(_feel.get_fov_offset(), 0.0, "shake off means no punch")
 	SettingsManager.set_value("accessibility/screenshake_enabled", shake)
@@ -431,15 +432,14 @@ func test_footsteps_track_distance_not_time() -> void:
 
 # ------------------------------------------------------------- movement VFX
 
-## A dash trail that outlives the dash it marks would keep burning on a charge
-## the player has already spent, so it fires once, off the same signal the HUD's
-## charge pips read - not off polling movement.state every frame.
-func test_dashing_bursts_the_dash_trail() -> void:
-	var trail: GPUParticles3D = _player.get_node("DashTrail")
-	assert_false(trail.emitting, "precondition: no trail before any dash")
+## The dive trail fires once, off the landing signal - not off polling
+## movement.state every frame, which would keep it burning for the whole slide.
+func test_a_fast_fall_landing_bursts_the_dive_trail() -> void:
+	var trail: GPUParticles3D = _player.get_node("DiveTrail")
+	assert_false(trail.emitting, "precondition: no trail before any dive")
 
-	EventBus.dash_used.emit(2)
-	assert_true(trail.emitting, "a spent charge has to show as a trail burst")
+	_player.movement.fast_fall_landed.emit(Vector3.FORWARD)
+	assert_true(trail.emitting, "a landed dive has to show as a trail burst")
 
 
 ## Sparks are the tell that a slide is live, so they must track the state exactly:

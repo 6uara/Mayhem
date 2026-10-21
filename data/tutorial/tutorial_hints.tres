@@ -31,12 +31,12 @@ text = "Press {action} while moving to slide."
 duration = 4.0
 action = &"crouch_slide"
 
-[sub_resource type="Resource" id="Hint_dash"]
+[sub_resource type="Resource" id="Hint_fast_fall"]
 script = ExtResource("2_hint")
-id = &"dash"
-text = "Press {action} to dash."
+id = &"fast_fall"
+text = "In the air, press {action} to dive into a slide."
 duration = 4.0
-action = &"dash"
+action = &"crouch_slide"
 
 [sub_resource type="Resource" id="Hint_grapple"]
 script = ExtResource("2_hint")
@@ -68,4 +68,4 @@ action = &""
 
 [resource]
 script = ExtResource("1_catalog")
-hints = Array[Resource]([SubResource("Hint_move"), SubResource("Hint_jump"), SubResource("Hint_mantle"), SubResource("Hint_slide"), SubResource("Hint_dash"), SubResource("Hint_grapple"), SubResource("Hint_ads"), SubResource("Hint_reload"), SubResource("Hint_shop")])
+hints = Array[Resource]([SubResource("Hint_move"), SubResource("Hint_jump"), SubResource("Hint_mantle"), SubResource("Hint_slide"), SubResource("Hint_fast_fall"), SubResource("Hint_grapple"), SubResource("Hint_ads"), SubResource("Hint_reload"), SubResource("Hint_shop")])

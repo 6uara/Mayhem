@@ -25,7 +25,7 @@ func test_every_bonus_id_has_a_price() -> void:
 	for id: StringName in [
 			KillBonusTracker.BONUS_HEADSHOT, KillBonusTracker.BONUS_AIRBORNE,
 			KillBonusTracker.BONUS_SPIN, KillBonusTracker.BONUS_GRAPPLE,
-			KillBonusTracker.BONUS_DASH, KillBonusTracker.BONUS_LONG_SHOT,
+			KillBonusTracker.BONUS_SLIDE, KillBonusTracker.BONUS_LONG_SHOT,
 			KillBonusTracker.BONUS_POINT_BLANK, KillBonusTracker.BONUS_LAST_ROUND,
 			KillBonusTracker.BONUS_DOUBLE, KillBonusTracker.BONUS_TRIPLE,
 			KillBonusTracker.BONUS_MAYHEM, KillBonusTracker.BONUS_PRIORITY]:

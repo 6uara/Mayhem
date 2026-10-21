@@ -148,6 +148,14 @@ func should_release() -> bool:
 	return to_anchor.dot(body.velocity) < 0.0 and body.velocity.length() > 1.0
 
 
+## Deja el gancho listo ya, y perdona el cooldown diferido de un encadenado.
+## Lo usa el Pad Charger (BouncePad).
+func refresh_cooldown() -> void:
+	_cooldown_left = 0.0
+	_chain_pending = false
+	_grounded_time = 0.0
+
+
 func get_anchor() -> Vector3:
 	return _anchor
 

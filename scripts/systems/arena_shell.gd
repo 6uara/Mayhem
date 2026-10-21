@@ -45,7 +45,7 @@ extends Node3D
 
 @export_group("Perimeter")
 ## Invisible wall around the play area. Without it the arena's edge is a cliff
-## into the stands, and the kill volume below turns a stray dash into a death.
+## into the stands, and the kill volume below turns a stray slide into a death.
 @export var wall_height: float = 14.0
 @export var wall_thickness: float = 2.0
 ## Deliberately outside the navigation bake: these are not level geometry, and a

@@ -56,9 +56,9 @@ extends ActionLeaf
 ##
 ## Adelantarse con algo que te **empuja** y con algo que te **retiene** son dos
 ## cosas distintas: un charco de ácido en tu camino te desvía, uno de atrapado en
-## tu camino te agarra. Con el 0.65 del ácido la única respuesta era gastar el
-## dash sí o sí; con 0.4 sigue cortando el camino pero cae delante y no encima, y
-## vuelven a existir frenar y rodear.
+## tu camino te agarra. Con el 0.65 del ácido la única respuesta era gastar una
+## salida sí o sí (entonces el dash); con 0.4 sigue cortando el camino pero cae
+## delante y no encima, y vuelven a existir frenar y rodear.
 @export_range(0.0, 1.0, 0.05) var snare_lead_fraction: float = 0.4
 
 @export_group("Saturación")

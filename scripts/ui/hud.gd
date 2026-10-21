@@ -35,7 +35,6 @@ const DAMAGE_FLASH_FULL_AT: float = 40.0
 @onready var _health_value: Label = $Root/VitalsCluster/HealthRow/Value
 @onready var _critical_tag: HBoxContainer = $Root/VitalsCluster/HealthRow/CriticalTag
 @onready var _health_segments: SegmentStrip = $Root/VitalsCluster/HealthSegments
-@onready var _dash_pips: SegmentStrip = $Root/VitalsCluster/DashRow/Pips
 
 # Abilities
 @onready var _ability_bar: HBoxContainer = $Root/AbilityBar
@@ -359,7 +358,7 @@ func _process(delta: float) -> void:
 
 func _bind_player() -> void:
 	# Our own body, never a teammate's - this HUD shows one player's health, ammo
-	# and dash charges, and on every machine that player is the local one.
+	# and grapple, and on every machine that player is the local one.
 	_player = Players.local() as Player
 	if _player == null:
 		# Normal on a client: the scene is up but our body is still in flight
@@ -483,12 +482,6 @@ func _tick_weapon() -> void:
 
 
 func _tick_movement() -> void:
-	var movement: MovementComponent = _player.movement
-	if movement != null:
-		_dash_pips.configure(movement.get_dash_charges_max(),
-			movement.get_dash_charges_available())
-		_dash_pips.progress = movement.dash_charges.get_next_charge_progress()
-
 	# Real horizontal speed, not MovementComponent.get_move_speed()'s target -
 	# the same "excess over a normal run" Player._tick_speed_fov() already
 	# computes for FOV. Runs even if the grapple slot below is unwired.
@@ -941,7 +934,7 @@ func _flash_damage(amount: float = 0.0) -> void:
 ## El charco de atrapado, en pantalla.
 ##
 ## Es lo único que le baja la velocidad al jugador, y sin decirlo se leía como que
-## el juego se había trabado - y peor: la salida (dash o gancho) no se le ocurre a
+## el juego se había trabado - y peor: la salida (el gancho) no se le ocurre a
 ## nadie que no sepa que está atrapado. Se queda prendida mientras dure, al revés
 ## que la viñeta de daño, porque no informa un golpe sino un estado.
 ##

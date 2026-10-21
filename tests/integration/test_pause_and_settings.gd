@@ -117,12 +117,12 @@ func test_rebinding_replaces_the_key_and_keeps_a_gamepad_binding() -> void:
 ## Dos acciones en la misma tecla dejan a una inalcanzable: se cambian de lugar.
 func test_taking_another_actions_key_swaps_them() -> void:
 	var jump_before: InputEvent = SettingsManager.get_primary_event(&"jump")
-	var dash_key: InputEvent = SettingsManager.get_primary_event(&"dash")
-	SettingsManager.rebind_primary(&"jump", dash_key)
+	var grapple_key: InputEvent = SettingsManager.get_primary_event(&"grapple")
+	SettingsManager.rebind_primary(&"jump", grapple_key)
 	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"jump")),
-		SettingsManager.describe_event(dash_key))
-	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"dash")),
-		SettingsManager.describe_event(jump_before), "dash took jump's old key")
+		SettingsManager.describe_event(grapple_key))
+	assert_eq(SettingsManager.describe_event(SettingsManager.get_primary_event(&"grapple")),
+		SettingsManager.describe_event(jump_before), "grapple took jump's old key")
 
 
 func test_the_options_screen_captures_the_next_key() -> void:
@@ -256,12 +256,12 @@ func test_settings_reach_the_manager() -> void:
 
 
 func test_reset_hints_button_clears_seen_tutorial_hints() -> void:
-	SaveManager.mark_hint_seen(&"dash")
+	SaveManager.mark_hint_seen(&"fast_fall")
 	_settings.open()
 	await wait_frames(2)
 
 	_settings._reset_hints_button.pressed.emit()
-	assert_false(SaveManager.has_seen_hint(&"dash"),
+	assert_false(SaveManager.has_seen_hint(&"fast_fall"),
 		"the reset button must forget every hint the player has already seen")
 	SaveManager.clear_tutorial_hints()
 

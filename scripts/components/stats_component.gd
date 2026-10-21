@@ -7,8 +7,6 @@ extends Node
 const MOVE_SPEED: StringName = &"move_speed"
 const JUMP_VELOCITY: StringName = &"jump_velocity"
 const AIR_CONTROL: StringName = &"air_control"
-const DASH_CHARGES: StringName = &"dash_charges"
-const DASH_COOLDOWN: StringName = &"dash_cooldown"
 const GRAPPLE_RANGE: StringName = &"grapple_range"
 const GRAPPLE_COOLDOWN: StringName = &"grapple_cooldown"
 const GRAPPLE_AIM_ASSIST: StringName = &"grapple_aim_assist"
@@ -29,13 +27,13 @@ const HEALTH_REGEN: StringName = &"health_regen"
 ## que la regla esta apagada hasta que una mejora la mueve: una mejora rara sigue
 ## siendo "solo StatModifiers", como pide UpgradeData.
 const SLIDE_RELOAD_RATE: StringName = &"slide_reload_rate"
-const DASH_RAM_DAMAGE: StringName = &"dash_ram_damage"
+const SLIDE_RAM_DAMAGE: StringName = &"slide_ram_damage"
 const AIRBORNE_DAMAGE_MULTIPLIER: StringName = &"airborne_damage_multiplier"
 const HEADSHOT_KILL_REFUND: StringName = &"headshot_kill_refund"
 const SPEED_DAMAGE_REDUCTION: StringName = &"speed_damage_reduction"
 const STYLE_PAYOUT_MULTIPLIER: StringName = &"style_payout_multiplier"
 const SECOND_WIND_CHARGES: StringName = &"second_wind_charges"
-const PAD_DASH_REFILL: StringName = &"pad_dash_refill"
+const PAD_GRAPPLE_REFILL: StringName = &"pad_grapple_refill"
 
 ## Mejoras raras de un arma y attachments. Por arma (se piden con el id del arma,
 ## como el resto de los stats de arma), y con base en WeaponData o neutra.

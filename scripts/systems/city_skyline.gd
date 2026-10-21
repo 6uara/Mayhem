@@ -8,7 +8,7 @@ extends MultiMeshInstance3D
 ## transmitiendo desde algun lado.
 ##
 ## Cajas de verdad, no siluetas planas. Un anillo de billboards gira con la
-## camara, y en un juego donde el jugador corre, dashea y se cuelga de un gancho,
+## camara, y en un juego donde el jugador corre, desliza y se cuelga de un gancho,
 ## ese giro se nota en cada desplazamiento. Doce triangulos por torre y un solo
 ## MultiMesh: la ciudad entera es una draw call.
 ##

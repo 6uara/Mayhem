@@ -5,7 +5,7 @@ extends ColorRect
 ## the same "excess over a normal run" Player._tick_speed_fov() already
 ## computes for FOV). Purely cosmetic, the visual half of the same reward the
 ## FOV widening is the camera half of: the movement system hands out real
-## momentum through slides, dashes and pads, but without a visible
+## momentum through slides, fast falls and pads, but without a visible
 ## consequence 7 m/s and 14 look identical on screen.
 
 ## Below this horizontal speed the overlay is fully invisible.

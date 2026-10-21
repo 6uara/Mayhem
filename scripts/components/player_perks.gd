@@ -1,7 +1,7 @@
 class_name PlayerPerks
 extends Node
 ## Las mejoras que agregan una regla en vez de mover un numero, del lado del
-## jugador: regeneracion, Slide Loader, Ram Dash, Headhunter, Momentum Plating y
+## jugador: regeneracion, Slide Loader, Ram Slide, Headhunter, Momentum Plating y
 ## Second Wind.
 ##
 ## Cada una es un stat con base neutra (0, o 1 en un multiplicador), asi que con
@@ -17,11 +17,16 @@ extends Node
 ## Segundos sin recibir daño antes de que la regeneracion arranque. Sin esto la
 ## mejora seria armadura con otro nombre: se curaria en medio de la pelea.
 const REGEN_DELAY: float = 3.0
-## Alcance del Ram Dash alrededor del cuerpo, en metros.
+## Alcance del Ram Slide alrededor del cuerpo, en metros.
 const RAM_RADIUS: float = 1.9
 const RAM_HEIGHT: float = 2.2
 ## Cuanto queda aturdido lo que se atropella.
 const RAM_STUN: float = 0.6
+## Velocidad horizontal desde la que un slide atropella. Por encima de la carrera
+## (7.5): el slide que sale corriendo (con su impulso) o de una picada pega, el
+## que ya se arrastra frenando no. Era el Ram Dash hasta que el dash salio
+## (2026-10-21).
+const RAM_MIN_SPEED: float = 9.0
 ## La ventana sin daño que da el Second Wind al salvarte.
 const SECOND_WIND_GRACE: float = 2.0
 
@@ -31,7 +36,7 @@ var _since_damage: float = 999.0
 ## Fraccion de bala acumulada mientras se desliza: a 30 % del cargador por
 ## segundo, un frame mete bastante menos que una bala entera.
 var _slide_carry: float = 0.0
-## Lo que ya se atropello en este dash: cada dash pega una vez a cada uno.
+## Lo que ya se atropello en este slide: cada slide pega una vez a cada uno.
 var _rammed: Dictionary = {}
 var _second_winds_used: int = 0
 var _grace_left: float = 0.0
@@ -74,7 +79,7 @@ func get_second_winds_left() -> int:
 func _refresh() -> void:
 	_cache.clear()
 	for key: StringName in [StatsComponent.HEALTH_REGEN, StatsComponent.SLIDE_RELOAD_RATE,
-			StatsComponent.DASH_RAM_DAMAGE, StatsComponent.HEADSHOT_KILL_REFUND,
+			StatsComponent.SLIDE_RAM_DAMAGE, StatsComponent.HEADSHOT_KILL_REFUND,
 			StatsComponent.SPEED_DAMAGE_REDUCTION, StatsComponent.SECOND_WIND_CHARGES]:
 		_cache[key] = UpgradeManager.get_stat(key, 0.0)
 
@@ -102,9 +107,10 @@ func _tick_slide_loader(delta: float) -> void:
 
 
 func _tick_ram() -> void:
-	var damage: float = get_value(StatsComponent.DASH_RAM_DAMAGE)
+	var damage: float = get_value(StatsComponent.SLIDE_RAM_DAMAGE)
 	if damage <= 0.0 or player.movement == null \
-			or player.movement.state != MovementComponent.State.DASHING:
+			or not player.movement.is_sliding() \
+			or Vector2(player.velocity.x, player.velocity.z).length() < RAM_MIN_SPEED:
 		_rammed.clear()
 		return
 	var here: Vector3 = player.global_position
