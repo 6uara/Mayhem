@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, todo, gaps]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-21
 ---
 
 # Known Issues and Gaps
@@ -42,7 +42,7 @@ and hurt VFX. Still not covered: a real firefight with the camera moving.
 - **Audio mix.** `tools/configure_audio_mix.gd` applies a gain hierarchy and a
   Master limiter. That is mechanical, not a mix: loudness balance, EQ, reverb and
   a headphones-and-speakers listening pass still need ears.
-- **Things only testable on screen or by hand:** the dash camera punch, FSR at
+- **Things only testable on screen or by hand:** the fast-fall landing camera punch, FSR at
   50-67%, MSAA/TAA, shadows on Low, a full wave on a gamepad.
 
 ## Fragile

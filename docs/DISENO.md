@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, diseño, brief]
 estado: guia
-actualizado: 2026-10-16
+actualizado: 2026-10-21
 ---
 
 # MAYHEM — Documento de diseño
@@ -114,7 +114,9 @@ acento tiene una forma compañera. Ver
 - **El momentum es un recurso que el jugador construye y conserva.** Nada lo
   recorta "por justicia": los enemigos saben siempre dónde está el jugador, así
   que la velocidad no rompe nada.
-- Slide que conserva y encadena, bhop intencional, dash con cargas, gancho.
+- Slide que conserva y encadena, bhop intencional, caída rápida que termina en
+  slide, gancho. (El dash con cargas del brief salió el 2026-10-21, por el
+  feedback de los profesores.)
 - **Un enganche de geometría que mata el momentum es un bug por decreto**
   (de ahí el mantle automático).
 - Nada que congele al jugador: el frasco de atrapado cobra movilidad sin
@@ -159,7 +161,7 @@ Agregado el 2026-10-09 (sin cita, decisiones posteriores al brief):
 - **La tabla es por arena.** Cada fila guarda su modo.
 - **Curación**: solo por la mejora de regeneración (fuera de combate) y por el
   botiquín que tira el público. Ninguna fuente gratis.
-- **Mejoras raras**: agregan una regla (deslizar recarga, el dash atropella...),
+- **Mejoras raras**: agregan una regla (deslizar recarga, el slide atropella...),
   siguen siendo solo StatModifiers sobre stats de base neutra. Como mucho una
   por visita, desde la ola 2.
 - **Rating de la transmisión**: sube con kills con estilo, amplificado por la
@@ -176,8 +178,8 @@ Agregado el 2026-10-16 (sin cita, decisiones posteriores al brief):
   que viene y el jugador elige una. Una regla ahora puede tocar también a los
   enemigos (vida, velocidad, daño, marcados con recompensa) y a la arena (cada
   kill deja un charco).
-- **Contratos**: a veces el Host ofrece además una restricción opcional (sin dash,
-  sin gancho, cargadores cortos...) que paga plata si se limpia la oleada con
+- **Contratos**: a veces el Host ofrece además una restricción opcional (sin
+  gancho, cargadores cortos...) que paga plata si se limpia la oleada con
   ella. Firmarla es una apuesta que el jugador elige; las olas elite también
   pueden traer contrato, porque no cambian la oleada.
 - **El rating tiene consecuencias**: llegar arriba paga (una vez por oleada) y

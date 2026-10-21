@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, architecture, autoloads]
 estado: referencia
-actualizado: 2026-10-16
+actualizado: 2026-10-21
 ---
 
 # Autoloads
@@ -60,7 +60,7 @@ signal weapon_switched(weapon_id: StringName)
 signal weapon_ads_changed(is_ads: bool)   # whichever weapon is equipped
 
 # Movement
-signal dash_used(charges_remaining: int)
+signal fast_fall_landed()                  # replaced dash_used (2026-10-21)
 signal grapple_started(anchor: Vector3)
 signal grapple_ended()
 
@@ -315,7 +315,7 @@ presenter, `&"subtitles_only"` — no recordings exist yet.
 
 `scripts/autoload/tutorial_hint_manager.gd`. Shows a one-line HUD overlay the
 first time the player does each core mechanic — move, jump, mantle, slide,
-dash, grapple, ADS, reload, first shop visit. Content is data
+fast fall, grapple, ADS, reload, first shop visit. Content is data
 (`TutorialHint` / `TutorialHintCatalog`, `data/tutorial/tutorial_hints.tres`),
 never string literals in the manager.
 
@@ -331,7 +331,7 @@ still set, even if called directly rather than from `_process()` — the
 non-overlap guarantee lives on the method itself, not on caller discipline.
 
 Hooks into gameplay two ways: global `EventBus` signals for anything that
-already has one (`dash_used`, `grapple_started`, `weapon_reloaded`,
+already has one (`fast_fall_landed`, `grapple_started`, `weapon_reloaded`,
 `shop_opened`, and the ADS-only `weapon_ads_changed` added for this), and a
 direct binding to the current player's `MovementComponent` for the rest
 (`started_moving`, `jumped`, `mantled`, and `state_changed` for `SLIDING`).
@@ -347,9 +347,9 @@ empty and skip substitution.
 ## KillBonusTracker
 
 `scripts/autoload/kill_bonus_tracker.gd`. Decides **whether** a kill earned a
-style bonus (headshot, airborne, spin, grapple, dash, long shot, point blank,
+style bonus (headshot, airborne, spin, grapple, slide, long shot, point blank,
 last round, double/triple/mayhem multi-kills, priority target); `EconomyConfig`
-decides **how much** it pays. Player state (air, grapple, dash, magazine, camera
+decides **how much** it pays. Player state (air, grapple, slide, magazine, camera
 spin) is tracked frame by frame, because by the instant of the kill it is too
 late to reconstruct. Bonus ids are stable `StringName`s, emitted on
 `EventBus.kill_payout`.

@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, architecture]
 estado: referencia
-actualizado: 2026-08-04
+actualizado: 2026-10-21
 ---
 
 # Architecture
@@ -33,7 +33,7 @@ Player (CharacterBody3D)
 │  └─ ViewBob (CameraFeelComponent output node — see 03)
 │     └─ CameraRig (CameraRecoilComponent output node)
 │        └─ Camera3D
-├─ MovementComponent      — all physics: ground/air/slide/dash/grapple state machine
+├─ MovementComponent      — all physics: ground/air/slide/grapple state machine, fast fall
 ├─ CameraFeelComponent    — step bob, strafe lean, landing punch (cosmetic only)
 ├─ CameraRecoilComponent  — weapon recoil: aim offset (real) vs visual kick (cosmetic)
 ├─ GrappleComponent

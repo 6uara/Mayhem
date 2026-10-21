@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, player, movement]
 estado: referencia
-actualizado: 2026-09-28
+actualizado: 2026-10-21
 ---
 
 # Player and Movement
@@ -26,7 +26,9 @@ asserts the aim transform doesn't move.
 ## MovementComponent
 
 `scripts/components/movement_component.gd`. Owns **all** player physics. State
-machine: `State` enum `GROUNDED / AIRBORNE / SLIDING / DASHING / GRAPPLING`.
+machine: `State` enum `GROUNDED / AIRBORNE / SLIDING / GRAPPLING`. There was a
+`DASHING` until 2026-10-21: the teacher feedback took the dash out and the burst
+of speed moved to the fast fall (below), which lands into a slide.
 
 Design law from the source's own comments: **momentum is a resource the player
 builds and keeps** — nothing here caps speed "for fairness" (enemies are
@@ -112,15 +114,16 @@ run (`_slide_boost_spent` guards re-triggering it via crouch-spam). Landing with
 crouch held re-enters a slide at full speed with **no** boost — that's the chain
 that makes downhill routes and pad-to-slide flow work.
 
-### Dash
+### No dash
 
-Flat, gravity-free burst (`dash_speed`, `dash_duration`) that goes wherever you
-point, including mid-air. `dash_charges` (a `DashCharges` value object — see
-`tests/unit/test_dash_charges.gd`) tracks up to `dash_charges_max = 3`
-(`Tokens.DASH_CHARGES` — the HUD reserves exactly three pips for it) with
-independent per-charge cooldowns. On dash end, `dash_exit_speed_fraction = 0.75`
-of dash speed carries into the next state — the momentum handoff that makes
-dash→slide chains worth learning.
+Removed 2026-10-21 with everything that hung off it: the `dash` input, the
+HUD pips, `DashCharges`, the `dash_charge` / `dash_cooldown` upgrades and the
+GROUNDED contract. What it fed was moved, not dropped: the style bonus is now
+`slide` (DESLIZANDO), the crowd request is SLIDE THROUGH THEM!, Ram Dash is
+Ram Slide (`PlayerPerks.RAM_MIN_SPEED` 9 m/s), Pad Charger resets the grapple
+(`GrappleComponent.refresh_cooldown()`), and the camera punch (`surge_*` in
+`CameraFeelComponent`), the trail (`DiveTrail`) and the sound answer
+`fast_fall_landed`. The snare pool is broken only by the grapple now.
 
 ### Grapple
 
@@ -187,7 +190,7 @@ that are not the same thing:
 
 `Player._tick_speed_fov()` — widens FOV above `movement.base_move_speed`, capped
 at `SPEED_FOV_MAX = 12.0`, suppressed while aiming (`* (1.0 - weapon.ads_progress)`).
-Exists because the movement system hands out real momentum through slides, dashes
+Exists because the movement system hands out real momentum through slides, fast falls
 and pads, but without a visible consequence the screen looks identical at 7 m/s
 and 14 — the reward for chaining well was otherwise invisible.
 

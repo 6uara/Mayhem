@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, enemies, ai]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-21
 ---
 
 # Enemies and AI
@@ -402,13 +402,15 @@ Three calls make it fair, and each one is a test in
 
 - **It slows, it never immobilises.** `MovementComponent.apply_snare()` scales
   ground speed to 35%; it never reaches zero. Freezing the player is the most
-  hostile thing a shooter built on dash, grapple and slide can do.
-- **It has an exit the player already has in their fingers.** Dashing or
-  grappling calls `break_snare()`, which clears it *and* buys `SNARE_GRACE`
-  (0.9s) of immunity. The grace is not politeness: a dash covers ~2.5m and the
-  pool has a 2.6m radius, so without it the pool's next refresh re-catches you
-  mid-escape, inside the pool you are escaping. Both exits cost a resource, so
-  the pool asks a question instead of handing out a punishment.
+  hostile thing a shooter built on slide, grapple and bhop can do.
+- **It has an exit the player already has in their fingers.** Grappling calls
+  `break_snare()`, which clears it *and* buys `SNARE_GRACE` (0.9s) of immunity.
+  The grace is not politeness: the pool has a 2.6m radius, so without it the
+  pool's next refresh re-catches you mid-escape, inside the pool you are
+  escaping. The exit costs the grapple, so the pool asks a question instead of
+  handing out a punishment. The dash was the other exit until it was removed
+  (2026-10-21); the owner chose to leave the grapple as the only one, which
+  means a NO HOOK contract wave has no exit at all.
 - **It does no damage.** `damage` is 0 on the scene. Slowing *and* burning is
   charging twice for one decision, and the currency this archetype deals in is
   position.

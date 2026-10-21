@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, testing]
 estado: referencia
-actualizado: 2026-08-19
+actualizado: 2026-10-21
 ---
 
 # Testing
@@ -16,7 +16,7 @@ GUT 9.7.1, vendored at `addons/gut/`. Tests live in `tests/`, mirroring
 
 ```
 tests/unit/
-  test_dash_charges.gd          test_economy_config.gd
+  test_economy_config.gd
   test_economy_manager.gd       test_enemy_data.gd
   test_recoil_pattern.gd        test_scene_wiring.gd
   test_spec_conformance.gd      test_stat_modifier.gd

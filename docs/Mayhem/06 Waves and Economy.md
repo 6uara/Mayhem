@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, waves, economy, shop]
 estado: referencia
-actualizado: 2026-10-16
+actualizado: 2026-10-21
 ---
 
 # Waves and Economy

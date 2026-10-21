@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, arena, venue, crowd, host]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-21
 ---
 
 # Arena, Venue and Crowd
@@ -78,7 +78,7 @@ onda desde ese punto. Hasta 8 ondas simultáneas (`MAX_IMPACTS`).
 ### ArenaRoof
 
 `scripts/systems/arena_roof.gd`. Anillo estructural, vigas y óculo abierto
-(`oculus_share`). Existe por una razón de juego: con gancho, dash, pads y zip
+(`oculus_share`). Existe por una razón de juego: con gancho, picadas, pads y zip
 lines, un techo abierto obliga a decidir qué pasa cuando alguien lo supera.
 Colisión: una caja plana. Los haces de luz se sacaron en playtest (competían
 con el área de juego).
