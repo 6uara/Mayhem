@@ -45,11 +45,26 @@ chaining is intentional.
   turning the mouse builds speed, up to `bhop_max_speed`, and holding forward
   builds nothing. Then air control (`air_control`) redirects velocity but never
   accelerates past current speed. Mantling
-  (`_try_mantle()`) triggers automatically while airborne, moving toward a wall,
-  holding jump: a chest-height ray finds the wall, a head-height ray confirms
-  clearance, and finding both boosts `velocity.y` — geometry snags that would
-  otherwise kill momentum are a bug by design decree. Emits `mantled()` only on
-  a successful boost, not on every probe.
+  (`_try_mantle()`) triggers automatically while airborne and moving toward a
+  wall, with no button held (it needed jump held until 2026-10-21): a
+  chest-height ray finds the wall, a head-height ray confirms clearance, and
+  finding both boosts `velocity.y` — geometry snags that would otherwise kill
+  momentum are a bug by design decree. Emits `mantled()` only on a successful
+  boost, not on every probe. Skipped during a fast fall.
+
+### Fast fall
+
+`crouch_slide` pressed while `AIRBORNE` calls `_start_fast_fall()`: vertical
+velocity drops to `-fast_fall_speed` (28), horizontal is untouched, and
+`fast_fell()` fires. Landing with crouch still held runs `_land_fast_fall()`
+before the usual landing slide: it adds `fast_fall_boost_per_meter` (3 m/s) per
+metre dropped since the press, along the current heading (or the facing when
+nearly still), capped at `fast_fall_boost_max` (10) above run speed and never
+taking from a speed that was already higher. Measured by metres dropped, not
+impact speed, because the dive starts at full speed: a hop would pay as much as
+a platform. Released crouch on landing means no boost. A bounce pad or grapple
+cancels the fast fall. Asked for by the 2026-10-21 teacher feedback
+("majestic leap").
 
 `started_moving()` / `jumped()` / `mantled()` exist solely as
 `TutorialHintManager`'s hook for each mechanic's first-time hint (see

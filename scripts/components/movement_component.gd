@@ -19,6 +19,8 @@ signal mantled()
 ## Fires on the frame a dash starts, with its horizontal world direction. The
 ## camera answers this one and not EventBus.dash_used, which carries no direction.
 signal dashed(direction: Vector3)
+## Fires on the frame crouch in the air starts a fast fall.
+signal fast_fell()
 
 enum State { GROUNDED, AIRBORNE, SLIDING, DASHING, GRAPPLING }
 
@@ -94,6 +96,19 @@ const SNARE_GRACE: float = 0.9
 @export var slope_accel_scale: float = 1.35
 @export var slide_head_drop: float = 0.55
 
+@export_group("Fast fall")
+## Agacharse en el aire tira al jugador al piso a esta velocidad, y al tocarlo
+## con agacharse apretado sale deslizando con la caida convertida en impulso. Lo
+## pidio el feedback de los profesores (2026-10-21), al estilo del majestic leap.
+@export var fast_fall_speed: float = 28.0
+## m/s de impulso horizontal por metro caido en picada. Por metro y no por
+## velocidad de impacto: la picada arranca a toda velocidad, asi que medida por
+## impacto un saltito pagaria lo mismo que tirarse de una plataforma.
+@export var fast_fall_boost_per_meter: float = 3.0
+## Lo maximo que la picada puede sumar por encima de la velocidad de carrera.
+## Encadenar picadas mantiene la velocidad, nunca la acumula sin techo.
+@export var fast_fall_boost_max: float = 10.0
+
 @export_group("Dash")
 @export var dash_speed: float = 16.0
 @export var dash_duration: float = 0.16
@@ -148,6 +163,9 @@ var _slide_boost_spent: bool = false
 var _coyote_left: float = 0.0
 var _jump_buffer_left: float = 0.0
 var _has_moved: bool = false
+var _fast_falling: bool = false
+## Altura a la que arranco la picada en curso; el impulso sale de cuanto se cayo.
+var _fast_fall_from_y: float = 0.0
 
 
 func _ready() -> void:
@@ -304,9 +322,16 @@ func _tick_airborne(wish_direction: Vector3, delta: float) -> void:
 		return
 	if Input.is_action_just_released("jump") and body.velocity.y > 0.0:
 		body.velocity.y *= jump_cut_multiplier
-	# Mantle: holding jump against a low ledge boosts up it instead of face-planting.
-	# Momentum-killing geometry snags are a bug by decree of CLAUDE.md 5.2.
-	if Input.is_action_pressed("jump") and wish_direction != Vector3.ZERO:
+	# Un pad o una explosion que lo levanta corta la caida rapida: lo que viene
+	# despues ya no es la misma caida.
+	if body.velocity.y > 0.0:
+		_fast_falling = false
+	# Mantle: pushing into a low ledge in the air boosts up it instead of
+	# face-planting. Momentum-killing geometry snags are a bug by decree of
+	# CLAUDE.md 5.2. It asked for jump held until the teachers' feedback
+	# (2026-10-21): the brief always said automatic, and a climb that needs a
+	# second button held is one most players never find.
+	if wish_direction != Vector3.ZERO and not _fast_falling:
 		_try_mantle(wish_direction)
 	# Steering only - no drag. Whatever speed was earned is kept until the floor
 	# or a wall takes it away.
@@ -385,11 +410,15 @@ func _handle_action_input(wish_direction: Vector3) -> void:
 
 	if Input.is_action_just_pressed("grapple") and grapple != null and grapple.try_fire():
 		state = State.GRAPPLING
+		_fast_falling = false
 		break_snare()
 		return
 
-	if Input.is_action_just_pressed("crouch_slide") and state == State.GROUNDED:
-		_try_slide(true)
+	if Input.is_action_just_pressed("crouch_slide"):
+		if state == State.GROUNDED:
+			_try_slide(true)
+		elif state == State.AIRBORNE and not _fast_falling:
+			_start_fast_fall()
 
 
 func _try_dash(wish_direction: Vector3) -> void:
@@ -408,6 +437,32 @@ func _try_dash(wish_direction: Vector3) -> void:
 	AudioPool.play_3d(dash_sound, body.global_position, AudioPool.BUS_WORLD)
 	dashed.emit(_dash_direction)
 	EventBus.dash_used.emit(dash_charges.get_available())
+
+
+## Cancela la subida y tira al piso. La velocidad horizontal no se toca: la
+## picada cambia hacia donde se cae, no cuanto se avanza.
+func _start_fast_fall() -> void:
+	_fast_falling = true
+	_fast_fall_from_y = body.global_position.y
+	body.velocity.y = minf(body.velocity.y, -fast_fall_speed)
+	fast_fell.emit()
+
+
+## El impulso de la picada al tocar el piso, en la direccion en que se venia o,
+## parado, hacia donde mira. Solo suma hasta `fast_fall_boost_max` por encima de
+## la velocidad de carrera, y nunca le quita a una velocidad que ya venia mas alta.
+func _land_fast_fall() -> void:
+	_fast_falling = false
+	var drop: float = maxf(_fast_fall_from_y - body.global_position.y, 0.0)
+	var boost: float = minf(drop * fast_fall_boost_per_meter, fast_fall_boost_max)
+	var horizontal: Vector3 = _horizontal()
+	var direction: Vector3 = horizontal.normalized() if horizontal.length() > 0.5 \
+		else -body.global_transform.basis.z
+	direction.y = 0.0
+	direction = direction.normalized()
+	var ceiling: float = maxf(horizontal.length(), get_move_speed() + fast_fall_boost_max)
+	var speed: float = minf(horizontal.length() + boost, ceiling)
+	_set_horizontal(direction * speed)
 
 
 func _try_slide(with_boost: bool) -> void:
@@ -471,9 +526,14 @@ func _post_move(fall_speed: float, delta: float) -> void:
 		if fall_speed > 4.0:
 			AudioPool.play_3d(land_sound, body.global_position, AudioPool.BUS_WORLD)
 		# Landing with crouch held re-enters the slide at full speed, boost-free:
-		# this is the chain that makes downhill runs and pad routes flow.
-		if Input.is_action_pressed("crouch_slide") \
-				and _horizontal().length() >= slide_min_speed:
+		# this is the chain that makes downhill runs and pad routes flow. A fast
+		# fall pays its own impulse first, so it lands straight into a slide.
+		var crouching: bool = Input.is_action_pressed("crouch_slide")
+		if _fast_falling:
+			if crouching:
+				_land_fast_fall()
+			_fast_falling = false
+		if crouching and _horizontal().length() >= slide_min_speed:
 			_try_slide(false)
 		else:
 			_stand_up()
