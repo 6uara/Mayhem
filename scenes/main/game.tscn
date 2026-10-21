@@ -86,7 +86,7 @@ multimesh = SubResource("MM_points")
 [node name="EnemySpawner" type="Node" parent="."]
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("7_enemy")
-prewarm_count = 48
+prewarm_count = 56
 
 [node name="PoolPrewarmer" type="Node" parent="."]
 script = ExtResource("15_prewarmer")

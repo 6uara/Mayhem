@@ -77,6 +77,7 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 | Mantle automático, sin mantener saltar | `MovementComponent._tick_airborne()` |
 | Caída rápida: agacharse en el aire pica a 28 m/s; aterrizar agachado sale deslizando con 3 m/s por metro caído (tope +10 sobre la carrera) | `MovementComponent` grupo Fast fall |
 | Sin dash. El bono pasa a DESLIZANDO, el pedido a SLIDE THROUGH THEM!, Ram Dash a Ram Slide, Pad Charger recarga el gancho; el paso del tutorial, el golpe de cámara, la estela y el sonido pasan a la caída rápida. Salen Extra Dash, Dash Cooldown, el contrato GROUNDED y los pips del HUD | ver [03 Player and Movement](Mayhem/03%20Player%20and%20Movement.md#no-dash) |
+| Más enemigos y más variedad por ola: de 6 a 10 en la 1 y de 42 a 49 en la 10 (total de la run 200 → 272). Los arquetipos debutan antes (ranger 1, bomber 2, healer 3, summoner 4, environmental 6, flyer 7) y cada ola mezcla más. `par_time` estirado en proporción; pool de enemigos a 56 | `data/waves/`, `game.tscn` |
 
 ## 2. Bloquea el release
 
@@ -84,7 +85,7 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 |---|---|---|
 | R1 | **Modelos** de piezas de arena, interactuables y dos enemigos (Elite, Environmental). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas e impactos** sigue siendo el sintetizado por `tools/generate_placeholder_sfx.py` | Audio |
-| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, del hitstop suave, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
+| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, del hitstop suave, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 
 ## 3. Abierto — necesita una decisión
 
@@ -92,8 +93,8 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
   desde que salió el dash (2026-10-21) el gancho es la única forma de romperlo, por
   decisión del dueño. O el contrato se excluye cuando hay Environmental en la ola,
   o se acepta como parte del precio del contrato.
-- **Curva de oleadas.** La 5 tiene `par_time` 95 y bonus 150; la 6 baja a 85 y
-  110. Si la 5 es un pico a propósito, documentarlo. Mejor con logs de
+- **Curva de oleadas.** La 5 tiene `par_time` 115 y bonus 150; la 6 baja a 100 y
+  110 (números del 2026-10-21, ver abajo). Si la 5 es un pico a propósito, documentarlo. Mejor con logs de
   `RunLogger` en la mano.
 - **Las olas elite** quedan como olas de masa (decisión del 2026-10-09). El
   Campeón de [PLAN_MEJORAS §2.1](planes/PLAN_MEJORAS.md) queda en el banco.
