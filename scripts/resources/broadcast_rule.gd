@@ -36,6 +36,10 @@ extends Resource
 @export var kill_hazard_damage: float = 0.0
 @export var kill_hazard_radius: float = 2.5
 @export var kill_hazard_duration: float = 4.0
+## Lo que se ve. Vacio usa el fuego de Scorched Earth; tiene que ser un
+## `HazardZone`. Es dato y no una constante para que otra regla que deje piso
+## peligroso pueda tener su propia cara sin tocar codigo.
+@export var kill_hazard_scene: PackedScene
 
 @export_group("Enemigos")
 ## Cambios a los enemigos que aparezcan mientras dura la regla.

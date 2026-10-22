@@ -22,9 +22,10 @@ const POOL_PATH: String = "res://data/broadcast_rules/rule_pool.tres"
 ## El id con el que la regla se registra como mejora global mientras dura.
 const UPGRADE_PREFIX: String = "rule_"
 const CONTRACT_PREFIX: String = "contract_"
-## El charco de "el piso arde". El mismo que deja el Environmental: el jugador ya
-## aprendio a leerlo.
-const KILL_HAZARD_SCENE: PackedScene = preload("res://scenes/arena/hazard_zone.tscn")
+## El charco de "el piso arde" cuando la regla no trae el suyo. Fuego, no el
+## acido del Flask: quema igual, pero no es de ningun enemigo, y verse igual
+## mentia sobre de donde vino.
+const KILL_HAZARD_SCENE: PackedScene = preload("res://scenes/arena/fire_pool.tscn")
 ## Hasta donde se busca el piso bajo una kill para apoyar el charco. Un Flyer
 ## muere en el aire, y un charco flotando no se lee.
 const KILL_HAZARD_FLOOR_PROBE: float = 30.0
@@ -372,7 +373,8 @@ func _on_enemy_killed(_type: StringName, position: Vector3, _reward: int) -> voi
 
 
 func _spawn_kill_hazard(rule: BroadcastRule, position: Vector3) -> void:
-	var zone := ObjectPool.acquire(KILL_HAZARD_SCENE) as HazardZone
+	var scene: PackedScene = rule.kill_hazard_scene if rule.kill_hazard_scene != null else KILL_HAZARD_SCENE
+	var zone := ObjectPool.acquire(scene) as HazardZone
 	if zone == null:
 		return
 	zone.global_position = _floor_under(position)
