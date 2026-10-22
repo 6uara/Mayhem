@@ -4,6 +4,9 @@ extends Node
 ## what is alive.
 
 const WAVE_COUNT: int = 10
+## Segundos de juego sin progreso -ninguna kill, ningun golpe a un enemigo- con
+## todo ya spawneado antes de dar la oleada por trabada. Ver _rescue_stalled_wave().
+const STALL_TIME: float = 40.0
 
 ## Any node with `spawn(enemy_data: EnemyData, door_ids: Array[StringName]) -> Node`.
 var spawner: Node
@@ -21,15 +24,37 @@ var _damage_taken_this_wave: float = 0.0
 ## Bumped on reset so in-flight spawn coroutines from an abandoned wave die off.
 var _run_generation: int = 0
 var _last_breakdown: Dictionary = {}
+## Los enemigos que largo esta oleada, por instance id. Un cuerpo del pool que
+## vuelve a salir en la misma oleada pisa su propia entrada, asi que no se cuenta
+## dos veces.
+var _tracked: Dictionary = {}
+## Spawns que no devolvieron un Enemy (los dobles de los tests). Con alguno, el
+## conteo de vivos no se puede verificar contra los cuerpos y no se corrige.
+var _untracked_spawns: int = 0
+var _stall_time: float = 0.0
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
 	EventBus.enemy_killed.connect(_on_enemy_killed)
+	EventBus.damage_dealt.connect(_on_damage_dealt)
 	EventBus.player_damaged.connect(_on_player_damaged)
 	# `stop()` y no `reset()`: la oleada deja de spawnear, pero `current_index`
 	# sigue diciendo en cual se murio. Este autoload se conecta antes que
 	# MatchDirector, y resetear aca dejaba toda derrota anotada con 0 oleadas.
 	EventBus.player_died.connect(stop)
+
+
+func _process(delta: float) -> void:
+	# Solo con todo spawneado: un grupo que llega a los 40 segundos no es una
+	# oleada trabada, es una oleada que todavia no termino de llegar.
+	if not is_wave_active or _pending_spawns > 0:
+		_stall_time = 0.0
+		return
+	_stall_time += delta
+	if _stall_time >= STALL_TIME:
+		_stall_time = 0.0
+		_rescue_stalled_wave()
 
 
 # Public API
@@ -53,6 +78,7 @@ func stop() -> void:
 	_alive_enemies = 0
 	_pending_spawns = 0
 	_damage_taken_this_wave = 0.0
+	_forget_spawns()
 
 
 func start_next_wave() -> bool:
@@ -64,6 +90,7 @@ func start_next_wave() -> bool:
 	_alive_enemies = 0
 	_pending_spawns = wave.get_total_enemy_count()
 	_damage_taken_this_wave = 0.0
+	_forget_spawns()
 	_wave_start_time = _now()
 	_wave_paused_at_start = GameManager.get_paused_seconds()
 	EconomyManager.begin_wave()
@@ -81,6 +108,7 @@ func spawn_summoned(enemy_data: EnemyData, position: Vector3) -> Node:
 	var enemy: Node = _spawn_at(enemy_data, position)
 	if enemy != null:
 		_alive_enemies += 1
+		_track(enemy)
 	return enemy
 
 
@@ -168,6 +196,7 @@ func _spawn_one(group: SpawnGroup) -> void:
 	var enemy: Node = spawner.call(&"spawn", group.enemy_data, group.spawn_door_ids)
 	if enemy != null:
 		_alive_enemies += 1
+		_track(enemy)
 
 
 func _spawn_at(enemy_data: EnemyData, position: Vector3) -> Node:
@@ -180,6 +209,7 @@ func _spawn_at(enemy_data: EnemyData, position: Vector3) -> Node:
 func _on_enemy_killed(_type: StringName, _position: Vector3, _reward: int) -> void:
 	if not is_wave_active:
 		return
+	_stall_time = 0.0
 	_alive_enemies = maxi(_alive_enemies - 1, 0)
 	_check_wave_cleared()
 
@@ -204,3 +234,65 @@ func _check_wave_cleared() -> void:
 
 func _now() -> float:
 	return float(Time.get_ticks_msec()) / 1000.0
+
+
+# Red de ultimo recurso
+
+func _on_damage_dealt(_target: Node, amount: float, _is_headshot: bool) -> void:
+	if amount > 0.0:
+		_stall_time = 0.0
+
+
+func _track(enemy: Node) -> void:
+	var typed := enemy as Enemy
+	if typed == null:
+		_untracked_spawns += 1
+		return
+	_tracked[typed.get_instance_id()] = typed
+
+
+func _forget_spawns() -> void:
+	_tracked.clear()
+	_untracked_spawns = 0
+	_stall_time = 0.0
+
+
+## Lo que pasa cuando la oleada lleva STALL_TIME sin que nadie muera ni reciba un
+## golpe, con todo ya spawneado. No deberia pasar nunca: el guardia de la arena
+## (Enemy._tick_arena_guard) devuelve a los que quedan afuera y el destrabe por
+## reloj saca a los encajados. Esto existe porque el playtest del 2026-10-21
+## reporto una run que no se pudo terminar, y una run que no termina es el peor
+## bug que puede tener el juego - peor que cualquier cosa que esta red pueda hacer
+## mal. Dos fallas posibles, las dos se arreglan aca:
+##
+## - El conteo dice que hay vivos que ya no existen (un cuerpo que volvio al pool
+##   sin `enemy_killed`). Se corrige el conteo con los cuerpos de verdad.
+## - Hay vivos, pero donde nadie los encuentra. Vuelven a entrar por una puerta,
+##   que es por donde el jugador ya espera verlos llegar.
+func _rescue_stalled_wave() -> void:
+	var live: Array[Enemy] = []
+	for id: int in _tracked.keys():
+		# Variant primero: un cuerpo liberado no se puede asignar a una variable tipada.
+		var entry: Variant = _tracked[id]
+		var enemy: Enemy = entry as Enemy if is_instance_valid(entry) else null
+		if enemy != null and enemy.is_active and enemy.health != null \
+				and not enemy.health.is_dead:
+			live.append(enemy)
+		else:
+			_tracked.erase(id)
+	if _untracked_spawns == 0 and live.size() < _alive_enemies:
+		push_warning("WaveManager: la oleada contaba %d vivos y hay %d; se corrige"
+			% [_alive_enemies, live.size()])
+		_alive_enemies = live.size()
+		_check_wave_cleared()
+		if not is_wave_active:
+			return
+	var points: Array = []
+	if spawner != null and spawner.has_method(&"get_rescue_points"):
+		points = spawner.call(&"get_rescue_points")
+	for enemy: Enemy in live:
+		var point: Vector3 = enemy.arena_return_point(enemy.global_position)
+		if not points.is_empty():
+			point = points[_rng.randi_range(0, points.size() - 1)]
+		enemy.return_to_arena(point)
+	EventBus.wave_stall_rescued.emit(current_index, live.size())

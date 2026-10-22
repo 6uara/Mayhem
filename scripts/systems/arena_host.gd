@@ -38,8 +38,15 @@ func _ready() -> void:
 	FeedbackManager.set_arena_name(arena.arena_name)
 	# Y para que la run se anote en la tabla de esta arena y no en otra.
 	RunRecord.set_arena(_arena_id(arena), arena.arena_name)
+	# Lo que queda adentro de la pared perimetral, para que un enemigo que aparece
+	# o termina afuera se devuelva solo. Ver ArenaBounds.
+	ArenaBounds.set_box(runtime.get_content_bounds())
 	if player_spawn_controller != null:
 		player_spawn_controller.spawn_point = runtime.get_player_spawn()
+
+
+func _exit_tree() -> void:
+	ArenaBounds.clear()
 
 
 # Private

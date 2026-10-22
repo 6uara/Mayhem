@@ -52,6 +52,19 @@ func spawn(enemy_data: EnemyData, door_ids: Array[StringName]) -> Node:
 	return spawn_at(enemy_data, door.get_spawn_position())
 
 
+## Donde dejar a un enemigo que hay que devolver a la arena: el punto de salida de
+## cada puerta, que es un lugar valido por construccion y por donde el jugador ya
+## espera ver entrar enemigos. Lo usa la red de ultimo recurso de WaveManager.
+func get_rescue_points() -> Array[Vector3]:
+	if _doors.is_empty():
+		_collect_doors()
+	var points: Array[Vector3] = []
+	for door: SpawnDoor in _doors.values():
+		if is_instance_valid(door):
+			points.append(door.get_spawn_position())
+	return points
+
+
 ## Dims every door a group was using, once the group has finished spawning.
 func close_doors(door_ids: Array[StringName]) -> void:
 	for door: SpawnDoor in _matching_doors(door_ids):

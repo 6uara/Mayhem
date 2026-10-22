@@ -174,6 +174,33 @@ no-op. The runtime guard stays either way: it is what keeps a future door, or a
 future arena, from reintroducing a bug whose only symptom is enemies taking the
 scenic route.
 
+### Nothing may end up where it cannot be killed
+
+The 2026-10-21 playtest reported runs that could not be finished: an enemy on the
+far side of the perimeter wall, in the stands, and the wave waiting for it
+forever. The likeliest source is a Summoner add — `ActionSummonAdds` places adds
+on a 2.5m ring around the summoner with no check, so a summoner against the wall
+put them outside. Rather than patch that one caller, three nets, each in
+`tests/integration/test_out_of_bounds.gd`:
+
+1. **On spawn.** `ArenaBounds` (`scripts/util/arena_bounds.gd`) holds the arena's
+   content box, which is exactly where the perimeter walls stand; `ArenaHost`
+   publishes it on load and clears it on exit (no box in tests → everything is
+   inside). `setup()` moves a spawn outside the box to `arena_return_point()`
+   before `playable_spawn()` runs. The navmesh cannot answer "which side of the
+   wall" — the outside strip is baked too — so the box decides and the navmesh is
+   only asked once the point is already inside.
+2. **During the fight.** `_tick_arena_guard()` returns an enemy that spends
+   `OUTSIDE_ARENA_GRACE` (0.5s) outside the box, or falls `ArenaBounds.FALL_DEPTH`
+   below the floor, through `return_to_arena()`.
+3. **Last resort.** `WaveManager` tracks the `Enemy` bodies it spawned. After
+   `STALL_TIME` (40s) with everything spawned and no kill or hit
+   (`damage_dealt`), `_rescue_stalled_wave()` corrects an alive count that no
+   longer matches the live bodies (a body back in the pool without
+   `enemy_killed`), and sends the rest back in through a door
+   (`EnemySpawner.get_rescue_points()`). It emits
+   `EventBus.wave_stall_rescued`; it should never fire.
+
 ## Jump links
 
 `scripts/systems/jump_link.gd` (`class_name JumpLink extends NavigationLink3D`),
