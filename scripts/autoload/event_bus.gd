@@ -79,6 +79,9 @@ signal grapple_ended()
 # Waves
 signal wave_started(wave_index: int, config: WaveData)
 signal wave_completed(wave_index: int, duration: float, damage_taken: float)
+## La oleada llevaba WaveManager.STALL_TIME sin progreso y la red de ultimo recurso
+## devolvio `rescued` enemigos por las puertas. Telemetria: no deberia pasar nunca.
+signal wave_stall_rescued(wave_index: int, rescued: int)
 signal match_completed(score: int, total_time: float)
 ## Una run termino, ganada o perdida, con todo lo que hay para anotar.
 ##

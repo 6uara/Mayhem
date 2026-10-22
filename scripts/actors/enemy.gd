@@ -58,6 +58,15 @@ const JUMP_PENDING_TIMEOUT: float = 4.0
 ## nunca. Esto es el ultimo escalon: pasado este tiempo se lo empuja a un punto
 ## navegable de verdad, aunque sea a un metro.
 const STUCK_WARP_TIME: float = 6.0
+## Cuanto puede estar un enemigo afuera de la arena (ArenaBounds) antes de que se
+## lo devuelva adentro. Corto: la pared perimetral no deja cruzar caminando, asi
+## que estar afuera nunca es una jugada en curso, es haber aparecido del lado
+## equivocado o haber salido despedido. El playtest del 2026-10-21 reporto una
+## oleada que no se podia terminar por un enemigo en las gradas.
+const OUTSIDE_ARENA_GRACE: float = 0.5
+## A cuanto de la pared se lo deja al devolverlo: lo bastante adentro para que el
+## cuerpo no quede tocandola, que es como empezo el problema.
+const ARENA_RETURN_MARGIN: float = 3.0
 ## Antes del empujon se prueba lo barato: rodear. Es el mismo rodeo que arma un
 ## salto fallido, disparado por el reloj en vez de por un aterrizaje.
 const STUCK_DETOUR_TIME: float = 2.0
@@ -243,6 +252,8 @@ var _has_detonated: bool = false
 ## una kill de un tiro con punteria.
 var _last_hit_headshot: bool = false
 var _stuck_time: float = 0.0
+## Segundos seguidos afuera de la arena. Ver OUTSIDE_ARENA_GRACE.
+var _outside_time: float = 0.0
 var _jump_cooldown_left: float = 0.0
 ## El objetivo esta en una isla del navmesh a la que no se llega caminando -
 ## arriba de una plataforma, del otro lado de un hueco sin link-. Lo escribe
@@ -351,6 +362,7 @@ func _physics_process(delta: float) -> void:
 	_separation_timer = maxf(_separation_timer - delta, 0.0)
 	_leap_recovery_left = maxf(_leap_recovery_left - delta, 0.0)
 	_expire_blocked_links(delta)
+	_tick_arena_guard(delta)
 	_tick_facing(delta)
 	_tick_ai_lod(delta)
 
@@ -425,6 +437,11 @@ func _physics_process(delta: float) -> void:
 ## Configures the enemy for an archetype. Called every time it leaves the pool.
 func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	data = enemy_data
+	# Primero el lado de la pared: un add del Summoner invocado con el Summoner
+	# pegado a la pared perimetral aparecia del otro lado, en las gradas, donde no
+	# se lo puede matar y la oleada no termina nunca. Ver ArenaBounds.
+	if not ArenaBounds.contains(spawn_position):
+		spawn_position = arena_return_point(spawn_position)
 	# Donde lo dejo la puerta puede no ser un lugar desde el que se pueda caminar
 	# a ningun lado. Ver playable_spawn().
 	spawn_position = playable_spawn(spawn_position)
@@ -456,6 +473,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_leap_hit_landed = false
 	_leap_recovery_left = 0.0
 	_stuck_time = 0.0
+	_outside_time = 0.0
 	_jump_cooldown_left = 0.0
 	_target_unreachable = false
 	_flight_blocked_time = 0.0
@@ -1420,6 +1438,56 @@ func ground_anchored_position(point: Vector3) -> Vector3:
 		if has_ground_below(candidate):
 			return candidate
 	return anchor
+
+
+## Donde devolver a un enemigo que esta afuera de la arena: el punto mas cercano
+## adentro de la pared, a ARENA_RETURN_MARGIN de ella, sobre el navmesh si lo hay.
+##
+## El navmesh se consulta despues de entrar a la caja y no antes: el piso se bakea
+## tambien del lado de afuera de la pared, y el poligono mas cercano a un punto de
+## afuera es el de afuera. Ver ArenaBounds.
+func arena_return_point(from: Vector3) -> Vector3:
+	var inside: Vector3 = ArenaBounds.clamp_inside(from, ARENA_RETURN_MARGIN)
+	if agent != null and _has_navmesh():
+		var map: RID = agent.get_navigation_map()
+		if map.is_valid():
+			var on_mesh: Vector3 = NavigationServer3D.map_get_closest_point(map, inside)
+			var drift: float = Vector2(on_mesh.x - inside.x, on_mesh.z - inside.z).length()
+			if ArenaBounds.contains(on_mesh) and drift < ARENA_RETURN_MARGIN:
+				inside = on_mesh
+	# Un poco arriba del piso: la gravedad lo apoya, y medio metro de caida no se ve.
+	return inside + Vector3.UP * 0.3
+
+
+## Lo devuelve a `point`, pasando por playable_spawn() para que de ahi se pueda
+## caminar hasta el jugador. Lo llaman el guardia de la arena y la red de ultimo
+## recurso de WaveManager.
+func return_to_arena(point: Vector3) -> void:
+	var landing: Vector3 = playable_spawn(point)
+	global_position = landing
+	velocity = Vector3.ZERO
+	is_moving = false
+	move_target = landing
+	_last_position = landing
+	_outside_time = 0.0
+	_stuck_time = 0.0
+	_is_leaping = false
+	_is_traversing_link = false
+	_jump_pending = false
+	reset_physics_interpolation()
+
+
+## La pared perimetral no deja salir caminando, pero un enemigo puede terminar
+## afuera igual: aparecer ahi (un add invocado contra la pared), salir despedido
+## por una explosion o pasarse en un salto. Afuera nadie lo puede matar y la ola
+## no termina, asi que no se espera a entender como llego: se lo devuelve.
+func _tick_arena_guard(delta: float) -> void:
+	if ArenaBounds.contains(global_position):
+		_outside_time = 0.0
+		return
+	_outside_time += delta
+	if _outside_time >= OUTSIDE_ARENA_GRACE:
+		return_to_arena(arena_return_point(global_position))
 
 
 ## Corrige un punto de aparicion que cayo en navmesh incomunicado.
