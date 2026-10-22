@@ -243,3 +243,23 @@ func test_the_environmental_stands_at_its_fit_height() -> void:
 		"mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
 	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")
 
+
+## El Ranger trae sus clips (idle, run, attack) y el disparo es lo que dispara el
+## attack: el retroceso del cañon en el instante del tiro.
+func test_the_ranger_recoils_when_it_fires() -> void:
+	var enemy: Enemy = await _spawn("ranger")
+	assert_not_null(enemy._motion, "el ranger tiene animacion")
+	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	for clip: StringName in [&"idle", &"run", &"attack"]:
+		assert_has(clips, clip, "trae el clip %s" % clip)
+	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
+	enemy.ability_used.emit()
+	assert_eq(player.current_animation, "attack", "disparar patea el cañon")
+
+
+func test_the_ranger_stands_at_its_fit_height() -> void:
+	var enemy: Enemy = await _spawn("ranger")
+	var bounds: AABB = _body_space_bounds(enemy)
+	assert_almost_eq(bounds.size.y, enemy.data.model_fit_height, 0.2,
+		"mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
+	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")

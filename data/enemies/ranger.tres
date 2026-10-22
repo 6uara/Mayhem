@@ -7,7 +7,7 @@
 [ext_resource type="AudioStream" uid="uid://cfs0l6ydduu6s" path="res://assets/audio/sfx/enemies/ranger_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://1y37qtodsxpq" path="res://assets/audio/sfx/enemies/ranger_death.wav" id="6_death"]
 [ext_resource type="PackedScene" path="res://scenes/projectiles/enemy_projectile.tscn" id="7_projectile"]
-[ext_resource type="PackedScene" uid="uid://xyji60ghga3d" path="res://assets/models/enemies/Ranged/Range.blend" id="8_model"]
+[ext_resource type="PackedScene" uid="uid://dr16ko4k0jcmr" path="res://assets/models/enemies/Ranged/Ranged.glb" id="8_model"]
 
 [sub_resource type="PrismMesh" id="Mesh_ranger"]
 size = Vector3(0.75, 1.9, 0.6)
@@ -31,14 +31,17 @@ approach_bearing_degrees = 85.0
 approach_bearing_weight = 0.7
 mesh = SubResource("Mesh_ranger")
 model_scene = ExtResource("8_model")
-model_scale = 0.29
-model_offset = Vector3(-0.127, 0, 0)
+model_yaw_degrees = 180.0
+model_pitch_degrees = 90.0
+model_fit_height = 1.9
 body_color = Color(1, 0.478, 0.122, 1)
 collision_height = 1.9
 collision_radius = 0.34
 hitbox_radius = 0.45
-head_offset = 1.7
-head_radius = 0.24
+head_offset = 1.78
+head_radius = 0.2
+model_lean_degrees = 4.0
+model_cast_pop = 0.03
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")

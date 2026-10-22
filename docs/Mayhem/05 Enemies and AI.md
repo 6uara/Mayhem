@@ -81,6 +81,12 @@ blender -b assets/models/enemies/Summoner/Summoner.blend --python tools/blender/
 
 `ActionSummonAdds` emits `ability_used`, which is what plays `cast`.
 
+The Ranger (`tools/blender/build_ranged.py`, clips `idle`, `run`, `attack`)
+splits each loose piece by height: the body between hips, spine and head, each leg
+at the knee, each arm at the elbow; the cannon rides the right forearm and stays
+aimed forward in every clip. `ActionRangedAttack` emits `ability_used` on the shot,
+which plays the recoil.
+
 The Environmental follows the same recipe (`idle`, `walk`, `attack`).
 `Enviromental.blend` (folder and file keep the artist's spelling) is the tank,
 the launcher on top and four geometry-node legs; `tools/blender/build_environmental.py`
