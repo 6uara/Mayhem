@@ -215,3 +215,31 @@ func test_the_summoner_glow_is_capped_below_the_hit_flash() -> void:
 			assert_lte(material.emission_energy_multiplier, enemy.data.model_emission_max,
 				"%s queda en el tope del arquetipo" % material.resource_name)
 	assert_gt(glowing, 0, "precondicion: el modelo tiene partes que brillan")
+
+
+## El Environmental trae sus clips (idle, walk, attack) y el tiro del frasco es
+## lo que dispara el attack: el brazo patea cuando sale el frasco.
+func test_the_environmental_kicks_its_launcher_when_it_throws() -> void:
+	var enemy: Enemy = await _spawn("environmental")
+	assert_not_null(enemy.data.model_scene, "el environmental tiene modelo")
+	assert_not_null(enemy._motion, "y animacion")
+	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	for clip: StringName in [&"idle", &"walk", &"attack"]:
+		assert_has(clips, clip, "trae el clip %s" % clip)
+	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
+	var throw := ActionThrowFlask.new()
+	throw.flask_scene = load("res://scenes/enemies/enemy_flask.tscn")
+	throw.tick(enemy, null)
+	assert_eq(player.current_animation, "attack", "tirar el frasco patea el brazo")
+	throw.free()
+	ObjectPool.release_all()
+
+
+## Parado y a su alto, como el resto: llega acostado y lo para model_pitch_degrees.
+func test_the_environmental_stands_at_its_fit_height() -> void:
+	var enemy: Enemy = await _spawn("environmental")
+	var bounds: AABB = _body_space_bounds(enemy)
+	assert_almost_eq(bounds.size.y, enemy.data.model_fit_height, 0.2,
+		"mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
+	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")
+

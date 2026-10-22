@@ -38,8 +38,8 @@ proportions and the halo is what separates their silhouettes at range),
 
 Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber,environmental,flyer}.tres`.
 
-**Models today:** Rusher, Ranger, Bomber, Healer, Flyer and Summoner have a `model_scene`;
-Elite and Environmental are still the grey-box primitive.
+**Models today:** Rusher, Ranger, Bomber, Healer, Flyer, Summoner and Environmental have a
+`model_scene`; the Elite is still the grey-box primitive.
 Behavior trees: `scenes/enemies/ai/tree_{archetype}.tscn`.
 
 `EnemyData.mesh` is the grey-box silhouette and is drawn centred on the body
@@ -80,6 +80,22 @@ blender -b assets/models/enemies/Summoner/Summoner.blend --python tools/blender/
 ```
 
 `ActionSummonAdds` emits `ability_used`, which is what plays `cast`.
+
+The Environmental follows the same recipe (`idle`, `walk`, `attack`).
+`Enviromental.blend` (folder and file keep the artist's spelling) is the tank,
+the launcher on top and four geometry-node legs; `tools/blender/build_environmental.py`
+skins the tank and the launcher rigidly and gives each leg a thigh and a shin split
+at the top of its arch, so the walk lifts and folds the legs instead of swinging
+them like compasses. Legs step about the vertical, not the side axis: they splay
+diagonally, and swinging them sideways pushed the trailing foot through the floor.
+The output is `Environmental.glb`:
+
+```
+blender -b assets/models/enemies/Enviromental/Enviromental.blend --python tools/blender/build_environmental.py
+```
+
+`ActionThrowFlask` emits `ability_used` only when a flask actually leaves, which
+plays `attack` (the launcher kicks up on frame 3).
 
 ## Movement fields — a contract, not taste
 
