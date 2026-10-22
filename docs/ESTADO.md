@@ -78,6 +78,7 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 | Caída rápida: agacharse en el aire pica a 28 m/s; aterrizar agachado sale deslizando con 3 m/s por metro caído (tope +10 sobre la carrera) | `MovementComponent` grupo Fast fall |
 | Sin dash. El bono pasa a DESLIZANDO, el pedido a SLIDE THROUGH THEM!, Ram Dash a Ram Slide, Pad Charger recarga el gancho; el paso del tutorial, el golpe de cámara, la estela y el sonido pasan a la caída rápida. Salen Extra Dash, Dash Cooldown, el contrato GROUNDED y los pips del HUD | ver [03 Player and Movement](Mayhem/03%20Player%20and%20Movement.md#no-dash) |
 | Más enemigos y más variedad por ola: de 6 a 10 en la 1 y de 42 a 49 en la 10 (total de la run 200 → 272). Los arquetipos debutan antes (ranger 1, bomber 2, healer 3, summoner 4, environmental 6, flyer 7) y cada ola mezcla más. `par_time` estirado en proporción; pool de enemigos a 56 | `data/waves/`, `game.tscn` |
+| Ningún enemigo puede quedar donde no se lo pueda matar: un spawn afuera de la pared se corrige al aparecer, el que termina afuera vuelve solo en medio segundo, y una ola sin progreso por 40 s devuelve a los vivos por una puerta y corrige un conteo de vivos colgado. Era el reporte de runs que no se podían terminar | `ArenaBounds`, `Enemy._tick_arena_guard()`, `WaveManager._rescue_stalled_wave()` |
 
 ## 2. Bloquea el release
 
