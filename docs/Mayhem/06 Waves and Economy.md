@@ -211,7 +211,7 @@ with `contract_chance`, one contract. The shop screen shows them
 | Group | Fields | Used by |
 |---|---|---|
 | Economy | `bonus_multipliers`, `kill_reward_multiplier`, `rating_gain_multiplier` | `KillBonusTracker`, `EconomyManager`, `BroadcastRating` |
-| Arena | `drop_interval_multiplier`; `kill_hazard_*` (every kill leaves a pooled `HazardZone`, ownerless) | `CrowdDropDirector`; `BroadcastRules._on_enemy_killed()` |
+| Arena | `drop_interval_multiplier`; `kill_hazard_*` (every kill leaves a pooled `FireZone` — a `HazardZone` that looks like burning ground, not the Flask acid — ownerless; `kill_hazard_scene` overrides the look) | `CrowdDropDirector`; `BroadcastRules._on_enemy_killed()` |
 | Enemies | `enemy_modifiers: Array[EnemyRuleModifier]` (health/speed/damage per archetype or all); `mark_every` / `mark_limit` (Manhunt) | `Enemy.setup()` → `BroadcastRules.enemy_multipliers()` / `should_mark_spawn()` |
 | Player | `stat_modifiers`, applied as a temporary global upgrade (`rule_<id>` / `contract_<id>`) | `UpgradeManager` |
 | Contract | `contract_payout` + `contract_payout_per_wave` (> 0 makes it a contract) | `EconomyManager.award_wave_bonuses()` (`contract_bonus` row) |

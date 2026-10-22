@@ -72,6 +72,28 @@ Uniforms: `noise_texture`, `liquid_color`, `glow_color`, `stain_color`, `shape_*
 `stain_opacity`, `flow_speed`, `vein_threshold`, `ripple_strength`,
 `bubble_cell`, `bubble_density`, `bubble_speed`.
 
+## `fire_pool.gdshader`
+
+The burning floor Scorched Earth leaves on every kill
+(`scenes/arena/fire_pool.tscn`, script `FireZone extends HazardZone`). It used
+to spawn the acid pool, which lied about where it came from: green acid means
+"a Flask is alive nearby", this is ownerless broadcast fire that burns everyone.
+
+- **Same contract as the acid.** Same quad, same `shape_*` contour, same
+  `spread` / `evaporate`, same 0.6 s warning — only the look changes. Glowing
+  embers in the cracks, a brighter fire front along the edge, a flicker
+  anchored to world space, charred floor inside and unlit soot outside.
+  When it expires the fire retreats toward the centre and the char fades last.
+- **Vertical read from `FireZone`, not the shader:** `Flames` and `Embers`
+  (`GPUParticles3D`, additive, `flame_03_a` / `spark_01_a`) and a flickering
+  `OmniLight3D` without shadows. Their `amount_ratio` and the light energy
+  follow `spread * (1 - evaporate)`, so they grow and die with the decal.
+- **Flames never rise from floor that does not burn:** they emit from a disc of
+  `radius * (1 - shape_irregularity)`, the smallest the contour can be.
+- `BroadcastRule.kill_hazard_scene` lets another rule bring its own look;
+  empty falls back to this one.
+- Side-by-side capture: `tools/capture_hazards.tscn`.
+
 ## `arena_surface.gdshader`
 
 Every greybox arena piece (`PieceMeshBuilder`): bolted metal plates with

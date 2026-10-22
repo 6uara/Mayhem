@@ -325,6 +325,30 @@ func test_scorched_earth_leaves_a_burning_pool_where_the_enemy_fell() -> void:
 	ObjectPool.release_all()
 
 
+func test_scorched_earth_burns_with_fire_not_with_the_flask_acid() -> void:
+	BroadcastRules.start_rule(load("res://data/broadcast_rules/scorched_earth.tres"))
+	EventBus.enemy_killed.emit(&"rusher", Vector3(3.0, 0.0, 3.0), 10)
+	await wait_physics_frames(1)
+	var fires: int = 0
+	for node: Node in get_tree().get_nodes_in_group(&"hazard"):
+		if not node.is_in_group(ObjectPool.RELEASED_GROUP) and node is FireZone:
+			fires += 1
+	assert_eq(fires, 1, "el charco de la transmision no se ve como el del Flask")
+	BroadcastRules.end_rule()
+	ObjectPool.release_all()
+
+
+func test_the_fire_never_rises_from_floor_that_does_not_burn() -> void:
+	var zone := ObjectPool.acquire(BroadcastRules.KILL_HAZARD_SCENE) as FireZone
+	zone.setup(10.0, 2.5, 4.0)
+	var inner: float = zone.radius * (1.0 - zone.shape_irregularity)
+	for particles: GPUParticles3D in [zone.flames, zone.embers]:
+		var process := particles.process_material as ParticleProcessMaterial
+		assert_almost_eq(process.emission_ring_radius, inner, 0.001,
+			"las llamas nacen dentro del contorno mas chico posible")
+	ObjectPool.release_all()
+
+
 # ------------------------------------------------------------------ consecuencias del rating
 
 func test_reaching_the_top_tier_pays_once_per_wave() -> void:

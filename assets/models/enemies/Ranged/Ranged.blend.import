@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://xyji60ghga3d"
-path="res://.godot/imported/Range.blend-743c8129dd2ddb136eafe833f5b50d0e.scn"
+uid="uid://cfa0em5is3yem"
+path="res://.godot/imported/Ranged.blend-a56766f415c9c039d5a8910ae104cbd6.scn"
 
 [deps]
 
-source_file="res://assets/models/enemies/Ranged/Range.blend"
-dest_files=["res://.godot/imported/Range.blend-743c8129dd2ddb136eafe833f5b50d0e.scn"]
+source_file="res://assets/models/enemies/Ranged/Ranged.blend"
+dest_files=["res://.godot/imported/Ranged.blend-a56766f415c9c039d5a8910ae104cbd6.scn"]
 
 [params]
 

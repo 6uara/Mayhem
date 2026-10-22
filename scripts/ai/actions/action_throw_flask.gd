@@ -131,6 +131,10 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 			enemy.get_attack_damage() * pool_damage_fraction)
 	flask.launch_with_velocity(origin, _arc_to(origin, target), enemy)
 	AudioPool.play_3d(enemy.data.attack_sound, origin, AudioPool.BUS_ENEMIES)
+	# Lo que dispara el clip "attack" del modelo: el brazo patea en el instante
+	# en que sale el frasco. Sólo acá, no en las salidas sin tiro de arriba - un
+	# lanzador que patea sin que salga nada miente sobre de dónde vino el charco.
+	enemy.ability_used.emit()
 	enemy.start_attack_cooldown()
 	return SUCCESS
 

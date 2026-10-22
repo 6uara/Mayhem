@@ -6,6 +6,7 @@
 [ext_resource type="AudioStream" uid="uid://ckqm4ibctyott" path="res://assets/audio/sfx/enemies/environmental_windup.wav" id="4_windup"]
 [ext_resource type="AudioStream" uid="uid://c2hpu7n6onjdr" path="res://assets/audio/sfx/enemies/environmental_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://bf7g35w2suiqb" path="res://assets/audio/sfx/enemies/environmental_death.wav" id="6_death"]
+[ext_resource type="PackedScene" uid="uid://uq07c58vtrax" path="res://assets/models/enemies/Enviromental/Environmental.glb" id="7_model"]
 
 [sub_resource type="CylinderMesh" id="Mesh_environmental"]
 top_radius = 0.28
@@ -31,11 +32,18 @@ preferred_distance = 12.0
 approach_bearing_degrees = 65.0
 approach_bearing_weight = 0.6
 mesh = SubResource("Mesh_environmental")
+model_scene = ExtResource("7_model")
+model_yaw_degrees = 180.0
+model_pitch_degrees = 90.0
+model_fit_height = 2.4
+model_emission_max = 2.0
 body_color = Color(0.3725, 0.851, 0.2275, 1)
 collision_height = 2.5
 collision_radius = 0.6
 head_offset = 2.2
-head_radius = 0.26
+head_radius = 0.3
+model_lean_degrees = 4.0
+model_cast_pop = 0.05
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
