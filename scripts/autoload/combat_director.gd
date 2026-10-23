@@ -92,8 +92,11 @@ const ATTACK_TOKENS: Dictionary = {
 	Role.INFILTRATOR: 2,
 }
 
-## Cuantos frames le dura la prioridad al que se quedo sin turno de repath.
-const REPATH_DEBT_FRAMES: int = 4
+## Cuantos frames le dura la prioridad al que se quedo sin turno de repath. Tiene
+## que pasar el tick mas espaciado de la IA (`Enemy.AI_TICK_FAR`, cuatro frames):
+## el que fue negado vuelve a pedir recien en su proximo tick, y con cuatro la
+## deuda vencia justo el frame en que venia a cobrarla.
+const REPATH_DEBT_FRAMES: int = 6
 
 ## Cuantos enemigos pueden pedirle un camino nuevo al navmesh en un mismo frame
 ## de fisica. Un repath es una consulta al NavigationServer y es la parte cara de
@@ -475,22 +478,20 @@ func _expire_repath_debt() -> void:
 	_repath_reserved = mini(_repath_debt.size(), REPATH_BUDGET_PER_FRAME)
 
 
+##
+## En el lugar y de atras para adelante: corre en cada frame de fisica, y armar una
+## lista nueva cada vez era un Array descartable por frame para, casi siempre, no
+## sacar a nadie.
 func _prune() -> void:
-	var alive: Array[Enemy] = []
-	for i: int in _enemies.size():
+	for i: int in range(_enemies.size() - 1, -1, -1):
 		# Sin tipar la variable del bucle, y ese es todo el punto: asignar una
 		# instancia ya liberada a una variable tipada es un error del motor antes
 		# de que la guarda llegue a correr, asi que la validez no se puede
 		# preguntar del otro lado de la asignacion. Es la misma trampa que
 		# Enemy.get_target() documenta.
 		var entry: Variant = _enemies[i]
-		if not is_instance_valid(entry):
-			continue
-		var enemy := entry as Enemy
-		if enemy != null and enemy.is_active:
-			alive.append(enemy)
-	if alive.size() != _enemies.size():
-		_enemies = alive
+		if not is_instance_valid(entry) or not (entry as Enemy).is_active:
+			_enemies.remove_at(i)
 
 
 func _refresh_target() -> void:
@@ -518,6 +519,8 @@ func _refresh_target() -> void:
 
 
 func _expire_hazards() -> void:
+	if _hazards.is_empty():
+		return
 	var now: float = _now()
 	var live: Array[Dictionary] = []
 	for claim: Dictionary in _hazards:

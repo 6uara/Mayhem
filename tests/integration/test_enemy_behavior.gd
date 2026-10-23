@@ -302,3 +302,38 @@ func test_a_heal_is_announced_for_whoever_draws_it() -> void:
 	_enemy.health.apply_damage(30.0)
 	_enemy.health.heal(12.0)
 	assert_signal_emitted_with_parameters(EventBus, "healed", [_enemy, 12.0])
+
+
+## El aviso tiene que quedar prendido entre tick y tick del arbol. Se barria en
+## cada frame sin destello, y con la IA decidiendo cada dos a cuatro frames el
+## telegrafo parpadeaba en vez de brillar.
+func test_a_windup_glow_survives_the_frames_between_ai_ticks() -> void:
+	_enemy.show_windup(0.6)
+	await wait_physics_frames(4)
+	assert_gt(_enemy._glow_level(), 0.0, "el aviso sigue a la vista")
+
+
+func test_a_hit_flash_hands_the_glow_back_to_the_windup() -> void:
+	_enemy.show_windup(0.6)
+	_enemy.body_hitbox.take_hit(1.0, _enemy.global_position, _player)
+	await wait_seconds(Enemy.FLASH_TIME + 0.1)
+	assert_gt(_enemy._glow_level(), 0.0, "termina el destello y vuelve el aviso, no la nada")
+
+
+## El golpe que mata anuncia la kill antes de que `hit_taken` salga, asi que la
+## zona tiene que estar anotada antes del daño.
+func test_a_one_shot_headshot_kill_is_scored_as_a_headshot() -> void:
+	watch_signals(EventBus)
+	_enemy.head_hitbox.take_hit(_enemy.health.max_health * 10.0, _enemy.global_position, _player)
+	assert_signal_emitted(EventBus, "kill_scored")
+	var scored: Array = get_signal_parameters(EventBus, "kill_scored")
+	assert_true(bool(scored[2]), "un tiro a la cabeza que mata es un headshot")
+
+
+func test_a_kill_by_something_else_after_a_headshot_is_not_a_headshot() -> void:
+	watch_signals(EventBus)
+	_enemy.head_hitbox.take_hit(1.0, _enemy.global_position, _player)
+	_enemy.health.apply_damage(_enemy.health.max_health * 10.0, _player)
+	assert_signal_emitted(EventBus, "kill_scored")
+	var scored: Array = get_signal_parameters(EventBus, "kill_scored")
+	assert_false(bool(scored[2]), "lo mato la explosion, no el tiro anterior")

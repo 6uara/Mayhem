@@ -251,6 +251,11 @@ var _has_detonated: bool = false
 ## y en el instante de morir esto es "fue un headshot" - que es lo que separa
 ## una kill de un tiro con punteria.
 var _last_hit_headshot: bool = false
+## Si el daño que esta por entrar viene de un hitbox, que es el unico que sabe la
+## zona. Lo prende `hit_landing` y lo apaga `hit_taken`; un daño que llega sin
+## pasar por ahi -una explosion, un charco- no es un headshot aunque el tiro
+## anterior lo haya sido.
+var _hit_zone_known: bool = false
 var _stuck_time: float = 0.0
 ## Segundos seguidos afuera de la arena. Ver OUTSIDE_ARENA_GRACE.
 var _outside_time: float = 0.0
@@ -336,10 +341,10 @@ func _ready() -> void:
 		health.damaged.connect(_on_damaged)
 		health.healed.connect(_on_healed)
 		health.died.connect(_on_died)
-	if body_hitbox != null:
-		body_hitbox.hit_taken.connect(_on_hit_taken)
-	if head_hitbox != null:
-		head_hitbox.hit_taken.connect(_on_hit_taken)
+	for hitbox: HitboxComponent in [body_hitbox, head_hitbox]:
+		if hitbox != null:
+			hitbox.hit_landing.connect(_on_hit_landing)
+			hitbox.hit_taken.connect(_on_hit_taken)
 
 
 ## Deja la lista de vivos: el que se va del arbol no vuelve por el pool, y el
@@ -352,9 +357,16 @@ func _physics_process(delta: float) -> void:
 	if not is_active:
 		return
 
-	_flash_timer = maxf(_flash_timer - delta, 0.0)
-	if _flash_timer <= 0.0 and _glow_level() > 0.0:
-		_set_glow(0.0)
+	# Solo en el frame en que vence el destello, y volviendo al nivel del aviso en
+	# vez de a cero. Apagar todo lo que brillara en cada frame sin destello pisaba el
+	# telegrafo: el arbol decide cada dos a cuatro frames (`_tick_ai_lod()`), asi
+	# que el aviso se prendia el frame del tick y se apagaba los demas - un
+	# parpadeo a 15-30 Hz justo en la señal que no se puede perder (CLAUDE.md 5.3),
+	# y el overlay de cada malla del modelo puesto y sacado en cada frame.
+	if _flash_timer > 0.0:
+		_flash_timer = maxf(_flash_timer - delta, 0.0)
+		if _flash_timer <= 0.0:
+			_set_glow(windup_progress)
 	_stagger_timer = maxf(_stagger_timer - delta, 0.0)
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	_jump_cooldown_left = maxf(_jump_cooldown_left - delta, 0.0)
@@ -469,6 +481,7 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_flight_height_override = -1.0
 	_has_detonated = false
 	_last_hit_headshot = false
+	_hit_zone_known = false
 	_is_leaping = false
 	_leap_hit_landed = false
 	_leap_recovery_left = 0.0
@@ -499,6 +512,10 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	_cache_links()
 
 	_apply_presentation()
+	# Pooleado: el ocupante anterior pudo morir prendido (a mitad de un aviso, con
+	# la espoleta en alto), y nada mas lo apaga ahora que el destello no se barre
+	# en cada frame.
+	_set_glow(0.0)
 	_apply_collision()
 	_apply_silhouette_markers()
 	_apply_fuse_ring()
@@ -2533,8 +2550,17 @@ func _set_hitboxes_enabled(enabled: bool) -> void:
 			hitbox.collision_layer = PhysicsLayers.HITBOX if enabled else 0
 
 
-func _on_hit_taken(_amount: float, is_headshot: bool, hit_position: Vector3) -> void:
+func _on_hit_landing(is_headshot: bool) -> void:
 	_last_hit_headshot = is_headshot
+	_hit_zone_known = true
+
+
+func _on_hit_taken(_amount: float, _is_headshot: bool, hit_position: Vector3) -> void:
+	_hit_zone_known = false
+	# El golpe que lo mato llega aca con el cuerpo ya devuelto al pool: ni
+	# destello, ni empujon, ni stagger para algo que espera debajo del piso.
+	if not is_active:
+		return
 	# Visible reaction to every hit is a gunplay-feel requirement (CLAUDE.md 5.3).
 	_flash_timer = FLASH_TIME
 	# Over the top of the wind-up glow on purpose: a hit landing has to read even
@@ -2553,7 +2579,8 @@ func _on_hit_taken(_amount: float, is_headshot: bool, hit_position: Vector3) -> 
 
 
 func _on_damaged(_amount: float, _remaining: float) -> void:
-	pass
+	if not _hit_zone_known:
+		_last_hit_headshot = false
 
 
 ## Curarse tiene que leerse desde afuera igual que recibir un golpe. Sin esto un
