@@ -25,6 +25,11 @@ extends Node
 ##
 ## Solo dibujo: las balas salen de HeadPivot, que sigue siendo la verdad de fisica.
 
+## Despues de todo lo que mueve la cadena: la mirada (Player), CameraFeel en
+## fisica y CameraRecoil en `_process`. Lo que lea la camara del juego para
+## dibujar algo pegado a ella va despues de esto.
+const PROCESS_PRIORITY: int = 100
+
 var body: Node3D
 var head: Node3D
 var view_node: Node3D
@@ -50,10 +55,8 @@ func setup(player_body: Node3D, player_head: Node3D, bob_node: Node3D, recoil_ri
 	camera = player_camera
 	if body == null or head == null or view_node == null or rig == null or camera == null:
 		return false
-	# Despues de todo lo que mueve la cadena: la mirada (Player), CameraFeel en
-	# fisica y CameraRecoil en `_process`.
-	process_priority = 100
-	process_physics_priority = 100
+	process_priority = PROCESS_PRIORITY
+	process_physics_priority = PROCESS_PRIORITY
 	_camera_local = camera.transform
 	camera.top_level = true
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
