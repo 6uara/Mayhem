@@ -85,6 +85,10 @@ var _intact_shown: bool = true
 ## String and re-laying out a Label to produce what was already on screen.
 var _elapsed_seconds_shown: int = -1
 var _remaining_shown: int = -1
+## Lo ultimo que mostro cada numero que se hincha al cambiar, para saber si subio
+## o bajo. -1 es "todavia nada": el primer valor no se festeja.
+var _currency_shown: int = -1
+var _health_shown: int = -1
 ## Last state pushed into the grapple slot. Assigning `theme_type_variation`
 ## invalidates the control and re-notifies its subtree whether or not the
 ## variation differs, so this is the same transition-only rule the timer cluster
@@ -97,6 +101,7 @@ func _ready() -> void:
 	_apply_hud_scale()
 
 	EventBus.ammo_changed.connect(_on_ammo_changed)
+	EventBus.weapon_reloaded.connect(_on_weapon_reloaded.unbind(1))
 	EventBus.currency_changed.connect(_on_currency_changed)
 	EventBus.player_damaged.connect(_on_player_damaged)
 	EventBus.player_died.connect(_on_player_died)
@@ -341,7 +346,7 @@ func _process(delta: float) -> void:
 	if _announce_timer > 0.0:
 		_announce_timer -= delta
 		if _announce_timer <= 0.0:
-			_announce.visible = false
+			UiMotion.exit(_announce, func() -> void: _announce.visible = false)
 			# La banda se libero: si habia una ayuda esperando, ahora entra.
 			if _pending_hint != "":
 				_show_hint(_pending_hint)
@@ -563,6 +568,10 @@ func _tick_wave() -> void:
 	var remaining: int = WaveManager.get_remaining_count()
 	if remaining != _remaining_shown:
 		var was_empty: bool = _remaining_shown == 0
+		# Un enemigo menos se siente en el contador, no solo se lee. Bajar y nada
+		# mas: que suba es la oleada nueva, y esa ya tiene su cartel.
+		if remaining < _remaining_shown:
+			UiMotion.punch(_enemies_left, Color.WHITE, 1.12)
 		_remaining_shown = remaining
 		_enemies_left.text = "%d" % remaining
 		# En cero la fila se apaga en vez de quedarse en rojo.
@@ -614,7 +623,13 @@ func _refresh_health() -> void:
 	if _player == null or _player.health == null:
 		return
 	var health: HealthComponent = _player.health
-	_health_value.text = "%d" % ceili(health.current_health)
+	var shown: int = ceili(health.current_health)
+	_health_value.text = "%d" % shown
+	# Perder vida golpea el numero en rojo; curarse lo hincha en el verde de la
+	# curacion. Mismo idioma que los enemigos (Enemy._on_healed).
+	if _health_shown >= 0 and shown != _health_shown:
+		UiMotion.punch(_health_value, Tokens.ENEMY if shown < _health_shown else Tokens.HEAL)
+	_health_shown = shown
 
 	# One segment = a tenth of max, rounded up so the last only empties at zero.
 	var fraction: float = health.get_health_fraction()
@@ -626,6 +641,12 @@ func _refresh_health() -> void:
 		Tokens.ENEMY if is_critical else Tokens.TEXT)
 	_health_segments.filled_color = Tokens.ENEMY if is_critical else Tokens.PLAYER
 	_set_low_health_overlay(is_critical)
+
+
+## El cargador lleno se festeja en el numero: es el momento en que el arma vuelve
+## a estar en la mano.
+func _on_weapon_reloaded() -> void:
+	UiMotion.punch(_ammo_mag, Tokens.PLAYER)
 
 
 func _on_ammo_changed(current: int, reserve: int) -> void:
@@ -693,6 +714,10 @@ func _rebuild_weapon_list() -> void:
 
 func _on_currency_changed(total: int) -> void:
 	_currency.text = "%d" % total
+	# La plata que entra brilla en ambar; la que se pierde por un golpe, en rojo.
+	if _currency_shown >= 0 and total != _currency_shown:
+		UiMotion.punch(_currency, Tokens.REWARD if total > _currency_shown else Tokens.ENEMY)
+	_currency_shown = total
 
 
 ## Only temporary upgrades get a chip - a permanent one has no countdown to show.
@@ -779,6 +804,7 @@ func note_damage_from(world_position: Vector3) -> void:
 
 func _on_wave_started(wave_index: int, config: WaveData) -> void:
 	_wave_number.text = "%02d" % (wave_index + 1)
+	UiMotion.punch(_wave_number, Color.WHITE, 1.3)
 	var is_elite: bool = config != null and config.is_elite_wave
 	_wave_number.add_theme_color_override("font_color",
 		Tokens.HAZARD if is_elite else Tokens.TEXT)
@@ -799,6 +825,8 @@ func announce(tag: String, title: String, tint: Color) -> void:
 	_announce_title.visible = not title.is_empty()
 	_announce.visible = true
 	_announce_timer = Tokens.ANNOUNCE_LIFE
+	# Cae desde mas grande y rebota a su tamaño: el cartel aterriza, no aparece.
+	UiMotion.pop_in(_announce, Tokens.ANNOUNCE_POP_SCALE)
 
 
 ## Three treatments, per SPEC-MENUS-HOST 7.3. Tier 3 drops the HOST tag and sets

@@ -27,6 +27,18 @@ const CARD_ICON_BOX: float = 28.0
 ## reloj de 30 segundos, apuntar el mouse a un boton es tiempo perdido.
 const BUY_KEYS: Array[Key] = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
 const STACK_PIP_SIZE := Vector2(18, 6)
+## Placeholders de tools/generate_placeholder_sfx.py, como el resto del audio.
+const SHOP_OPEN_SOUND: AudioStream = preload("res://assets/audio/sfx/ui/shop_open.wav")
+const CARD_DEAL_SOUND: AudioStream = preload("res://assets/audio/sfx/ui/card_deal.wav")
+const RARE_REVEAL_SOUND: AudioStream = preload("res://assets/audio/sfx/ui/rare_reveal.wav")
+const TIMER_TICK_SOUND: AudioStream = preload("res://assets/audio/sfx/ui/timer_tick.wav")
+## Cada carta repartida suena un poco mas aguda que la anterior: la fila se oye
+## como una fila, no como el mismo clic cuatro veces.
+const DEAL_PITCH_STEP: float = 0.07
+const DEAL_VOLUME_DB: float = -9.0
+## De que tamaño arranca una carta comun al repartirse. Las raras arrancan de
+## Tokens.RARE_REVEAL_SCALE, mas grande: llegan con mas peso.
+const DEAL_FROM_SCALE: float = 0.9
 
 enum Page { SHOP, NEXT_WAVE }
 
@@ -35,6 +47,8 @@ enum Page { SHOP, NEXT_WAVE }
 @export var duration: float = 30.0  ## Tokens.SHOP_TIMER
 
 @onready var _root: Control = $Root
+@onready var _background: Control = $Root/Background
+@onready var _panel: Control = $Root/Panel
 @onready var _steps: Label = $Root/Panel/VBox/Header/Titles/Steps
 @onready var _title: Label = $Root/Panel/VBox/Header/Titles/Title
 @onready var _currency: Label = $Root/Panel/VBox/Header/Money/Currency
@@ -62,6 +76,11 @@ var _time_left: float = 0.0
 var _timer_urgent_shown: bool = false
 var _rule_group: ButtonGroup
 var _contract_button: Button
+## La proxima tanda de cartas se reparte animada: al abrir y al rerollear. Despues
+## de una compra no, las que quedan ya estaban en la mesa.
+var _deal_next: bool = false
+## La plata que muestra la cabecera, para saber si subio o bajo.
+var _currency_shown: int = -1
 
 
 func _ready() -> void:
@@ -75,6 +94,8 @@ func _ready() -> void:
 	if shop != null:
 		shop.offers_changed.connect(_rebuild_cards)
 		shop.reroll_cost_changed.connect(_on_reroll_cost_changed)
+		shop.purchase_succeeded.connect(_on_purchase_succeeded)
+		shop.purchase_failed.connect(_on_purchase_failed.unbind(1))
 		_reroll_button.visible = shop.catalog != null and shop.catalog.reroll_base_cost > 0
 
 
@@ -88,6 +109,10 @@ func _process(delta: float) -> void:
 	_time_left -= delta
 	if roundi(maxf(_time_left, 0.0)) != shown:
 		_timer_label.text = "%ds" % roundi(maxf(_time_left, 0.0))
+		# Los ultimos segundos se sienten, no solo se leen en rojo.
+		if _time_left <= Tokens.SHOP_TIMER_URGENT and _time_left > 0.0:
+			UiMotion.punch(_timer_label, Tokens.ENEMY)
+			AudioPool.play_2d(TIMER_TICK_SOUND, AudioPool.BUS_UI, -6.0)
 	# Solo al cruzar el umbral: add_theme_color_override() invalida el control en
 	# cada llamada, cambie o no el color.
 	var urgent: bool = _time_left <= Tokens.SHOP_TIMER_URGENT
@@ -125,11 +150,14 @@ func open(breakdown: Dictionary, wave_index: int, duration_seconds: float) -> vo
 	_timer_urgent_shown = false
 	_timer_label.add_theme_color_override(&"font_color", Tokens.TEXT)
 	_root.visible = true
+	_currency_shown = -1
 	_fill_report(breakdown, wave_index, duration_seconds)
 	_on_currency_changed(EconomyManager.currency)
 	_build_next_wave_page()
 	show_page(Page.SHOP)
+	_animate_open()
 	if shop != null:
+		_deal_next = true
 		shop.roll_offers()
 	# Por GameManager y no por get_tree() directo: el menu de pausa puede abrirse
 	# encima de la tienda, y con los dos escribiendo el mismo booleano el que
@@ -158,9 +186,13 @@ func force_close() -> void:
 func show_page(target: Page) -> void:
 	if target == Page.NEXT_WAVE and not _has_next_wave_page():
 		target = Page.SHOP
+	var changed: bool = page != target
 	page = target
 	_shop_page.visible = page == Page.SHOP
 	_next_page.visible = page == Page.NEXT_WAVE
+	if changed:
+		UiMotion.pop_in(_shop_page if page == Page.SHOP else _next_page, 0.98, 0.0,
+			Tokens.UI_EXIT_TIME)
 	_title.text = "ARMOURY" if page == Page.SHOP else "NEXT WAVE"
 	var two_steps: bool = _has_next_wave_page()
 	_steps.visible = two_steps
@@ -365,6 +397,9 @@ func _on_contract_toggled(signed: bool) -> void:
 
 func _on_currency_changed(total: int) -> void:
 	_currency.text = "%d" % total
+	if is_open and _currency_shown >= 0 and total != _currency_shown:
+		UiMotion.punch(_currency, Tokens.REWARD if total > _currency_shown else Tokens.ENEMY)
+	_currency_shown = total
 	_refresh_affordability()
 
 
@@ -376,7 +411,10 @@ func _on_reroll_cost_changed(cost: int) -> void:
 func _on_reroll_pressed() -> void:
 	if shop == null:
 		return
-	shop.reroll()
+	_deal_next = true
+	if shop.reroll() != EconomyManager.PurchaseResult.OK:
+		_deal_next = false
+		UiMotion.shake(_reroll_button)
 
 
 func _rebuild_cards(offers: Array[Dictionary]) -> void:
@@ -385,6 +423,13 @@ func _rebuild_cards(offers: Array[Dictionary]) -> void:
 	for i: int in offers.size():
 		_cards.add_child(_make_card(offers[i], i))
 	_refresh_affordability()
+	if _deal_next:
+		_deal_next = false
+		# Diferido: el HBox acomoda a sus hijos al final del frame, y la carta
+		# tiene que tener su tamaño para crecer desde el centro.
+		for card: Node in _cards.get_children():
+			(card as Control).modulate.a = 0.0
+		_deal_cards.call_deferred()
 
 
 func _make_card(offer: Dictionary, index: int) -> Control:
@@ -428,6 +473,9 @@ func _make_card(offer: Dictionary, index: int) -> Control:
 		rare.text = "RARE  -  NEW RULE"
 		rare.add_theme_color_override(&"font_color", Tokens.REWARD)
 		card.add_child(rare)
+		var shine := RareShine.new()
+		shine.name = "RareShine"
+		panel.add_child(shine)
 
 	var title := Label.new()
 	title.text = String(offer["name"])
@@ -593,7 +641,12 @@ func _refresh_affordability() -> void:
 		var affordable: bool = shop != null and shop.can_afford(offer)
 		button.disabled = not affordable
 		button.tooltip_text = "" if affordable else _short_text(int(offer["cost"]))
-		panel.modulate = Color.WHITE if affordable else Color(1, 1, 1, 0.45)
+		var rest_alpha: float = 1.0 if affordable else 0.45
+		panel.set_meta(&"rest_alpha", rest_alpha)
+		# A mitad del reparto la carta va camino a su opacidad: la anima
+		# `_deal_cards()`, que ya leyo esta.
+		if not _is_dealing(panel):
+			panel.modulate = Color(1, 1, 1, rest_alpha)
 		var chamfer_style := panel.get_theme_stylebox(&"panel") as ChamferStyleBox
 		if chamfer_style != null:
 			chamfer_style.rail_color.a = 1.0 if affordable else 0.0
@@ -613,6 +666,98 @@ func _find_button(node: Node) -> Button:
 		if found != null:
 			return found
 	return null
+
+
+# Motion
+
+## El panel sube y el fondo se oscurece, en vez de aparecer de golpe.
+func _animate_open() -> void:
+	AudioPool.play_2d(SHOP_OPEN_SOUND, AudioPool.BUS_UI, -4.0)
+	UiMotion.enter(_panel)
+	_background.modulate.a = 0.0
+	var tween: Tween = _background.create_tween()
+	tween.tween_property(_background, ^"modulate:a", 1.0, Tokens.UI_ENTER_TIME) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+## Las cartas entran de a una, de izquierda a derecha, cada una con su tic. La
+## rara llega un poco despues y desde mas grande, con su propio sonido: es la
+## unica que tiene que notarse antes de leerse.
+func _deal_cards() -> void:
+	var cards: Array[Node] = _cards.get_children()
+	for i: int in cards.size():
+		var card := cards[i] as Control
+		if card == null or card.is_queued_for_deletion():
+			continue
+		var rare: bool = card.has_node(^"RareShine")
+		var delay: float = Tokens.UI_STAGGER * float(i) \
+			+ (Tokens.RARE_REVEAL_DELAY if rare else 0.0)
+		UiMotion.pop_in(card, Tokens.RARE_REVEAL_SCALE if rare else DEAL_FROM_SCALE, delay,
+			Tokens.UI_ENTER_TIME, _rest_alpha(card))
+		var cue: Tween = card.create_tween()
+		cue.tween_interval(delay)
+		cue.tween_callback(_play_deal_cue.bind(i, rare))
+
+
+func _play_deal_cue(index: int, rare: bool) -> void:
+	if rare:
+		AudioPool.play_2d(RARE_REVEAL_SOUND, AudioPool.BUS_UI)
+		return
+	AudioPool.play_2d(CARD_DEAL_SOUND, AudioPool.BUS_UI, DEAL_VOLUME_DB,
+		1.0 + DEAL_PITCH_STEP * float(index))
+
+
+## Lo que deja una compra: un contorno de la carta que se agranda y se apaga
+## donde estaba. La carta en si se va con la reconstruccion de la fila, que pasa
+## en el mismo frame; esto vive en `_root`, afuera del HBox, y sobrevive.
+func _on_purchase_succeeded(offer: Dictionary) -> void:
+	var card: Control = _card_for(offer)
+	if card == null or not is_open:
+		return
+	var accent: Color = _offer_color(offer)
+	var style := _card_style(accent) as ChamferStyleBox
+	style.fill_alpha = 0.0
+	style.border_color = accent
+	style.border_width = 3.0
+	var burst := Panel.new()
+	burst.add_theme_stylebox_override(&"panel", style)
+	burst.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(burst)
+	burst.position = card.global_position - _root.global_position
+	burst.size = card.size
+	burst.pivot_offset = card.size * 0.5
+	var tween: Tween = burst.create_tween().set_parallel()
+	tween.tween_property(burst, ^"scale", Vector2.ONE * 1.1, Tokens.UI_PUNCH_TIME) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(burst, ^"modulate:a", 0.0, Tokens.UI_PUNCH_TIME) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.chain().tween_callback(burst.queue_free)
+
+
+## Una compra que no paso se sacude, ademas del sonido de "no".
+func _on_purchase_failed(offer: Dictionary) -> void:
+	var card: Control = _card_for(offer)
+	if card != null:
+		UiMotion.shake(card)
+
+
+func _card_for(offer: Dictionary) -> Control:
+	for node: Node in _cards.get_children():
+		var button: Button = _find_button(node)
+		if button != null and button.has_meta(&"offer") \
+				and is_same(button.get_meta(&"offer"), offer):
+			return node as Control
+	return null
+
+
+## La opacidad en reposo de una carta: apagada si no alcanza la plata. La anota
+## `_refresh_affordability()`, y el reparto anima hasta ahi y no hasta 1.
+func _rest_alpha(card: Control) -> float:
+	return float(card.get_meta(&"rest_alpha")) if card.has_meta(&"rest_alpha") else 1.0
+
+
+func _is_dealing(card: Control) -> bool:
+	return UiMotion.is_running(card, &"pop")
 
 
 func _on_buy_pressed(offer: Dictionary) -> void:

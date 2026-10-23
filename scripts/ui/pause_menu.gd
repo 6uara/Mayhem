@@ -45,6 +45,9 @@ func _on_game_paused(paused: bool) -> void:
 	_skip_tutorial_button.visible = TutorialHintManager.is_tutorial_running()
 	if paused:
 		_resume_button.grab_focus()
+		# Llega con inercia en vez de aparecer: la pausa es un estado al que se
+		# entra, no un cuadro que se pega encima del juego.
+		UiMotion.enter(_root.get_node(^"Panel") as Control)
 		return
 	# Unpausing from anywhere - including escape while the options are open - has to
 	# leave the whole stack closed, or the next pause reopens onto a stale screen.

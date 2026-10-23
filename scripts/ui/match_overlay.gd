@@ -63,6 +63,11 @@ func _show_banner(text: String) -> void:
 	_banner.text = text
 	_banner_timer = BANNER_TIME
 	_banner.modulate.a = 1.0
+	# La oleada limpia aterriza como el cartel de oleada nueva: desde mas grande.
+	_banner.pivot_offset = _banner.size * 0.5
+	_banner.scale = Vector2.ONE * Tokens.ANNOUNCE_POP_SCALE
+	var tween: Tween = _banner.create_tween()
+	tween.tween_property(_banner, ^"scale", Vector2.ONE, Tokens.UI_ENTER_TIME) 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _on_wave_completed(wave_index: int, duration: float, damage_taken: float) -> void:
@@ -166,6 +171,10 @@ func _show_end(title: String, details: String) -> void:
 	_end_title.text = title
 	_end_details.text = details
 	_end_panel.visible = true
+	# El titulo cae y rebota; el resto sube detras. Es el final de la run: es el
+	# unico cartel que puede pesar un poco mas.
+	UiMotion.enter(_end_panel.get_node(^"VBox") as Control)
+	UiMotion.punch(_end_title, Tokens.REWARD if title.contains("VICTORY") else Color.WHITE, 1.4)
 	_banner.text = ""
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_restart_button.grab_focus()

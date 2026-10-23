@@ -52,6 +52,29 @@ world affordance (not just HUD) runs on.
   top edge, LIVE tag, a crossed-ring mark reused across favicon/broadcast
   bug/floor decals/loading screens.
 
+### Motion
+
+`UiMotion` (static helper) is the only place UI animation is built; durations
+come from Tokens ([[09 Design Tokens and Color Law#Motion]]). What moves:
+
+- HUD: currency, health, wave number, enemies left and the magazine (on reload)
+  punch when they change; the wave announce lands from bigger and fades out
+  instead of vanishing.
+- Shop: the panel rises in with `ui/shop_open.wav`; cards are dealt left to right
+  with a rising `ui/card_deal.wav` tick; a rare card lands a beat later, from
+  bigger, with `ui/rare_reveal.wav` and a `RareShine` (amber halo that breathes
+  around the chamfer plus a periodic light sweep); a purchase leaves a fading
+  outline where the card was; a refused one shakes; the last five seconds punch
+  the clock with `ui/timer_tick.wav`.
+- Pause panel and end screen enter with the same ease; the wave-clear banner
+  lands like the announce.
+
+Gotcha: a `Container` resets its children's scale and position whenever it
+re-sorts. Punching a label inside an `HBoxContainer` works until something
+changes size; then the animation jumps to its end state, which is the resting
+one. Travel (`UiMotion.enter`) is only for controls whose parent is not a
+container.
+
 ## Theme system
 
 `ui/mayhem_theme.tres` — a Godot `Theme` resource with named type variations
