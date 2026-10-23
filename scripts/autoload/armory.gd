@@ -184,6 +184,7 @@ func add_run_xp(weapon_id: StringName, amount: int) -> void:
 func load_progress() -> void:
 	_xp.clear()
 	_equipped.clear()
+	SafeFile.recover(save_path)
 	if not FileAccess.file_exists(save_path):
 		return
 	# JSON.new() y no parse_string(): el estatico grita un error del motor por un
@@ -216,12 +217,9 @@ func load_progress() -> void:
 
 
 func save_progress() -> void:
-	var file: FileAccess = FileAccess.open(save_path, FileAccess.WRITE)
-	if file == null:
+	var text: String = JSON.stringify({"xp": _xp, "equipped": _equipped}, "\t")
+	if SafeFile.write_text(save_path, text) != OK:
 		push_warning("Armory: cannot write %s" % save_path)
-		return
-	file.store_string(JSON.stringify({"xp": _xp, "equipped": _equipped}, "\t"))
-	file.close()
 
 
 ## Borra todo lo desbloqueado. Para las pruebas y para el que quiera empezar de

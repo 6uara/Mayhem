@@ -16,6 +16,12 @@ static func save(arena: ArenaData, path: String) -> Error:
 	arena.format_version = ArenaData.CURRENT_FORMAT_VERSION
 	if path.get_extension().to_lower() == JSON_EXTENSION:
 		return save_json(arena, path)
+	# Las del jugador por SafeFile: guardar encima de su arena y cortarse a la
+	# mitad era perder la arena entera, no solo el ultimo cambio. Las de res:// no:
+	# esas las guarda el editor de Godot, que tiene que enterarse del cambio, y un
+	# rename por fuera de su sistema de archivos no le avisa.
+	if path.begins_with("user://"):
+		return SafeFile.save_resource(arena, path)
 	return ResourceSaver.save(arena, path)
 
 
@@ -33,6 +39,8 @@ static func load_arena(path: String) -> ArenaData:
 
 
 static func save_json(arena: ArenaData, path: String) -> Error:
+	if path.begins_with("user://"):
+		return SafeFile.write_text(path, arena.to_json())
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()

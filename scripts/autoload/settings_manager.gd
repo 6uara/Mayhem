@@ -137,6 +137,7 @@ func reset_to_defaults() -> void:
 
 func load_settings() -> void:
 	var config := ConfigFile.new()
+	SafeFile.recover(SETTINGS_PATH)
 	if config.load(SETTINGS_PATH) != OK:
 		return  # First run: defaults already in place.
 	for key: String in DEFAULTS:
@@ -179,7 +180,7 @@ func save_settings() -> void:
 		config.set_value(parts[0], parts[1], _values[key])
 	for action: String in _bindings:
 		config.set_value("bindings", action, _bindings[action])
-	var error: int = config.save(SETTINGS_PATH)
+	var error: int = SafeFile.save_config(config, SETTINGS_PATH)
 	if error != OK:
 		push_error("SettingsManager: failed to save settings (%d)" % error)
 
