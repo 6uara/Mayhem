@@ -45,6 +45,10 @@ var _generation: int = 0
 var _break_generation: int = 0
 ## True between the shop opening and the arena reopening.
 var _in_break: bool = false
+## Waves cleared this run, counted as they clear. `WaveManager.current_index` is
+## the wave that was running, so a death in the break after clearing wave 4 - a
+## leftover hazard pool - was filed as 3 waves cleared.
+var _waves_cleared: int = 0
 
 
 func _ready() -> void:
@@ -62,6 +66,7 @@ func start_match() -> void:
 		push_warning("MatchDirector: no waves authored, nothing to run")
 		return
 	_generation += 1
+	_waves_cleared = 0
 	is_running = true
 	_match_start_time = _now()
 	_match_paused_at_start = GameManager.get_paused_seconds()
@@ -132,6 +137,7 @@ func _start_wave_after(delay: float, generation: int) -> void:
 func _on_wave_completed(wave_index: int, duration: float, _damage: float) -> void:
 	if not is_running:
 		return
+	_waves_cleared += 1
 	# Commentary is HostDirector's job - this one sequences waves.
 	if WaveManager.is_last_wave():
 		_finish_match()
@@ -145,7 +151,9 @@ func _run_shop_phase(wave_index: int, duration: float, generation: int) -> void:
 		_start_wave_after(between_wave_delay, generation)
 		return
 
-	await get_tree().create_timer(shop_open_delay).timeout
+	# Pausable, like every other wave timer here: pausing right after the last
+	# kill opened the shop on top of the pause menu.
+	await get_tree().create_timer(shop_open_delay, false).timeout
 	if generation != _generation or not is_running:
 		return
 
@@ -227,7 +235,7 @@ func _on_player_died() -> void:
 	_generation += 1
 	var generation: int = _generation
 	var score: int = _calculate_score(false)
-	var waves_cleared: int = maxi(WaveManager.current_index, 0)
+	var waves_cleared: int = _waves_cleared
 	match_state_changed.emit(false)
 	if death_reveal_delay <= 0.0 or not is_inside_tree():
 		_announce_death(generation, score, total_time, waves_cleared)

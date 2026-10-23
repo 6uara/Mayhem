@@ -114,8 +114,10 @@ func _tick_ram() -> void:
 		_rammed.clear()
 		return
 	var here: Vector3 = player.global_position
-	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
-		var enemy := node as Enemy
+	# La lista de vivos y no el grupo, que trae tambien a los guardados en el pool.
+	# Copiada: el golpe puede matar, y el que muere se da de baja de la lista que se
+	# esta recorriendo.
+	for enemy: Enemy in CombatDirector.get_active_enemies().duplicate():
 		if enemy == null or not enemy.is_active or enemy.health == null \
 				or enemy.health.is_dead or _rammed.has(enemy.get_instance_id()):
 			continue

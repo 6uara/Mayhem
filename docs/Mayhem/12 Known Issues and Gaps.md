@@ -58,6 +58,11 @@ and hurt VFX. Still not covered: a real firefight with the camera moving.
 - **Navmesh connectivity flake** —
   `test_navigation_connectivity.gd::test_the_map_has_a_navmesh_at_all` can fail
   alone and intermittently under load. Failing *always* means a real break.
+- **Leap test flake** —
+  `test_enemy_stuck_recovery.gd::test_an_attack_leap_is_not_judged_as_a_failed_jump`
+  failed once in a full run (2026-10-23: "esta parado" / "el salto sale") and
+  passed 3/3 alone. The rusher spawns 1 m from the player, so its own tree can
+  leap before the test does. Same rule as above.
 - **`enemy.gd` is ~2400 lines**, and the locomotion/navigation block (`_steer`
   to `_stop_horizontal`, ~900 lines) is the part most edits touch. Splitting it
   is planned, after the playtest, on its own branch.

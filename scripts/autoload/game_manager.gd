@@ -77,6 +77,8 @@ var _run_paused_at_start: float = 0.0
 ## GameManager's own child, not part of whatever scene is being replaced -
 ## survives every change_scene_to_file() call untouched. See
 ## scripts/ui/scene_transition.gd.
+## Ver `_begin_scene_change()`.
+var _scene_change_busy: bool = false
 var _transition: SceneTransition
 ## Also GameManager's own child, and for the same reason: it has to outlive the
 ## scene it is covering for.
@@ -165,6 +167,13 @@ func start_run() -> void:
 ## (SceneTransition.duration, each way) eats a fraction of that budget on
 ## purpose, short enough to leave the rest of it intact.
 func restart_run() -> void:
+	if not _begin_scene_change():
+		return
+	await _restart_run()
+	_scene_change_busy = false
+
+
+func _restart_run() -> void:
 	var scene: PackedScene = await _prepare_scene(GAME_SCENE_PATH)
 	clear_freezes()
 	if scene == null:
@@ -186,6 +195,13 @@ func restart_run() -> void:
 ## misma cobertura y la misma carga en hilo que el resto. Existe para que el
 ## editor no tenga que reimplementar la transicion ni escribir `state` a mano.
 func open_scene(path: String, new_state: State = State.MENU) -> void:
+	if not _begin_scene_change():
+		return
+	await _open_scene(path, new_state)
+	_scene_change_busy = false
+
+
+func _open_scene(path: String, new_state: State) -> void:
 	var scene: PackedScene = await _prepare_scene(path)
 	clear_freezes()
 	_set_pause_clock(false)
@@ -204,6 +220,13 @@ func open_scene(path: String, new_state: State = State.MENU) -> void:
 
 
 func return_to_menu() -> void:
+	if not _begin_scene_change():
+		return
+	await _return_to_menu()
+	_scene_change_busy = false
+
+
+func _return_to_menu() -> void:
 	var scene: PackedScene = await _prepare_scene(MENU_SCENE_PATH)
 	clear_freezes()
 	_set_pause_clock(false)
@@ -216,6 +239,18 @@ func return_to_menu() -> void:
 		push_error("GameManager: failed to enter menu scene")
 	await _await_scene_swap(previous)
 	await _reveal()
+
+
+## Un cambio de escena por vez. El velo de la transicion frena el mouse pero no el
+## teclado ni el joystick: un segundo Enter sobre "Restart" mientras el primero
+## fadeaba arrancaba otra carga encima, y las dos terminaban cambiando de escena y
+## llamando a `start_run()`. El segundo pedido se descarta; el primero ya va a
+## donde el jugador pidio.
+func _begin_scene_change() -> bool:
+	if _scene_change_busy:
+		return false
+	_scene_change_busy = true
+	return true
 
 
 ## Espera a que la escena nueva este realmente puesta.
