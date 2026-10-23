@@ -225,6 +225,8 @@ func _ensure_beam(index: int) -> void:
 		# En espacio de mundo: el haz se estira entre dos puntos globales, asi que
 		# no puede heredar la rotacion ni la escala del cuerpo que lo dispara.
 		beam.top_level = true
+		# Se reubica en `_process`, siguiendo a dos cuerpos que se mueven.
+		beam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(beam)
 

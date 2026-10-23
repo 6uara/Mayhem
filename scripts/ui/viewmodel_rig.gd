@@ -24,6 +24,10 @@ extends SubViewportContainer
 
 
 func _ready() -> void:
+	# El arma, la patada, el giro de recarga y las vainas se mueven en `_process`;
+	# con la interpolacion del motor llegarian un tick tarde. La camara del rig no
+	# se mueve, asi que aca no hay nada que interpolar.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if camera != null:
 		camera.fov = viewmodel_fov
 	_configure_viewport()

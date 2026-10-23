@@ -74,6 +74,8 @@ var is_zip_line_in_range: bool = false
 var is_dead: bool = false
 ## Las mejoras que agregan reglas (regeneracion y las raras). Ver PlayerPerks.
 var perks: PlayerPerks
+## Dibuja la camara entre ticks de fisica. Ver ViewInterpolator.
+var view_interpolator: ViewInterpolator
 
 var _hurt_sound_cooldown: float = 0.0
 var _look_yaw: float = 0.0
@@ -109,7 +111,36 @@ func _ready() -> void:
 	perks.player = self
 	add_child(perks)
 	_apply_view_nodes()
+	_attach_view_interpolator()
 	EventBus.local_player_spawned.emit(self)
+
+
+## La cadena que espera ViewInterpolator es HeadPivot > ViewBob > CameraRig >
+## Camera3D. Con otra forma no se arma y la camara queda como estaba, colgada de
+## la cabeza.
+func _attach_view_interpolator() -> void:
+	if camera == null or head == null:
+		return
+	var recoil_rig := camera.get_parent() as Node3D
+	var bob_node := recoil_rig.get_parent() as Node3D if recoil_rig != null else null
+	if bob_node == null or bob_node.get_parent() != head:
+		return
+	var interpolator := ViewInterpolator.new()
+	interpolator.name = "ViewInterpolator"
+	add_child(interpolator)
+	if interpolator.setup(self, head, bob_node, recoil_rig, camera):
+		view_interpolator = interpolator
+	else:
+		interpolator.queue_free()
+
+
+## Despues de mover el cuerpo a mano, de golpe. Sin esto el motor dibuja el
+## camino entre donde estaba y donde quedo: un barrido de un frame por el arena.
+func teleport_to(position_now: Vector3) -> void:
+	global_position = position_now
+	reset_physics_interpolation()
+	if view_interpolator != null:
+		view_interpolator.snap()
 
 
 ## The third-person body exists for the shadow it casts and nothing else: the
