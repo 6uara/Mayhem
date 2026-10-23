@@ -281,7 +281,11 @@ func _cmd_teleport(args: PackedStringArray) -> String:
 	var player: Node3D = _player()
 	if player == null:
 		return "no player in the scene"
-	player.global_position = Vector3(float(args[0]), float(args[1]), float(args[2]))
+	var destination := Vector3(float(args[0]), float(args[1]), float(args[2]))
+	if player is Player:
+		(player as Player).teleport_to(destination)
+	else:
+		player.global_position = destination
 	return "moved to %v" % player.global_position
 
 

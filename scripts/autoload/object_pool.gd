@@ -138,6 +138,12 @@ func _activate(instance: Node) -> void:
 		(instance as Node3D).visible = true
 	if instance.has_method(&"_on_acquired"):
 		instance.call(&"_on_acquired")
+	# Diferido: quien pidio el nodo lo ubica recien despues de esta llamada. Con
+	# la interpolacion de fisica prendida, sin el reset el motor dibujaria el viaje
+	# desde el deposito diez kilometros abajo hasta la puerta - un enemigo que sube
+	# del piso en un frame. Corre antes del dibujo del mismo frame.
+	if instance is Node3D:
+		instance.reset_physics_interpolation.call_deferred()
 
 
 func _deactivate(instance: Node) -> void:

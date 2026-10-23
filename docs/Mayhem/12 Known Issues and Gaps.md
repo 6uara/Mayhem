@@ -47,6 +47,14 @@ and hurt VFX. Still not covered: a real firefight with the camera moving.
 
 ## Fragile
 
+- **Physics interpolation is on** (`physics/common/physics_interpolation`). The
+  engine draws a node between its last two physics ticks, so: a node moved in
+  `_process` lags up to a tick unless it is set to
+  `PHYSICS_INTERPOLATION_MODE_OFF` (an OFF child still follows its interpolated
+  parent); a node moved by hand far away needs `reset_physics_interpolation()`
+  after the move, or it is drawn sweeping across the arena for a frame
+  (`ObjectPool` does it on acquire, `Player.teleport_to()` for the player). The
+  player camera is assembled by `ViewInterpolator`, not by the engine.
 - **Godot auto-resaves open scenes** when the project loads (even headless
   `--import`), and can silently revert hand edits to a `.tscn` open in a stale
   editor. It has destroyed content once. `git diff` every scene before

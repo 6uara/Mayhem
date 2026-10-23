@@ -2212,6 +2212,9 @@ func _apply_model() -> void:
 		push_error("Enemy: %s model_scene is not a Node3D" % data.id)
 		return
 	add_child(_model)
+	# EnemyModelMotion lo anima en `_process`. Interpolado por el motor llegaria un
+	# tick tarde; apagado sigue igual al cuerpo, que si se interpola.
+	_model.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_prune_authoring_nodes(_model)
 	_collect_model_meshes(_model)
 	_model_bounds = _measure_model(_model)

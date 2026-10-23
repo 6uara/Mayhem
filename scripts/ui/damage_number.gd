@@ -58,6 +58,8 @@ var play_id: int = 0
 
 func _ready() -> void:
 	set_process(false)
+	# Sube en `_process` y salta de enemigo en enemigo al reusarse.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 
 ## `amount` is already the final applied damage (falloff, headshot multiplier,

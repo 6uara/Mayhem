@@ -59,6 +59,8 @@ func _ready() -> void:
 	if core != null:
 		_rest_height = core.position.y
 		_default_mesh = core.mesh
+		# Gira y flota en `_process`: sin interpolacion del motor, que lo atrasaria.
+		core.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	if hitbox != null:
 		hitbox.body_entered.connect(_on_body_entered)
 	_build_idle_player()

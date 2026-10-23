@@ -31,6 +31,8 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	if mesh != null:
 		_rest_height = mesh.position.y
+		# Gira y flota en `_process`: sin interpolacion del motor, que lo atrasaria.
+		mesh.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		# Amber and circular, always - amber only ever means 'the house': money,
 		# pickups and the Host.
 		var material := StandardMaterial3D.new()

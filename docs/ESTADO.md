@@ -137,7 +137,10 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
   mejoras nuevas son geométricos provisorios en el mismo lenguaje.
 - **Probar a mano:** punch de la picada, FSR a 50-67 %, MSAA/TAA, sombras en Bajo, una
   oleada con joystick, el tutorial completo, el giro de los enemigos con la IA a
-  ritmo espaciado.
+  ritmo espaciado, y la **interpolacion de fisica** (rama
+  `feat/physics-interpolation`) en un monitor de mas de 60 Hz: correr, slide,
+  dash, grapple, zip line, enemigos saliendo de las puertas, trazadoras, haces
+  del Healer y numeros de daño. Ningun test ve un frame dibujado.
 - **`export_presets.cfg` local** no sigue [EXPORT.md](EXPORT.md): tiene presets
   "Windows Desktop" y "Web" (este último duplicado) y ningún `exclude_filter`.
 

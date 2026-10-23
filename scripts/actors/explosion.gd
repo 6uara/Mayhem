@@ -46,6 +46,9 @@ var _material: StandardMaterial3D
 
 func _ready() -> void:
 	_build_material()
+	# El destello crece en `_process`.
+	if flash_mesh != null:
+		flash_mesh.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
 
 func _process(delta: float) -> void:

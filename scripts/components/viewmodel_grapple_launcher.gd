@@ -37,6 +37,10 @@ var _since_fired: float = 999.0
 
 
 func _ready() -> void:
+	# Despues de ViewInterpolator: el cable sale de donde la camara del juego se
+	# dibuja este frame, y esa la arma el interpolador. Antes que el, el cable
+	# salia de la camara del frame anterior y se despegaba del lanzador al correr.
+	process_priority = ViewInterpolator.PROCESS_PRIORITY + 1
 	_mesh = MeshInstance3D.new()
 	_mesh.name = &"Launcher"
 	_mesh.mesh = LAUNCHER_MESH
