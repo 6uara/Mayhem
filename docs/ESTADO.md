@@ -141,6 +141,10 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
   `feat/physics-interpolation`) en un monitor de mas de 60 Hz: correr, slide,
   dash, grapple, zip line, enemigos saliendo de las puertas, trazadoras, haces
   del Healer y numeros de daño. Ningun test ve un frame dibujado.
+  Tambien el **movimiento de la UI** (rama `feat/ui-juice`): reparto de cartas,
+  brillo y sonido de la rara, golpe de los numeros de la HUD, cartel de oleada;
+  y si los sonidos nuevos de `assets/audio/sfx/ui/` (placeholders) quedan bien
+  en la mezcla.
 - **`export_presets.cfg` local** no sigue [EXPORT.md](EXPORT.md): tiene presets
   "Windows Desktop" y "Web" (este último duplicado) y ningún `exclude_filter`.
 

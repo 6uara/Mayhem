@@ -99,6 +99,24 @@ const HAZARD_WARNING     := 0.60  ## telegraph before a hazard can damage
 const HAZARD_EVAPORATE   := 0.40  ## a temporary pool drying up after it stops damaging
 const STATE_SETTLE_MAX   := 0.40  ## nothing else may animate longer than this
 
+## UI punch (UiMotion). Every one-shot stays under STATE_SETTLE_MAX: the motion
+## answers an action, it never makes the player wait for it.
+const UI_PUNCH_TIME      := 0.22  ## a number that just changed swells and settles
+const UI_PUNCH_SCALE     := 1.18  ## how far it swells; small numbers read as jitter
+const UI_FLASH_TIME      := 0.30  ## tint of a gain/loss fading back to the base colour
+const UI_ENTER_TIME      := 0.26  ## a panel arriving: ease out, back overshoot
+const UI_ENTER_OFFSET    := 28.0  ## px it travels to get there
+const UI_EXIT_TIME       := 0.14  ## leaving is faster than arriving
+const UI_STAGGER         := 0.06  ## between cards dealt in a row
+const UI_SHAKE_TIME      := 0.24  ## "no": a refused purchase
+const UI_SHAKE_PX        := 9.0
+const ANNOUNCE_POP_SCALE := 1.35  ## the wave banner lands from bigger
+const RARE_REVEAL_DELAY  := 0.18  ## a rare card lands a beat after the rest
+const RARE_REVEAL_SCALE  := 1.16
+const RARE_GLOW_PERIOD   := 1.40  ## continuous, like LOW_HEALTH_PULSE
+const RARE_SHEEN_TIME    := 0.40  ## one light sweep across the card
+const RARE_SHEEN_EVERY   := 2.60
+
 # ---------------------------------------------------------------- Crosshair
 const RETICLE_BASE      := 40
 const RETICLE_EXPANDED  := 56  ## grapple-anchor-available

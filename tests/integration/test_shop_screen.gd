@@ -137,3 +137,54 @@ func test_keys_do_nothing_while_the_pause_menu_is_up() -> void:
 	_key(KEY_ENTER)
 	GameManager.is_paused = false
 	assert_eq(_screen.page, _screen.Page.SHOP)
+
+
+# Movimiento
+
+## La tienda congela el arbol, y con el arbol congelado los timers de GUT no
+## corren: wait_seconds() esperaba hasta su propio tope de treinta segundos. La
+## tienda anima igual (corre en PROCESS_MODE_ALWAYS), asi que para medir el
+## reparto alcanza con soltar el congelamiento.
+func _wait_for_the_deal() -> void:
+	GameManager.set_freeze(GameManager.FREEZE_SHOP, false)
+	await wait_seconds(Tokens.UI_STAGGER * 6.0 + Tokens.RARE_REVEAL_DELAY \
+		+ Tokens.UI_ENTER_TIME + 0.15)
+
+
+## Las cartas se reparten animadas, pero terminan donde tienen que estar: una que
+## se puede pagar, entera; ninguna a medio camino.
+func test_dealt_cards_settle_fully_visible() -> void:
+	EconomyManager.currency = 100000
+	await _open()
+	await _wait_for_the_deal()
+	var cards: Array[Node] = _screen.get_node("Root/Panel/VBox/ShopPage/Main/Cards").get_children()
+	assert_false(cards.is_empty())
+	for card: Node in cards:
+		assert_almost_eq((card as Control).modulate.a, 1.0, 0.01)
+		assert_almost_eq((card as Control).scale.x, 1.0, 0.01)
+
+
+## Una que no alcanza llega apagada, no prendida y despues apagada.
+func test_a_card_you_cannot_afford_is_dealt_dim() -> void:
+	EconomyManager.currency = 0
+	await _open()
+	await _wait_for_the_deal()
+	for card: Node in _screen.get_node("Root/Panel/VBox/ShopPage/Main/Cards").get_children():
+		assert_lt((card as Control).modulate.a, 0.5)
+
+
+## La rara se ve antes de leerse.
+func test_a_rare_offer_gets_its_shine() -> void:
+	await _open()
+	var offers: Array[Dictionary] = [
+		{"kind": Shop.Kind.UPGRADE, "id": &"test_rare", "name": "Rara", "description": "",
+			"cost": 10, "category": 0, "owned": 0, "max_stacks": 1, "weapon_id": &"",
+			"rare": true},
+		{"kind": Shop.Kind.UPGRADE, "id": &"test_common", "name": "Comun", "description": "",
+			"cost": 10, "category": 0, "owned": 0, "max_stacks": 1, "weapon_id": &""},
+	]
+	_screen._rebuild_cards(offers)
+	var cards: Array[Node] = _screen.get_node("Root/Panel/VBox/ShopPage/Main/Cards").get_children() \
+		.filter(func(node: Node) -> bool: return not node.is_queued_for_deletion())
+	assert_true(cards[0].has_node(^"RareShine"), "la rara brilla")
+	assert_false(cards[1].has_node(^"RareShine"), "la comun no")

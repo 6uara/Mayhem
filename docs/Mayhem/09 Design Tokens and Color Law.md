@@ -111,6 +111,17 @@ ground never reaches a player on a platform above it), `STATE_SETTLE_MAX = 0.40`
 (a hard ceiling: nothing may animate longer than this, so no UI feedback ever
 feels laggy).
 
+The UI's punch lives in the `UI_*` and `RARE_*` tokens and is played by
+`UiMotion` (`scripts/ui/ui_motion.gd`): a changed number swells and settles
+(`UI_PUNCH_*`, tinted by what the change means - `REWARD` for money in, `ENEMY`
+for health or money lost, `HEAL` for health back), panels arrive with a back
+ease-out (`UI_ENTER_*`) and leave faster than they came (`UI_EXIT_TIME`), shop
+cards are dealt one by one (`UI_STAGGER`) and a refused purchase shakes
+(`UI_SHAKE_*`). Every one-shot stays under `STATE_SETTLE_MAX`
+(`tests/unit/test_ui_motion.gd` checks it). The rare shop card's glow is the one
+continuous loop, like `LOW_HEALTH_PULSE`. **Reduce flashing** turns off tints,
+the rare glow's pulse and sheen, and the shake; plain motion stays.
+
 ## Enemy identity
 
 `ENEMY_RUSHER` / `_RANGER` / `_ELITE` / `_HEALER` / `_SUMMONER` — dominant color

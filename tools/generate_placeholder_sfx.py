@@ -10,6 +10,11 @@ than one flat sample, so the layering is already in place when real samples repl
 
 Usage:
     python tools/generate_placeholder_sfx.py
+    python tools/generate_placeholder_sfx.py --only ui/rare_reveal.wav ui/card_deal.wav
+
+`--only` writes just the named files. Everything is still synthesised in the same
+order (so the shared RNG sequence does not move), but nothing else on disk is
+touched - a real sample that already replaced a placeholder survives.
 
 Stdlib only. Rerunning overwrites the files deterministically (fixed RNG seed).
 """
@@ -20,10 +25,13 @@ import math
 import os
 import random
 import struct
+import sys
 import wave
 
 SAMPLE_RATE = 44100
 OUT_DIR = os.path.join("assets", "audio", "sfx")
+# Filled from `--only`; empty means "write everything".
+ONLY: set[str] = set()
 
 
 def _env(index: int, length: int, attack: float, decay: float) -> float:
@@ -82,6 +90,8 @@ def _normalise(samples: list[float], peak: float = 0.89) -> list[float]:
 
 
 def _write(name: str, samples: list[float]) -> None:
+    if ONLY and name not in ONLY:
+        return
     path = os.path.join(OUT_DIR, name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     frames = b"".join(
@@ -441,6 +451,38 @@ def denied() -> list[float]:
     return _tone(ms(160), 220.0, 0.002, 0.25, 0.6, sweep=0.75)
 
 
+def rare_reveal() -> list[float]:
+    """A rising four-note shimmer: the shop dealt a rare. Brighter and longer than
+    `purchase`, which it must never be mistaken for - this one costs nothing yet."""
+    notes = [(660.0, 0), (880.0, 55), (1320.0, 110), (1760.0, 165)]
+    layers = [(_tone(ms(240), freq, 0.004, 0.22, 0.42, sweep=1.02), ms(start))
+              for freq, start in notes]
+    # A soft high bed under the arpeggio, so it reads as light rather than notes.
+    layers.append((_tone(ms(420), 2640.0, 0.06, 0.5, 0.12, sweep=1.04), 0))
+    return _mix(*layers)
+
+
+def shop_open() -> list[float]:
+    """Low to high swell, airless: the shop panel arriving."""
+    return _mix(
+        (_tone(ms(260), 180.0, 0.12, 0.3, 0.5, sweep=2.2), 0),
+        (_tone(ms(200), 540.0, 0.1, 0.25, 0.25, sweep=1.6), ms(60)),
+    )
+
+
+def card_deal() -> list[float]:
+    """A dry tick per card dealt. Played quiet and pitched up along the row."""
+    return _mix(
+        (_tone(ms(45), 1500.0, 0.001, 0.12, 0.5, sweep=0.7), 0),
+        (_tone(ms(60), 380.0, 0.001, 0.18, 0.35, sweep=0.8), 0),
+    )
+
+
+def timer_tick() -> list[float]:
+    """The last seconds of the shop clock."""
+    return _tone(ms(70), 1240.0, 0.001, 0.16, 0.6, sweep=0.92)
+
+
 def hazard_warning(rng: random.Random) -> list[float]:
     """Two rising blips - the 0.6s tell before a hazard can damage."""
     return _mix(
@@ -627,8 +669,15 @@ def main() -> None:
     player_rng = random.Random(20260928)
     _write("player/player_hurt.wav", player_hurt(player_rng))
     _write("player/player_death.wav", player_death(player_rng))
+    # Sin rng: agregarlos no le corre el ruido a nada de lo de arriba.
+    _write("ui/rare_reveal.wav", rare_reveal())
+    _write("ui/shop_open.wav", shop_open())
+    _write("ui/card_deal.wav", card_deal())
+    _write("ui/timer_tick.wav", timer_tick())
     print("Done. These are placeholders - replace them in Phase 5.")
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "--only":
+        ONLY.update(sys.argv[2:])
     main()
