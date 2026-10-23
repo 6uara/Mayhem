@@ -23,6 +23,13 @@ var _stacks: Dictionary = {}
 var _owned: Dictionary = {}
 ## scope key -> seconds remaining (temporary upgrades only)
 var _temporary_remaining: Dictionary = {}
+## weapon_id -> stat_key -> Array[StatModifier]: what `get_stat()` already worked
+## out for this set of upgrades. The weapon reads its stats every frame (ADS,
+## spread for the reticle, recoil, damage per pellet), and each read walked every
+## owned upgrade and formatted a scope key per weapon upgrade - dozens of throwaway
+## strings a frame for an answer that only changes when something is bought or
+## expires. Cleared on every one of those.
+var _modifier_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -51,7 +58,15 @@ func _process(delta: float) -> void:
 ## scopes which weapon's WEAPON-category upgrades apply - global (MOBILITY,
 ## SURVIVABILITY) upgrades always apply regardless of what is passed here.
 func get_stat(stat_key: StringName, base_value: float, weapon_id: StringName = &"") -> float:
-	return aggregate(base_value, get_modifiers_for(stat_key, weapon_id))
+	if _owned.is_empty():
+		return base_value
+	if not _modifier_cache.has(weapon_id):
+		_modifier_cache[weapon_id] = {}
+	var by_stat: Dictionary = _modifier_cache[weapon_id]
+	if not by_stat.has(stat_key):
+		by_stat[stat_key] = get_modifiers_for(stat_key, weapon_id)
+	var modifiers: Array[StatModifier] = by_stat[stat_key]
+	return aggregate(base_value, modifiers)
 
 
 func get_modifiers_for(stat_key: StringName, weapon_id: StringName = &"") -> Array[StatModifier]:
@@ -82,6 +97,7 @@ func add_upgrade(data: UpgradeData, weapon_id: StringName = &"") -> bool:
 	if not can_add(data, weapon_id):
 		return false
 	var key: StringName = _key(data.id, _scope(data, weapon_id))
+	_modifier_cache.clear()
 	_owned[key] = data
 	_stacks[key] = int(_stacks.get(key, 0)) + 1
 	if data.is_temporary:
@@ -152,6 +168,7 @@ func remove_upgrade(id: StringName, weapon_id: StringName = &"") -> void:
 
 
 func reset() -> void:
+	_modifier_cache.clear()
 	_stacks.clear()
 	_owned.clear()
 	_temporary_remaining.clear()
@@ -200,6 +217,7 @@ func _scope(data: UpgradeData, weapon_id: StringName) -> StringName:
 
 
 func _remove(key: StringName) -> void:
+	_modifier_cache.clear()
 	_temporary_remaining.erase(key)
 	_stacks.erase(key)
 	_owned.erase(key)

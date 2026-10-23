@@ -67,8 +67,19 @@ func handle_input(_event: InputEvent) -> bool:
 	return false
 
 
+## Retargets a swap already under way instead of ignoring the new one. The shop
+## freezes the tree, so a swap bought there does not finish until the shop
+## closes: the second weapon bought in the same visit used to be charged and
+## then dropped here, and the player walked out with the first one.
 func start_swap(weapon: WeaponComponent) -> void:
-	if weapon == null or weapon == current or is_swapping:
+	if weapon == null:
+		return
+	if weapon == current:
+		# Buying back the gun still in hand cancels the swap that was pending.
+		is_swapping = false
+		_pending = null
+		return
+	if is_swapping and weapon == _pending:
 		return
 	# Dropping the trigger on swap stops a held fire input carrying over.
 	if current != null:
@@ -84,7 +95,7 @@ func start_swap(weapon: WeaponComponent) -> void:
 ## charging twice for the same gun.
 func acquire(weapon_id: StringName) -> bool:
 	var weapon: WeaponComponent = find_by_id(weapon_id)
-	if weapon == null or weapon == current:
+	if weapon == null or weapon == get_incoming():
 		return false
 	weapon_replaced.emit()
 	start_swap(weapon)
@@ -93,8 +104,18 @@ func acquire(weapon_id: StringName) -> bool:
 
 ## True only for the weapon currently equipped - not "ever owned". A previously
 ## equipped weapon is not owned in this sense; the shop may offer it again.
+##
+## "Equipped" counts a swap still on its way: bought in the shop, it lands when
+## the shop closes, and until then the shop must neither sell it twice nor scope
+## weapon upgrades to the gun being replaced.
 func owns(weapon_id: StringName) -> bool:
-	return current != null and current.data != null and current.data.id == weapon_id
+	var weapon: WeaponComponent = get_incoming()
+	return weapon != null and weapon.data != null and weapon.data.id == weapon_id
+
+
+## The weapon the player will be holding once any pending swap lands.
+func get_incoming() -> WeaponComponent:
+	return _pending if is_swapping and _pending != null else current
 
 
 func find_by_id(weapon_id: StringName) -> WeaponComponent:
@@ -129,6 +150,11 @@ func add_reserve_ammo_fraction(fraction: float) -> int:
 func reset() -> void:
 	if _weapons.is_empty():
 		return
+	# Un cambio a medio hacer terminaria despues del reset y le pondria al jugador
+	# el arma de la run anterior en vez de la inicial.
+	is_swapping = false
+	_pending = null
+	_swap_timer = 0.0
 	for weapon: WeaponComponent in _weapons:
 		weapon.reset()
 	_equip(_starting_weapon())
