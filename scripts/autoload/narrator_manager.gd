@@ -51,6 +51,10 @@ var _since_last_line: float = LINE_COOLDOWN
 var _punchlines_this_wave: int = 0
 ## Incremented on every line start so a preempted line's timer cannot stop its successor.
 var _generation: int = 0
+## The voice of the line on air, so a preempting line can cut it. Without this a
+## CRITICAL line talked over the FLAVOR one it had just replaced on screen.
+var _voice_player: AudioStreamPlayer
+var _voice_stream: AudioStream
 
 
 func _ready() -> void:
@@ -200,7 +204,8 @@ func _play(line: Dictionary) -> void:
 	var duration: float = PLACEHOLDER_DURATION
 	if stream != null:
 		duration = stream.get_length()
-		AudioPool.play_2d(stream, AudioPool.BUS_VO)
+		_voice_player = AudioPool.play_2d(stream, AudioPool.BUS_VO)
+		_voice_stream = stream
 	AudioPool.push_duck()
 	_since_last_line = 0.0
 	subtitle_shown.emit(String(line["text"]), duration, int(line["tier"]))
@@ -215,6 +220,12 @@ func _stop_current() -> void:
 		return
 	is_speaking = false
 	_current_priority = -1
+	# Only if the pooled voice is still ours: once the line ends AudioPool may have
+	# handed the same player to some other sound.
+	if _voice_player != null and _voice_player.playing and _voice_player.stream == _voice_stream:
+		_voice_player.stop()
+	_voice_player = null
+	_voice_stream = null
 	AudioPool.pop_duck()
 	subtitle_hidden.emit()
 

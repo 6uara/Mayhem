@@ -134,8 +134,14 @@ func _process(delta: float) -> void:
 		_lifetimes[i] -= delta
 		if _pulses[i] > 0.0:
 			_pulses[i] -= delta
-		var target: Node3D = _targets[i]
-		if _lifetimes[i] <= 0.0 or target == null or not is_instance_valid(target):
+		# Sin tipar hasta validarlo: un objeto liberado no entra en una variable
+		# tipada. Y un paciente que murio sigue siendo valido - vuelve al pool, oculto
+		# y diez kilometros abajo del piso -, asi que el haz lo seguia hasta ahi el
+		# resto de su vida. Oculto, en vez de nombrar a Enemy, por el mismo ciclo de
+		# clases que documenta Explosion._victims().
+		var entry: Variant = _targets[i]
+		var target: Node3D = entry as Node3D if is_instance_valid(entry) else null
+		if _lifetimes[i] <= 0.0 or target == null or not target.is_visible_in_tree():
 			_targets[i] = null
 			_lifetimes[i] = 0.0
 			_beams[i].visible = false

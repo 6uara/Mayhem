@@ -3,6 +3,9 @@ extends Node
 ## Pooled scenes must expose `_on_acquired()` / `_on_released()` if they need reset logic.
 
 const RELEASED_GROUP: StringName = &"pooled_released"
+## Set on every node the pool instantiates, before it enters the tree, so its
+## `_ready()` can tell it is about to be parked rather than placed in the level.
+const POOLED_META: StringName = &"object_pool_owned"
 
 var _free: Dictionary = {}      # PackedScene -> Array[Node]
 var _in_use: Dictionary = {}    # Node -> PackedScene
@@ -107,6 +110,7 @@ func _get_free_list(scene: PackedScene) -> Array:
 
 func _instantiate(scene: PackedScene) -> Node:
 	var instance: Node = scene.instantiate()
+	instance.set_meta(POOLED_META, true)
 	_get_container(scene).add_child(instance)
 	return instance
 

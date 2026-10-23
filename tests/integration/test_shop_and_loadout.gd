@@ -41,7 +41,9 @@ func test_all_four_weapons_exist_on_the_player() -> void:
 func test_acquiring_a_weapon_equips_it_after_the_swap() -> void:
 	var holder: WeaponHolder = _player.weapon_holder
 	assert_true(holder.acquire(&"shotgun"))
-	assert_true(holder.owns(&"pistol"), "still equipped until the swap finishes")
+	assert_eq(_player.weapon.data.id, &"pistol", "still in hand until the swap finishes")
+	assert_true(holder.owns(&"shotgun"),
+		"but the shop already counts the one on its way: it must not sell it twice")
 	# The swap is not instant; that delay is the cost of switching.
 	assert_true(holder.is_swapping, "a swap should be in progress")
 	await wait_seconds(holder.swap_time + 0.1)
@@ -85,6 +87,37 @@ func test_each_weapon_keeps_its_own_ammo_across_a_replacement() -> void:
 	await wait_seconds(holder.swap_time + 0.1)
 	assert_eq(_player.weapon.get_ammo(), 9, "the pistol kept its own count while holstered")
 	assert_eq(shotgun.get_ammo(), 3, "the shotgun kept its own count too")
+
+
+## The shop freezes the tree, so a weapon bought there is still a pending swap
+## when the next one is bought. The second one used to be charged and dropped.
+func test_a_second_weapon_bought_in_one_visit_is_the_one_equipped() -> void:
+	var holder: WeaponHolder = _player.weapon_holder
+	assert_true(holder.acquire(&"shotgun"))
+	assert_true(holder.acquire(&"smg"), "the pending swap is retargeted, not ignored")
+	await wait_seconds(holder.swap_time + 0.1)
+	assert_eq(_player.weapon.data.id, &"smg")
+
+
+func test_buying_back_the_gun_in_hand_cancels_the_pending_swap() -> void:
+	var holder: WeaponHolder = _player.weapon_holder
+	holder.acquire(&"shotgun")
+	assert_true(holder.acquire(&"pistol"), "the pistol is no longer the incoming gun")
+	assert_false(holder.is_swapping)
+	assert_eq(_player.weapon.data.id, &"pistol")
+
+
+func test_weapon_upgrade_offers_follow_a_weapon_bought_in_the_same_visit() -> void:
+	EconomyManager.currency = 100000
+	var magazine: UpgradeData = _shop.catalog.find_upgrade(&"magazine")
+	_shop.offers = [
+		{"kind": Shop.Kind.UPGRADE, "id": magazine.id, "cost": magazine.cost,
+			"category": int(magazine.category), "weapon_id": &"pistol", "owned": 0},
+		{"kind": Shop.Kind.WEAPON, "id": &"shotgun", "cost": 0, "category": -1},
+	]
+	assert_eq(_shop.buy(_shop.offers[1]), EconomyManager.PurchaseResult.OK)
+	assert_eq(StringName(_shop.offers[0]["weapon_id"]), &"shotgun",
+		"the magazine on the table is for the gun the player walks out with")
 
 
 # Weapon-scoped upgrades

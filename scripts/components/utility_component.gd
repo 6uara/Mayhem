@@ -175,7 +175,7 @@ func get_carried(slot: int) -> int:
 
 
 func get_cooldown_fraction(slot: int) -> float:
-	if slot < 0 or slot >= _cooldowns.size() or slots[slot] == null:
+	if slot < 0 or slot >= _cooldowns.size() or slot >= slots.size() or slots[slot] == null:
 		return 0.0
 	var cooldown: float = maxf(slots[slot].cooldown, 0.01)
 	return clampf(_cooldowns[slot] / cooldown, 0.0, 1.0)

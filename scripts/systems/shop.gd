@@ -87,6 +87,8 @@ func buy(offer: Dictionary) -> EconomyManager.PurchaseResult:
 	if result == EconomyManager.PurchaseResult.OK:
 		AudioPool.play_2d(purchase_sound, AudioPool.BUS_UI)
 		offers.erase(offer)
+		if int(offer["kind"]) == Kind.WEAPON:
+			_rescope_weapon_offers()
 		purchase_succeeded.emit(offer)
 		offers_changed.emit(offers)
 	else:
@@ -198,11 +200,34 @@ func _rare_scope(upgrade: UpgradeData, equipped: StringName) -> StringName:
 	return equipped if upgrade.category == UpgradeData.Category.WEAPON else &""
 
 
+## The gun the player walks out with: a weapon bought this visit is still a
+## pending swap (the shop freezes the tree), and its upgrades are the ones to sell.
 func _equipped_id() -> StringName:
 	var holder: WeaponHolder = _get_holder()
-	if holder == null or holder.current == null or holder.current.data == null:
+	var weapon: WeaponComponent = holder.get_incoming() if holder != null else null
+	if weapon == null or weapon.data == null:
 		return &""
-	return holder.current.data.id
+	return weapon.data.id
+
+
+## After a weapon purchase, the weapon upgrades already on the table were rolled
+## for the gun that just got replaced. Bought as they were, they went to the
+## holstered weapon - paid for, and doing nothing. They follow the new gun, and
+## the ones that do not fit it (a rare for the old weapon, a maxed stack) leave.
+func _rescope_weapon_offers() -> void:
+	var equipped: StringName = _equipped_id()
+	var kept: Array[Dictionary] = []
+	for offer: Dictionary in offers:
+		if int(offer["kind"]) == Kind.UPGRADE \
+				and int(offer["category"]) == UpgradeData.Category.WEAPON:
+			var data: UpgradeData = catalog.find_upgrade(offer["id"])
+			if data == null or not data.fits_weapon(equipped) \
+					or not UpgradeManager.can_add(data, equipped):
+				continue
+			offer["weapon_id"] = equipped
+			offer["owned"] = UpgradeManager.get_stacks(data.id, equipped)
+		kept.push_back(offer)
+	offers = kept
 
 
 func _execute(offer: Dictionary) -> EconomyManager.PurchaseResult:
@@ -227,6 +252,9 @@ func _buy_weapon(offer: Dictionary) -> EconomyManager.PurchaseResult:
 		return EconomyManager.PurchaseResult.INVALID
 	if holder.owns(offer["id"]):
 		return EconomyManager.PurchaseResult.MAX_STACKS
+	# Before charging: the swap is what is being sold.
+	if holder.find_by_id(offer["id"]) == null:
+		return EconomyManager.PurchaseResult.INVALID
 	var result: EconomyManager.PurchaseResult = EconomyManager.try_spend(
 		offer["id"], int(offer["cost"]))
 	if result != EconomyManager.PurchaseResult.OK:
@@ -238,9 +266,7 @@ func _buy_weapon(offer: Dictionary) -> EconomyManager.PurchaseResult:
 func _build_pool() -> Array[Dictionary]:
 	var pool: Array[Dictionary] = []
 	var holder: WeaponHolder = _get_holder()
-	var equipped_id: StringName = (
-		holder.current.data.id if holder != null and holder.current != null
-			and holder.current.data != null else &"")
+	var equipped_id: StringName = _equipped_id()
 
 	for upgrade: UpgradeData in catalog.upgrades:
 		# Null check comes first: reading `category` below to compute the scope would

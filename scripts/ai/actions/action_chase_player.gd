@@ -37,7 +37,15 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		return SUCCESS
 
 	_repath_timer -= enemy.get_ai_delta()
-	if _repath_timer <= 0.0:
+	# El turno se pide antes de consultar el navmesh, no despues. La pregunta de si
+	# se llega al objetivo es un camino entero (y si no se llega, otro mas), y se
+	# pagaba en cada intervalo de cada enemigo aunque el cupo despues le negara el
+	# repath: el presupuesto por frame no cubria la parte cara.
+	#
+	# Y negado el turno, el reloj no se rearma: se reintenta en el proximo tick del
+	# arbol, que es cuando la deuda que anoto el director le guarda el lugar. Con el
+	# reloj rearmado se volvia a pedir 200ms despues, con la deuda ya vencida.
+	if _repath_timer <= 0.0 and CombatDirector.request_repath(enemy):
 		_repath_timer = repath_interval
 		# Not the player's feet: a lane beside them, personal to this enemy, that
 		# closes as it arrives. See Enemy.get_approach_position - a pack that all
@@ -53,16 +61,13 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 		# abajo, que es lo que hace cualquiera que no puede subir.
 		if not enemy.refresh_target_reachability():
 			wanted = enemy.closest_reachable_point(enemy.get_target_position())
-		if _worth_repathing(enemy, wanted) and CombatDirector.request_repath(enemy):
+		if _worth_repathing(enemy, wanted):
 			enemy.set_move_target(wanted)
 	enemy.face_target(enemy.get_ai_delta())
 	return RUNNING
 
 
-## Si el destino se corrio lo suficiente. Y, si se corrio, si hay turno este
-## frame: un repath es una consulta al NavigationServer, y con una horda grande se
-## apilan todas en los mismos frames si nadie las reparte. El que no consigue
-## turno reintenta al siguiente, o sea 16ms tarde sobre un intervalo de 200ms.
+## Si el destino se corrio lo suficiente como para pagar un camino nuevo.
 func _worth_repathing(enemy: Enemy, wanted: Vector3) -> bool:
 	if not enemy.is_moving:
 		return true

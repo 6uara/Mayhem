@@ -51,10 +51,17 @@ var _phase_offset: Dictionary = {}
 var _amplitude: Dictionary = {}
 ## Bone index -> whether it is a knee, and so only bends one way.
 var _is_knee: Dictionary = {}
+## Bone index -> its rest rotation. The rest pose never changes at runtime, and
+## rebuilding the quaternion from it was per bone, per enemy, per physics frame.
+var _rest_rotation: Dictionary = {}
 var _model: Node3D
 var _model_rest_y: float = 0.0
 var _phase: float = 0.0
 var _weight: float = 0.0
+## The legs are already back at rest. An enemy standing still used to keep
+## writing its rest pose into every leg bone every frame, because the phase it
+## walked to never returns to zero.
+var _settled: bool = true
 
 
 ## Returns false when the model has no legs this can drive, so the caller can
@@ -80,12 +87,17 @@ func _physics_process(delta: float) -> void:
 	# a footfall to a metre of ground and keeps the legs from sliding: at half
 	# speed the enemy takes the same steps, half as often.
 	if speed > idle_speed_threshold:
-		_phase += speed * steps_per_meter * TAU * delta
+		_phase = fmod(_phase + speed * steps_per_meter * TAU * delta, TAU)
 		_weight = minf(_weight + settle_speed * delta, 1.0)
 	else:
 		_weight = maxf(_weight - settle_speed * delta, 0.0)
-	if _weight <= 0.0 and is_zero_approx(_phase):
-		return
+	if _weight <= 0.0:
+		if _settled:
+			return
+		# One last pass at weight zero puts every bone back on its rest pose.
+		_settled = true
+	else:
+		_settled = false
 
 	for bone: int in _swing_axis:
 		var wave: float = sin(_phase + float(_phase_offset[bone]))
@@ -93,9 +105,8 @@ func _physics_process(delta: float) -> void:
 			wave = maxf(wave, 0.0)
 		var angle: float = wave * deg_to_rad(float(_amplitude[bone])) * _weight
 		var axis: Vector3 = _swing_axis[bone]
-		var rest: Transform3D = _skeleton.get_bone_rest(bone)
-		_skeleton.set_bone_pose_rotation(bone,
-			Quaternion(rest.basis.orthonormalized()) * Quaternion(axis, angle))
+		var rest: Quaternion = _rest_rotation[bone]
+		_skeleton.set_bone_pose_rotation(bone, rest * Quaternion(axis, angle))
 
 	if _model != null:
 		# Twice the leg frequency: the body dips once per footfall, and there are
@@ -138,6 +149,7 @@ func _collect_legs(node: Node) -> void:
 		_amplitude[bone] = knee_degrees if is_knee else swing_degrees
 		_is_knee[bone] = is_knee
 		_swing_axis[bone] = _side_axis_in_bone_space(bone)
+		_rest_rotation[bone] = Quaternion(_skeleton.get_bone_rest(bone).basis.orthonormalized())
 
 
 ## The swing has to happen around the model's own left-right axis whichever way

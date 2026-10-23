@@ -156,7 +156,9 @@ func set_bus_volume_linear(bus: StringName, linear: float) -> void:
 	if index < 0:
 		return
 	_base_db[bus] = linear_to_db(clampf(linear, 0.0, 1.0))
-	if bus == BUS_SFX and _duck_refs > 0:
+	# Los mismos dos buses que baja `_apply_duck()`. Con solo SFX, tocar la musica
+	# en el menu mientras hablaba el Host la dejaba sin bajar hasta la proxima linea.
+	if (bus == BUS_SFX or bus == BUS_MUSIC) and _duck_refs > 0:
 		AudioServer.set_bus_volume_db(index, _base_db[bus] + DUCK_AMOUNT_DB)
 	else:
 		AudioServer.set_bus_volume_db(index, _base_db[bus])

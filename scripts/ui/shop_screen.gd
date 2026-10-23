@@ -58,6 +58,8 @@ var is_open: bool = false
 var page: Page = Page.SHOP
 
 var _time_left: float = 0.0
+## Si el reloj ya esta pintado de urgente. Ver `_process()`.
+var _timer_urgent_shown: bool = false
 var _rule_group: ButtonGroup
 var _contract_button: Button
 
@@ -77,12 +79,22 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not is_open:
+	# The shop runs while the tree is frozen (it froze it), so pausing on top of it
+	# has to stop its clock by hand: the timer kept running under the pause menu
+	# and threw the player back into the arena from it.
+	if not is_open or GameManager.is_frozen_by(GameManager.FREEZE_PAUSE_MENU):
 		return
+	var shown: int = roundi(maxf(_time_left, 0.0))
 	_time_left -= delta
-	_timer_label.text = "%0.0fs" % maxf(_time_left, 0.0)
-	_timer_label.add_theme_color_override(&"font_color",
-		Tokens.ENEMY if _time_left <= Tokens.SHOP_TIMER_URGENT else Tokens.TEXT)
+	if roundi(maxf(_time_left, 0.0)) != shown:
+		_timer_label.text = "%ds" % roundi(maxf(_time_left, 0.0))
+	# Solo al cruzar el umbral: add_theme_color_override() invalida el control en
+	# cada llamada, cambie o no el color.
+	var urgent: bool = _time_left <= Tokens.SHOP_TIMER_URGENT
+	if urgent != _timer_urgent_shown:
+		_timer_urgent_shown = urgent
+		_timer_label.add_theme_color_override(&"font_color",
+			Tokens.ENEMY if urgent else Tokens.TEXT)
 	if _time_left <= 0.0:
 		close()
 
@@ -109,6 +121,9 @@ func open(breakdown: Dictionary, wave_index: int, duration_seconds: float) -> vo
 		return
 	is_open = true
 	_time_left = duration
+	_timer_label.text = "%ds" % roundi(duration)
+	_timer_urgent_shown = false
+	_timer_label.add_theme_color_override(&"font_color", Tokens.TEXT)
 	_root.visible = true
 	_fill_report(breakdown, wave_index, duration_seconds)
 	_on_currency_changed(EconomyManager.currency)

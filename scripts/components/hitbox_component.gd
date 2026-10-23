@@ -4,6 +4,11 @@ extends Area3D
 ## Headshots are just a hitbox with a damage_multiplier - there are no limb zones.
 
 signal hit_taken(amount: float, is_headshot: bool, hit_position: Vector3)
+## Antes de que el daño entre. Existe por el golpe que mata: `hit_taken` sale
+## despues de aplicar el daño, y para entonces el enemigo ya murio y ya anuncio
+## la kill - con la zona del golpe anterior. Un headshot que mataba de un tiro se
+## cobraba como tiro al cuerpo.
+signal hit_landing(is_headshot: bool)
 
 ## Body hitboxes leave this at 1.0; head hitboxes override it per enemy.
 @export var damage_multiplier: float = 1.0
@@ -31,6 +36,7 @@ func _ready() -> void:
 func take_hit(base_damage: float, hit_position: Vector3, attacker: Node = null) -> float:
 	var amount: float = base_damage * damage_multiplier
 	var applied: float = 0.0
+	hit_landing.emit(is_headshot_zone)
 	if health_component != null:
 		applied = health_component.apply_damage(amount, attacker)
 	hit_taken.emit(applied, is_headshot_zone, hit_position)

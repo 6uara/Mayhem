@@ -117,9 +117,11 @@ func _last_attacker_direction() -> Vector3:
 		return Vector3.FORWARD
 	var closest: Vector3 = Vector3.FORWARD
 	var best: float = INF
-	for node: Node in get_tree().get_nodes_in_group(&"enemy"):
-		var enemy := node as Node3D
-		if enemy == null:
+	# Los vivos y no el grupo: el grupo incluye a los guardados en el pool, que
+	# esperan diez kilometros abajo del piso, y sin ningun vivo el golpe de un
+	# charco se dibujaba viniendo del suelo.
+	for enemy: Enemy in CombatDirector.get_active_enemies():
+		if not is_instance_valid(enemy) or not enemy.is_active:
 			continue
 		var offset: Vector3 = enemy.global_position - player.global_position
 		var distance: float = offset.length_squared()

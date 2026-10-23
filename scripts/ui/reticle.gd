@@ -38,7 +38,14 @@ var is_anchor_available: bool = false:
 		queue_redraw()
 
 ## 0 = hipfire, 1 = fully aimed. Drives the crossfade to the weapon's sight.
-var ads_progress: float = 0.0
+## Redraws on its own: the crossfade used to ride on the spread changing alongside
+## it, so a weapon whose hipfire and ADS cones matched would never show its sight.
+var ads_progress: float = 0.0:
+	set(value):
+		if is_equal_approx(ads_progress, value):
+			return
+		ads_progress = value
+		queue_redraw()
 
 var _spread_gap: float = 0.0
 var _hit: Hit = Hit.NONE

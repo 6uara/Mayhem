@@ -74,7 +74,11 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_apply_radius()
-	arm()
+	# A trap placed in the level arms itself. One built by ObjectPool is armed by
+	# setup() a moment later, where it lands: arming it here too played the
+	# warning at the arena origin, where the pool instantiates it.
+	if not has_meta(ObjectPool.POOLED_META):
+		arm()
 
 
 func _physics_process(delta: float) -> void:

@@ -62,12 +62,17 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 ## pediria un camino nuevo todos los frames.
 func _reposition(enemy: Enemy, wanted: Vector3) -> int:
 	_repath_timer -= enemy.get_ai_delta()
-	if _repath_timer <= 0.0:
+	if _repath_timer > 0.0:
+		return RUNNING
+	var moved: float = wanted.distance_squared_to(enemy.move_target)
+	if enemy.is_moving and moved <= repath_tolerance * repath_tolerance:
 		_repath_timer = repath_interval
-		var moved: float = wanted.distance_squared_to(enemy.move_target)
-		if (not enemy.is_moving or moved > repath_tolerance * repath_tolerance) \
-				and CombatDirector.request_repath(enemy):
-			enemy.set_move_target(wanted)
+		return RUNNING
+	# Negado el turno, el reloj no se rearma: se reintenta en el proximo tick, que
+	# es cuando la deuda que anoto el director le guarda el lugar.
+	if CombatDirector.request_repath(enemy):
+		_repath_timer = repath_interval
+		enemy.set_move_target(wanted)
 	return RUNNING
 
 
