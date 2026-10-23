@@ -147,6 +147,7 @@ func clear_leaderboard() -> void:
 
 func load_leaderboard() -> void:
 	_entries.clear()
+	SafeFile.recover(SAVE_PATH)
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -229,11 +230,8 @@ func _read_row(entry: Variant) -> Dictionary:
 
 
 func save_leaderboard() -> void:
-	var file: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
+	if SafeFile.write_text(SAVE_PATH, JSON.stringify(_entries, "\t")) != OK:
 		push_error("SaveManager: cannot write %s" % SAVE_PATH)
-		return
-	file.store_string(JSON.stringify(_entries, "	"))
 
 
 # Public API - perfiles
@@ -288,6 +286,7 @@ func is_valid_name(raw: String) -> bool:
 
 func load_profiles() -> void:
 	_profiles.clear()
+	SafeFile.recover(PROFILES_PATH)
 	if not FileAccess.file_exists(PROFILES_PATH):
 		return
 	var file: FileAccess = FileAccess.open(PROFILES_PATH, FileAccess.READ)
@@ -309,11 +308,8 @@ func load_profiles() -> void:
 
 
 func save_profiles() -> void:
-	var file: FileAccess = FileAccess.open(PROFILES_PATH, FileAccess.WRITE)
-	if file == null:
+	if SafeFile.write_text(PROFILES_PATH, JSON.stringify(_profiles, "\t")) != OK:
 		push_error("SaveManager: cannot write %s" % PROFILES_PATH)
-		return
-	file.store_string(JSON.stringify(_profiles, "	"))
 
 
 # Public API - tutorial hints
@@ -338,6 +334,7 @@ func clear_tutorial_hints() -> void:
 
 func load_tutorial_hints() -> void:
 	_seen_hints.clear()
+	SafeFile.recover(TUTORIAL_SAVE_PATH)
 	if not FileAccess.file_exists(TUTORIAL_SAVE_PATH):
 		return
 	var file: FileAccess = FileAccess.open(TUTORIAL_SAVE_PATH, FileAccess.READ)
@@ -355,9 +352,6 @@ func load_tutorial_hints() -> void:
 
 
 func save_tutorial_hints() -> void:
-	var file: FileAccess = FileAccess.open(TUTORIAL_SAVE_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("SaveManager: cannot write %s" % TUTORIAL_SAVE_PATH)
-		return
 	var ids: Array = _seen_hints.keys().map(func(id: StringName) -> String: return String(id))
-	file.store_string(JSON.stringify(ids, "	"))
+	if SafeFile.write_text(TUTORIAL_SAVE_PATH, JSON.stringify(ids, "\t")) != OK:
+		push_error("SaveManager: cannot write %s" % TUTORIAL_SAVE_PATH)
