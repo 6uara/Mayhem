@@ -50,8 +50,9 @@ settings del proyecto. Un solo camino de entrada para las tres cosas.
 godot --headless --path . -s tools/make_default_arena.gd
 ```
 
-Construye `data/arenas/default_arena.tres` — *The Pit*, la única arena que
-viene con el juego — manejando el mismo `PlacementModel` que maneja el dock. La
+Construye `data/arenas/default_arena.tres` — *The Pit*, la arena default de
+las tres que vienen con el juego (las otras dos salen de
+`tools/make_ziggurat_arena.gd` y `tools/make_foundry_arena.gd`) — manejando el mismo `PlacementModel` que maneja el dock. La
 valida antes de guardar, falla si alguna pieza fue rechazada, e imprime piezas,
 celdas caminables, spawns y enlaces de navegación. Si eso corre, el núcleo está
 sano.

@@ -216,3 +216,39 @@ func test_moving_platforms_travel_along_their_rotated_path() -> void:
 		assert_almost_eq(node.position.y + slab.size.y * 0.5, floor_top, 0.02)
 		checked += 1
 	assert_gt(checked, 0)
+
+
+## Las arenas que vienen con el juego son tres y se eligen al darle a Play.
+## Cualquiera de ellas es la arena de una run normal, asi que lo que se le pide a
+## la default se le pide a todas.
+func _shipped_paths() -> Array[String]:
+	var paths: Array[String] = []
+	for entry: Dictionary in ArenaSession.list_playable():
+		if bool(entry["shipped"]):
+			paths.append(String(entry["path"]))
+	return paths
+
+
+func test_every_shipped_arena_loads_with_a_door_for_every_wave_id() -> void:
+	var paths: Array[String] = _shipped_paths()
+	assert_gte(paths.size(), 3, "The Pit, The Ziggurat y The Foundry")
+	for path: String in paths:
+		var arena: ArenaData = ArenaIO.load_arena(path)
+		assert_true(ArenaValidator.is_playable(arena, ArenaSession.catalog), path)
+		assert_gte(arena.enemy_spawns.size(), 7, "%s: las waves nombran door_01 a door_07" % path)
+		var runtime: ArenaRuntime = ArenaLoader.load_arena(arena, _parent, ArenaSession.catalog)
+		assert_not_null(runtime, path)
+		if runtime == null:
+			continue
+		assert_gt(runtime.get_node("NavigationLinks").get_child_count(), 0,
+			"%s: la horda tiene por donde subir" % path)
+		runtime.free()
+
+
+func test_shipped_arenas_each_play_in_the_coliseum_with_their_own_name() -> void:
+	var names: Dictionary = {}
+	for path: String in _shipped_paths():
+		var arena: ArenaData = ArenaIO.load_arena(path)
+		assert_eq(arena.theme_id, &"coliseum", "%s: el publico y los regalos viven en el coliseo" % path)
+		assert_false(names.has(arena.arena_name), "dos arenas no comparten nombre")
+		names[arena.arena_name] = true

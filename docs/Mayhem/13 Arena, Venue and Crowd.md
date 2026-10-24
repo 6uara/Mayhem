@@ -43,8 +43,18 @@ spawn y navegación.
 - **Navegación:** dos sistemas con roles separados — grilla + A* para el editor,
   navmesh horneado en runtime para los enemigos. Ver
   [DECISION_navegacion_arenas](../decisiones/DECISION_navegacion_arenas.md).
-- **Arena por defecto:** generada por `tools/make_default_arena.gd` (headless,
-  reproducible): ~300 piezas, piso de bloques `floor_3x3`.
+- **Arenas del juego:** tres en `data/arenas/`, todas en el coliseo, con 7
+  puertas y el piso entero (los regalos del público caen al nivel 0). Con más de
+  una, Play pasa siempre por la pantalla de elección; la default va primero.
+
+  | Arena | Archivo | Generador | Carácter |
+  |---|---|---|---|
+  | *The Pit* (default) | `default_arena.tres` | `tools/make_default_arena.gd` (el `.tres` tiene pads corregidos a mano: no regenerar) | Equilibrada: anillo elevado, islas, perchas |
+  | *The Ziggurat* | `ziggurat_arena.tres` | `tools/make_ziggurat_arena.gd` | Vertical, rey de la colina: pirámide de tres terrazas, 4 zip lines desde la cima, piso abierto con pilares, patio con charcos bajo la cima |
+  | *The Foundry* | `foundry_arena.tres` | `tools/make_foundry_arena.gd` | Corta distancia: 12 cuartos y una nave central, pasarela con plataformas que se caen, charcos y campos lentos en las entradas |
+
+  Los dos generadores nuevos extienden `tools/shipped_arena_builder.gd`
+  (validar, contar, guardar, baldosas y tramos de muro).
 
 Editor: in-game (botón CREAR ARENA, ver [DEV_TOOLS](../DEV_TOOLS.md)) y dock de
 Godot (ver [`addons/mayhem_tools/README.md`](../../addons/mayhem_tools/README.md)).
