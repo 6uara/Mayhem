@@ -131,7 +131,16 @@ func list_arenas() -> PackedStringArray:
 ## itself rather than its filename.
 func list_playable() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
+	# La default primero, que es la que el menu da por elegida; el resto por
+	# nombre de archivo, para que la lista no cambie de orden entre builds.
+	var shipped: Array[String] = []
 	for path: String in _arenas_in(SHIPPED_DIR):
+		shipped.append(path)
+	shipped.sort()
+	if shipped.has(SaveManager.DEFAULT_ARENA_ID):
+		shipped.erase(SaveManager.DEFAULT_ARENA_ID)
+		shipped.push_front(SaveManager.DEFAULT_ARENA_ID)
+	for path: String in shipped:
 		entries.append(_describe(path, true))
 	for path: String in list_arenas():
 		entries.append(_describe(path, false))

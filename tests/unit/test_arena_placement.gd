@@ -371,8 +371,10 @@ func test_counts_by_piece_matches_counting_one_by_one() -> void:
 
 func test_every_capped_piece_fits_the_arenas_that_ship() -> void:
 	var catalog: PieceCatalog = load(ArenaSession.CATALOG_PATH) as PieceCatalog
-	for path: String in ["res://data/arenas/default_arena.tres"]:
-		var arena: ArenaData = ArenaIO.load_arena(path)
+	for entry: Dictionary in ArenaSession.list_playable():
+		if not bool(entry["shipped"]):
+			continue
+		var arena: ArenaData = ArenaIO.load_arena(String(entry["path"]))
 		var model := PlacementModel.new(arena, catalog)
 		for piece: PieceDefinition in catalog.pieces:
 			if piece == null or piece.max_instances <= 0:

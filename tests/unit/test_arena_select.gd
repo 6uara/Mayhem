@@ -22,6 +22,18 @@ func test_the_shipped_arenas_are_playable_without_building_anything() -> void:
 		assert_true(bool(entry["shipped"]), "nothing of the player's exists yet")
 
 
+## Tres arenas para elegir al darle a Play, con la default primero: es la que
+## el menu da por elegida si nadie eligio otra.
+func test_three_arenas_ship_and_the_default_comes_first() -> void:
+	var entries: Array[Dictionary] = ArenaSession.list_playable()
+	var names: Array[String] = []
+	for entry: Dictionary in entries:
+		names.append(String(entry["name"]))
+	assert_eq(entries[0]["path"], SaveManager.DEFAULT_ARENA_ID)
+	for arena_name: String in ["The Pit", "The Ziggurat", "The Foundry"]:
+		assert_has(names, arena_name)
+
+
 func test_entries_carry_the_name_the_arena_calls_itself() -> void:
 	for entry: Dictionary in ArenaSession.list_playable():
 		if entry["path"] == "res://data/arenas/default_arena.tres":
