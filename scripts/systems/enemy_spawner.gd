@@ -113,4 +113,10 @@ func _pick_door(door_ids: Array[StringName]) -> SpawnDoor:
 	var candidates: Array[SpawnDoor] = _matching_doors(door_ids)
 	if candidates.is_empty():
 		return null
-	return candidates[_rng.randi_range(0, candidates.size() - 1)]
+	# Al azar entre las que nombra el grupo, pesado por el director: contra el que
+	# retrocede, las que quedan hacia donde va salen mas seguido. Todas siguen
+	# posibles y todas avisaron igual (telegraph() las prende a todas).
+	var weights := PackedFloat32Array()
+	for door: SpawnDoor in candidates:
+		weights.append(CombatDirector.door_weight(door.get_spawn_position()))
+	return candidates[_rng.rand_weighted(weights)]

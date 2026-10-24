@@ -160,7 +160,11 @@ func _predicted_spot(enemy: Enemy, is_snare: bool = false) -> Vector3:
 	# lado la resuelven con velocidades de frames distintos, y despues el reparto
 	# de piso de abajo no puede saber si apuntaron al mismo lugar o a dos.
 	if CombatDirector.has_target():
-		return CombatDirector.predicted_position(maxf(flight_time, 0.1), lead)
+		# Contra el que retrocede, el frasco va un poco mas adelante en la retirada:
+		# el piso que se niega es el que tiene a la espalda.
+		var flight: float = maxf(flight_time, 0.1)
+		return CombatDirector.predicted_position(flight, lead) + CombatDirector.retreat_lead(
+			flight, CombatDirector.retreat.config.flask_lead_bonus)
 	# Sin director -el primer frame de la ola, o un test que instancia la hoja
 	# sola- la cuenta se hace aca. Es la misma.
 	var velocity: Vector3 = enemy.get_target_velocity()

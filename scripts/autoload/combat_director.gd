@@ -21,6 +21,13 @@ extends Node
 ##    ruido: todo pasa al mismo tiempo y nada se puede leer ni esquivar.
 ## 3. **El presupuesto por frame.** Vecinos y repaths se sirven de una grilla y de
 ##    un cupo, no de un recorrido completo por enemigo por frame.
+## 4. **La respuesta a la retirada.** Retroceder disparando es la forma mas barata
+##    de pelear contra una horda que viene de frente. El director mide cuanto se
+##    sostiene (`RetreatPressure`) y la horda lo contesta en grupo: dos cortan el
+##    camino, los tiradores adelantan la retirada, los cuerpo a cuerpo apuran el
+##    paso y las puertas de adelante pesan mas. Todo escala con la presion y se
+##    apaga solo; retroceder sigue siendo posible, deja de ser gratis. Los numeros
+##    en `data/combat/retreat_pressure.tres`.
 ##
 ## Es autoload y no un nodo del arena a proposito: los enemigos son pooleados y
 ## sobreviven al cambio de escena, asi que el registro tiene que vivir mas que
@@ -117,6 +124,11 @@ const HAZARD_MIN_SEPARATION: float = 4.0
 ## de devolverla cuando el charco se apaga.
 const HAZARD_CLAIM_TIME: float = 2.5
 
+const RETREAT_CONFIG_PATH: String = "res://data/combat/retreat_pressure.tres"
+
+## Cuanto viene retrocediendo el jugador. Ver la seccion "API - retirada".
+var retreat: RetreatPressure
+
 ## Los enemigos vivos. Es la lista que la separacion recorria adentro de `Enemy`,
 ## traida aca porque la pregunta "quien esta cerca" es de todos y no de cada uno.
 var _enemies: Array[Enemy] = []
@@ -137,6 +149,8 @@ var _tokens: Dictionary = {}
 var _token_holders: Dictionary = {}
 ## Pedazos de piso reservados: cada entrada es {position, expiry}.
 var _hazards: Array[Dictionary] = []
+## instance_id -> true, los que estan cortando el camino del que retrocede.
+var _interceptors: Dictionary = {}
 
 var _reassign_timer: float = 0.0
 var _grid_timer: float = 0.0
@@ -156,6 +170,7 @@ var _repath_reserved: int = 0
 func _ready() -> void:
 	# Antes que cualquier enemigo: todos leen el snapshot y la grilla de este frame.
 	process_priority = -100
+	retreat = RetreatPressure.new(load(RETREAT_CONFIG_PATH) as RetreatPressureConfig)
 	EventBus.player_died.connect(reset)
 
 
@@ -166,10 +181,15 @@ func _physics_process(delta: float) -> void:
 	# la deuda no serviria de nada.
 	_expire_repath_debt()
 	if _enemies.is_empty():
+		# Sin nadie que conteste, la presion se enfria igual: la oleada siguiente
+		# no hereda la retirada del final de esta.
+		retreat.update(Vector3.ZERO, _target_facing, delta)
 		return
 	_prune()
 	_expire_hazards()
 	_refresh_target()
+	retreat.update(_target_velocity if _target != null else Vector3.ZERO,
+		_target_facing, delta)
 	_grid_timer -= delta
 	if _grid_timer <= 0.0:
 		_grid_timer = GRID_INTERVAL
@@ -178,6 +198,7 @@ func _physics_process(delta: float) -> void:
 	if _reassign_timer <= 0.0:
 		_reassign_timer = REASSIGN_INTERVAL
 		_reassign_bearings()
+		_assign_interceptors()
 
 
 # API - registro
@@ -199,6 +220,7 @@ func unregister(enemy: Enemy) -> void:
 	release_attack_token(enemy)
 	_bearings.erase(enemy.get_instance_id())
 	_repath_debt.erase(enemy.get_instance_id())
+	_interceptors.erase(enemy.get_instance_id())
 
 
 ## Los enemigos vivos, sin pasar por el arbol - `get_nodes_in_group()` arma un
@@ -218,6 +240,9 @@ func reset() -> void:
 	_repath_debt.clear()
 	_repath_reserved = 0
 	_hazards.clear()
+	_interceptors.clear()
+	if retreat != null:
+		retreat.reset()
 	_target = null
 	_reassign_timer = 0.0
 
@@ -434,6 +459,67 @@ func claim_hazard(point: Vector3) -> bool:
 	return true
 
 
+# API - retirada
+
+## Cuanto contesta la horda a la retirada ahora mismo, de 0 a 1. Ya trae el
+## umbral y la escala por oleada: quien lo lee solo lo multiplica por su numero.
+func retreat_effect() -> float:
+	if retreat == null or _target == null:
+		return 0.0
+	return retreat.effect(WaveManager.current_index)
+
+
+## La parte de la velocidad del jugador que va hacia atras de donde mira. Es lo
+## unico que adelantan los que contestan la retirada: el que se mueve de costado
+## no se vuelve mas facil de pegar.
+func retreat_velocity() -> Vector3:
+	return RetreatPressure.backward_velocity(_target_velocity, _target_facing)
+
+
+## Cuanto adelantar algo que tarda `lead_time` en llegar, con `fraction` como lo
+## maximo que adelanta el que pregunta.
+func retreat_lead(lead_time: float, fraction: float = 1.0) -> Vector3:
+	var effect: float = retreat_effect()
+	if effect <= 0.0:
+		return Vector3.ZERO
+	return retreat_velocity() * lead_time * clampf(fraction, 0.0, 1.0) * effect
+
+
+## Si este enemigo dejo de perseguir para ir a donde el jugador va a estar.
+func is_interceptor(enemy: Enemy) -> bool:
+	return enemy != null and _interceptors.has(enemy.get_instance_id())
+
+
+## Hacia donde camina un interceptor: el jugador mas la retirada adelantada.
+func interception_point() -> Vector3:
+	return _target_position + retreat_lead(retreat.config.interception_lead_time)
+
+
+## El multiplicador de velocidad de este enemigo por la retirada. Solo los cuerpo
+## a cuerpo, que son los que la retirada deja atras: un tirador ya llega.
+func pursuit_multiplier(enemy: Enemy) -> float:
+	if enemy == null or retreat == null or role_of(enemy.data) != Role.BRAWLER:
+		return 1.0
+	return 1.0 + retreat.config.pursuit_speed_bonus * retreat_effect()
+
+
+## Cuanto pesa una puerta en la eleccion del spawner. 1 para todas mientras nadie
+## retrocede; con la retirada, las que quedan hacia donde va el jugador pesan mas.
+## Nunca cero: las puertas que el grupo nombra se siguen usando todas, cambia la
+## frecuencia, y todas avisan igual antes de abrirse.
+func door_weight(door_position: Vector3) -> float:
+	var effect: float = retreat_effect()
+	var direction: Vector3 = retreat_velocity()
+	if effect <= 0.0 or direction.length_squared() < 0.01:
+		return 1.0
+	var to_door: Vector3 = door_position - _target_position
+	to_door.y = 0.0
+	if to_door.length_squared() < 0.01:
+		return 1.0
+	var ahead: float = maxf(direction.normalized().dot(to_door.normalized()), 0.0)
+	return 1.0 + retreat.config.door_ahead_weight * effect * ahead
+
+
 # API - snapshot
 
 ## Si el director ya sabe contra quien pelea la horda. Lo preguntan los que tienen
@@ -580,6 +666,38 @@ func _reassign_bearings() -> void:
 		slots.sort()
 		for i: int in members.size():
 			_bearings[members[i].get_instance_id()] = slots[i]
+
+
+## Elige a los que cortan el camino: cuerpo a cuerpo y bombas, los que ya estan
+## mas del lado hacia donde el jugador retrocede. Los que vienen de frente siguen
+## persiguiendo - son la presion que lo hace retroceder - y los que estan a los
+## costados o atras son los que pueden llegar antes que el.
+func _assign_interceptors() -> void:
+	_interceptors.clear()
+	var direction: Vector3 = retreat_velocity()
+	if retreat_effect() <= 0.0 or direction.length_squared() < 0.01:
+		return
+	direction = direction.normalized()
+	var candidates: Array[Dictionary] = []
+	for enemy: Enemy in _enemies:
+		if enemy.data == null or enemy.is_flying():
+			continue
+		var role: Role = role_of(enemy.data)
+		if role != Role.BRAWLER and role != Role.INFILTRATOR:
+			continue
+		var offset: Vector3 = enemy.global_position - _target_position
+		offset.y = 0.0
+		if offset.length_squared() < 0.01:
+			continue
+		var alignment: float = direction.dot(offset.normalized())
+		# De frente ya lo esta empujando; ese sigue persiguiendo.
+		if alignment < -0.3:
+			continue
+		candidates.append({"enemy": enemy, "alignment": alignment})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["alignment"]) > float(b["alignment"]))
+	for i: int in mini(candidates.size(), retreat.config.max_interceptors):
+		_interceptors[(candidates[i]["enemy"] as Enemy).get_instance_id()] = true
 
 
 ## Los angulos disponibles de un rol para `count` enemigos: la banda repartida en

@@ -40,6 +40,14 @@ const SNARE_GRACE: float = 0.9
 
 @export_group("Ground")
 @export var base_move_speed: float = 7.5
+## Fraccion de la velocidad de caminar que queda yendo derecho hacia atras. De
+## costado no cobra nada y en diagonal cobra la parte que va hacia atras.
+##
+## Solo el destino de la caminata en el piso: no toca el slide, el bhop, el aire
+## ni el gancho, porque el momentum ganado no se recorta (CLAUDE.md 5.2). Lo que
+## encarece es retroceder caminando mientras se dispara, que con la misma
+## velocidad hacia todos lados era gratis contra cualquier cosa que corra a pie.
+@export_range(0.5, 1.0) var backpedal_speed_multiplier: float = 0.85
 @export var acceleration: float = 60.0
 @export var friction: float = 45.0
 ## Apex under `gravity` alone is jump_velocity^2 / (2*gravity) - 1.33m at the
@@ -211,6 +219,21 @@ func get_move_speed() -> float:
 	return speed * _snare_multiplier
 
 
+## Cuanto de la velocidad de caminar queda yendo hacia `wish_direction`: 1 hacia
+## adelante y de costado, `backpedal_speed_multiplier` derecho hacia atras.
+func backpedal_factor(wish_direction: Vector3) -> float:
+	if body == null or wish_direction == Vector3.ZERO:
+		return 1.0
+	# Godot mira hacia -Z, asi que +Z del cuerpo es su espalda. El mismo basis
+	# local con el que se arma `wish_direction`.
+	var back: Vector3 = body.transform.basis.z
+	back.y = 0.0
+	if back.length_squared() < 0.001:
+		return 1.0
+	var backward: float = clampf(wish_direction.dot(back.normalized()), 0.0, 1.0)
+	return lerpf(1.0, backpedal_speed_multiplier, backward)
+
+
 func is_sliding() -> bool:
 	return state == State.SLIDING
 
@@ -277,7 +300,7 @@ func _tick_grounded(wish_direction: Vector3, delta: float) -> void:
 		_jump()
 		return
 	var horizontal: Vector3 = _horizontal()
-	var speed: float = get_move_speed()
+	var speed: float = get_move_speed() * backpedal_factor(wish_direction)
 	if wish_direction != Vector3.ZERO:
 		horizontal = horizontal.move_toward(wish_direction * speed, acceleration * delta)
 	else:

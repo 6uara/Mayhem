@@ -40,7 +40,13 @@ chaining is intentional.
 - `_tick_grounded()` — a pending jump fires **before** friction (so a jump on
   the touchdown frame keeps all its speed — the bhop), otherwise accelerate
   toward `wish_direction * get_move_speed()` (`acceleration`), or decelerate to
-  zero (`friction`) with no input.
+  zero (`friction`) with no input. Walking backward targets
+  `backpedal_speed_multiplier` (0.85) of that speed, blended by how much of the
+  wish points behind the body (`backpedal_factor()`); strafing pays nothing.
+  Only the ground walk target — slide, bhop, air and grapple momentum are
+  untouched (CLAUDE.md 5.2). It exists so backpedalling while shooting is not
+  free against a horde on foot; the horde's side of that is in
+  [[02 Autoloads#Respuesta a la retirada (2026-10-23)]].
 - `_tick_airborne()` — **no drag**. First `_air_strafe()`, Source/Quake-style
   air acceleration: it only adds along the wish direction until the velocity's
   projection on it reaches `air_strafe_wish_speed`, so strafing sideways while

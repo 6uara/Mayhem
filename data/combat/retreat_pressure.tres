@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="RetreatPressureConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/retreat_pressure_config.gd" id="1_retreat"]
+
+[resource]
+script = ExtResource("1_retreat")

@@ -19,8 +19,10 @@ const LOG_DIR: String = "user://runs"
 const MAX_LOGS: int = 30
 ## 2: origen del daño, semilla y modo, reglas y contratos, rating, pedidos del
 ## publico, ofertas de la tienda y donde se murio.
-const FORMAT_VERSION: int = 2
-## Cada cuanto se muestrea el rating durante una oleada, en segundos.
+## 3: presion de retirada por oleada (`retreat_avg`, `retreat_peak`), para ajustar
+## `data/combat/retreat_pressure.tres` con datos.
+const FORMAT_VERSION: int = 3
+## Cada cuanto se muestrean el rating y la retirada durante una oleada, en segundos.
 const RATING_SAMPLE_INTERVAL: float = 1.0
 
 ## Donde se escribe. Variable y no solo la constante para que un test escriba en
@@ -35,6 +37,7 @@ var _run_start_msec: int = 0
 var _rating_samples: int = 0
 var _rating_sum: float = 0.0
 var _rating_timer: float = 0.0
+var _retreat_sum: float = 0.0
 
 
 func _ready() -> void:
@@ -69,6 +72,12 @@ func _process(delta: float) -> void:
 	_rating_sum += value
 	_wave["rating_peak"] = snappedf(maxf(float(_wave["rating_peak"]), value), 0.1)
 	_wave["rating_avg"] = snappedf(_rating_sum / float(_rating_samples), 0.1)
+	# La presion medida, de 0 a 1, no lo que contesto la horda: la respuesta ya
+	# depende de la oleada, y lo que hay que saber es cuanto se retrocede.
+	var retreat: float = CombatDirector.retreat.value if CombatDirector.retreat != null else 0.0
+	_retreat_sum += retreat
+	_wave["retreat_peak"] = snappedf(maxf(float(_wave["retreat_peak"]), retreat), 0.01)
+	_wave["retreat_avg"] = snappedf(_retreat_sum / float(_rating_samples), 0.01)
 
 
 # Public API
@@ -128,6 +137,8 @@ func _on_wave_started(wave_index: int, config: WaveData) -> void:
 		"contract_paid": 0,
 		"rating_peak": 0.0,
 		"rating_avg": 0.0,
+		"retreat_peak": 0.0,
+		"retreat_avg": 0.0,
 		"crowd_requests": [],
 	}
 	# La oferta se arma en la tienda, antes de que la oleada exista: queda
@@ -138,6 +149,7 @@ func _on_wave_started(wave_index: int, config: WaveData) -> void:
 	_rating_samples = 0
 	_rating_sum = 0.0
 	_rating_timer = 0.0
+	_retreat_sum = 0.0
 	(_log["waves"] as Array).append(_wave)
 
 
