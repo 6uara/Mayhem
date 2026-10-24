@@ -80,6 +80,13 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 | Más enemigos y más variedad por ola: de 6 a 10 en la 1 y de 42 a 49 en la 10 (total de la run 200 → 272). Los arquetipos debutan antes (ranger 1, bomber 2, healer 3, summoner 4, environmental 6, flyer 7) y cada ola mezcla más. `par_time` estirado en proporción; pool de enemigos a 56 | `data/waves/`, `game.tscn` |
 | Ningún enemigo puede quedar donde no se lo pueda matar: un spawn afuera de la pared se corrige al aparecer, el que termina afuera vuelve solo en medio segundo, y una ola sin progreso por 40 s devuelve a los vivos por una puerta y corrige un conteo de vivos colgado. Era el reporte de runs que no se podían terminar | `ArenaBounds`, `Enemy._tick_arena_guard()`, `WaveManager._rescue_stalled_wave()` |
 
+### Lo que entró el 2026-10-23
+
+| Qué | Dónde |
+|---|---|
+| Retroceder disparando deja de ser gratis: el `CombatDirector` mide la retirada sostenida y la horda la contesta (dos cortan el camino, tiros y saltos adelantan sólo la retirada, frascos más adelante, cuerpo a cuerpo hasta +12 %, puertas hacia donde va); caminar hacia atrás va al 85 %. Escala por oleada y se apaga sola. Números sin playtest: ajustar con `retreat_avg`/`retreat_peak` del log | `RetreatPressure`, `data/combat/retreat_pressure.tres`, `MovementComponent.backpedal_speed_multiplier`, [02 Autoloads](Mayhem/02%20Autoloads.md#combatdirector) |
+| Dos arenas más para elegir al darle a Play: *The Ziggurat* (vertical, rey de la colina, zip lines desde la cima) y *The Foundry* (cuartos y pasillos, pasarela con plataformas que se caen, charcos y campos lentos). La default va primera en la lista. Sin playtest todavía | `data/arenas/`, `tools/make_ziggurat_arena.gd`, `tools/make_foundry_arena.gd`, [13 Arena](Mayhem/13%20Arena,%20Venue%20and%20Crowd.md) |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |

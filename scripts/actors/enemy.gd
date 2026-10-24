@@ -675,7 +675,8 @@ func get_approach_position() -> Vector3:
 		return global_position
 	var target: Vector3 = victim.global_position
 	var wants_bearing: bool = data != null and data.approach_bearing_weight > 0.0
-	if is_zero_approx(_approach_lane) and not wants_bearing:
+	var intercepts: bool = CombatDirector.is_interceptor(self)
+	if is_zero_approx(_approach_lane) and not wants_bearing and not intercepts:
 		return target
 
 	var to_player: Vector3 = target - global_position
@@ -684,6 +685,11 @@ func get_approach_position() -> Vector3:
 	var commit: float = _approach_commit_distance()
 	if distance <= commit or distance < 0.01:
 		return target
+	# El que corta el camino del que retrocede no camina hacia el jugador sino
+	# hacia donde va a estar, y sin carril: el carril abre un frente, y este va a
+	# cerrarle la espalda. De cerca se compromete igual que todos, por arriba.
+	if intercepts:
+		return CombatDirector.interception_point()
 
 	# Full lane far out, none of it once inside the commit distance, and a smooth
 	# ramp between - a hard switch would make the whole pack snap inward at the
@@ -897,7 +903,10 @@ func get_hitbox_radius() -> float:
 
 func get_move_speed() -> float:
 	var speed: float = data.move_speed if data != null else 5.0
-	return speed * _slow_multiplier * _rule_speed
+	# El apuron detras del que retrocede (CombatDirector.pursuit_multiplier). Se
+	# ve sin cartel: el paso del modelo sale de la velocidad, asi que acelera con
+	# ella.
+	return speed * _slow_multiplier * _rule_speed * CombatDirector.pursuit_multiplier(self)
 
 
 ## El daño de un golpe o un disparo, con lo que la regla de la oleada le sume.
@@ -938,6 +947,10 @@ func start_leap() -> bool:
 	var target: Vector3 = victim.global_position
 	if global_position.distance_to(target) > data.leap_range:
 		return false
+	# Contra el que retrocede, cae adelante de la retirada (ver fire_projectile).
+	# El rango se mide antes, al jugador: el adelanto no estira el salto.
+	target += CombatDirector.retreat_lead(maxf(data.leap_flight_time, 0.1),
+		CombatDirector.retreat.config.leap_lead_fraction)
 	# Sin linea de vision no hay salto: si no, se estrella contra la pared que hay
 	# en el medio y el jugador ve al bicho tirarse a la nada.
 	if not _can_see(victim):
@@ -1157,6 +1170,13 @@ func fire_projectile() -> void:
 		return
 	var origin: Vector3 = global_position + Vector3.UP * data.head_offset
 	var target: Vector3 = get_target_position() + Vector3.UP * 1.0
+	# Contra el que retrocede, el tiro se adelanta a la retirada - solo a la parte
+	# hacia atras de su velocidad: de costado se esquiva igual que siempre, y
+	# moverse distinto es la respuesta. Ver CombatDirector.retreat_lead().
+	if data.projectile_speed > 0.0:
+		var flight: float = origin.distance_to(target) / data.projectile_speed
+		target += CombatDirector.retreat_lead(flight,
+			CombatDirector.retreat.config.ranged_lead_fraction)
 	var projectile: Node = ObjectPool.acquire(data.projectile_scene)
 	var typed := projectile as EnemyProjectile
 	if typed == null:

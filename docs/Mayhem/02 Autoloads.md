@@ -383,6 +383,37 @@ a grid and a quota instead of a full scan per enemy. Autoload because pooled
 enemies outlive arenas. Why and the numbers:
 [PLAN_COMBAT_DIRECTOR](../historial/PLAN_COMBAT_DIRECTOR.md).
 
+### Respuesta a la retirada (2026-10-23)
+
+Retroceder disparando contra una horda que viene de frente era gratis: el
+jugador caminaba hacia atrás a 7.5 m/s, el Rusher corre a 7.2 y los tiradores
+apuntaban a donde estaba. No se prohíbe; se vuelve caro y poco eficiente.
+
+- **Medición** — `RetreatPressure` (`scripts/systems/retreat_pressure.gd`),
+  0–1: sube sólo con la parte de la velocidad que va hacia atrás de la mirada
+  (de costado no cuenta), por encima de `min_retreat_speed`, en `rise_time`;
+  baja en `fall_time`, más corto. Por debajo de `onset` la horda no contesta;
+  la respuesta (`CombatDirector.retreat_effect()`) es una curva suave y escala
+  de `first_wave_strength` en la ola 1 a completa en `full_strength_wave`.
+- **Respuestas**, todas proporcionales a ese efecto:
+  - *Corte de camino*: hasta `max_interceptors` cuerpo a cuerpo/bombas que ya
+    están del lado hacia donde retrocede caminan a `interception_point()` (la
+    retirada adelantada `interception_lead_time`) en vez de perseguir.
+  - *Tiros y saltos que adelantan*: `fire_projectile()` y `start_leap()` suman
+    `retreat_lead()` — sólo la componente hacia atrás, así que moverse de
+    costado se sigue esquivando igual.
+  - *Frascos*: el Environmental suma `flask_lead_bonus` de la retirada a su
+    predicción.
+  - *Persecución*: los BRAWLER corren hasta `pursuit_speed_bonus` más rápido;
+    se lee en el paso del modelo, que sale de la velocidad.
+  - *Puertas*: entre las que nombra el grupo, `EnemySpawner` pesa más las que
+    quedan hacia donde va el jugador (`door_weight()`, nunca menos de 1).
+- **Números**: `data/combat/retreat_pressure.tres` (`RetreatPressureConfig`).
+  **Telemetría**: `RunLogger` formato 3 guarda `retreat_avg`/`retreat_peak` por
+  ola.
+- Complemento del lado del jugador: `MovementComponent.backpedal_speed_multiplier`
+  (ver [[03 Player and Movement#Ground / Air]]).
+
 ## BalanceHub
 
 `scripts/autoload/balance_hub.gd`. Editor-only: watches `res://data/economy`
