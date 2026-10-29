@@ -39,46 +39,58 @@ const GREYBOX_META: StringName = &"greybox"
 ## y nada que el render pudiera agrupar.
 static var _boxes: Dictionary = {}
 static var _materials: Dictionary = {}
+static var _art_meshes: Dictionary = {}
 
 
 ## `elevated` marca lo que esta por encima del nivel del piso. No es una
 ## propiedad de la pieza sino de donde se puso: el mismo `floor_3x3` es el suelo
 ## de la arena en el nivel 0 y una pasarela en el 1, y solo la segunda necesita
 ## que se le vea el borde.
+##
+## `cell` es la celda del mundo donde va la pieza: de ahi sale que variante del
+## arte lleva cada celda (`art_variants`). Sin ella todas llevan el arte base.
 static func build(piece: PieceDefinition, catalog: PieceCatalog,
-		with_collision: bool = true, elevated: bool = false) -> Node3D:
+		with_collision: bool = true, elevated: bool = false, cell: Vector3i = Vector3i.ZERO) -> Node3D:
 	if piece == null or catalog == null:
 		return null
 	if piece.scene != null:
 		return piece.scene.instantiate() as Node3D
-	return build_greybox(piece, catalog, with_collision, elevated)
+	return build_greybox(piece, catalog, with_collision, elevated, cell)
 
 
 static func build_greybox(piece: PieceDefinition, catalog: PieceCatalog,
-		with_collision: bool, elevated: bool = false) -> Node3D:
+		with_collision: bool, elevated: bool = false, cell: Vector3i = Vector3i.ZERO) -> Node3D:
 	var root: Node3D = StaticBody3D.new() if with_collision else Node3D.new()
 	root.set_meta(GREYBOX_META, true)
-	var material: ShaderMaterial = _surface_material(piece.greybox_color, elevated)
 	var size: Vector3 = catalog.cell_size * piece.greybox_extents
 	# Built up from the cell floor, never centred on the cell: a 0.25-high floor
 	# tile has to be the ground of its cell, not a slab hanging in the middle of
 	# it, or every wall standing on it floats.
 	var lift := Vector3(0.0, size.y * 0.5, 0.0)
-	for offset: Vector3i in piece.footprint:
-		var mesh_instance := MeshInstance3D.new()
-		mesh_instance.mesh = _box(size)
-		mesh_instance.material_override = material
-		mesh_instance.position = Vector3(offset) * catalog.cell_size + lift
-		root.add_child(mesh_instance)
-		if not with_collision:
-			continue
-		var shape := BoxShape3D.new()
-		shape.size = size
-		var collision := CollisionShape3D.new()
-		collision.shape = shape
-		collision.position = mesh_instance.position
-		root.add_child(collision)
-	if elevated and piece.edge_energy > 0.0:
+	var art: Mesh = art_mesh(piece)
+	if art != null:
+		_add_art(root, piece, catalog, art, with_collision, cell)
+	else:
+		var material: ShaderMaterial = _surface_material(piece.greybox_color, elevated)
+		for offset: Vector3i in piece.footprint:
+			var mesh_instance := MeshInstance3D.new()
+			mesh_instance.mesh = _box(size)
+			mesh_instance.material_override = material
+			mesh_instance.position = Vector3(offset) * catalog.cell_size + lift
+			root.add_child(mesh_instance)
+	var art_collides: bool = art != null and (piece.art_ramp_collision or piece.art_collision)
+	if with_collision and not art_collides:
+		for offset: Vector3i in piece.footprint:
+			var shape := BoxShape3D.new()
+			shape.size = size
+			var collision := CollisionShape3D.new()
+			collision.shape = shape
+			collision.position = Vector3(offset) * catalog.cell_size + lift
+			root.add_child(collision)
+	# La rampa con arte no tiene tapa plana: el filete marcaria el borde de una
+	# caja que ya no esta, flotando sobre la pendiente. La suya la trae el modelo.
+	var flat_top: bool = not (art != null and piece.art_ramp_collision)
+	if elevated and piece.edge_energy > 0.0 and flat_top:
 		_add_edge_trim(root, piece, catalog, size.y)
 	return root
 
@@ -98,7 +110,125 @@ static func build_preview(piece: PieceDefinition, catalog: PieceCatalog,
 	return root
 
 
+## La malla del arte de la pieza, o null si no tiene. Una por pieza y compartida,
+## igual que las cajas: es lo que deja que ArenaGeometryBatcher junte mil
+## baldosas en un MultiMesh.
+static func art_mesh(piece: PieceDefinition) -> Mesh:
+	return _mesh_of(piece.art_scene)
+
+
+static func _mesh_of(scene: PackedScene) -> Mesh:
+	if scene == null:
+		return null
+	var key: String = scene.resource_path
+	if not _art_meshes.has(key):
+		var found: Mesh = null
+		var instance: Node = scene.instantiate()
+		for node: Node in instance.find_children("*", "MeshInstance3D", true, false):
+			found = (node as MeshInstance3D).mesh
+			break
+		instance.free()
+		_art_meshes[key] = found
+	return _art_meshes[key]
+
+
 # Private
+
+## El arte, estirado sobre la caja de cada celda o sobre la del footprint entero.
+## Las cajas son las mismas que las de la colision greybox (ver `art_scene`).
+static func _add_art(root: Node3D, piece: PieceDefinition, catalog: PieceCatalog,
+		art: Mesh, with_collision: bool, world_cell: Vector3i = Vector3i.ZERO) -> void:
+	var cell: Vector3 = catalog.cell_size
+	var size: Vector3 = cell * piece.greybox_extents
+	var boxes: Array[AABB] = []
+	if piece.art_bounds.size != Vector3.ZERO:
+		boxes.append(piece.art_bounds)
+	elif piece.art_per_cell:
+		for offset: Vector3i in piece.footprint:
+			boxes.append(AABB(Vector3(offset) * cell - Vector3(size.x, 0.0, size.z) * 0.5, size))
+	else:
+		var lowest: Vector3i = piece.footprint[0]
+		var highest: Vector3i = lowest
+		for offset: Vector3i in piece.footprint:
+			lowest = lowest.min(offset)
+			highest = highest.max(offset)
+		var start: Vector3 = Vector3(lowest) * cell - Vector3(size.x, 0.0, size.z) * 0.5
+		var end: Vector3 = Vector3(highest) * cell + Vector3(size.x * 0.5, size.y, size.z * 0.5)
+		boxes.append(AABB(start, end - start))
+	var turn := Basis(Vector3.UP, deg_to_rad(piece.art_yaw_degrees))
+	# Girado un cuarto de vuelta, el ancho del arte va a lo largo de la caja.
+	var quarter: bool = absf(fmod(absf(piece.art_yaw_degrees), 180.0) - 90.0) < 1.0
+	var variants: Array[Mesh] = []
+	if piece.art_per_cell and piece.art_bounds.size == Vector3.ZERO:
+		for scene: PackedScene in piece.art_variants:
+			var variant: Mesh = _mesh_of(scene)
+			if variant != null:
+				variants.append(variant)
+	for index: int in boxes.size():
+		var box: AABB = boxes[index]
+		var local: Vector3 = Vector3(box.size.z, box.size.y, box.size.x) if quarter else box.size
+		var mesh: Mesh = art
+		var spin := Basis.IDENTITY
+		if not variants.is_empty():
+			var here: Vector3i = world_cell + piece.footprint[index]
+			var picked: int = _variant_for(here, piece.art_variant_chance, variants.size())
+			if picked >= 0:
+				mesh = variants[picked]
+				# Girada un cuarto de vuelta al azar: tres variantes rinden doce.
+				spin = Basis(Vector3.UP, PI * 0.5 * float(_cell_hash(here, 7) % 4))
+		var place := Transform3D(spin * turn * Basis.from_scale(local),
+			box.position + Vector3(box.size.x * 0.5, 0.0, box.size.z * 0.5))
+		var mesh_instance := MeshInstance3D.new()
+		mesh_instance.mesh = mesh
+		mesh_instance.transform = place
+		root.add_child(mesh_instance)
+		# La malla manda sobre la cuña: la rampa choca con todo lo que se ve,
+		# barandas y base incluidas. La cuña queda para una rampa sin malla propia.
+		if with_collision and piece.art_collision:
+			root.add_child(_mesh_collision(mesh, place))
+		elif with_collision and piece.art_ramp_collision:
+			root.add_child(_ramp_collision(place))
+
+
+## Que variante lleva esta celda, o -1 para el arte base. Un hash de la celda y
+## no randf(): la arena tiene que verse igual cada vez, y en el editor y en el
+## juego, y la semilla de la run no tiene nada que ver con el piso.
+static func _variant_for(cell: Vector3i, chance: float, count: int) -> int:
+	if float(_cell_hash(cell, 1) % 1000) / 1000.0 >= chance:
+		return -1
+	return _cell_hash(cell, 3) % count
+
+
+static func _cell_hash(cell: Vector3i, salt: int) -> int:
+	return absi(hash(Vector4i(cell.x, cell.y, cell.z, salt)))
+
+
+## La malla del arte como colision, ya estirada a su caja. Una forma concava: el
+## navmesh la lee igual que las cajas, y es la unica que sigue una L.
+static func _mesh_collision(art: Mesh, place: Transform3D) -> CollisionShape3D:
+	var faces: PackedVector3Array = art.get_faces()
+	for index: int in faces.size():
+		faces[index] = place * faces[index]
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	return collision
+
+
+## La cuña de la rampa, en el espacio del arte: sube de y = 0 en +Z a y = 1 en -Z.
+static func _ramp_collision(place: Transform3D) -> CollisionShape3D:
+	var points := PackedVector3Array()
+	for x: float in [-0.5, 0.5]:
+		points.append(place * Vector3(x, 0.0, 0.5))
+		points.append(place * Vector3(x, 0.0, -0.5))
+		points.append(place * Vector3(x, 1.0, -0.5))
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = points
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	return collision
+
 
 ## Cuatro barras finas alrededor del perimetro de la pieza, no de cada celda: un
 ## `floor_3x3` con filete por celda son treinta y seis mallas para dibujar una

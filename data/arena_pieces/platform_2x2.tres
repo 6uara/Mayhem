@@ -1,6 +1,10 @@
-[gd_resource type="Resource" script_class="PieceDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PieceDefinition" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://addons/mayhem_tools/arena_editor/core/piece_definition.gd" id="1_piece"]
+[ext_resource type="PackedScene" path="res://assets/models/props/floor_tile.glb" id="9_art"]
+[ext_resource type="PackedScene" path="res://assets/models/props/floor_damaged.glb" id="10_damaged"]
+[ext_resource type="PackedScene" path="res://assets/models/props/floor_circuits.glb" id="11_circuits"]
+[ext_resource type="PackedScene" path="res://assets/models/props/floor_vent.glb" id="12_vent"]
 
 [resource]
 script = ExtResource("1_piece")
@@ -15,3 +19,5 @@ greybox_color = Color(0.45, 0.55, 0.62, 1)
 greybox_extents = Vector3(1, 0.25, 1)
 edge_color = Color(0.25, 0.85, 1, 1)
 edge_energy = 2.0
+art_scene = ExtResource("9_art")
+art_variants = Array[PackedScene]([ExtResource("10_damaged"), ExtResource("11_circuits"), ExtResource("12_vent")])

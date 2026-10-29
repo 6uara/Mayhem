@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, assets, tooling]
 estado: referencia
-actualizado: 2026-10-09
+actualizado: 2026-10-28
 ---
 
 # Asset Pipeline
@@ -15,8 +15,9 @@ actualizado: 2026-10-09
   (`gadget_<id>.res`, `grapple_launcher.res`). Each mesh has a `body` and an
   `accent` surface; the game tints the accent. Rerun headless after changing a
   shape.
-- `blender/build_fp_arms.py`, `blender/build_summoner.py` — turn the art `.blend`
-  files into the `.glb` the game loads. See [[04 Weapons and Combat#Viewmodel]]
+- `blender/build_fp_arms.py`,
+  `blender/build_weapons.py`, `blender/build_enemy_models.py`, `blender/build_props.py` — turn the art (`.blend` or Meshy `.glb`)
+  into the `.glb` the game loads. See [[04 Weapons and Combat#Viewmodel]]
   and [[05 Enemies and AI#Models and model motion]].
 - `preview_viewmodel.gd` — renders weapon + arms from the player's camera (or
   `side`/`top`) to PNG.
@@ -72,9 +73,10 @@ matters for two different fields that consume models differently:
   imported model was nowhere near the body). Save the output under
   `assets/models/meshes/` and point `data/enemies/*.tres`'s `mesh` field at it.
 
-  Verified against the existing `spiderbot.res`: re-running the tool on
+  Verified, back when the Rusher was a spider, against `spiderbot.res`: re-running the tool on
   `LowPoly_SpiderBot_Rzenn.fbx` with `--height=1.2` (the Rusher's
-  `collision_height`) reproduces the same vertex/attribute data.
+  `collision_height`) reproduced the same vertex/attribute data. Both files
+  are gone (2026-10-28); no archetype uses a baked mesh any more.
 
 ## Placeholder audio
 

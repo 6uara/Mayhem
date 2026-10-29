@@ -1,18 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/spawn_door.gd" id="1_door"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/spawn_door.wav" id="2_sound"]
 [ext_resource type="Shader" path="res://assets/shaders/portal_spawn.gdshader" id="3_portal_shader"]
 [ext_resource type="Texture2D" path="res://assets/textures/Noise128x128/Swirl/Swirl_02-128x128.png" id="4_noise"]
-
-[sub_resource type="StandardMaterial3D" id="Mat_frame"]
-albedo_color = Color(0.09, 0.095, 0.115, 1)
-metallic = 0.3
-roughness = 0.4
-
-[sub_resource type="BoxMesh" id="Mesh_frame"]
-material = SubResource("Mat_frame")
-size = Vector3(3.4, 4, 0.4)
+[ext_resource type="PackedScene" path="res://assets/models/props/spawn_door.glb" id="5_model"]
 
 [sub_resource type="ShaderMaterial" id="Mat_portal"]
 shader = ExtResource("3_portal_shader")
@@ -24,23 +16,21 @@ shader_parameter/glow_energy = 0.3
 
 [sub_resource type="QuadMesh" id="Mesh_opening"]
 material = SubResource("Mat_portal")
-size = Vector2(2.6, 3.2)
+size = Vector2(1.75, 3.35)
 
 [node name="SpawnDoor" type="Node3D" groups=["spawn_door"] node_paths=PackedStringArray("light", "frame_mesh", "portal_mesh", "spawn_point")]
 script = ExtResource("1_door")
 door_id = &"door_01"
 light = NodePath("OmniLight3D")
-frame_mesh = NodePath("Frame")
+frame_mesh = NodePath("Frame/Body")
 portal_mesh = NodePath("Opening")
 spawn_point = NodePath("SpawnPoint")
 open_sound = ExtResource("2_sound")
 
-[node name="Frame" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-mesh = SubResource("Mesh_frame")
+[node name="Frame" parent="." instance=ExtResource("5_model")]
 
 [node name="Opening" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0.15)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 mesh = SubResource("Mesh_opening")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]

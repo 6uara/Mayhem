@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/systems/ammo_pickup.gd" id="1_pickup"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/ammo_pickup.wav" id="2_sound"]
-[ext_resource type="ArrayMesh" path="res://assets/models/meshes/ammobox_low.res" id="3_mesh"]
+[ext_resource type="PackedScene" path="res://assets/models/props/ammo_crate.glb" id="3_mesh"]
 [ext_resource type="Shader" path="res://assets/shaders/arena_glitch_panel.gdshader" id="4_glitch"]
 
 [sub_resource type="CylinderShape3D" id="Shape_pickup"]
@@ -45,15 +45,14 @@ pickup_sound = ExtResource("2_sound")
 [node name="GlitchPad" type="MeshInstance3D" parent="."]
 mesh = SubResource("Mesh_ring")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
-mesh = ExtResource("3_mesh")
+[node name="Mesh" parent="." instance=ExtResource("3_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 light_color = Color(1, 0.85, 0.35, 1)
-light_energy = 2.0
-omni_range = 7.0
+light_energy = 1.6
+omni_range = 4.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)

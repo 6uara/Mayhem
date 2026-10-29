@@ -22,13 +22,16 @@ extends Area3D
 @export var preserve_higher_velocity: bool = true
 @export var bounce_sound: AudioStream
 
-@onready var _mesh: MeshInstance3D = $Mesh
+@onready var _mesh: Node3D = $Mesh
 
 
 ## Cyan, because a pad is something you use. The chevron motion states the
-## direction; the colour only confirms it.
+## direction; the colour only confirms it. A bare mesh gets painted; the pad
+## model (assets/models/props/jump_pad.glb) keeps its texture, whose brackets
+## are cyan already, and the ring around it carries the token.
 func _apply_colour_law() -> void:
-	if _mesh == null:
+	var geometry := _mesh as GeometryInstance3D
+	if geometry == null:
 		return
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Tokens.WORLD_TRAVERSAL
@@ -36,7 +39,7 @@ func _apply_colour_law() -> void:
 	material.emission = Tokens.WORLD_TRAVERSAL
 	material.emission_energy_multiplier = 0.9
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_mesh.material_override = material
+	geometry.material_override = material
 
 
 func _ready() -> void:

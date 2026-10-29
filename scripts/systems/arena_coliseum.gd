@@ -108,6 +108,17 @@ const PIT_DROP: float = 0.5
 ## al vacio.
 @export var build_pit_floor: bool = true
 
+@export_group("Pantalla")
+## La pantalla gigante, colgada en el centro bajo el oculo del techo. Sin
+## colision, igual que el resto del venue: queda arriba de donde se pelea, y un
+## jugador que llegue con el gancho la atraviesa en vez de engancharse en algo
+## que no es parte de la arena. Es assets/models/props/jumbotron.glb, que sale
+## de build_props.py con un metro de ancho.
+@export var jumbotron_scene: PackedScene
+@export var jumbotron_width: float = 12.0
+## Cuanto queda la punta de arriba por debajo del techo.
+@export var jumbotron_drop: float = 1.5
+
 ## El publico. Se le pasan las huellas medidas, no una estimacion.
 @export var crowd: CrowdStands
 ## La ciudad de fondo. Se la siembra por fuera de donde llegan las gradas, asi
@@ -172,6 +183,7 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 		energy_wall.height = (roof.get_height() if roof != null else wall_height) \
 			- bounds.position.y
 		energy_wall.setup(bounds)
+	_hang_jumbotron(centre)
 
 
 # Public API
@@ -476,6 +488,23 @@ func _build_pit_floor(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 	mesh.material_override = _panel()
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_built.add_child(mesh)
+
+
+## Cuelga la pantalla del techo, centrada sobre la arena. Se mide la malla para
+## saber donde queda su punta de arriba en vez de suponerla.
+func _hang_jumbotron(centre: Vector3) -> void:
+	if jumbotron_scene == null or roof == null:
+		return
+	var jumbotron := jumbotron_scene.instantiate() as Node3D
+	jumbotron.name = "Jumbotron"
+	_built.add_child(jumbotron)
+	var top: float = 0.0
+	for node: Node in jumbotron.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := node as MeshInstance3D
+		top = maxf(top, (mesh_instance.transform * mesh_instance.mesh.get_aabb()).end.y)
+	jumbotron.scale = Vector3.ONE * jumbotron_width
+	jumbotron.position = Vector3(centre.x,
+		roof.get_height() - jumbotron_drop - top * jumbotron_width, centre.z)
 
 
 ## Cuatro cajas en el borde del area de juego. Sin malla, y fuera del grupo que
