@@ -20,6 +20,7 @@ const JUMP_COOLDOWN: float = 0.9
 ## Por preload y no por class_name: no depende de que la cache de clases globales
 ## ya se haya regenerado.
 const MODEL_MOTION_SCRIPT := preload("res://scripts/components/enemy_model_motion.gd")
+const OUTLINE_SHADER: Shader = preload("res://assets/shaders/enemy_outline.gdshader")
 ## A jump that ends this close to where it started got the enemy nowhere.
 ##
 ## The bug this measures: an enemy wedged against a lip or a railing hops, lands
@@ -203,9 +204,10 @@ var _model_source: PackedScene
 ## them to light the whole bot up at once.
 var _model_meshes: Array[MeshInstance3D] = []
 var _glow_material: StandardMaterial3D
-## Walks the model's legs when it has any. Null for an archetype still wearing
-## its grey-box capsule, which has nothing to walk with.
-var _gait: LeggedGait
+## El contorno del modelo en el color del arquetipo (assets/shaders/
+## enemy_outline.gdshader). Uno por enemigo: el destello va encadenado a el
+## (`next_pass`) y se prende y apaga por enemigo.
+var _outline_material: ShaderMaterial
 ## Flota, oscila, se inclina: la animacion procedural del modelo, cuando el
 ## arquetipo pide alguna o el modelo trae clips. Ver EnemyModelMotion.
 var _motion: MODEL_MOTION_SCRIPT
@@ -2185,9 +2187,8 @@ func _apply_model() -> void:
 	_model_source = data.model_scene
 	_model_bounds = AABB()
 	if _model_source == null:
-		# Sin modelo no hay nada que caminar ni animar, y los dos quedarian
+		# Sin modelo no hay nada que animar, y el componente quedaria
 		# apuntando al que se acaba de liberar.
-		_attach_gait()
 		_attach_motion()
 		return
 	_model = _model_source.instantiate() as Node3D
@@ -2199,7 +2200,6 @@ func _apply_model() -> void:
 	_collect_model_meshes(_model)
 	_model_bounds = _measure_model(_model)
 	_place_model()
-	_attach_gait()
 	_attach_motion()
 
 
@@ -2218,25 +2218,8 @@ func _prune_authoring_nodes(node: Node) -> void:
 		_prune_authoring_nodes(child)
 
 
-## Gives the model a walk, if it has legs to walk with. Dropped again when it
-## has none rather than left in place doing nothing every frame - the pool runs
-## a lot of these at once.
-func _attach_gait() -> void:
-	if _gait != null:
-		_gait.queue_free()
-		_gait = null
-	if _model == null:
-		return
-	var gait := LeggedGait.new()
-	add_child(gait)
-	if gait.setup(_model, self):
-		_gait = gait
-		return
-	gait.queue_free()
-
-
-## Anima el modelo si el arquetipo lo pide o el modelo trae clips. Mismo criterio
-## que el gait: si no hay nada que hacer, el nodo no se queda.
+## Anima el modelo si el arquetipo lo pide o el modelo trae clips. Si no hay nada
+## que hacer, el nodo no se queda: el pool corre muchos de estos a la vez.
 func _attach_motion() -> void:
 	if _motion != null:
 		_motion.queue_free()
@@ -2297,7 +2280,8 @@ func _measure_model(model: Node3D) -> AABB:
 ## instead: one unshaded material on every part, transparent until something
 ## lights it up.
 ##
-## Puesto solo mientras brilla (`_set_overlay()`). Un overlay transparente en cero
+## Puesto solo mientras brilla (`_set_overlay()`), encadenado detras del contorno.
+## Un overlay transparente en cero
 ## igual se dibuja: cada parte de cada modelo pasaba dos veces por frame, la
 ## segunda en el pase transparente, para no pintar nada.
 func _collect_model_meshes(node: Node) -> void:
@@ -2308,7 +2292,7 @@ func _collect_model_meshes(node: Node) -> void:
 			_glow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			_glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			_glow_material.albedo_color = Color(flash_color, 0.0)
-		mesh_node.material_overlay = null
+		mesh_node.material_overlay = _outline()
 		_model_meshes.append(mesh_node)
 		_cap_emission(mesh_node)
 	for child: Node in node.get_children():
@@ -2352,9 +2336,27 @@ func _set_overlay(on: bool) -> void:
 	if on == _overlay_on:
 		return
 	_overlay_on = on
+	# El contorno queda siempre puesto como overlay; el destello va encadenado
+	# detras, asi que prenderlo no saca el borde y apagarlo no cuesta un pase.
+	if _outline_material != null:
+		_outline_material.next_pass = _glow_material if on else null
+		return
 	for mesh_node: MeshInstance3D in _model_meshes:
 		if is_instance_valid(mesh_node):
 			mesh_node.material_overlay = _glow_material if on else null
+
+
+## Los enemigos oscuros (el perro, el Ranger, el hechicero) desaparecian contra
+## el piso oscuro de la arena. El borde los recorta en el color que ya los
+## identifica en la capsula, el halo y el visor, sin tocar su textura.
+func _outline() -> ShaderMaterial:
+	if _outline_material == null:
+		_outline_material = ShaderMaterial.new()
+		_outline_material.shader = OUTLINE_SHADER
+		_outline_material.set_shader_parameter(&"width_px", Tokens.ENEMY_OUTLINE_PX)
+		_outline_material.set_shader_parameter(&"energy", Tokens.ENEMY_OUTLINE_ENERGY)
+	_outline_material.set_shader_parameter(&"outline_color", data.body_color)
+	return _outline_material
 
 
 func _glow_level() -> float:

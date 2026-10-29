@@ -39,7 +39,7 @@ func _find(node: Node, type_name: String) -> Node:
 
 ## The common enemy is the one with a model, so it is the one that would show a
 ## regression first.
-func test_the_rusher_wears_the_spider_bot() -> void:
+func test_the_rusher_wears_its_rigged_model() -> void:
 	var enemy: Enemy = await _spawn("rusher")
 	assert_not_null(enemy.data.model_scene, "the archetype carries a model")
 	assert_not_null(_find(enemy, "Skeleton3D"), "and the rig came with it")
@@ -122,12 +122,13 @@ func test_fit_height_sizes_the_model_from_its_mesh() -> void:
 		"y esta parado: el alto es su eje mas largo")
 
 
-## El Healer trae su propio halo en el modelo; el anillo generado no se dibuja
-## encima, pero el arquetipo sigue contando como uno con halo.
-func test_the_healer_shows_only_the_models_halo() -> void:
+## El modelo del Healer no trae halo, asi que lo pone el anillo generado: es lo
+## que lo marca como objetivo prioritario.
+func test_the_healer_wears_the_generated_halo() -> void:
 	var enemy: Enemy = await _spawn("healer")
-	assert_true(enemy.data.has_halo, "el arquetipo sigue teniendo halo")
-	assert_false(enemy.halo.visible, "pero lo dibuja el modelo, no el anillo generado")
+	assert_true(enemy.data.has_halo, "el arquetipo tiene halo")
+	assert_false(enemy.data.model_has_halo, "el modelo no trae uno propio")
+	assert_true(enemy.halo.visible, "asi que se dibuja el anillo")
 
 
 ## El Bomber flota: su modelo no toca el piso en ningun punto del bob, pero su
@@ -202,19 +203,42 @@ func test_the_summoner_stands_at_its_fit_height() -> void:
 	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")
 
 
-## Su .glb trae emissiveStrength 10, que encandila y tapa el destello de impacto.
-func test_the_summoner_glow_is_capped_below_the_hit_flash() -> void:
-	var enemy: Enemy = await _spawn("summoner")
+## Un .glb puede traer emissiveStrength 10 (el Summoner anterior lo traia), que
+## con el bloom encandila y tapa el destello de impacto. El tope del arquetipo
+## lo baja; se prueba con un modelo armado aca, porque ninguno de los actuales
+## trae partes que brillen.
+func test_model_glow_is_capped_below_the_hit_flash() -> void:
+	var model := Node3D.new()
+	var mesh_node := MeshInstance3D.new()
+	mesh_node.name = "Glowing"
+	var box := BoxMesh.new()
+	var material := StandardMaterial3D.new()
+	material.emission_enabled = true
+	material.emission_energy_multiplier = 10.0
+	box.material = material
+	mesh_node.mesh = box
+	model.add_child(mesh_node)
+	mesh_node.owner = model
+	var scene := PackedScene.new()
+	scene.pack(model)
+	model.free()
+	var data: EnemyData = (load("res://data/enemies/summoner.tres") as EnemyData).duplicate()
+	data.model_scene = scene
+	data.model_emission_max = 2.0
+	var enemy: Enemy = load("res://scenes/enemies/enemy.tscn").instantiate()
+	add_child_autofree(enemy)
+	await wait_physics_frames(1)
+	enemy.setup(data, Vector3.ZERO)
+	await wait_physics_frames(1)
 	var glowing: int = 0
-	for mesh_node: MeshInstance3D in enemy._model_meshes:
-		for surface: int in mesh_node.mesh.get_surface_count():
-			var material := mesh_node.get_active_material(surface) as BaseMaterial3D
-			if material == null or not material.emission_enabled:
-				continue
-			glowing += 1
-			assert_lte(material.emission_energy_multiplier, enemy.data.model_emission_max,
-				"%s queda en el tope del arquetipo" % material.resource_name)
-	assert_gt(glowing, 0, "precondicion: el modelo tiene partes que brillan")
+	for found: MeshInstance3D in enemy._model_meshes:
+		var active := found.get_active_material(0) as BaseMaterial3D
+		if active == null or not active.emission_enabled:
+			continue
+		glowing += 1
+		assert_lte(active.emission_energy_multiplier, data.model_emission_max,
+			"queda en el tope del arquetipo")
+	assert_gt(glowing, 0, "precondicion: el modelo de prueba brilla")
 
 
 ## El Environmental trae sus clips (idle, walk, attack) y el tiro del frasco es
@@ -263,3 +287,42 @@ func test_the_ranger_stands_at_its_fit_height() -> void:
 	assert_almost_eq(bounds.size.y, enemy.data.model_fit_height, 0.2,
 		"mide lo que pide el arquetipo (%0.2f)" % bounds.size.y)
 	assert_gt(bounds.size.y, maxf(bounds.size.x, bounds.size.z), "y esta parado")
+
+
+## El Rusher trae sus clips (idle, run, attack), y el attack es la embestida que
+## acompaña al salto: ActionLeapAttack emite ability_used al despegar.
+func test_the_rusher_lunges_when_it_leaps() -> void:
+	var enemy: Enemy = await _spawn("rusher")
+	assert_not_null(enemy._motion, "el rusher tiene animacion")
+	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	for clip: StringName in [&"idle", &"run", &"attack"]:
+		assert_has(clips, clip, "trae el clip %s" % clip)
+	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
+	enemy.ability_used.emit()
+	assert_eq(player.current_animation, "attack", "saltar lo tira encima")
+
+
+## Los modelos de Meshy llegan acostados o mirando a cualquier lado;
+## build_enemy_models.py los para y los pone de frente al exportar, asi que
+## ninguno necesita una correccion en el .tres.
+func test_the_new_models_need_no_orientation_fix() -> void:
+	for id: String in ["rusher", "bomber", "healer", "ranger", "flyer"]:
+		var data: EnemyData = load("res://data/enemies/%s.tres" % id)
+		assert_eq(data.model_yaw_degrees, 0.0, "%s: sin yaw" % id)
+		assert_eq(data.model_pitch_degrees, 0.0, "%s: sin cabeceo" % id)
+
+
+## Cada modelo lleva su contorno en el color del arquetipo, y el destello de
+## impacto va encima sin sacarlo.
+func test_every_model_is_outlined_in_its_colour() -> void:
+	var enemy: Enemy = await _spawn("rusher")
+	assert_gt(enemy._model_meshes.size(), 0, "precondicion: tiene modelo")
+	var outline := enemy._model_meshes[0].material_overlay as ShaderMaterial
+	assert_not_null(outline, "el contorno va como overlay")
+	assert_eq(outline.get_shader_parameter(&"outline_color"), enemy.data.body_color,
+		"del color del arquetipo")
+	enemy._set_glow(1.0)
+	assert_same(enemy._model_meshes[0].material_overlay, outline, "el destello no lo saca")
+	assert_same(outline.next_pass, enemy._glow_material, "va encadenado detras")
+	enemy._set_glow(0.0)
+	assert_null(outline.next_pass, "y se apaga")

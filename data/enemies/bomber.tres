@@ -9,7 +9,7 @@
 [ext_resource type="AudioStream" uid="uid://bqejbpwfr1xm4" path="res://assets/audio/sfx/enemies/bomber_fuse.wav" id="7_fuse"]
 [ext_resource type="AudioStream" uid="uid://c5vq0dh37881n" path="res://assets/audio/sfx/world/explosion.wav" id="8_boom"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/explosion.tscn" id="9_explosion"]
-[ext_resource type="PackedScene" uid="uid://1n1pf4ehrn6o" path="res://assets/models/enemies/Bomber/Bomber.blend" id="10_model"]
+[ext_resource type="PackedScene" uid="uid://bdr114vuge7pi" path="res://assets/models/enemies/Bomber/Bomber.glb" id="10_model"]
 
 [sub_resource type="SphereMesh" id="Mesh_bomber"]
 radius = 0.7

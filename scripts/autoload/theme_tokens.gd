@@ -124,6 +124,8 @@ const ARM_SLEEVE     := Color("#1E212B")
 ## Enemy dominant colours. Silhouette is the primary read; colour confirms.
 const ENEMY_RUSHER   := Color("#FF3B54")
 const ENEMY_RANGER   := Color("#FF7A1F")
+const ENEMY_OUTLINE_PX     := 2.0  ## silhouette outline on every enemy model, in its body_color
+const ENEMY_OUTLINE_ENERGY := 1.6
 const ENEMY_ELITE    := Color("#FC3A00")
 const ENEMY_HEALER   := Color("#B45CFF")
 const ENEMY_SUMMONER := Color("#FF3BC1")
