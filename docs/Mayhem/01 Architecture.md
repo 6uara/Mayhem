@@ -95,8 +95,10 @@ empty `spawn_door_ids`) are otherwise silent.
 Every interactive/dangerous object in the arena — grapple anchors, zip lines,
 moving/disappearing platforms, hazard pools, spawn doors — runs through the same
 `TelegraphComponent`: one mesh, one unlit emissive material, one state enum
-(`IDLE` / `AVAILABLE` / `WARNING` / `ACTIVE`), one of four meanings (`TRAVERSAL` /
-`HAZARD` / `PICKUP` / `SPAWN`), each meaning permanently bound to one color. See
+(`IDLE` / `AVAILABLE` / `WARNING` / `ACTIVE`), one of five meanings (`TRAVERSAL` /
+`HAZARD` / `PICKUP` / `SPAWN` / `GRAPPLE`), each meaning permanently bound to one color.
+A textured model can take the color as `overlay` (an additive glow over its
+texture) instead of being painted flat. See
 [[09 Design Tokens and Color Law]] and [[07 UI and HUD#TelegraphComponent]].
 
 ## Object pooling

@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, arena, venue, crowd, host]
 estado: referencia
-actualizado: 2026-10-21
+actualizado: 2026-10-28
 ---
 
 # Arena, Venue and Crowd
@@ -30,14 +30,52 @@ spawn y navegación.
 
 - **Grilla:** celdas de **4 × 3 × 4 m** (`PieceCatalog.cell_size`), tamaño fijo
   **32 × 8 × 32** celdas (`ArenaData.FIXED_SIZE`) → 128 m de lado.
-- **Lotes:** al cargar, `ArenaGeometryBatcher` junta las cajas greybox en un
+- **Lotes:** al cargar, `ArenaGeometryBatcher` junta las cajas greybox y el arte de las piezas en un
   `MultiMeshInstance3D` por malla+material (bajo `BatchedGeometry`). Cada pieza
   sigue siendo su nodo con su colision.
 - **Catálogo:** 21 piezas en `data/arena_pieces/` (`default_catalog.tres`),
-  categorías `FLOOR / RAMP / WALL / PLATFORM / PROP`. Cada `PieceDefinition`
-  puede traer `scene`; **ninguna la trae hoy**, así que todas se arman como caja
-  greybox desde `footprint` + `greybox_color` (`piece_mesh_builder.gd`), con el
-  filete emisivo `edge_color`/`edge_energy` que las hace legibles de noche.
+  categorías `FLOOR / RAMP / WALL / PLATFORM / PROP`. Una pieza con `scene`
+  instancia esa escena (los interactuables: pad, munición, ancla…). El resto se
+  arma en `piece_mesh_builder.gd` desde `footprint`, con el filete emisivo
+  `edge_color`/`edge_energy` que las hace legibles de noche, y de dos maneras:
+  - **Con arte** (`art_scene`): pisos, plataformas, cobertura baja y pared 1x1
+    (una copia por celda), la pared 2x1 y
+    la pasarela (`art_per_cell = false`, una sola estirada), las rampas, el pilar
+    y la esquina.
+    El arte se estira sobre la misma caja que usa la colisión greybox, así que el
+    navmesh no cambia. Las excepciones son las rampas y la esquina, que chocan con
+    la malla de su modelo entero (`art_collision`), barandas y base incluidas; las
+    rampas además no llevan filete (`art_ramp_collision`). Antes las rampas
+    chocaban como una cuña, y quedaban partes del modelo que se atravesaban.
+    La esquina va dentro de su propia caja (`art_bounds`). Los `.glb` salen de
+    `tools/blender/build_props.py`. Las piezas de arena salen normalizadas a una
+    celda y la baldosa se hornea sobre una caja de 54 caras, porque va unas mil
+    veces en la arena por defecto. El piso mezcla tres variantes de la baldosa
+    (rota, con circuitos, con rejilla; `art_variants`) en un 30 % de las celdas
+    (`art_variant_chance`), giradas un cuarto de vuelta al azar. Cuál va en cada
+    celda sale de un hash de la celda, así que la arena se ve igual en cada carga
+    y en el editor.
+  - **Greybox** (`greybox_color`): lo que no tenga modelo (hoy, ninguna pieza
+    del catálogo sin escena).
+- **Props con modelo** (los fuentes de Meshy en `assets/models/props/`, con
+  `importer="skip"`): la caja de munición, el bounce pad, la puerta de spawn, el
+  gancho del ancla de grapple, la plataforma móvil (las flechas marcan su
+  recorrido) y
+  la pantalla del coliseo (`ArenaColiseum.jumbotron_scene`, colgada bajo el
+  óculo, sin colisión). Munición y pad conservan su textura: el color de la ley
+  lo llevan sus franjas, su luz y el anillo de abajo, en vez de pintarlos
+  enteros. La luz de la munición va por encima de la caja (dentro del modelo
+  iluminaba el piso y dejaba la caja a oscuras) y el anillo del pad es más ancho
+  que las esquinas del modelo, para que se lea como un halo entero y no como
+  medias lunas asomando por los costados. Los modelos se decimaban con las costuras
+  de UV abiertas y salían agrietados: `build_props.py` suelda antes de decimar
+  y rehornea el mapa de normales sobre la malla decimada, y
+  `build_enemy_models.py` también suelda. El ancla y la plataforma pasan por
+  `TelegraphComponent`, que pinta cada malla de un color plano y sin luz; con
+  `overlay` el color va encima de la textura como un brillo aditivo
+  (`overlay_strength`, 0.1: más alto, el glow lavaba el modelo a cyan liso).
+  El jump link sigue invisible a propósito: es una ayuda de navegación para los
+  enemigos (ver `jump_link.gd`).
 - **Topes por pieza** (`max_instances`): los interactuables tienen techo para que
   una arena no deje de ser legible (6 bounce pads, 12 anclas, 4 zip lines…).
 - **Navegación:** dos sistemas con roles separados — grilla + A* para el editor,
@@ -67,6 +105,11 @@ alrededor de la arena rectangular, foso (`pit_margin`), muro podio de 6 m, tres
 anillos de gradas. **Una sola malla, sin colisión**: el jugador no puede llegar,
 y los asientos salen de `get_seat_rows()` — el mismo código que hace el escalón
 sabe dónde sentar a cada espectador. Material: `arena_glitch_panel.gdshader`.
+
+**Luz** (`coliseum.tres` y `coliseum_env.tres`): luna a 1.1, ambiente 1.8 y
+exposición 1.25. Era luna a 0.35 y ambiente 0.85, pensado para cajas greybox
+claras; con las texturas oscuras de los modelos la arena quedaba casi negra.
+El cielo sigue de noche: lo que sube es la luz sobre las piezas.
 
 ### EnergyWall
 

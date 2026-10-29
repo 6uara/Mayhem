@@ -185,6 +185,11 @@ const WORLD_TRAVERSAL := PLAYER  ## "you can use this"  — square/bracket shape
 const WORLD_HAZARD    := HAZARD  ## "this will hurt you" — 45 degree stripes
 const WORLD_PICKUP    := REWARD  ## "take this"          — circle
 const SPAWN           := Color("#FF3BC1")  ## "enemies come from here" — doors and summon plates only
+## "you can hook onto this" — grapple anchors only. Its own hue and not traversal
+## cyan: the anchor is the one thing the grapple takes, and among the cyan of every
+## pad and platform it was hard to pick out. Violet, clear of the SPAWN magenta and
+## of the enemies' crimson.
+const WORLD_GRAPPLE   := Color("#A855FF")
 
 ## Arena telegraph timings (seconds)
 const PLATFORM_WARNING       := 1.50

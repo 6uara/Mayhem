@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, design-tokens, color]
 estado: referencia
-actualizado: 2026-09-06
+actualizado: 2026-10-28
 ---
 
 # Design Tokens and Color Law
@@ -20,14 +20,23 @@ const WORLD_TRAVERSAL := PLAYER   # "you can use this"      — square/bracket
 const WORLD_HAZARD    := HAZARD   # "this will hurt you"     — 45° stripes
 const WORLD_PICKUP    := REWARD   # "take this"              — circle
 const SPAWN := Color("#FF3BC1")   # "enemies come from here" — doors, summon plates
+const WORLD_GRAPPLE := Color("#A855FF")  # "you can hook onto this" — grapple anchors
 ```
 
-**No other color may appear on an interactive surface, and none of these four is
+**No other color may appear on an interactive surface, and none of these five is
 ever reused for a second meaning.** Every telegraphed object in the arena — grapple
 anchors, zip lines, moving/disappearing platforms, hazard pools, spawn doors — is
-one of exactly these four meanings, enforced structurally by `TelegraphComponent.Meaning`
+one of exactly these five meanings, enforced structurally by `TelegraphComponent.Meaning`
 (see [[01 Architecture#The telegraph contract]]) and checked directly by
-`tests/integration/test_arena_elements.gd::test_the_four_meanings_never_share_a_colour`.
+`tests/integration/test_arena_elements.gd::test_the_five_meanings_never_share_a_colour`.
+
+**The fifth meaning (2026-10-28).** Grapple anchors were traversal cyan, like every
+pad and platform, and among all that cyan the one thing the grapple takes was
+hard to pick out. They got their own meaning, `GRAPPLE`, in violet: clear of the
+`SPAWN` magenta and of the enemies' crimson. The anchor's hook model has its
+cyan stripes repainted violet and emitting (`build_props.py`, `accent`), and its
+own `OmniLight3D` brightens when it comes into range. The HUD side of the grapple
+(charges, reticle) stays `PLAYER` cyan: that is "yours", not the world.
 
 ## Accent colors and their shapes
 
