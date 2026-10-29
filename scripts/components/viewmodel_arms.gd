@@ -4,16 +4,16 @@ extends Node3D
 ##
 ## Reemplaza a los cilindros placeholder. Lo que se conserva de ellos es el
 ## contrato con `WeaponComponent`: los brazos no se cuelgan del pivot del arma sino
-## al lado, y les copia la posicion y el kick pero no el giro de recarga. La
-## recarga es una vuelta entera del arma; unos brazos atornillados a ella girarian
-## por toda la pantalla. Mientras el arma gira, las manos la sueltan y la esperan.
+## al lado, y les copia la posicion y el kick pero no la inclinacion de recarga:
+## unos brazos atornillados al arma girarian con los hombros incluidos. La
+## inclinacion les llega como `set_weapon_hold()`, y la siguen solo las manos.
 ##
 ## Las manos se ubican midiendo la malla del arma, igual que la boca del cañon en
 ## `WeaponComponent._align_muzzle_to_barrel()`: la derecha en la empuñadura, la
 ## izquierda bajo el guardamanos. Un arma nueva queda agarrada sin tocar nada. El
 ## codo lo pone `ViewmodelArmIK`; los dedos, los clips del glb.
 ##
-## Lo que se anima por estado y no por clip - igual que el giro de recarga - es a
+## Lo que se anima por estado y no por clip - igual que la inclinacion de recarga - es a
 ## donde va cada mano: el clip de recarga se recorre por el progreso de la
 ## recarga, no por reloj, asi que una recarga mas rapida por mejora sigue cuadrando
 ## y una cortada vuelve al agarre sin estado que limpiar.
@@ -37,8 +37,9 @@ const LAUNCHER_SCALE: float = 0.8
 const SHOULDER_CENTRE: Vector3 = Vector3(0.03, -0.3, -0.19)
 ## El rig mide como una persona, y el rifle pide estirar la izquierda hasta el
 ## guardamanos a casi 60 cm del ojo. Un poco mas largo que real llega sin trabarse
-## recto, que es lo que se nota.
-const ARM_SCALE: float = 0.75
+## recto, que es lo que se nota. Con los brazos de Meshy y las armas mas bajas y
+## chicas, 0.75 dejaba la mano mas grande que la pistola entera.
+const ARM_SCALE: float = 0.66
 ## Hacia donde salen los codos, desde cada hombro: abajo y hacia afuera.
 const RIGHT_POLE: Vector3 = Vector3(0.45, -0.6, 0.1)
 const LEFT_POLE: Vector3 = Vector3(-0.5, -0.55, 0.0)
@@ -94,6 +95,9 @@ var _grip: Vector3 = Vector3.ZERO
 var _support: Vector3 = Vector3.ZERO
 var _shoulder_centre: Vector3 = Vector3.ZERO
 var _reload_progress: float = 0.0
+## Como esta girada el arma respecto de este nodo: la inclinacion de recarga. Las
+## manos la siguen; los hombros no.
+var _hold: Basis = Basis.IDENTITY
 var _equip_left: float = 0.0
 var _launcher: Node3D
 ## 0 con la mano en el arma, 1 con el brazo adelante tirando el gancho.
@@ -107,7 +111,8 @@ func _ready() -> void:
 ## Arma los dos brazos para un arma cuya malla ocupa `weapon_bounds`, medida en
 ## el espacio de este nodo. `pivot_offset` es donde queda este nodo respecto de
 ## la camara, para poder poner los hombros en el espacio de la camara.
-func build(weapon_bounds: AABB, pivot_offset: Vector3) -> void:
+func build(weapon_bounds: AABB, pivot_offset: Vector3,
+		grip_offset: Vector3 = Vector3.ZERO, support_offset: Vector3 = Vector3.ZERO) -> void:
 	for child: Node in get_children():
 		child.queue_free()
 	_rig = null
@@ -117,8 +122,15 @@ func build(weapon_bounds: AABB, pivot_offset: Vector3) -> void:
 	if weapon_bounds.size == Vector3.ZERO:
 		return
 
-	_grip = grip_point(weapon_bounds)
-	_support = support_point(weapon_bounds)
+	# La medida da donde esta la empuñadura de cualquier arma; las correcciones
+	# por arma (WeaponData.viewmodel_grip_offset) ponen la mano donde se agarra de
+	# verdad, que en una pistola es arriba, pegada a la corredera.
+	_grip = grip_point(weapon_bounds) + grip_offset
+	_support = support_point(weapon_bounds) + support_offset
+	# En un arma corta la izquierda va pegada a la derecha (support_point): si la
+	# derecha se corrige, la izquierda la acompaña.
+	if weapon_bounds.size.z < TWO_HAND_REACH:
+		_support += grip_offset
 	_shoulder_centre = SHOULDER_CENTRE - pivot_offset
 
 	_rig = ARMS_SCENE.instantiate() as Node3D
@@ -165,6 +177,12 @@ func set_reload_progress(progress: float) -> void:
 	_reload_progress = clampf(progress, 0.0, 1.0)
 	if was_reloading and _reload_progress <= 0.0 and _player != null:
 		_player.play(CLIP_IDLE, 0.1)
+
+
+## El giro del arma respecto de este nodo, que gira alrededor de su origen (el
+## pivot del arma). Ver `WeaponComponent._reload_tilt()`.
+func set_weapon_hold(hold: Basis) -> void:
+	_hold = hold
 
 
 ## La empuñadura: tercio de atras, parte baja. Adelante es -Z.
@@ -261,14 +279,18 @@ func _update_targets() -> void:
 	var drop: Vector3 = EQUIP_DROP * equip
 	var p: float = _reload_progress
 
-	var right_palm: Vector3 = _grip + RELOAD_RIGHT_DROP * sin(PI * p) + drop
-	var left_palm: Vector3 = _reload_left_hand(p) + drop
-	_aim_hand(_ik.right, right_palm, RIGHT_FORWARD, RIGHT_PALM)
+	# Los agarres se miden sobre el arma quieta; `_hold` los lleva a donde esta
+	# el arma inclinada. La derecha queda en la empuñadura, la izquierda sigue su
+	# viaje al cinturon con el arma como referencia.
+	var right_palm: Vector3 = _hold * (_grip + RELOAD_RIGHT_DROP * sin(PI * p)) + drop
+	var left_palm: Vector3 = _hold * _reload_left_hand(p) + drop
+	_aim_hand(_ik.right, right_palm, _hold * RIGHT_FORWARD, _hold * RIGHT_PALM)
 	var raise: float = smoothstep(0.0, 1.0, _grapple_blend)
 	# De la camara a este nodo: lo mismo que se le resto a los hombros.
 	var grapple_palm: Vector3 = GRAPPLE_HAND + (_shoulder_centre - SHOULDER_CENTRE)
 	_aim_hand(_ik.left, left_palm.lerp(grapple_palm, raise),
-		LEFT_FORWARD.lerp(GRAPPLE_FORWARD, raise), LEFT_PALM.lerp(GRAPPLE_PALM, raise))
+		(_hold * LEFT_FORWARD).lerp(GRAPPLE_FORWARD, raise),
+		(_hold * LEFT_PALM).lerp(GRAPPLE_PALM, raise))
 	_ik.left.straighten = raise
 
 	var half_width: float = absf(_shoulder_from_rig("upper_arm.R").x

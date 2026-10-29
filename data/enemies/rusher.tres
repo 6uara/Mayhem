@@ -6,16 +6,16 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_windup.wav" id="4_windup"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_death.wav" id="6_death"]
-[ext_resource type="ArrayMesh" path="res://assets/models/meshes/spiderbot.res" id="7_mesh"]
-[ext_resource type="PackedScene" uid="uid://c5re6lw0wrpoh" path="res://assets/models/enemies/Melee/LowPoly_SpiderBot_Rzenn.fbx" id="8_model"]
+[ext_resource type="PackedScene" path="res://assets/models/enemies/Melee/Rusher.glb" id="8_model"]
+
+[sub_resource type="BoxMesh" id="Mesh_rusher"]
+size = Vector3(0.75, 1.4, 1.35)
 
 [resource]
 script = ExtResource("1_script")
-mesh = ExtResource("7_mesh")
+mesh = SubResource("Mesh_rusher")
 model_scene = ExtResource("8_model")
-model_scale = 0.25
-model_offset = Vector3(0, 0.721, 0)
-model_yaw_degrees = 180.0
+model_fit_height = 1.4
 archetype = 0
 id = &"rusher"
 display_name = "Rusher"
@@ -36,8 +36,8 @@ body_scale = 1.00
 collision_height = 1.20
 collision_radius = 0.50
 hitbox_radius = 0.60
-head_offset = 0.95
-head_radius = 0.28
+head_offset = 1.2
+head_radius = 0.3
 reward_currency = 10
 behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")

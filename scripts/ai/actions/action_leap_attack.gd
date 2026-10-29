@@ -47,6 +47,9 @@ func tick(actor: Node, _blackboard: Blackboard) -> int:
 			CombatDirector.release_attack_token(enemy)
 			return FAILURE
 		_launched = true
+		# Al despegar: es lo que reproduce el clip attack del modelo, que se
+		# tira encima con la cabeza baja.
+		enemy.ability_used.emit()
 		# El cooldown arranca al despegar y no al aterrizar: si no, la
 		# recuperacion se sumaria a la espera y el arquetipo atacaria bastante
 		# menos seguido de lo que dice su attack_cooldown.

@@ -3,7 +3,7 @@ extends Node
 ## Anima el modelo de un enemigo sin clips: flotar, oscilar, girar, inclinarse
 ## hacia donde avanza, respirar e inflarse al usar su habilidad.
 ##
-## Mismo razonamiento que `LeggedGait`: los modelos llegan quietos, y una
+## Los modelos llegan quietos, y una
 ## animacion derivada del estado del cuerpo no se puede desincronizar de el. El
 ## Bomber que flota y gira mas rapido con la espoleta armada, o el Healer que se
 ## infla en el instante en que cura, salen de leer al enemigo, no de una linea de
@@ -113,6 +113,9 @@ func capture_rest() -> void:
 	_lean = Vector3.ZERO
 	_cast_left = 0.0
 	_play_loop(_idle_clip)
+	# Ya en la pose de este frame: el reposo es el modelo apoyado en el piso, y
+	# hasta el primer _process el Bomber aparecia ahi y despues saltaba a flotar.
+	_process(0.0)
 
 
 func _process(delta: float) -> void:

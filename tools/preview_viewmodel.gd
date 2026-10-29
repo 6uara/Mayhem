@@ -77,7 +77,8 @@ func _initialize() -> void:
 	_equip_time = arms_script.get_script_constant_map()["EQUIP_TIME"]
 	camera.add_child(_arms)
 	_arms.position = data.viewmodel_offset
-	_arms.call(&"build", _bounds(model), data.viewmodel_offset)
+	_arms.call(&"build", _bounds(model), data.viewmodel_offset,
+		data.viewmodel_grip_offset, data.viewmodel_support_offset)
 	# "side" y "top" miran desde afuera, para ver codos y muñecas.
 	for view: String in ["side", "top"]:
 		if not args.has(view):
@@ -89,10 +90,25 @@ func _initialize() -> void:
 		outside.look_at_from_position(eye, Vector3(0.0, -0.2, -0.3),
 			Vector3.UP if view == "side" else Vector3.FORWARD)
 		outside.current = true
+	# Las piezas del modelo, en el cuadro del clip que toca (cero fuera de recarga:
+	# esconde lo que solo aparece recargando).
+	var parts: Array[Node] = model.find_children("*", "AnimationPlayer", true, false)
+	var reload_progress: float = _progress if _state == "reload" else 0.0
+	for node: Node in parts:
+		var player := node as AnimationPlayer
+		if player.has_animation(&"reload"):
+			player.assigned_animation = &"reload"
+			player.seek(player.get_animation(&"reload").length * reload_progress, true)
 	if _state == "reload":
 		_arms.call(&"set_reload_progress", _progress)
-		# El arma gira en la recarga igual que en WeaponComponent.
-		_pivot.rotation_degrees.x = -360.0 * smoothstep(0.0, 1.0, _progress)
+		# Inclinacion y bajada como en WeaponComponent (reload_tilt_ease 0.18,
+		# reload_dip 0.05).
+		var amount: float = smoothstep(0.0, 0.18, _progress) \
+			* (1.0 - smoothstep(0.82, 1.0, _progress))
+		_pivot.rotation_degrees = data.reload_tilt_degrees * amount
+		_pivot.position += Vector3.DOWN * 0.05 * sin(PI * _progress)
+		_arms.position = _pivot.position
+		_arms.call(&"set_weapon_hold", _pivot.basis)
 
 
 func _process(_delta: float) -> bool:
@@ -136,6 +152,8 @@ func _bounds(model: Node3D) -> AABB:
 		while walker != null and walker != model:
 			t = walker.transform * t
 			walker = walker.get_parent() as Node3D
+		if is_zero_approx(t.basis.determinant()):
+			continue
 		var local: AABB = t * mesh_instance.mesh.get_aabb()
 		out = local if not found else out.merge(local)
 		found = true

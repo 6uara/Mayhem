@@ -56,23 +56,19 @@ signal ads_changed(is_ads: bool)
 @export var view_kick_max_degrees: float = 6.0
 @export var view_kick_max_back: float = 0.12
 
-## Vuelta completa del arma mientras recarga. Provisorio hasta que haya animacion
-## de verdad, que es lo que pidio el playtest: no habia *ninguna* señal visual de
-## que estabas recargando, solo un sonido y un arma que no dispara.
-##
-## 360 y no un angulo intermedio a proposito: una vuelta entera termina donde
-## empezo, asi que la pose de reposo se recupera sola por aritmetica en vez de
-## depender de que alguien acuerde de restaurarla. Una recarga interrumpida -
-## cambio de arma, muerte, fin de la run - no puede dejar el arma torcida para
-## siempre porque no hay nada guardado que restaurar.
-@export var reload_spin_degrees: float = 360.0
-## Cuanto baja el arma en el medio del giro. Sale y vuelve con el mismo seno, asi
-## que tampoco deja residuo.
+## Cuanto baja el arma en el medio de la recarga. Sale y vuelve con el mismo
+## seno, asi que no deja residuo.
 @export var reload_dip: float = 0.05
+## Que fraccion de la recarga tarda el arma en inclinarse a
+## `WeaponData.reload_tilt_degrees`, y lo mismo en volver al final.
+@export var reload_tilt_ease: float = 0.18
 
 ## Por preload y no por class_name: asi no depende de que la cache de clases
 ## globales ya se haya regenerado (CLI de tests en una copia recien clonada).
 const ARMS_SCRIPT := preload("res://scripts/components/viewmodel_arms.gd")
+## El clip de las piezas que se mueven al recargar (cargador, corredera, bombeo),
+## dentro del modelo. Lo exporta tools/blender/build_weapons.py.
+const RELOAD_CLIP: StringName = &"reload"
 
 var is_reloading: bool = false
 var is_ads: bool = false
@@ -108,6 +104,10 @@ var _view_kick_offset: Vector3 = Vector3.ZERO
 var _view_kick_rot: float = 0.0
 ## Los brazos, hermanos de `_view` y no hijos. Ver ViewmodelArms.
 var _arms: ARMS_SCRIPT
+## El AnimationPlayer del modelo con el clip `reload`, o null si el modelo no
+## trae piezas que se muevan. Nunca reproduce: se lo posiciona por progreso.
+var _parts_player: AnimationPlayer
+var _parts_progress: float = -1.0
 
 
 func _ready() -> void:
@@ -715,6 +715,10 @@ func _spawn_viewmodel() -> void:
 	visibility_changed.connect(_sync_viewmodel_visibility)
 	_sync_viewmodel_visibility()
 	_align_muzzle_to_barrel(model)
+	# Despues de medir: el clip en cero esconde piezas (el cartucho de la
+	# escopeta, en escala casi cero bajo el arma) que no son parte de la silueta.
+	_parts_player = _find_reload_clip(model)
+	_pose_parts(0.0)
 
 
 func _spawn_arms(host: Node3D, model: Node3D) -> void:
@@ -722,7 +726,8 @@ func _spawn_arms(host: Node3D, model: Node3D) -> void:
 	arms.name = &"ViewArms"
 	host.add_child(arms)
 	arms.position = _view_rest_position
-	arms.build(_model_bounds(model), _view_rest_position)
+	arms.build(_model_bounds(model), _view_rest_position,
+		data.viewmodel_grip_offset, data.viewmodel_support_offset)
 	_arms = arms
 
 
@@ -769,7 +774,13 @@ func _model_bounds(model: Node3D) -> AABB:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:
 			continue
-		var local: AABB = _relative_transform(model, mesh_instance) * mesh_instance.mesh.get_aabb()
+		var relative: Transform3D = _relative_transform(model, mesh_instance)
+		# Una pieza en escala casi cero esta escondida (el cartucho de la escopeta,
+		# guardado bajo el arma hasta que la mano lo trae), y como punto suelto
+		# estiraba la caja hacia abajo.
+		if is_zero_approx(relative.basis.determinant()):
+			continue
+		var local: AABB = relative * mesh_instance.mesh.get_aabb()
 		out = local if not found else out.merge(local)
 		found = true
 	return model.transform * out if found else AABB()
@@ -800,29 +811,49 @@ func _tick_viewmodel(delta: float) -> void:
 	_view_kick_rot = move_toward(_view_kick_rot, 0.0, view_kick_recovery * delta)
 	var reload_progress: float = get_reload_progress()
 	_view.position = _view_rest_position + _view_kick_offset 		+ Vector3.DOWN * (reload_dip * sin(PI * reload_progress))
-	_view.rotation_degrees.x = _view_kick_rot + _reload_spin(reload_progress)
-	# Los brazos siguen el kick y la bajada, pero no la vuelta de recarga: esa la
-	# leen como progreso, para soltar el arma y volver a agarrarla.
+	_view.rotation_degrees = Vector3(_view_kick_rot, 0.0, 0.0) + _reload_tilt(reload_progress)
+	_pose_parts(reload_progress)
+	# Los brazos siguen el kick y la bajada en su propio nodo; la inclinacion de
+	# recarga no, porque girarian los hombros con el arma. Esa la reciben como
+	# pose de las manos, que es lo unico que tiene que seguirla.
 	if _arms != null:
 		_arms.position = _view.position
 		_arms.rotation_degrees.x = _view_kick_rot
 		_arms.set_reload_progress(reload_progress)
+		_arms.set_weapon_hold(_arms.basis.inverse() * _view.basis)
 
 
-## El giro de recarga, derivado del progreso en vez de animado por un Tween.
+## La inclinacion de recarga, derivada del progreso en vez de animada por un Tween.
 ##
 ## Un tween sobre _view pelearia con este mismo tick, que le reescribe posicion y
-## rotacion todos los frames; el ultimo en escribir ganaria y el giro saldria a
-## los tirones. Derivarlo ademas resuelve solo el caso feo: si la recarga se
-## corta, el progreso vuelve a cero y el arma con el, sin ningun estado que
-## limpiar.
-##
-## smoothstep y no lineal: una vuelta a velocidad constante arranca y frena de
-## golpe, que es justo lo que delata que es un placeholder.
-func _reload_spin(progress: float) -> float:
+## rotacion todos los frames; el ultimo en escribir ganaria y saldria a los
+## tirones. Derivarlo ademas resuelve solo el caso feo: si la recarga se corta,
+## el progreso vuelve a cero y el arma con el, sin ningun estado que limpiar.
+func _reload_tilt(progress: float) -> Vector3:
 	if progress <= 0.0:
-		return 0.0
-	return -reload_spin_degrees * smoothstep(0.0, 1.0, progress)
+		return Vector3.ZERO
+	var amount: float = smoothstep(0.0, reload_tilt_ease, progress) \
+		* (1.0 - smoothstep(1.0 - reload_tilt_ease, 1.0, progress))
+	return data.reload_tilt_degrees * amount
+
+
+func _find_reload_clip(model: Node) -> AnimationPlayer:
+	for node: Node in model.find_children("*", "AnimationPlayer", true, false):
+		var player := node as AnimationPlayer
+		if player.has_animation(RELOAD_CLIP):
+			player.assigned_animation = RELOAD_CLIP
+			return player
+	return null
+
+
+## Pone las piezas del modelo en el cuadro del clip que toca a este progreso. Por
+## progreso y no por reloj, igual que los brazos: una recarga mas rapida por
+## mejora sigue cuadrando, y una cortada vuelve al cuadro cero.
+func _pose_parts(progress: float) -> void:
+	if _parts_player == null or progress == _parts_progress:
+		return
+	_parts_progress = progress
+	_parts_player.seek(_parts_player.get_animation(RELOAD_CLIP).length * progress, true)
 
 
 ## Scoped to this weapon's own id, so WEAPON-category upgrades bought for a

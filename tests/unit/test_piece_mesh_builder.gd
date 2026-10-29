@@ -16,6 +16,14 @@ func _piece(id: StringName) -> PieceDefinition:
 	return _catalog.get_piece(id)
 
 
+## La misma pieza sin arte: lo que se prueba del greybox vale para toda pieza que
+## todavia no tiene modelo (paredes, cobertura), aunque el piso ya tenga el suyo.
+func _greybox(id: StringName) -> PieceDefinition:
+	var piece: PieceDefinition = _piece(id).duplicate() as PieceDefinition
+	piece.art_scene = null
+	return piece
+
+
 func _emissive_meshes(root: Node3D) -> Array[MeshInstance3D]:
 	var out: Array[MeshInstance3D] = []
 	for child: Node in root.get_children():
@@ -86,7 +94,7 @@ func _shape_count(root: Node3D) -> int:
 ## La otra mitad del arreglo: lo elevado es mas claro y menos rugoso, asi que el
 ## sol y las luces del coliseo le sacan un reflejo que el piso no tiene.
 func test_elevated_ground_reads_brighter_than_the_floor() -> void:
-	var piece: PieceDefinition = _piece(&"floor_3x3")
+	var piece: PieceDefinition = _greybox(&"floor_3x3")
 	var ground: Node3D = PieceMeshBuilder.build(piece, _catalog, false, false)
 	autofree(ground)
 	var raised: Node3D = PieceMeshBuilder.build(piece, _catalog, false, true)
@@ -102,10 +110,113 @@ func test_elevated_ground_reads_brighter_than_the_floor() -> void:
 ## La pasarela lleva chapa antideslizante; el piso del nivel 0 es liso. Es la
 ## otra senal, ademas del filete, de que eso esta en el aire.
 func test_only_elevated_ground_gets_the_tread_plate() -> void:
-	var piece: PieceDefinition = _piece(&"floor_3x3")
+	var piece: PieceDefinition = _greybox(&"floor_3x3")
 	var ground: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, false))
 	var raised: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, true))
 	var ground_material := (ground.get_child(0) as MeshInstance3D).material_override as ShaderMaterial
 	var raised_material := (raised.get_child(0) as MeshInstance3D).material_override as ShaderMaterial
 	assert_eq(float(ground_material.get_shader_parameter(&"tread_strength")), 0.0)
 	assert_gt(float(raised_material.get_shader_parameter(&"tread_strength")), 0.0)
+
+
+# ------------------------------------------------------------------ arte
+
+## El piso lleva una baldosa por celda, y es la misma malla en todas las piezas:
+## es lo que deja que ArenaGeometryBatcher junte las mil del arena en un MultiMesh.
+func test_floor_art_is_one_shared_tile_per_cell() -> void:
+	var piece: PieceDefinition = _piece(&"floor_3x3")
+	var a: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, true, false))
+	var b: Node3D = autofree(PieceMeshBuilder.build(_piece(&"floor_2x2"), _catalog, true, false))
+	var tiles: Array[MeshInstance3D] = []
+	for child: Node in a.get_children():
+		if child is MeshInstance3D:
+			tiles.append(child)
+	assert_eq(tiles.size(), piece.footprint.size(), "una baldosa por celda")
+	assert_same(tiles[0].mesh, PieceMeshBuilder.art_mesh(piece))
+	assert_same((b.get_child(0) as MeshInstance3D).mesh, tiles[0].mesh,
+		"floor_2x2 y floor_3x3 comparten la baldosa")
+
+
+## El arte cambia lo que se ve, nunca lo que se choca: misma cantidad de cajas y
+## del mismo tamaño que el greybox, que es de donde sale el navmesh.
+func test_art_keeps_the_greybox_collision() -> void:
+	var with_art: Node3D = autofree(PieceMeshBuilder.build(_piece(&"floor_3x3"), _catalog, true, false))
+	var bare: Node3D = autofree(PieceMeshBuilder.build(_greybox(&"floor_3x3"), _catalog, true, false))
+	assert_eq(_shape_count(with_art), _shape_count(bare))
+	var art_box := _first_shape(with_art) as BoxShape3D
+	var bare_box := _first_shape(bare) as BoxShape3D
+	assert_eq(art_box.size, bare_box.size)
+
+
+## La rampa con arte choca con todo su modelo, barandas y base incluidas: con la
+## caja greybox se caminaba en el aire sobre la pendiente, y con una cuña quedaban
+## partes del modelo que se veian pero se atravesaban.
+func test_the_ramp_collides_as_its_whole_model() -> void:
+	var piece: PieceDefinition = _piece(&"ramp_1x1")
+	var node: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, true, false))
+	var shape := _first_shape(node) as ConcavePolygonShape3D
+	assert_not_null(shape, "la colision es la malla del modelo")
+	var tile: MeshInstance3D = null
+	for child: Node in node.get_children():
+		if child is MeshInstance3D:
+			tile = child
+	var drawn: AABB = tile.transform * tile.mesh.get_aabb()
+	var faces: PackedVector3Array = shape.get_faces()
+	var hit := AABB(faces[0], Vector3.ZERO)
+	for point: Vector3 in faces:
+		hit = hit.expand(point)
+	assert_almost_eq(hit.position, drawn.position, Vector3.ONE * 0.05, "empieza donde el modelo")
+	assert_almost_eq(hit.end, drawn.end, Vector3.ONE * 0.05, "y termina donde el modelo")
+
+
+## Sin tapa plana no hay borde que marcar: el filete flotaria sobre la pendiente.
+func test_an_elevated_art_ramp_gets_no_trim() -> void:
+	var node: Node3D = autofree(PieceMeshBuilder.build(_piece(&"ramp_1x1"), _catalog, true, true))
+	assert_eq(_emissive_meshes(node).size(), 0)
+
+
+func _first_shape(root: Node3D) -> Shape3D:
+	for child: Node in root.get_children():
+		var collision := child as CollisionShape3D
+		if collision != null:
+			return collision.shape
+	return null
+
+
+## La esquina choca con su L, no con las tres losas paralelas que armaban sus
+## cajas por celda.
+func test_the_wall_corner_collides_as_its_model() -> void:
+	var node: Node3D = autofree(PieceMeshBuilder.build(_piece(&"wall_corner"), _catalog, true, false))
+	assert_eq(_shape_count(node), 1, "una sola forma, la del modelo")
+	assert_true(_first_shape(node) is ConcavePolygonShape3D, "sacada de la malla")
+	var faces: PackedVector3Array = (_first_shape(node) as ConcavePolygonShape3D).get_faces()
+	var hollow: int = 0
+	for point: Vector3 in faces:
+		if point.x > 1.0 and point.z > 1.0:
+			hollow += 1
+	assert_eq(hollow, 0, "el cuadrante del hueco de la L queda libre")
+
+
+## El piso mezcla variantes de la baldosa, y cual va en cada celda sale de la
+## celda: la misma arena se arma igual siempre.
+func test_floor_variants_are_mixed_in_and_stable() -> void:
+	var piece: PieceDefinition = _piece(&"floor_3x3")
+	assert_gt(piece.art_variants.size(), 0, "precondicion: el piso trae variantes")
+	var base: Mesh = PieceMeshBuilder.art_mesh(piece)
+	var variant_tiles: int = 0
+	var layout: Array[Mesh] = []
+	for x: int in 6:
+		for z: int in 6:
+			var node: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, false,
+				Vector3i(x * 3, 0, z * 3)))
+			for child: Node in node.get_children():
+				var tile := child as MeshInstance3D
+				if tile != null:
+					layout.append(tile.mesh)
+					if tile.mesh != base:
+						variant_tiles += 1
+	var share: float = float(variant_tiles) / float(layout.size())
+	assert_between(share, 0.15, 0.45, "una parte del piso es variante (%0.2f)" % share)
+	var again: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, false, Vector3i.ZERO))
+	assert_same((again.get_child(0) as MeshInstance3D).mesh, layout[0], "misma celda, misma baldosa")
+	assert_lt(variant_tiles, layout.size(), "y el resto sigue siendo la base")

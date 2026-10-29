@@ -148,6 +148,16 @@ y vuelta al playtest. PLAY guarda, valida y entra a la partida real de MAYHEM en
 esa arena; el menú de pausa muestra **Back to the editor** solamente durante ese
 playtest, y volver no pierde nada porque la arena nunca salió de memoria.
 
+## Visor de armas — botón Weapon Viewer (dev) en el menú, o `weapons` en consola
+
+`scenes/main/weapon_viewer.tscn`. El arma y los brazos como los ve el jugador (el
+`ViewmodelRig` y un `WeaponComponent` de verdad, con la arena atrás). A la
+izquierda, por arma: escala, posición y giro del arma, dónde agarra cada mano
+(`viewmodel_grip_offset` / `viewmodel_support_offset`, correcciones sobre lo
+que se mide de la malla) e inclinación de recarga. Cada cambio rehace el arma en
+vivo; **Guardar en el .tres** lo escribe en `data/weapons/`. Vistas de costado y
+de arriba para ver si la mano agarra o atraviesa; botones para recargar y sacar.
+
 ## Visor de enemigos — botón Enemy Viewer (dev) en el menú, o `viewer` en consola
 
 `scenes/main/enemy_viewer.tscn`. Cada arquetipo parado solo sobre una grilla de

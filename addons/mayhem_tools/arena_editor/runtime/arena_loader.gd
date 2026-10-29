@@ -27,7 +27,7 @@ static func load_arena(data: ArenaData, parent: Node3D, catalog: PieceCatalog) -
 	# Despues de armar y antes de bakear: el bake lee colliders, que no se tocan.
 	ArenaGeometryBatcher.batch(runtime, runtime.geometry_root)
 	_build_navigation_links(runtime, graph, catalog)
-	_build_spawn_doors(runtime, data, catalog)
+	_build_spawn_doors(runtime, data, catalog, graph)
 	runtime.bake_navigation()
 	return runtime
 
@@ -43,7 +43,8 @@ static func _build_geometry(runtime: ArenaRuntime, data: ArenaData,
 		# Elevado es una propiedad de donde se puso, no de la pieza: el mismo
 		# bloque de piso es el suelo en el nivel 0 y una pasarela en el 1, y solo
 		# la pasarela necesita que se le vea el borde de noche.
-		var node: Node3D = PieceMeshBuilder.build(piece, catalog, true, entry.cell.y > 0)
+		var node: Node3D = PieceMeshBuilder.build(piece, catalog, true, entry.cell.y > 0,
+			entry.cell)
 		if node == null:
 			continue
 		node.name = "%s_%d_%d_%d" % [piece.id, entry.cell.x, entry.cell.y, entry.cell.z]
@@ -98,12 +99,14 @@ static func _mark_navigation_source(node: Node3D) -> void:
 
 
 static func _build_spawn_doors(runtime: ArenaRuntime, data: ArenaData,
-		catalog: PieceCatalog) -> void:
+		catalog: PieceCatalog, graph: GridGraph) -> void:
 	var door_scene := load(SPAWN_DOOR_SCENE) as PackedScene
 	for index: int in data.enemy_spawns.size():
 		var spawn: EnemySpawnEntry = data.enemy_spawns[index]
+		# Sobre el piso de la celda, no a media altura: el modelo de la puerta
+		# tiene base, y colgada a metro y medio quedaba flotando.
 		var position: Vector3 = catalog.cell_to_world(spawn.cell) \
-			+ Vector3(0.0, catalog.cell_size.y * 0.5, 0.0)
+			+ Vector3(0.0, graph.surface_offset(spawn.cell), 0.0)
 		var door: Node3D = door_scene.instantiate() as Node3D if door_scene != null else Node3D.new()
 		door.name = "Door%02d" % (index + 1)
 		door.position = position

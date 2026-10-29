@@ -104,9 +104,9 @@ func _process(_delta: float) -> bool:
 			enemy.setup(data, enemy.position)
 			enemy.set_physics_process(false)
 		return false
-	# Posar y sacar la foto no pueden pasar en el mismo frame: los
-	# BoneAttachment3D copian la pose del hueso recien en el proceso del
-	# esqueleto, asi que una captura inmediata muestra el modelo en reposo.
+	# Posar y sacar la foto no pueden pasar en el mismo frame: el esqueleto
+	# aplica la pose del clip recien en su proceso, asi que una captura
+	# inmediata muestra el modelo en reposo.
 	if _frames == 4 and _walking:
 		_pose_the_walk()
 		return false
@@ -120,29 +120,28 @@ func _process(_delta: float) -> bool:
 	return true
 
 
-## Cada copia queda un cuarto de ciclo mas adelante. Se le miente la velocidad al
-## componente y se lo hace correr a mano: la fisica esta apagada, asi que nadie
-## se mueve de su lugar y las cuatro poses quedan quietas para la foto.
+## Cada copia queda un cuarto de ciclo mas adelante en el clip de movimiento del
+## modelo. La fisica esta apagada, asi que nadie se mueve de su lugar y las
+## cuatro poses quedan quietas para la foto.
 func _pose_the_walk() -> void:
 	for i: int in _enemies.size():
 		var enemy: Node3D = _enemies[i]
-		var gait: LeggedGait = null
-		for child: Node in enemy.get_children():
-			var found := child as LeggedGait
-			if found != null:
-				gait = found
-		if gait == null:
-			print("sin gait: el modelo no tiene patas que caminen")
+		var players: Array[Node] = enemy.find_children("*", "AnimationPlayer", true, false)
+		var clip: StringName = &""
+		if not players.is_empty():
+			var candidate := players[0] as AnimationPlayer
+			for hint: String in ["run", "walk", "move"]:
+				if candidate.has_animation(hint):
+					clip = StringName(hint)
+					break
+		if clip == &"":
+			print("sin clip de movimiento: el modelo no camina")
 			return
-		if i == 0:
-			print("huesos tomados: ", gait._amplitude.size(),
-				"  rodillas: ", gait._is_knee.values().count(true),
-				"  amp_rodilla=", gait.knee_degrees)
-		enemy.velocity = Vector3(0.0, 0.0, -7.2)
-		# 1/60 por paso, las veces que haga falta para llegar a esta fase.
-		var steps: int = 12 + i * 9
-		for _step: int in steps:
-			gait._physics_process(1.0 / 60.0)
+		var motion: Node = enemy.get(&"_motion")
+		motion.call(&"set_clip_override", clip)
+		var player := players[0] as AnimationPlayer
+		player.seek(player.get_animation(clip).length * float(i) / float(_enemies.size()), true)
+		player.pause()
 
 
 ## Vertice mas bajo del modelo, no la esquina de su caja: un AABB es una caja

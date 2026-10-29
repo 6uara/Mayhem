@@ -12,6 +12,13 @@ extends StaticBody3D
 const GROUP: StringName = &"grapple_anchor"
 
 @export var telegraph: TelegraphComponent
+## La luz propia del ancla, del color de su telegrafo (Tokens.WORLD_GRAPPLE): se
+## ve el gancho y tambien lo que tiene alrededor, asi que un ancla se encuentra
+## de reojo. Se enciende mas cuando entra en rango, con el mismo cambio que el
+## telegrafo y la mira.
+@export var light: OmniLight3D
+@export var light_idle_energy: float = 1.2
+@export var light_available_energy: float = 3.0
 
 var _player: Player
 var _was_available: bool = false
@@ -19,6 +26,9 @@ var _was_available: bool = false
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	if light != null:
+		light.light_color = telegraph.get_color() if telegraph != null else Tokens.WORLD_GRAPPLE
+		light.light_energy = light_idle_energy
 	if telegraph != null:
 		telegraph.state = TelegraphComponent.State.IDLE
 
@@ -30,6 +40,8 @@ func _physics_process(_delta: float) -> void:
 	if available == _was_available:
 		return
 	_was_available = available
+	if light != null:
+		light.light_energy = light_available_energy if available else light_idle_energy
 	telegraph.state = TelegraphComponent.State.AVAILABLE if available \
 		else TelegraphComponent.State.IDLE
 

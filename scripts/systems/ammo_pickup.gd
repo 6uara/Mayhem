@@ -33,15 +33,19 @@ func _ready() -> void:
 		_rest_height = mesh.position.y
 		# Gira y flota en `_process`: sin interpolacion del motor, que lo atrasaria.
 		mesh.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-		# Amber and circular, always - amber only ever means 'the house': money,
-		# pickups and the Host.
+	# Amber and circular, always - amber only ever means 'the house': money,
+	# pickups and the Host. A bare mesh gets painted amber; the crate model
+	# (assets/models/props/ammo_crate.glb) keeps its own texture, whose stripes are
+	# amber already, and the light and the ring under it carry the token.
+	var geometry := mesh as GeometryInstance3D
+	if geometry != null:
 		var material := StandardMaterial3D.new()
 		material.albedo_color = Tokens.WORLD_PICKUP
 		material.emission_enabled = true
 		material.emission = Tokens.WORLD_PICKUP
 		material.emission_energy_multiplier = 1.4
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mesh.material_override = material
+		geometry.material_override = material
 	if light != null:
 		light.light_color = Tokens.WORLD_PICKUP
 	_start_idle_sound()

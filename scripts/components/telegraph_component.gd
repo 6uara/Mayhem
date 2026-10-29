@@ -19,19 +19,30 @@ enum State {
 	ACTIVE,     ## doing its thing
 }
 
-## The one law (SPEC-VIEWMODELS 3.2). No other colour may appear on an
-## interactive surface, and none of these four is ever reused for another meaning.
+## The one law (SPEC-VIEWMODELS 3.2), with a fifth meaning added for grapple
+## anchors (2026-10-28). No other colour may appear on an
+## interactive surface, and none of these five is ever reused for another meaning.
 enum Meaning {
 	TRAVERSAL,  ## cyan: you can use this
 	HAZARD,     ## acid: this will hurt you
 	PICKUP,     ## amber: take this
 	SPAWN,      ## magenta: enemies come from here
+	GRAPPLE,    ## violet: you can hook onto this
 }
 
 @export var meaning: Meaning = Meaning.TRAVERSAL
 ## Meshes driven by this telegraph. All get the same unlit emissive material, so
 ## an interactive object can never disappear into shadow.
 @export var meshes: Array[MeshInstance3D] = []
+## Para meshes que son un modelo con textura (el gancho del ancla, la plataforma
+## movil): el color va encima como material_overlay, un brillo aditivo que pulsa
+## igual que el material plano, en vez de reemplazar la textura por un color liso.
+## El modelo se sigue leyendo como lo que es y el estado se sigue viendo en el
+## color y el movimiento.
+@export var overlay: bool = false
+## Que fraccion de la energia de emision llega al overlay. Sumado sobre la
+## textura, la energia del material plano lavaba el modelo hasta dejarlo cyan.
+@export var overlay_strength: float = 0.1
 
 @export_group("Emission")
 @export var idle_energy: float = 0.6
@@ -84,6 +95,7 @@ func get_color() -> Color:
 		Meaning.HAZARD: return Tokens.WORLD_HAZARD
 		Meaning.PICKUP: return Tokens.WORLD_PICKUP
 		Meaning.SPAWN: return Tokens.SPAWN
+		Meaning.GRAPPLE: return Tokens.WORLD_GRAPPLE
 	return Tokens.WORLD_TRAVERSAL
 
 
@@ -106,6 +118,16 @@ func _build_materials() -> void:
 	var tint: Color = get_color()
 	for mesh: MeshInstance3D in meshes:
 		if mesh == null:
+			continue
+		if overlay:
+			var glow := StandardMaterial3D.new()
+			glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			glow.albedo_color = Color.BLACK
+			glow.metallic_specular = 0.0
+			glow.emission_enabled = true
+			glow.emission = tint
+			mesh.material_overlay = glow
+			_materials.push_back(glow)
 			continue
 		var existing := mesh.material_override as ShaderMaterial
 		if existing != null:
@@ -138,7 +160,8 @@ func _enter_state() -> void:
 
 
 func _set_energy(energy: float) -> void:
+	var scaled: float = energy * overlay_strength if overlay else energy
 	for material: StandardMaterial3D in _materials:
-		material.emission_energy_multiplier = energy
+		material.emission_energy_multiplier = scaled
 	for material: ShaderMaterial in _shader_materials:
 		material.set_shader_parameter(&"glow_energy", energy)

@@ -8,6 +8,7 @@ extends Control
 ## to be written, so there is only one of it.
 
 const ENEMY_VIEWER_SCENE_PATH: String = "res://scenes/main/enemy_viewer.tscn"
+const WEAPON_VIEWER_SCENE_PATH: String = "res://scenes/main/weapon_viewer.tscn"
 
 @onready var _root: Control = $Root
 @onready var _play_button: Button = $Root/Panel/Margin/Layout/PlayButton
@@ -119,6 +120,15 @@ func _add_enemy_viewer_button() -> void:
 	var layout: Node = _create_arena_button.get_parent()
 	layout.add_child(button)
 	layout.move_child(button, _create_arena_button.get_index() + 1)
+	# El visor de armas al lado: el mismo tipo de herramienta, para los viewmodels.
+	var weapons := Button.new()
+	weapons.text = "Weapon Viewer (dev)"
+	weapons.tooltip_text = "Dev tool: tune how each weapon and the arms sit on screen, and save it."
+	weapons.custom_minimum_size = _create_arena_button.custom_minimum_size
+	weapons.pressed.connect(func() -> void:
+		GameManager.open_scene(WEAPON_VIEWER_SCENE_PATH))
+	layout.add_child(weapons)
+	layout.move_child(weapons, button.get_index() + 1)
 
 
 func _on_leaderboard_pressed() -> void:

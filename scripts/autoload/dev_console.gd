@@ -105,6 +105,7 @@ func _register_commands() -> void:
 	_add("shop", "", "Open the shop screen right now.", _cmd_shop)
 	_add("stats", "", "Wave, enemies, currency, fps.", _cmd_stats)
 	_add("viewer", "", "Open the enemy viewer (models and animations).", _cmd_viewer)
+	_add("weapons", "", "Open the weapon viewer (tune viewmodels and save).", _cmd_weapons)
 	_add("clear", "", "Clear the console output.", _cmd_clear)
 	_add("quit", "", "Quit the game.", _cmd_quit)
 
@@ -133,6 +134,13 @@ func _cmd_viewer(_args: PackedStringArray) -> String:
 	set_open(false)
 	GameManager.open_scene("res://scenes/main/enemy_viewer.tscn")
 	return "opening enemy viewer"
+
+
+## Lo mismo para el visor de armas.
+func _cmd_weapons(_args: PackedStringArray) -> String:
+	set_open(false)
+	GameManager.open_scene("res://scenes/main/weapon_viewer.tscn")
+	return "opening weapon viewer"
 
 
 func _cmd_give(args: PackedStringArray) -> String:

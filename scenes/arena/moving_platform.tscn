@@ -2,9 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/systems/moving_platform.gd" id="1_move"]
 [ext_resource type="Script" path="res://scripts/components/telegraph_component.gd" id="2_tel"]
-
-[sub_resource type="BoxMesh" id="Mesh_plat"]
-size = Vector3(3.8, 0.4, 3.8)
+[ext_resource type="PackedScene" path="res://assets/models/props/moving_platform.glb" id="3_model"]
 
 [sub_resource type="BoxShape3D" id="Shape_plat"]
 size = Vector3(3.8, 0.4, 3.8)
@@ -19,8 +17,8 @@ speed = 3.0
 dwell = 1.2
 telegraph = NodePath("Telegraph")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
-mesh = SubResource("Mesh_plat")
+[node name="Mesh" parent="." instance=ExtResource("3_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("Shape_plat")
@@ -28,4 +26,5 @@ shape = SubResource("Shape_plat")
 [node name="Telegraph" type="Node" parent="." node_paths=PackedStringArray("meshes")]
 script = ExtResource("2_tel")
 meaning = 0
-meshes = [NodePath("../Mesh")]
+meshes = [NodePath("../Mesh/Body")]
+overlay = true

@@ -5,7 +5,7 @@ extends SceneTree
 ## so the .fbx/.glb import's root transform (Z-up->Y-up conversion, source-file scale)
 ## has to be baked in by hand rather than carried along by node hierarchy. This tool
 ## replaces the one-off scratch SceneTree script that produced the first bake
-## (assets/models/meshes/spiderbot.res) - see docs/Mayhem/11 Asset Pipeline.md and
+## (spiderbot.res, the Rusher's old spider, since deleted) - see docs/Mayhem/11 Asset Pipeline.md and
 ## docs/Mayhem/12 Known Issues and Gaps.md. Re-run it for every new enemy model rather
 ## than repeating the manual process; the next one is at least the fourth.
 ##

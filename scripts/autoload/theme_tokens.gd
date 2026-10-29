@@ -142,6 +142,8 @@ const ARM_SLEEVE     := Color("#1E212B")
 ## Enemy dominant colours. Silhouette is the primary read; colour confirms.
 const ENEMY_RUSHER   := Color("#FF3B54")
 const ENEMY_RANGER   := Color("#FF7A1F")
+const ENEMY_OUTLINE_PX     := 2.0  ## silhouette outline on every enemy model, in its body_color
+const ENEMY_OUTLINE_ENERGY := 1.6
 const ENEMY_ELITE    := Color("#FC3A00")
 const ENEMY_HEALER   := Color("#B45CFF")
 const ENEMY_SUMMONER := Color("#FF3BC1")
@@ -201,6 +203,11 @@ const WORLD_TRAVERSAL := PLAYER  ## "you can use this"  — square/bracket shape
 const WORLD_HAZARD    := HAZARD  ## "this will hurt you" — 45 degree stripes
 const WORLD_PICKUP    := REWARD  ## "take this"          — circle
 const SPAWN           := Color("#FF3BC1")  ## "enemies come from here" — doors and summon plates only
+## "you can hook onto this" — grapple anchors only. Its own hue and not traversal
+## cyan: the anchor is the one thing the grapple takes, and among the cyan of every
+## pad and platform it was hard to pick out. Violet, clear of the SPAWN magenta and
+## of the enemies' crimson.
+const WORLD_GRAPPLE   := Color("#A855FF")
 
 ## Arena telegraph timings (seconds)
 const PLATFORM_WARNING       := 1.50

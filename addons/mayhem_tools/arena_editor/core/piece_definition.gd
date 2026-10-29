@@ -112,6 +112,46 @@ enum Support {
 ## piso gris.
 @export var edge_energy: float = 0.0
 
+@export_group("Art")
+## Lo que se ve en lugar de las cajas greybox. Solo cambia el dibujo: la colision,
+## y con ella el navmesh, siguen siendo las cajas de `greybox_extents`, asi que
+## ponerle arte a una pieza no mueve por donde se camina.
+##
+## Es un .glb con una sola malla normalizada a la caja de una celda (x y z de
+## -0.5 a 0.5, y de 0 a 1, donde 1 es la superficie que se pisa), que es lo que
+## escribe tools/blender/build_props.py. PieceMeshBuilder la estira sobre la caja
+## que corresponde. Lo que el modelo tenga por encima de 1 -barandas- sobresale.
+@export var art_scene: PackedScene
+## Una copia por celda (el piso, que es una baldosa que se repite) o una sola
+## estirada sobre todo el footprint (la pasarela, la rampa de dos celdas).
+@export var art_per_cell: bool = true
+## Otras versiones del arte (baldosa rota, con circuitos, con rejilla) que
+## reemplazan a `art_scene` en algunas celdas, para que el piso no sea la misma
+## baldosa mil veces. Solo con `art_per_cell`. Cual toca sale de la celda del
+## mundo, no del azar: la misma arena se ve igual cada vez que se carga, en el
+## editor y en el juego.
+@export var art_variants: Array[PackedScene] = []
+## Que fraccion de las celdas lleva una variante en vez del arte base.
+@export_range(0.0, 1.0) var art_variant_chance: float = 0.3
+
+## Giro del arte dentro de su caja, en grados. La rampa sube hacia -Z; la de dos
+## celdas es larga en X y la gira para que suba a lo largo.
+@export var art_yaw_degrees: float = 0.0
+## La colision de la rampa con arte es una cuña que sigue su superficie, de 0 en
+## la punta baja a la altura de la caja en la alta, y no la caja entera: con la
+## caja el jugador caminaba sobre aire por encima de la pendiente que se ve. La
+## punta alta queda donde estaba la tapa de la caja, asi que lo que se llegaba
+## desde arriba se sigue llegando.
+@export var art_ramp_collision: bool = false
+## Caja donde va el arte, en metros y en el espacio de la pieza sin rotar. Vacia
+## (el default) es la de la celda o la del footprint, segun `art_per_cell`. La
+## esquina la necesita: sus dos brazos pasan por el centro de sus celdas, no por
+## el borde de la caja que las envuelve.
+@export var art_bounds: AABB = AABB()
+## La colision sale de la malla del arte en vez de las cajas greybox. Para la
+## esquina, cuyas cajas por celda eran tres losas paralelas y no una L.
+@export var art_collision: bool = false
+
 
 ## Lo que hay que saber antes de apretar el boton de la paleta, armado de la
 ## definicion misma: una regla que se escribe a mano en el tooltip es una regla

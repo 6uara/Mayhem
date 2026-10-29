@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, estado, backlog]
 estado: vivo
-actualizado: 2026-10-21
+actualizado: 2026-10-28
 ---
 
 # MAYHEM — Estado del proyecto
@@ -87,11 +87,29 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 | Retroceder disparando deja de ser gratis: el `CombatDirector` mide la retirada sostenida y la horda la contesta (dos cortan el camino, tiros y saltos adelantan sólo la retirada, frascos más adelante, cuerpo a cuerpo hasta +12 %, puertas hacia donde va); caminar hacia atrás va al 85 %. Escala por oleada y se apaga sola. Números sin playtest: ajustar con `retreat_avg`/`retreat_peak` del log | `RetreatPressure`, `data/combat/retreat_pressure.tres`, `MovementComponent.backpedal_speed_multiplier`, [02 Autoloads](Mayhem/02%20Autoloads.md#combatdirector) |
 | Dos arenas más para elegir al darle a Play: *The Ziggurat* (vertical, rey de la colina, zip lines desde la cima) y *The Foundry* (cuartos y pasillos, pasarela con plataformas que se caen, charcos y campos lentos). La default va primera en la lista. Sin playtest todavía | `data/arenas/`, `tools/make_ziggurat_arena.gd`, `tools/make_foundry_arena.gd`, [13 Arena](Mayhem/13%20Arena,%20Venue%20and%20Crowd.md) |
 
+### Lo que entró el 2026-10-28
+
+| Qué | Dónde |
+|---|---|
+| Armas con modelos de Meshy (pistola, subfusil, rifle, escopeta). Los placeholder `.fbx` se borraron | `tools/blender/build_weapons.py`, `data/weapons/` |
+| Recarga animada por arma: sale el cargador (rifle, subfusil), la corredera va atrás (pistola), entra un cartucho y se bombea (escopeta), y el arma se inclina. Reemplaza el giro de 360° | clip `reload` de cada `.glb`, `WeaponData.reload_tilt_degrees`, `WeaponComponent._pose_parts()` |
+| Rusher, Bomber, Healer, Ranger y Flyer con modelos de Meshy. Rusher y Ranger traen `idle`, `run` y `attack`. Los modelos viejos se borraron, y `LeggedGait` con ellos | `tools/blender/build_enemy_models.py`, `data/enemies/` |
+| Brazos de primera persona de Meshy sobre el mismo esqueleto, clips e IK; manos y armas a escala entre sí | `tools/blender/build_fp_arms.py`, `viewmodel_scale` |
+| Props de Meshy: pisos, plataformas, pasarela, rampas y pilar con arte (la colisión sigue siendo la greybox, salvo las rampas, que chocan con su modelo); caja de munición, bounce pad, puerta de spawn y la pantalla gigante del coliseo | `tools/blender/build_props.py`, `PieceDefinition` grupo Art, `ArenaColiseum.jumbotron_scene` |
+| Environmental y Summoner con modelos de Meshy (tanque de ácido con patas y brazo lanzador, hechicero de túnica), con sus clips; ancla de grapple y plataforma móvil con modelo, con el telegrafo como brillo encima de la textura | `build_enemy_models.py`, `build_props.py`, `TelegraphComponent.overlay` |
+| Contorno de cada enemigo en el color de su arquetipo, para que se recorten contra el piso oscuro | `enemy_outline.gdshader`, `Tokens.ENEMY_OUTLINE_PX`, 2 px |
+| Piso con variedad: tres variantes de baldosa (rota, circuitos, rejilla) en un 30 % de las celdas, fijas por celda | `PieceDefinition.art_variants`, `build_props.py` |
+| Visor de armas (dev): ajustar en vivo cómo queda cada arma y las manos, y guardarlo. Las manos tienen corrección por arma (la pistola agarra más arriba) | `scenes/main/weapon_viewer.tscn`, `WeaponData.viewmodel_grip_offset` |
+| Ancla de grapple con color propio (violeta, 5° significado de la ley de color) y luz propia, que se enciende más en rango | `Tokens.WORLD_GRAPPLE`, `TelegraphComponent.Meaning.GRAPPLE`, `GrappleAnchor.light` |
+| Más luz en la arena (luna, ambiente y exposición), y armas más chicas y más bajas en pantalla, con brazos a escala | `coliseum.tres`, `coliseum_env.tres`, `viewmodel_scale`, `ViewmodelArms.ARM_SCALE` |
+| Paredes (1x1, 2x1, esquina) y cobertura baja con modelo. La esquina choca con su L | `build_props.py`, `PieceDefinition.art_bounds` / `art_collision` |
+| Limpieza: fuera el resto del pack de armas viejo, `spiderbot.res`, `ual1_standard.res`, `ammobox_low.res`, `UAL1_Standard_RM.glb` y los `.blend` y scripts viejos del Environmental y el Summoner, que ya no usaba nada | — |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
-| R1 | **Modelos** de piezas de arena, interactuables y un enemigo (Elite). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
+| R1 | **Modelos** de piezas de arena, interactuables y un enemigo (Elite). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19; los brazos de Meshy, 2026-10-28, llegaron sin textura y usan un material liso hasta que haya una), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas e impactos** sigue siendo el sintetizado por `tools/generate_placeholder_sfx.py` | Audio |
 | R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, del hitstop suave, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 

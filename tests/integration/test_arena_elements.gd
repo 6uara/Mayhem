@@ -33,11 +33,11 @@ func _make_target() -> CharacterBody3D:
 
 # --------------------------------------------------------------- the colour law
 
-## Cyan usable, acid hurts, amber take, magenta spawn - and no colour ever means
+## Cyan usable, acid hurts, amber take, magenta spawn, violet hook onto - and no colour ever means
 ## two things (SPEC-VIEWMODELS 3.2).
 func test_every_element_declares_the_right_meaning() -> void:
 	var expected: Dictionary = {
-		"res://scenes/arena/grapple_anchor.tscn": TelegraphComponent.Meaning.TRAVERSAL,
+		"res://scenes/arena/grapple_anchor.tscn": TelegraphComponent.Meaning.GRAPPLE,
 		"res://scenes/arena/moving_platform.tscn": TelegraphComponent.Meaning.TRAVERSAL,
 		"res://scenes/arena/zip_line.tscn": TelegraphComponent.Meaning.TRAVERSAL,
 		"res://scenes/arena/disappearing_platform.tscn": TelegraphComponent.Meaning.TRAVERSAL,
@@ -49,11 +49,11 @@ func test_every_element_declares_the_right_meaning() -> void:
 		assert_eq(telegraph.meaning, expected[path], "%s meaning" % path)
 
 
-func test_the_four_meanings_never_share_a_colour() -> void:
+func test_the_five_meanings_never_share_a_colour() -> void:
 	var seen: Array[Color] = []
 	for meaning: int in [TelegraphComponent.Meaning.TRAVERSAL,
 			TelegraphComponent.Meaning.HAZARD, TelegraphComponent.Meaning.PICKUP,
-			TelegraphComponent.Meaning.SPAWN]:
+			TelegraphComponent.Meaning.SPAWN, TelegraphComponent.Meaning.GRAPPLE]:
 		var telegraph := TelegraphComponent.new()
 		telegraph.meaning = meaning
 		add_child_autofree(telegraph)

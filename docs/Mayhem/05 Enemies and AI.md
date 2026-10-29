@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, enemies, ai]
 estado: referencia
-actualizado: 2026-10-21
+actualizado: 2026-10-28
 ---
 
 # Enemies and AI
@@ -68,40 +68,67 @@ state. It is cosmetic only: the body, capsule and hitboxes never move, so a
 floating archetype (the Bomber) still walks the navmesh, and its hitboxes
 (`head_offset`) are authored for where the model is drawn.
 
-The Summoner is the first archetype whose model ships its own clips (`idle`,
-`move`, `cast`). Its source `Summoner.blend` is six loose rigid pieces with no
-rig; `tools/blender/build_summoner.py` adds a six-bone skeleton, skins each
-piece to one bone (the robe hem to the root, so it bends instead of swinging
-like a board), keys the clips and writes `Summoner.glb`, which is what
-`summoner.tres` references. Edit the `.blend`, then rerun:
+Seven archetypes wear Meshy models that arrive as `.glb` files in
+`assets/models/enemies/`:
+
+| Archetype | Source | Output |
+|---|---|---|
+| Rusher | `SciFi_Robot_Dog` | `Melee/Rusher.glb` |
+| Bomber | `bomb_robot_lowpoly` | `Bomber/Bomber.glb` |
+| Healer | `healer_robot_quad` | `Healer/Healer.glb` |
+| Ranger | `ranger_robot_lowpoly` | `Ranged/Ranger.glb` |
+| Flyer | `scifi_combat_drone_qu` | `RangedFlyer/Flyer.glb` |
+| Environmental | `acid_barrel_robot_3d` | `Enviromental/Environmental.glb` (the folder keeps the artist's spelling) |
+| Summoner | `robot_sorcerer_quad` | `Summoner/Summoner.glb` |
+
+The sources are set to `importer="skip"`. `tools/blender/build_enemy_models.py`
+turns each one into the `.glb` its `.tres` loads:
 
 ```
-blender -b assets/models/enemies/Summoner/Summoner.blend --python tools/blender/build_summoner.py
+blender -b --python tools/blender/build_enemy_models.py -- <rusher|bomber|healer|ranger|flyer|environmental|summoner>
 ```
 
-`ActionSummonAdds` emits `ability_used`, which is what plays `cast`.
+It welds the UV seams (left open, decimating tears them into cracks) and
+decimates (the dog arrived with 528k triangles). It then stands the model up
+facing Godot's -Z with its base at the origin, so none of them needs
+`model_yaw_degrees` or `model_pitch_degrees`. Four of them get a rig. Each rig
+skins by zone with a small blend at each joint, and the joints were measured
+from orthographic renders:
 
-The Ranger (`tools/blender/build_ranged.py`, clips `idle`, `run`, `attack`)
-splits each loose piece by height: the body between hips, spine and head, each leg
-at the knee, each arm at the elbow; the cannon rides the right forearm and stays
-aimed forward in every clip. `ActionRangedAttack` emits `ability_used` on the shot,
-which plays the recoil.
+- **Rusher**: a quadruped with its head on top of its back. Body, head, and a
+  thigh and shin per leg. Clips: `idle`, `run` (a trot, with diagonal legs
+  together) and `attack`, a lunge with the head down. `ActionLeapAttack` emits
+  `ability_used` on take-off, which plays it. Its walk used to come from
+  `LeggedGait`, which drove the spider bot's leg bones and is gone with it.
+- **Ranger**: a humanoid with the cannon on its right forearm (`idle`, `run`,
+  `attack`). The cannon arm stays aimed forward in every clip.
+  `ActionRangedAttack` emits `ability_used` on the shot, which plays the recoil.
+- **Environmental**: an acid tank on four diagonal legs with a three-segment
+  launcher arm (`idle`, `walk`, `attack`). The legs are measured from the mesh
+  itself: whatever sits below the tank and away from its axis, split by
+  quadrant, with hip, knee and foot taken from that leg's own radial profile.
+  Legs step about the vertical, not the side axis: they splay diagonally, and
+  swinging them sideways pushes the trailing foot through the floor.
+  `ActionThrowFlask` emits `ability_used` only when a flask actually leaves,
+  which plays `attack` (the arm draws back, then whips forward on frame 10).
+- **Summoner**: a robed sorcerer (`idle`, `move`, `cast`). The robe rides the
+  root, since it floats rather than walks; torso, head and arms move.
+  `ActionSummonAdds` emits `ability_used`, which plays `cast`: the arms rise
+  forward and up.
 
-The Environmental follows the same recipe (`idle`, `walk`, `attack`).
-`Enviromental.blend` (folder and file keep the artist's spelling) is the tank,
-the launcher on top and four geometry-node legs; `tools/blender/build_environmental.py`
-skins the tank and the launcher rigidly and gives each leg a thigh and a shin split
-at the top of its arch, so the walk lifts and folds the legs instead of swinging
-them like compasses. Legs step about the vertical, not the side axis: they splay
-diagonally, and swinging them sideways pushed the trailing foot through the floor.
-The output is `Environmental.glb`:
+The Bomber, Healer and Flyer float, and `EnemyModelMotion` animates them with no
+clips. The new Healer has no halo of its own, so the generated ring draws
+(`model_has_halo` is off). `EnemyModelMotion.capture_rest()` applies its pose in
+the same frame. Without that, a floating model spent its first frame sitting on
+the floor.
 
-```
-blender -b assets/models/enemies/Enviromental/Enviromental.blend --python tools/blender/build_environmental.py
-```
-
-`ActionThrowFlask` emits `ability_used` only when a flask actually leaves, which
-plays `attack` (the launcher kicks up on frame 3).
+**Outline.** Every enemy model carries a silhouette outline in its archetype's
+`body_color` (`assets/shaders/enemy_outline.gdshader`, `Tokens.ENEMY_OUTLINE_PX`, 2 px
+and `ENEMY_OUTLINE_ENERGY`; 2 px, 3 read too heavy). The dark Meshy models vanished against the dark
+arena floor. It is an inverted hull inflated in screen space, so the line is the
+same width in pixels at any distance, and it is emissive so the bloom picks it
+up. It lives in `material_overlay`; the hit flash is chained behind it as its
+`next_pass` while it lights up.
 
 ## Movement fields — a contract, not taste
 
@@ -667,13 +694,15 @@ Tests en `tests/integration/test_kill_attribution.gd`.
 can't be assigned directly, since Godot's fbx importer produces a full node
 hierarchy with a root-level transform (rotation from the Z-up→Y-up conversion,
 plus whatever scale the source file's units imply), not a standalone mesh
-resource. SpiderBot (Rusher) and UAL1_Standard (Elite) were baked offline:
+resource. SpiderBot (the old Rusher) and UAL1_Standard (Elite) were baked offline this way:
 `SurfaceTool.append_from(mesh, surface, transform)` walks the composed local
 transform down to the mesh node and bakes it into a new `ArrayMesh`, then the
 result is recentred on its own AABB and rescaled to the archetype's
 `collision_height` (this matches how the box/capsule placeholders were already
 authored — pivot at the shape's own center). Saved as `.res` files under
-`assets/models/meshes/`.
+`assets/models/meshes/`. Both were deleted on 2026-10-28: nothing used them any more,
+and every archetype's `mesh` is now a primitive (the Rusher's a box in the
+dog's proportions). `tools/bake_enemy_meshes.gd` stays for the next one.
 
 ## Beehave
 

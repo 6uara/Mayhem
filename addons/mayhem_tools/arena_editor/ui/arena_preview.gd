@@ -36,7 +36,7 @@ func rebuild() -> void:
 		var piece: PieceDefinition = catalog.get_piece(entry.piece_id)
 		if piece == null:
 			continue
-		var node: Node3D = PieceMeshBuilder.build(piece, catalog, false)
+		var node: Node3D = PieceMeshBuilder.build(piece, catalog, false, false, entry.cell)
 		if node == null:
 			continue
 		# Same lift as the loader: what you place is what you get.
