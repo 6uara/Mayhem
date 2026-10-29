@@ -1,25 +1,13 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/slow_field.gd" id="1_slow"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/slow_field.wav" id="2_sound"]
-
-[sub_resource type="StandardMaterial3D" id="Mat_body"]
-albedo_color = Color(0.45, 0.3, 0.6, 1)
-emission_enabled = true
-emission = Color(0.7, 0.4, 1, 1)
-emission_energy_multiplier = 0.8
-
-[sub_resource type="SphereMesh" id="Mesh_body"]
-material = SubResource("Mat_body")
-radius = 0.14
-height = 0.28
-radial_segments = 8
-rings = 4
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/gadget_slow_field.res" id="3_mesh"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_field"]
 transparency = 1
 shading_mode = 0
-albedo_color = Color(0.6, 0.35, 0.9, 0.35)
+albedo_color = Color(0.356863, 0.423529, 1, 0.35)
 
 [sub_resource type="CylinderMesh" id="Mesh_field"]
 material = SubResource("Mat_field")
@@ -36,7 +24,8 @@ field_mesh = NodePath("Field")
 activate_sound = ExtResource("2_sound")
 
 [node name="Mesh" type="MeshInstance3D" parent="."]
-mesh = SubResource("Mesh_body")
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+mesh = ExtResource("3_mesh")
 
 [node name="Field" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
