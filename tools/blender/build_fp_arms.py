@@ -178,6 +178,13 @@ def main():
 
     _fix_material(mesh_obj)
 
+    # Los brazos de Meshy, si estan, reemplazan a la malla del rig. El esqueleto,
+    # los clips y todo lo de Godot siguen siendo los de arms_rig.blend: la malla
+    # nueva se acomoda a los huesos, no al reves.
+    if os.path.exists(MESHY_ARMS):
+        bpy.data.objects.remove(mesh_obj)
+        mesh_obj = _meshy_arms(rig)
+
     # --- Poses ---
     # Rotacion local de cada hueso en la pose del rig, relativa a su reposo, en la
     # jerarquia nueva. Es lo que hay que poner en rotation_quaternion.
@@ -344,6 +351,136 @@ def main():
         export_image_format="AUTO",
     )
     print("FP_ARMS written", OUTPUT)
+
+
+# Los brazos de Meshy: torso con brazos en T, en un metro de ancho dividido por
+# diecisiete, partidos en diez piezas (mano, antebrazo, brazo, hombro por lado,
+# mas torso y cuello). Llegan sin textura.
+MESHY_ARMS = os.path.join(os.path.dirname(bpy.data.filepath),
+    "Meshy_AI_cyberpunk_fps_arms_split_20261028_part-segmentation_split.glb")
+# El torso y el cuello: la camara esta adentro del pecho, y del viewmodel solo se
+# ven antebrazos y manos. La malla del rig tampoco tenia torso.
+MESHY_DROP = {"model_part2", "model_part9"}
+MESHY_FACES = 20000
+# Articulaciones a lo largo del brazo (|x|), de Meshy -> del rig: hombro,
+# arranque del brazo, codo, muñeca y punta de los dedos. Medidas en un perfil del
+# brazo de Meshy (donde se angosta) y en los huesos DEF del rig.
+MESHY_X = [(0.006, 0.150), (0.012, 0.192), (0.029, 0.479), (0.0445, 0.791), (0.0605, 1.096)]
+# El eje del brazo en el corte (y, z): de Meshy y del rig.
+MESHY_AXIS = (0.0026, 0.0095)
+RIG_AXIS = (0.065, 0.024)
+# Cuanto esta girada la mano de Meshy alrededor del eje del brazo, en grados:
+# el eje mayor de los dedos abiertos (medido con PCA del corte) sale a 54 de +Y
+# hacia +Z, con el indice del lado de -Y -Z. Girar eso hasta +Y deja la palma
+# abajo y el pulgar adelante, como el rig. Con 90 la mano quedaba en diagonal
+# y el puño salia del grosor de la pistola.
+MESHY_TWIST = 54.3
+# Escala del corte: la mano abierta de Meshy mide 0.0136 de lado a lado con el
+# pulgar, y una mano real de este rig unos 0.17 (0.13 en juego, por ARM_SCALE).
+MESHY_SECTION = 12.5
+# Sin textura de origen: un gris metal oscuro, que no compite con el arma. En
+# lineal, como lo guarda glTF: 0.15 se veia gris claro al lado de la luz de
+# relleno del rig.
+MESHY_COLOUR = (0.035, 0.038, 0.045, 1.0)
+
+
+def _meshy_warp(x):
+    ax = abs(x)
+    for (a0, b0), (a1, b1) in zip(MESHY_X, MESHY_X[1:]):
+        if ax <= a1 or (a1, b1) == MESHY_X[-1]:
+            t = (ax - a0) / (a1 - a0)
+            return math.copysign(b0 + (b1 - b0) * t, x)
+    return x
+
+
+def _meshy_arms(rig):
+    """La malla de Meshy, parada sobre el esqueleto limpio y pesada por cercania.
+
+    Llega con la mano girada (ver MESHY_TWIST) y el rig la tiene de plano (el
+    dorso arriba, el pulgar adelante): el corte gira alrededor del eje del
+    brazo. A lo largo del brazo cada tramo se estira hasta
+    su hueso, asi codo y muñeca caen donde dobla el rig.
+    """
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=MESHY_ARMS)
+    parts = [o for o in bpy.data.objects if o not in before]
+    keep = []
+    for obj in parts:
+        if obj.type != "MESH" or obj.name.split(".")[0] in MESHY_DROP:
+            bpy.data.objects.remove(obj)
+            continue
+        obj.data.transform(obj.matrix_world)
+        obj.matrix_world.identity()
+        keep.append(obj)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in keep:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = keep[0]
+    bpy.ops.object.join()
+    mesh_obj = keep[0]
+    mesh_obj.name = "FPArmsMesh"
+
+    y0, z0 = MESHY_AXIS
+    cos_t = math.cos(math.radians(MESHY_TWIST))
+    sin_t = math.sin(math.radians(MESHY_TWIST))
+    for v in mesh_obj.data.vertices:
+        x, y, z = v.co
+        dy = y - y0
+        dz = z - z0
+        v.co = Vector((_meshy_warp(x),
+                       RIG_AXIS[0] + MESHY_SECTION * (dy * cos_t + dz * sin_t),
+                       RIG_AXIS[1] + MESHY_SECTION * (dz * cos_t - dy * sin_t)))
+    mesh_obj.data.update()
+
+    ratio = MESHY_FACES / max(len(mesh_obj.data.polygons), 1)
+    if ratio < 1.0:
+        modifier = mesh_obj.modifiers.new("Decimate", "DECIMATE")
+        modifier.ratio = ratio
+        with bpy.context.temp_override(object=mesh_obj, active_object=mesh_obj):
+            bpy.ops.object.modifier_apply(modifier=modifier.name)
+
+    # Pesos por cercania a cada hueso, mezclando los que estan casi igual de
+    # cerca: lo que no se ve doblar (el brazo en T) queda rigido y las juntas
+    # se reparten.
+    segments = [(b.name, b.head_local.copy(), b.tail_local.copy()) for b in rig.data.bones]
+
+    def distance(p, a, b):
+        ab = b - a
+        t = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-9)))
+        return (p - (a + ab * t)).length
+
+    groups = {name: mesh_obj.vertex_groups.new(name=name) for name, _, _ in segments}
+    for v in mesh_obj.data.vertices:
+        near = sorted((distance(v.co, a, b), name) for name, a, b in segments)[:3]
+        best = max(near[0][0], 1e-4)
+        picked = [(d, n) for d, n in near if d < best * 1.35]
+        weights = [(n, (best / max(d, 1e-4)) ** 4) for d, n in picked]
+        total = sum(w for _, w in weights)
+        for name, w in weights:
+            groups[name].add([v.index], w / total, "REPLACE")
+
+    mesh_obj.parent = rig
+    mesh_obj.matrix_parent_inverse = rig.matrix_world.inverted()
+    mesh_obj.modifiers.new("Armature", "ARMATURE").object = rig
+
+    material = bpy.data.materials.new("FPArmsMeshy")
+    bsdf = material.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = MESHY_COLOUR
+    bsdf.inputs["Metallic"].default_value = 0.25
+    bsdf.inputs["Roughness"].default_value = 0.5
+    mesh_obj.data.materials.clear()
+    mesh_obj.data.materials.append(material)
+    # Al unir, cada pieza conserva el indice de su material; con un solo slot,
+    # los que quedan afuera salian con el material por defecto. Y la decimada
+    # deja caras planas que, sin suavizar, se leen como facetas.
+    for poly in mesh_obj.data.polygons:
+        poly.material_index = 0
+        poly.use_smooth = True
+    # Meshy pinta cada pieza con un color de vertice claro, y Godot lo usa de
+    # albedo: los brazos salian blancos con cualquier color de material.
+    for attribute in list(mesh_obj.data.color_attributes):
+        mesh_obj.data.color_attributes.remove(attribute)
+    return mesh_obj
 
 
 def _fix_material(mesh_obj):

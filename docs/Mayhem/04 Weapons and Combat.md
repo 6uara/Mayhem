@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, weapons, combat]
 estado: referencia
-actualizado: 2026-10-16
+actualizado: 2026-10-28
 ---
 
 # Weapons and Combat
@@ -57,12 +57,40 @@ pattern every time. See `tests/unit/test_recoil_pattern.gd`.
 
 `WeaponData` gained `viewmodel: PackedScene`, `viewmodel_scale`,
 `viewmodel_offset`, `viewmodel_rotation_degrees`. `WeaponComponent._spawn_viewmodel()`
-instantiates it as a child on `_ready()`. All four weapons now have real
-low-poly meshes (`assets/models/weapons/*.fbx`) — ak47 (Rifle), shotgun,
-mac10 (SMG), pew (Pistol) — imported directly as `PackedScene`, no manual mesh
-extraction needed since the scene's own node transforms carry the correct scale.
+instantiates it as a child on `_ready()`. The four weapons are Meshy models
+(`assets/models/weapons/Meshy_AI_*.blend`) turned into
+`pistol.glb`, `smg.glb`, `rifle.glb` and `shotgun.glb` by
+`tools/blender/build_weapons.py`:
 
-**Contrast with enemy meshes**, which *do* need extraction — `EnemyData.mesh` is
+```
+blender -b assets/models/weapons/<weapon>.blend --python tools/blender/build_weapons.py
+```
+
+The script decimates each one to ~40k triangles, cuts out the part that moves
+on reload (rifle and SMG magazine, pistol slide, shotgun pump; the shotgun also
+gets a shell the left hand loads), scales it to the length the old placeholder
+had on screen and keys a one-second `reload`
+clip. The `.blend` files are set to `importer="skip"`: Godot unpacking their
+textures into a shared folder made all four weapons share one texture (every
+Meshy file names them `Image_0..2`). Edit the `.blend`, rerun, reimport.
+
+**Reload.** Two layers, both driven by `get_reload_progress()` rather than a
+clock, so a faster reload from an upgrade still lines up and an interrupted one
+falls back to rest with nothing to clean up:
+
+- The model's `reload` clip, scrubbed by `WeaponComponent._pose_parts()`.
+  Its timing follows the left hand in `ViewmodelArms` (lets go at 0.1, belt
+  0.32–0.42, magazine well 0.62, seated 0.72, back on the gun at 0.9).
+- The whole gun tilts towards `WeaponData.reload_tilt_degrees` (`_reload_tilt()`,
+  eased in and out over `reload_tilt_ease`) and dips by `reload_dip`. The tilt
+  turns the magazine well or loading port towards the camera. The arms don't
+  rotate with it, since that would swing the shoulders too. They get it as
+  `set_weapon_hold()` and only the hands follow it.
+
+Parts hidden at rest (the shell, at scale 0.001 under the gun) are left out of
+`_model_bounds()`, which places the hands and the muzzle.
+
+**Contrast with enemy meshes**, which need extraction: `EnemyData.mesh` is
 typed `Mesh`, not `PackedScene`, so an enemy's source `.fbx` gets its transform
 hierarchy baked into a standalone `ArrayMesh` offline and saved under
 `assets/models/meshes/*.res`. See [[05 Enemies and AI#Enemy meshes]].
@@ -75,7 +103,7 @@ shared camera rig.
 
 **Arms.** `ViewmodelArms` (`scripts/components/viewmodel_arms.gd`) instances
 `assets/models/Arms/fp_arms.glb` next to the weapon pivot (not under it, so the
-reload spin does not carry them). The hands are not animated into place:
+reload tilt does not carry them). The hands are not animated into place:
 `ViewmodelArmIK`, a `SkeletonModifier3D`, solves shoulder-elbow-wrist toward
 the grip and handguard measured from the weapon's mesh, and turns each hand to
 face it. The clips only move fingers and wrists — `grip_idle` loops, `fire`
@@ -85,17 +113,27 @@ a reload the left hand also travels procedurally: down to the belt, back under
 the gun, into the handguard.
 
 Placement constants (shoulder anchor, `ARM_SCALE`, hand orientations) live at
-the top of `viewmodel_arms.gd`. The weapons are sized to the hands, not the
-other way round: each `viewmodel_scale` (pistol 1.7, SMG 1.35, rifle and
-shotgun 1.15) is what makes its grip fill a fist — the source `.fbx` files came
-in at mismatched sizes, and the pistol at 1.0 disappeared inside the hands. Tune them by looking, with
+the top of `viewmodel_arms.gd`. Each weapon is sized against the hands by
+`viewmodel_scale` (pistol 0.95, SMG 0.85, rifle and shotgun 0.9) together with
+`ARM_SCALE` (0.66). Earlier passes had both bigger: at `ARM_SCALE` 0.75 the
+hand was as long as the whole pistol, and scaling the weapons up to match left
+them too big and too high. They are placed by `viewmodel_offset`, low and to the
+right (y -0.16 to -0.2)
+(the stocked rifle, SMG and shotgun sit further out, so the stock doesn't
+reach the eye) and tilted by `reload_tilt_degrees`. Tune all three by looking, with
 `godot --path . -s res://tools/preview_viewmodel.gd -- rifle_ak [idle|reload|equip] [progress] [side|top]`.
 
 `fp_arms.glb` is generated, not authored: `tools/blender/build_fp_arms.py`
 reads `arms_rig.blend` (the full Rigify rig), keeps only the 39 deform bones
 that matter, applies the mirror, folds twist weights into their parents, swaps
 the Diffuse BSDF for a Principled one glTF can read and keys the clips, taking
-the "closed finger" pose from the rig's own fist. Edit the `.blend`, then:
+the "closed finger" pose from the rig's own fist. When
+`Meshy_AI_cyberpunk_fps_arms_split_*.glb` sits next to the rig, its mesh
+replaces the rig's. It drops the torso and neck, untwists the hands 54° to lie
+flat like the rig's, stretches each segment onto its bone, decimates to 20k triangles and skins
+by distance to the bones. The skeleton, clips and IK stay the same. It comes
+without a texture: a dark metal material stands in until one exists. Edit the
+`.blend` or swap the `.glb`, then:
 
 ```
 blender -b assets/models/Arms/arms_rig.blend --python tools/blender/build_fp_arms.py

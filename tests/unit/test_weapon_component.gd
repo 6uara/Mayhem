@@ -150,23 +150,27 @@ func test_reload_progress_runs_from_zero_to_one() -> void:
 	assert_almost_eq(_weapon.get_reload_progress(), 0.5, 0.05, "a mitad de camino")
 
 
-## La razon de que el giro sea una vuelta entera: termina donde empezo, y la pose
-## de reposo se recupera por aritmetica en vez de por alguien acordandose de
-## restaurarla.
-func test_a_finished_spin_lands_back_on_the_resting_pose() -> void:
-	assert_almost_eq(_weapon._reload_spin(1.0), -360.0, 0.01,
-		"una vuelta completa es la misma pose")
-	assert_eq(_weapon._reload_spin(0.0), 0.0, "sin recarga no hay giro")
+## La inclinacion sale y vuelve por el progreso: al principio y al final de la
+## recarga el arma esta en reposo, sin que nadie tenga que restaurarla.
+func test_the_reload_tilt_starts_and_ends_on_the_resting_pose() -> void:
+	_data.reload_tilt_degrees = Vector3(10.0, 0.0, -30.0)
+	assert_eq(_weapon._reload_tilt(0.0), Vector3.ZERO, "sin recarga no hay inclinacion")
+	assert_almost_eq(_weapon._reload_tilt(1.0).length(), 0.0, 0.001,
+		"al terminar vuelve al reposo")
+	assert_almost_eq(_weapon._reload_tilt(0.5), _data.reload_tilt_degrees, Vector3.ONE * 0.001,
+		"en el medio esta toda inclinada")
 
 
 ## Una recarga interrumpida -cambio de arma, muerte, fin de run- no puede dejar el
 ## arma torcida para siempre.
 func test_an_interrupted_reload_leaves_no_residue() -> void:
+	_data.reload_tilt_degrees = Vector3(10.0, 0.0, -30.0)
 	_fire_once()
 	_weapon.try_reload()
 	_weapon._process(_data.reload_time * 0.4)
-	assert_gt(absf(_weapon._reload_spin(_weapon.get_reload_progress())), 0.0,
-		"a mitad de recarga el arma esta girada")
+	assert_gt(_weapon._reload_tilt(_weapon.get_reload_progress()).length(), 0.0,
+		"a mitad de recarga el arma esta inclinada")
 
 	_weapon.reset()
-	assert_eq(_weapon.get_reload_progress(), 0.0, "cortar la recarga vuelve el giro a cero")
+	assert_eq(_weapon._reload_tilt(_weapon.get_reload_progress()), Vector3.ZERO,
+		"cortar la recarga vuelve la inclinacion a cero")

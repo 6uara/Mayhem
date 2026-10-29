@@ -11,6 +11,20 @@ extends Resource
 @export var viewmodel_scale: float = 1.0
 @export var viewmodel_offset: Vector3 = Vector3.ZERO
 @export var viewmodel_rotation_degrees: Vector3 = Vector3.ZERO
+## How far the whole viewmodel tilts while reloading, at the peak of the motion,
+## in the pivot's frame (pitch, yaw, roll). It turns the magazine well or the
+## loading port towards the camera; the moving parts themselves come from the
+## model's own `reload` clip. Lives here rather than in that clip because the
+## arms have to follow it, and they never see the clip.
+@export var reload_tilt_degrees: Vector3 = Vector3.ZERO
+## Where the hands actually hold this weapon, as a correction to what
+## ViewmodelArms measures from the mesh, in metres and in camera axes (+X right,
+## +Y up, -Z forward). The measurement finds the grip of any model; it does not
+## know that a pistol is held high, against the slide. Tune with
+## the weapon viewer (scenes/main/weapon_viewer.tscn).
+@export var viewmodel_grip_offset: Vector3 = Vector3.ZERO
+## Same for the support hand (handguard, or right beside the grip on a pistol).
+@export var viewmodel_support_offset: Vector3 = Vector3.ZERO
 
 @export_group("Damage")
 @export var damage: float = 10.0
