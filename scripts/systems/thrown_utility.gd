@@ -18,6 +18,10 @@ const GRAVITY: float = 18.0
 ## Safety net so a utility thrown off the map still returns to the pool.
 const MAX_FLIGHT_TIME: float = 6.0
 
+## Por preload y no por class_name, como los brazos del viewmodel: no depende de
+## que la cache de clases globales ya se haya regenerado.
+const AREA_RING := preload("res://scripts/systems/gadget_area_ring.gd")
+
 @export var data: UtilityData
 ## What the arc lands on.
 ##
@@ -96,6 +100,16 @@ func launch_with_velocity(from: Vector3, velocity: Vector3, thrower: Node) -> vo
 	visible = true
 
 
+## Si un efecto que dura (la barrera, el campo lento) se ve en este momento:
+## parpadea los ultimos `Tokens.GADGET_ENDING_BLINK` segundos, igual que una
+## plataforma que desaparece. Uno que se apaga sin avisar te deja expuesto en
+## medio de una recarga.
+static func ending_blink_visible(time_left: float) -> bool:
+	if time_left > Tokens.GADGET_ENDING_BLINK:
+		return true
+	return fmod(time_left, Tokens.PLATFORM_BLINK_STEP * 2.0) > Tokens.PLATFORM_BLINK_STEP
+
+
 ## La gravedad con la que este objeto vuela, para que quien resuelva un arco hacia
 ## el use el mismo numero. Con otro, el frasco cae corto o largo y nada lo dice.
 static func get_gravity() -> float:
@@ -131,6 +145,10 @@ func _land(normal: Vector3) -> void:
 
 func _detonate() -> void:
 	_is_active = false
+	# Solo los gadgets del jugador: el frasco del Environmental ya marca su charco.
+	if _thrower is Player and data != null and data.effect_radius > 0.0 and is_inside_tree():
+		AREA_RING.spawn(get_tree().current_scene if get_tree().current_scene != null \
+			else get_parent(), global_position, data.effect_radius, data.accent_color)
 	AudioPool.play_3d(activate_sound, global_position, AudioPool.BUS_WORLD)
 	_activate()
 

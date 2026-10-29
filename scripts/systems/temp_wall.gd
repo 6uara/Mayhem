@@ -15,6 +15,9 @@ func _process(delta: float) -> void:
 	_time_left -= delta
 	if _time_left <= 0.0:
 		_dismiss()
+		return
+	if wall_mesh != null:
+		wall_mesh.visible = ThrownUtility.ending_blink_visible(_time_left)
 
 
 func _activate() -> void:

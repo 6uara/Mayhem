@@ -12,6 +12,9 @@ signal armed_changed(slot: int)
 const SLOT_COUNT: int = 3
 ## Setting que elige entre los dos esquemas. Ver handle_input().
 const QUICK_CAST_KEY: String = "input/gadget_quick_cast"
+## Por preload y no por class_name: no depende de que la cache de clases globales
+## ya se haya regenerado.
+const AIM_PREVIEW_SCRIPT := preload("res://scripts/components/utility_aim_preview.gd")
 
 @export var aim_node: Node3D
 @export var body: CharacterBody3D
@@ -36,6 +39,15 @@ func _ready() -> void:
 	# Un gadget en la mano cuando se abre la pausa no puede seguir ahi al volver:
 	# el jugador solto el control en el medio y no se acuerda de que lo tenia.
 	EventBus.game_paused.connect(_on_game_paused)
+	# La vista previa del apuntado. Hija de este nodo y no del cuerpo: un Node3D
+	# bajo un Node no hereda transform (y la vista previa es top_level de todos
+	# modos), y agregarla al cuerpo tenia que ser diferido, que dejaba el nodo
+	# huerfano si el jugador se liberaba antes del frame siguiente.
+	if body != null:
+		var preview: Node3D = AIM_PREVIEW_SCRIPT.new()
+		preview.name = &"AimPreview"
+		preview.set(&"utility", self)
+		add_child(preview)
 
 
 func _process(delta: float) -> void:
@@ -113,9 +125,8 @@ func throw(slot: int) -> bool:
 	if not can_throw(slot):
 		return false
 	var data: UtilityData = slots[slot]
-	var origin: Vector3 = aim_node.global_position - aim_node.global_transform.basis.z * 0.6
-	# Thrown slightly above the aim line so a level throw still arcs.
-	var direction: Vector3 = (-aim_node.global_transform.basis.z + Vector3.UP * 0.25).normalized()
+	var origin: Vector3 = throw_origin()
+	var direction: Vector3 = throw_direction()
 
 	if not _spawn_throw(data, origin, direction):
 		return false
@@ -126,6 +137,52 @@ func throw(slot: int) -> bool:
 	utility_changed.emit(slot, _carried[slot])
 	utility_used.emit(slot, data)
 	return true
+
+
+## De donde sale el gadget: un poco adelante de la camara.
+func throw_origin() -> Vector3:
+	return aim_node.global_position - aim_node.global_transform.basis.z * 0.6
+
+
+## Hacia donde sale: un poco por encima de la mira, para que un tiro a nivel
+## igual haga arco.
+func throw_direction() -> Vector3:
+	return (-aim_node.global_transform.basis.z + Vector3.UP * 0.25).normalized()
+
+
+## El arco que haria el gadget de `slot` si se lanzara ahora, hasta donde
+## toca. La misma cuenta que ThrownUtility: mismos pasos, misma gravedad, misma
+## mascara, asi la vista previa no promete un lugar al que el gadget no llega.
+## Vacio si no hay nada que lanzar.
+func predict_arc(slot: int) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	if slot < 0 or slot >= slots.size() or slots[slot] == null or aim_node == null \
+			or not aim_node.is_inside_tree():
+		return points
+	var data: UtilityData = slots[slot]
+	var space: PhysicsDirectSpaceState3D = aim_node.get_world_3d().direct_space_state
+	var position: Vector3 = throw_origin()
+	var velocity: Vector3 = throw_direction() * data.throw_force
+	var step: float = 1.0 / float(Engine.physics_ticks_per_second)
+	var exclude: Array[RID] = []
+	if body != null:
+		exclude.append(body.get_rid())
+	points.append(position)
+	var elapsed: float = 0.0
+	while elapsed < ThrownUtility.MAX_FLIGHT_TIME:
+		elapsed += step
+		velocity.y -= ThrownUtility.get_gravity() * step
+		var to: Vector3 = position + velocity * step
+		var query := PhysicsRayQueryParameters3D.create(position, to,
+			PhysicsLayers.WORLD | PhysicsLayers.ENEMY)
+		query.exclude = exclude
+		var hit: Dictionary = space.intersect_ray(query)
+		if not hit.is_empty():
+			points.append(hit["position"])
+			return points
+		position = to
+		points.append(position)
+	return points
 
 
 func _spawn_throw(data: UtilityData, origin: Vector3, direction: Vector3) -> bool:

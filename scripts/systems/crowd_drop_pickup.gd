@@ -137,6 +137,7 @@ func collect(player: Player) -> bool:
 		return false
 	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
 	collected.emit(data.id)
+	EventBus.crowd_drop_collected.emit(data.id)
 	_set_available(false)
 	ObjectPool.release(self)
 	return true
@@ -151,6 +152,7 @@ func _collect_heal(player: Player) -> bool:
 	player.health.heal(data.heal_amount)
 	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
 	collected.emit(data.id)
+	EventBus.crowd_drop_collected.emit(data.id)
 	_set_available(false)
 	ObjectPool.release(self)
 	return true

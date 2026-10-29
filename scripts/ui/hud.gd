@@ -65,7 +65,15 @@ var _announce_timer: float = 0.0
 ## El cartel de ayuda que llego mientras habia un aviso de oleada en pantalla, o
 ## vacio. Ver _on_hint_shown(): los dos ocupan la misma banda, asi que se turnan.
 var _pending_hint: String = ""
+## Las teclas de las tres ranuras de gadget, en orden.
+const UTILITY_KEYS: Array[String] = ["Q", "X", "C"]
+
 var _utility_slots: Array[Control] = []
+## Cuantas veces se levanto cada gadget en esta run. Las primeras el aviso dice
+## que hace; despues alcanza con el nombre en la ranura.
+var _gadget_pickups: Dictionary = {}
+## Segundos que le quedan a cada ranura mostrando el nombre de su gadget.
+var _slot_name_left: Array[float] = [0.0, 0.0, 0.0]
 ## El fundido de la viñeta de daño. Ver _flash_damage().
 var _damage_tween: Tween
 var _snare_tween: Tween
@@ -119,6 +127,7 @@ func _ready() -> void:
 	NarratorManager.subtitle_hidden.connect(_on_subtitle_hidden)
 	TutorialHintManager.hint_shown.connect(_on_hint_shown)
 	TutorialHintManager.hint_hidden.connect(_on_hint_hidden)
+	EventBus.crowd_drop_collected.connect(_on_crowd_drop_collected)
 
 	_subtitle_box.visible = false
 	_hint_box.visible = false
@@ -355,6 +364,7 @@ func _process(delta: float) -> void:
 	if _player == null:
 		return
 	_tick_weapon()
+	_tick_utility_slots(delta)
 	_tick_movement()
 	_tick_wave()
 
@@ -400,10 +410,11 @@ func _build_ability_bar() -> void:
 		child.queue_free()
 	_utility_slots.clear()
 
-	var keys: Array[String] = ["Q", "X", "C"]
 	for i: int in UtilityComponent.SLOT_COUNT:
 		var data: UtilityData = _player.utility.get_slot_data(i) if _player.utility != null else null
-		var slot: Control = _make_slot(_icon_for_utility(data), keys[i] if i < keys.size() else "")
+		var key: String = UTILITY_KEYS[i] if i < UTILITY_KEYS.size() else ""
+		var slot: Control = _make_slot(_icon_for_utility(data), key)
+		(slot.get_meta(&"name") as Label).text = data.display_name.to_upper() if data != null else ""
 		_ability_bar.add_child(slot)
 		_utility_slots.push_back(slot)
 
@@ -423,6 +434,15 @@ func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 8)
 
+	# El nombre del gadget, arriba de la ranura: se ve al levantarlo y mientras
+	# esta en la mano. El icono solo no decia cual era.
+	var name_label := Label.new()
+	name_label.name = "Name"
+	name_label.theme_type_variation = &"Keybind"
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.modulate.a = 0.0
+	column.add_child(name_label)
+
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = &"AbilitySlot"
 	panel.custom_minimum_size = Tokens.SLOT_SIZE
@@ -433,6 +453,16 @@ func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	panel.add_child(icon)
+
+	# El cooldown, como un relleno que baja: sin el, un gadget en espera era una
+	# tecla que no hacia nada.
+	var cooldown := ColorRect.new()
+	cooldown.name = "Cooldown"
+	cooldown.color = Color(Tokens.VOID, 0.6)
+	cooldown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cooldown.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	cooldown.offset_top = 0.0
+	panel.add_child(cooldown)
 
 	var count := Label.new()
 	count.name = "Count"
@@ -458,6 +488,8 @@ func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
 	column.set_meta(&"icon", icon)
 	column.set_meta(&"count", count)
 	column.set_meta(&"panel", panel)
+	column.set_meta(&"name", name_label)
+	column.set_meta(&"cooldown", cooldown)
 	return column
 
 
@@ -732,6 +764,43 @@ func _refresh_powerups() -> void:
 		chip.setup(upgrade)
 
 
+## Cooldown y nombre de cada ranura de gadget. El nombre se ve mientras el
+## gadget esta en la mano y un rato despues de levantarlo.
+func _tick_utility_slots(delta: float) -> void:
+	if _player.utility == null:
+		return
+	for i: int in _utility_slots.size():
+		var slot: Control = _utility_slots[i]
+		var cooldown: ColorRect = slot.get_meta(&"cooldown")
+		var panel: Control = slot.get_meta(&"panel")
+		cooldown.offset_top = -panel.size.y * _player.utility.get_cooldown_fraction(i)
+		_slot_name_left[i] = maxf(_slot_name_left[i] - delta, 0.0)
+		var shown: bool = _player.utility.armed_slot == i or _slot_name_left[i] > 0.0
+		var name_label: Label = slot.get_meta(&"name")
+		name_label.modulate.a = move_toward(name_label.modulate.a, 1.0 if shown else 0.0,
+			delta / Tokens.SUBTITLE_FADE_IN)
+
+
+## Levantaste un gadget: que es, que hace y con que tecla, las primeras veces de
+## la run. Despues alcanza con el nombre en la ranura, que se enciende igual.
+func _on_crowd_drop_collected(utility_id: StringName) -> void:
+	var data := load("res://data/utilities/%s.tres" % utility_id) as UtilityData
+	if data == null:
+		return
+	var seen: int = int(_gadget_pickups.get(utility_id, 0)) + 1
+	_gadget_pickups[utility_id] = seen
+	var slot: int = _player.utility.find_slot(utility_id) \
+		if _player != null and _player.utility != null else -1
+	if slot >= 0 and slot < _slot_name_left.size():
+		_slot_name_left[slot] = Tokens.GADGET_NAME_LIFE
+	if seen > Tokens.GADGET_CALLOUT_REPEATS:
+		return
+	var line: String = data.describe()
+	if slot >= 0 and slot < UTILITY_KEYS.size():
+		line += "   [%s]" % UTILITY_KEYS[slot]
+	announce(data.display_name.to_upper(), line, data.accent_color)
+
+
 func _on_utility_changed() -> void:
 	if _player == null or _player.utility == null:
 		return
@@ -742,7 +811,11 @@ func _on_utility_changed() -> void:
 		var carried: int = _player.utility.get_carried(i)
 		count.text = "%d" % carried
 		# Nothing carried reads as unavailable, not merely as a zero.
-		icon.color = Tokens.TEXT if carried > 0 else Tokens.DIM
+		# En el color del gadget, el mismo que tiene tirado en el piso: lo que se
+		# levanto y la ranura donde fue se leen como la misma cosa.
+		var data: UtilityData = _player.utility.get_slot_data(i)
+		var accent: Color = data.accent_color if data != null else Tokens.TEXT
+		icon.color = accent if carried > 0 else Tokens.DIM
 
 
 ## Un gadget en la mano tiene que verse. En modo equipar el jugador queda con
@@ -752,6 +825,8 @@ func _on_utility_armed(slot: int) -> void:
 	for i: int in _utility_slots.size():
 		var panel: PanelContainer = _utility_slots[i].get_meta(&"panel")
 		panel.modulate = Tokens.REWARD if i == slot else Color.WHITE
+		if i == slot:
+			_slot_name_left[i] = maxf(_slot_name_left[i], 0.01)
 
 
 func _on_weapon_fired(_weapon_id: StringName) -> void:
