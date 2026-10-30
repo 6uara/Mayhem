@@ -43,6 +43,8 @@ const FIELDS: Array = [
 	["ARMA", &"viewmodel_rotation_degrees", "Giro", TYPE_VECTOR3, DEGREE_STEP],
 	["MANOS", &"viewmodel_grip_offset", "Mano derecha", TYPE_VECTOR3, METRE_STEP],
 	["MANOS", &"viewmodel_support_offset", "Mano izquierda", TYPE_VECTOR3, METRE_STEP],
+	["MANOS", &"viewmodel_grip_rotation_degrees", "Giro derecha", TYPE_VECTOR3, DEGREE_STEP],
+	["MANOS", &"viewmodel_support_rotation_degrees", "Giro izquierda", TYPE_VECTOR3, DEGREE_STEP],
 	["RECARGA", &"reload_tilt_degrees", "Inclinacion", TYPE_VECTOR3, DEGREE_STEP],
 ]
 

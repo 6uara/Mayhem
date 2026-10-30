@@ -53,6 +53,12 @@ const RIGHT_FORWARD: Vector3 = Vector3(-0.1, 0.25, -1.0)
 const RIGHT_PALM: Vector3 = Vector3(-1.0, 0.0, -0.1)
 const LEFT_FORWARD: Vector3 = Vector3(0.65, 0.2, -0.75)
 const LEFT_PALM: Vector3 = Vector3(0.25, 1.0, 0.15)
+## En un arma corta no hay guardamanos: la izquierda abraza la empuñadura y los
+## dedos de la derecha desde el costado, con la palma contra el arma y los dedos
+## hacia adelante y abajo. Con la pose del guardamanos (palma arriba) sostenia el
+## aire bajo la pistola, y ningun offset de posicion la arreglaba.
+const SHORT_LEFT_FORWARD: Vector3 = Vector3(0.45, -0.35, -0.8)
+const SHORT_LEFT_PALM: Vector3 = Vector3(1.0, 0.15, 0.25)
 ## De la muñeca al centro de la palma, en metros del rig sin escalar: el punto de
 ## agarre es donde va la palma, y el IK mueve la muñeca.
 const PALM_REACH: float = 0.09
@@ -98,6 +104,12 @@ var _reload_progress: float = 0.0
 ## Como esta girada el arma respecto de este nodo: la inclinacion de recarga. Las
 ## manos la siguen; los hombros no.
 var _hold: Basis = Basis.IDENTITY
+## El giro de cada mano por arma (WeaponData.viewmodel_*_rotation_degrees), sobre
+## la orientacion base. Una empuñadura de pistola va inclinada; la del rifle no.
+var _grip_turn: Basis = Basis.IDENTITY
+var _support_turn: Basis = Basis.IDENTITY
+var _left_forward: Vector3 = LEFT_FORWARD
+var _left_palm: Vector3 = LEFT_PALM
 var _equip_left: float = 0.0
 var _launcher: Node3D
 ## 0 con la mano en el arma, 1 con el brazo adelante tirando el gancho.
@@ -112,7 +124,9 @@ func _ready() -> void:
 ## el espacio de este nodo. `pivot_offset` es donde queda este nodo respecto de
 ## la camara, para poder poner los hombros en el espacio de la camara.
 func build(weapon_bounds: AABB, pivot_offset: Vector3,
-		grip_offset: Vector3 = Vector3.ZERO, support_offset: Vector3 = Vector3.ZERO) -> void:
+		grip_offset: Vector3 = Vector3.ZERO, support_offset: Vector3 = Vector3.ZERO,
+		grip_rotation_degrees: Vector3 = Vector3.ZERO,
+		support_rotation_degrees: Vector3 = Vector3.ZERO) -> void:
 	for child: Node in get_children():
 		child.queue_free()
 	_rig = null
@@ -129,8 +143,13 @@ func build(weapon_bounds: AABB, pivot_offset: Vector3,
 	_support = support_point(weapon_bounds) + support_offset
 	# En un arma corta la izquierda va pegada a la derecha (support_point): si la
 	# derecha se corrige, la izquierda la acompaña.
-	if weapon_bounds.size.z < TWO_HAND_REACH:
+	var short: bool = weapon_bounds.size.z < TWO_HAND_REACH
+	if short:
 		_support += grip_offset
+	_left_forward = SHORT_LEFT_FORWARD if short else LEFT_FORWARD
+	_left_palm = SHORT_LEFT_PALM if short else LEFT_PALM
+	_grip_turn = Basis.from_euler(grip_rotation_degrees * (PI / 180.0))
+	_support_turn = Basis.from_euler(support_rotation_degrees * (PI / 180.0))
 	_shoulder_centre = SHOULDER_CENTRE - pivot_offset
 
 	_rig = ARMS_SCENE.instantiate() as Node3D
@@ -284,13 +303,14 @@ func _update_targets() -> void:
 	# viaje al cinturon con el arma como referencia.
 	var right_palm: Vector3 = _hold * (_grip + RELOAD_RIGHT_DROP * sin(PI * p)) + drop
 	var left_palm: Vector3 = _hold * _reload_left_hand(p) + drop
-	_aim_hand(_ik.right, right_palm, _hold * RIGHT_FORWARD, _hold * RIGHT_PALM)
+	_aim_hand(_ik.right, right_palm, _hold * _grip_turn * RIGHT_FORWARD,
+		_hold * _grip_turn * RIGHT_PALM)
 	var raise: float = smoothstep(0.0, 1.0, _grapple_blend)
 	# De la camara a este nodo: lo mismo que se le resto a los hombros.
 	var grapple_palm: Vector3 = GRAPPLE_HAND + (_shoulder_centre - SHOULDER_CENTRE)
 	_aim_hand(_ik.left, left_palm.lerp(grapple_palm, raise),
-		(_hold * LEFT_FORWARD).lerp(GRAPPLE_FORWARD, raise),
-		(_hold * LEFT_PALM).lerp(GRAPPLE_PALM, raise))
+		(_hold * _support_turn * _left_forward).lerp(GRAPPLE_FORWARD, raise),
+		(_hold * _support_turn * _left_palm).lerp(GRAPPLE_PALM, raise))
 	_ik.left.straighten = raise
 
 	var half_width: float = absf(_shoulder_from_rig("upper_arm.R").x

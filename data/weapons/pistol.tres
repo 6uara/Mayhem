@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/weapon_data.gd" id="1_weapon"]
 [ext_resource type="Resource" path="res://data/weapons/pistol_recoil.tres" id="2_recoil"]
@@ -7,28 +7,25 @@
 
 [resource]
 script = ExtResource("1_weapon")
-projectile_scene = ExtResource("3_projectile")
-recoil_pattern = ExtResource("2_recoil")
-viewmodel = ExtResource("4_viewmodel")
-viewmodel_scale = 0.95
-viewmodel_offset = Vector3(0.13, -0.16, -0.38)
-viewmodel_rotation_degrees = Vector3(0, -90, 0)
-viewmodel_grip_offset = Vector3(0.01, 0.035, 0)
-reload_tilt_degrees = Vector3(14, 10, -20)
 id = &"pistol"
 display_name = "Pistol"
+projectile_scene = ExtResource("3_projectile")
+viewmodel = ExtResource("4_viewmodel")
+viewmodel_scale = 0.95
+viewmodel_offset = Vector3(0.135, -0.16, -0.38)
+viewmodel_rotation_degrees = Vector3(2, -90, 0)
+reload_tilt_degrees = Vector3(14, 10, -20)
+viewmodel_grip_offset = Vector3(0.03, 0.035, 0)
+viewmodel_support_offset = Vector3(0, -0.07, 0)
 damage = 16.0
 headshot_multiplier = 2.2
-falloff_start = 20.0
-falloff_end = 45.0
 falloff_min_multiplier = 0.65
 fire_rate = 5.0
-projectiles_per_shot = 1
 projectile_speed = 170.0
-projectile_gravity = 0.0
 magazine_size = 14
 reserve_ammo_max = 150
 reload_time = 1.5
+recoil_pattern = ExtResource("2_recoil")
 spread_hipfire = 1.0
 spread_ads = 0.15
 spread_moving_multiplier = 1.8

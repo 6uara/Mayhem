@@ -117,3 +117,28 @@ func test_grappling_brings_the_left_arm_forward() -> void:
 	EventBus.grapple_ended.emit()
 	await wait_seconds(ARMS_SCRIPT.GRAPPLE_RAISE_TIME + 0.1)
 	assert_almost_eq(arms.get_wrist_targets()[1], holding, Vector3.ONE * 0.001, "y volvio")
+
+
+## En un arma corta no hay guardamanos: la izquierda va con la palma contra el
+## costado de la empuñadura (hacia +X), no palma arriba sosteniendo el aire.
+func test_on_a_short_weapon_the_left_palm_faces_the_grip() -> void:
+	var arms: ARMS_SCRIPT = ARMS_SCRIPT.new()
+	add_child_autofree(arms)
+	arms.position = PIVOT
+	arms.build(AABB(Vector3(-0.02, -0.12, -0.1), Vector3(0.04, 0.15, 0.2)), PIVOT)
+	await wait_process_frames(2)
+	var palm: Vector3 = arms._ik.left.palm
+	assert_gt(palm.x, 0.8, "la palma mira a la empuñadura: %s" % palm)
+
+
+## El giro por arma (WeaponData.viewmodel_grip_rotation_degrees) gira la mano
+## sobre su pose base: una empuñadura inclinada se puede seguir.
+func test_a_grip_rotation_turns_the_right_hand() -> void:
+	var straight: ARMS_SCRIPT = _build()
+	var turned: ARMS_SCRIPT = ARMS_SCRIPT.new()
+	add_child_autofree(turned)
+	turned.position = PIVOT
+	turned.build(RIFLE_BOUNDS, PIVOT, Vector3.ZERO, Vector3.ZERO, Vector3(-20.0, 0.0, 0.0))
+	await wait_process_frames(2)
+	var angle: float = rad_to_deg(straight._ik.right.forward.angle_to(turned._ik.right.forward))
+	assert_almost_eq(angle, 20.0, 0.5, "los nudillos giran lo pedido")

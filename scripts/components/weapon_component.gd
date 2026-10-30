@@ -727,7 +727,8 @@ func _spawn_arms(host: Node3D, model: Node3D) -> void:
 	host.add_child(arms)
 	arms.position = _view_rest_position
 	arms.build(_model_bounds(model), _view_rest_position,
-		data.viewmodel_grip_offset, data.viewmodel_support_offset)
+		data.viewmodel_grip_offset, data.viewmodel_support_offset,
+		data.viewmodel_grip_rotation_degrees, data.viewmodel_support_rotation_degrees)
 	_arms = arms
 
 

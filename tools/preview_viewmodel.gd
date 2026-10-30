@@ -78,17 +78,27 @@ func _initialize() -> void:
 	camera.add_child(_arms)
 	_arms.position = data.viewmodel_offset
 	_arms.call(&"build", _bounds(model), data.viewmodel_offset,
-		data.viewmodel_grip_offset, data.viewmodel_support_offset)
-	# "side" y "top" miran desde afuera, para ver codos y muñecas.
-	for view: String in ["side", "top"]:
+		data.viewmodel_grip_offset, data.viewmodel_support_offset,
+		data.viewmodel_grip_rotation_degrees, data.viewmodel_support_rotation_degrees)
+	# "side" y "top" miran desde afuera, para ver codos y muñecas. "right" y
+	# "left" miran de cerca el arma por cada costado: si la mano la envuelve o
+	# la atraviesa no se ve desde un metro y medio.
+	var views: Dictionary = {
+		"side": [Vector3(1.4, -0.15, -0.3), Vector3(0.0, -0.2, -0.3)],
+		"top": [Vector3(0.0, 1.3, -0.3), Vector3(0.0, -0.2, -0.3)],
+		"right": [data.viewmodel_offset + Vector3(0.45, 0.05, 0.0), data.viewmodel_offset],
+		"left": [data.viewmodel_offset + Vector3(-0.45, 0.05, 0.0), data.viewmodel_offset],
+	}
+	for view: String in views:
 		if not args.has(view):
 			continue
 		var outside := Camera3D.new()
 		outside.fov = 50.0
+		outside.near = 0.01
 		world.add_child(outside)
-		var eye: Vector3 = Vector3(1.4, -0.15, -0.3) if view == "side" else Vector3(0.0, 1.3, -0.3)
-		outside.look_at_from_position(eye, Vector3(0.0, -0.2, -0.3),
-			Vector3.UP if view == "side" else Vector3.FORWARD)
+		var points: Array = views[view]
+		outside.look_at_from_position(points[0], points[1],
+			Vector3.FORWARD if view == "top" else Vector3.UP)
 		outside.current = true
 	# Las piezas del modelo, en el cuadro del clip que toca (cero fuera de recarga:
 	# esconde lo que solo aparece recargando).

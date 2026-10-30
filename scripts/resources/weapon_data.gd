@@ -25,6 +25,12 @@ extends Resource
 @export var viewmodel_grip_offset: Vector3 = Vector3.ZERO
 ## Same for the support hand (handguard, or right beside the grip on a pistol).
 @export var viewmodel_support_offset: Vector3 = Vector3.ZERO
+## How each hand turns from its base pose, in degrees and camera axes (applied
+## like a node's rotation_degrees). Offsets only move a hand; a pistol grip is
+## raked back, and a hand that cannot follow it never closes around it.
+@export var viewmodel_grip_rotation_degrees: Vector3 = Vector3.ZERO
+## Same for the support hand.
+@export var viewmodel_support_rotation_degrees: Vector3 = Vector3.ZERO
 
 @export_group("Damage")
 @export var damage: float = 10.0
