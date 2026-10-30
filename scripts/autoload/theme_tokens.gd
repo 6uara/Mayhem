@@ -71,6 +71,10 @@ const AMMO_PIP_GAP      := 3
 const AMMO_PIP_MAX      := 40   ## above this, one pip per 2 rounds
 const SLOT_SIZE         := Vector2(72, 72)
 const SLOT_ICON         := 28
+## Ancho de cada columna de la barra de habilidades: lo que ocupa la etiqueta mas
+## larga ("C · SLOW", "E GRAPPLE"). Fijo, para que las ranuras queden a la misma
+## distancia entre si sin importar cuanto mida cada etiqueta.
+const SLOT_COLUMN_W     := 96
 const PAR_BAR_SIZE      := Vector2(360, 4)
 const POWERUP_BAR_W     := 230
 const ICON_GRID         := 64
@@ -190,7 +194,9 @@ const ENEMY_HEIGHT := {
 	"healer": 2.0,
 	"summoner": 2.2,
 	"bomber": 1.0,
-	"environmental": 2.5,
+	# Era 2.5 y no pasaba bajo una plataforma de nivel 1: entre el piso y la
+	# plataforma quedan 2.25 m. Mas ancho para no compartir silueta con el Summoner.
+	"environmental": 2.0,
 	# Mas bajo que el Bomber, que es la otra esfera del elenco: comparten forma, y
 	# en el aire la silueta es lo unico que queda para distinguirlos de un vistazo.
 	"flyer": 0.8,

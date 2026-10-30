@@ -125,6 +125,14 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 
 Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 
+### Lo que entró el 2026-10-30 (playtest, rama `fix/playtest-tuning`)
+
+| Qué | Dónde |
+|---|---|
+| Todos los enemigos un 20 % más rápidos (Rusher 8.6, Bomber 6.5, Flyer 6.7, Healer 6.0, Ranger 5.3, Summoner 4.8, Environmental 4.6, Elite 4.3) | `data/enemies/*.tres` |
+| Environmental de 2.0 m (era 2.5) y un poco más ancho: no pasaba bajo una plataforma de nivel 1, que deja 2.25 m. Un test lo fija para todos los arquetipos | `environmental.tres`, `Tokens.ENEMY_HEIGHT`, `test_every_walker_fits_under_a_first_level_platform` |
+| HUD: las ranuras de gadget quedaban corridas (el nombre invisible ensanchaba su columna); el cartel de oleada limpia pisaba el timer | `HUD._make_slot()`, `Tokens.SLOT_COLUMN_W`, `match_overlay.tscn` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |

@@ -433,19 +433,34 @@ func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
 	var column := VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 8)
+	# Ancho fijo: cada etiqueta mide distinto, y con la columna al ancho de la suya
+	# las ranuras quedaban corridas y a distancias distintas.
+	column.custom_minimum_size.x = Tokens.SLOT_COLUMN_W
 
 	# El nombre del gadget, arriba de la ranura: se ve al levantarlo y mientras
 	# esta en la mano. El icono solo no decia cual era.
+	#
+	# Colgado de un Control sin ancho y centrado sobre el: "STUN GRENADE" es mas
+	# ancho que la columna, y adentro del VBox la ensanchaba aunque estuviera
+	# invisible, corriendo esa ranura respecto de las otras.
+	var name_holder := Control.new()
+	name_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_holder)
 	var name_label := Label.new()
 	name_label.name = "Name"
 	name_label.theme_type_variation = &"Keybind"
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.modulate.a = 0.0
-	column.add_child(name_label)
+	name_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	name_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	name_label.minimum_size_changed.connect(func() -> void:
+		name_holder.custom_minimum_size.y = name_label.get_combined_minimum_size().y)
+	name_holder.add_child(name_label)
 
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = &"AbilitySlot"
 	panel.custom_minimum_size = Tokens.SLOT_SIZE
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	var icon := MayhemIcon.new()
 	icon.kind = kind
