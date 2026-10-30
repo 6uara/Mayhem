@@ -114,13 +114,15 @@ static func build_preview(piece: PieceDefinition, catalog: PieceCatalog,
 ## igual que las cajas: es lo que deja que ArenaGeometryBatcher junte mil
 ## baldosas en un MultiMesh.
 static func art_mesh(piece: PieceDefinition) -> Mesh:
-	return _mesh_of(piece.art_scene)
+	return _mesh_of(piece.art_scene, piece.art_shine)
 
 
-static func _mesh_of(scene: PackedScene) -> Mesh:
+## Cacheada por escena y brillo: dos piezas con el mismo .glb y el mismo brillo
+## comparten malla, que es lo que necesita el MultiMesh.
+static func _mesh_of(scene: PackedScene, shine: float = 1.0) -> Mesh:
 	if scene == null:
 		return null
-	var key: String = scene.resource_path
+	var key: String = "%s@%s" % [scene.resource_path, shine]
 	if not _art_meshes.has(key):
 		var found: Mesh = null
 		var instance: Node = scene.instantiate()
@@ -128,8 +130,26 @@ static func _mesh_of(scene: PackedScene) -> Mesh:
 			found = (node as MeshInstance3D).mesh
 			break
 		instance.free()
+		if found != null and shine < 1.0:
+			found = _dulled(found, shine)
 		_art_meshes[key] = found
 	return _art_meshes[key]
+
+
+## Una copia de la malla con el metalico y el especular escalados por `shine`.
+## Copia y no el material del .glb: ese lo comparten todas las piezas que usan
+## el mismo modelo, y no todas quieren ser mate.
+static func _dulled(mesh: Mesh, shine: float) -> Mesh:
+	var copy := mesh.duplicate() as Mesh
+	for surface: int in copy.get_surface_count():
+		var source := copy.surface_get_material(surface) as BaseMaterial3D
+		if source == null:
+			continue
+		var material := source.duplicate() as BaseMaterial3D
+		material.metallic *= shine
+		material.metallic_specular *= shine
+		copy.surface_set_material(surface, material)
+	return copy
 
 
 # Private
@@ -161,7 +181,7 @@ static func _add_art(root: Node3D, piece: PieceDefinition, catalog: PieceCatalog
 	var variants: Array[Mesh] = []
 	if piece.art_per_cell and piece.art_bounds.size == Vector3.ZERO:
 		for scene: PackedScene in piece.art_variants:
-			var variant: Mesh = _mesh_of(scene)
+			var variant: Mesh = _mesh_of(scene, piece.art_shine)
 			if variant != null:
 				variants.append(variant)
 	for index: int in boxes.size():

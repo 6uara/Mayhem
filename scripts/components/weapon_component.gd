@@ -10,7 +10,6 @@ const CONVERGE_DISTANCE: float = 300.0
 const MUZZLE_CLEARANCE: float = 0.25
 
 const MUZZLE_FLASH_SCENE: PackedScene = preload("res://scenes/vfx/muzzle_flash.tscn")
-const EJECTED_SHELL_SCENE: PackedScene = preload("res://scenes/vfx/ejected_shell.tscn")
 
 signal fired(shot_index: int)
 signal reload_started(duration: float)
@@ -57,18 +56,38 @@ signal ads_changed(is_ads: bool)
 @export var view_kick_max_back: float = 0.12
 
 ## Cuanto baja el arma en el medio de la recarga. Sale y vuelve con el mismo
-## seno, asi que no deja residuo.
-@export var reload_dip: float = 0.05
+## seno, asi que no deja residuo. Brazos y arma son una sola malla, sin manos que
+## se muevan: la recarga se cuenta con todo el bloque, y por eso baja bastante.
+@export var reload_dip: float = 0.11
 ## Que fraccion de la recarga tarda el arma en inclinarse a
 ## `WeaponData.reload_tilt_degrees`, y lo mismo en volver al final.
 @export var reload_tilt_ease: float = 0.18
+## El golpe del cargador entrando: un tiron corto hacia arriba en ese momento de
+## la recarga. Sin el, la recarga era bajar y subir, y no se sabia cuando
+## "entraba" la bala.
+@export var reload_seat_at: float = 0.68
+@export var reload_seat_kick: float = 0.025
+@export var reload_seat_width: float = 0.06
 
+## Sacar el arma: sube desde abajo de la pantalla con la punta hacia abajo.
+@export var equip_time: float = 0.3
+@export var equip_drop: Vector3 = Vector3(0.0, -0.3, 0.08)
+@export var equip_pitch_degrees: float = -35.0
+## La respiracion en reposo: el arma nunca queda clavada en la pantalla.
+@export var idle_breath_height: float = 0.004
+@export var idle_breath_roll_degrees: float = 0.6
+@export var idle_breath_speed: float = 1.4
+## Al tirar el gancho el bloque gira y se corre para mostrar el lanzador de la
+## muñeca izquierda, de donde sale el cable.
+@export var grapple_roll_degrees: float = 14.0
+@export var grapple_offset: Vector3 = Vector3(0.05, -0.03, 0.02)
+@export var grapple_blend_time: float = 0.12
+
+## El punto de la boca del cañon dentro del modelo (tools/blender/build_viewmodels.py).
+const MUZZLE_NODE: StringName = &"Muzzle"
 ## Por preload y no por class_name: asi no depende de que la cache de clases
 ## globales ya se haya regenerado (CLI de tests en una copia recien clonada).
-const ARMS_SCRIPT := preload("res://scripts/components/viewmodel_arms.gd")
-## El clip de las piezas que se mueven al recargar (cargador, corredera, bombeo),
-## dentro del modelo. Lo exporta tools/blender/build_weapons.py.
-const RELOAD_CLIP: StringName = &"reload"
+const LAUNCHER_SCRIPT := preload("res://scripts/components/viewmodel_grapple_launcher.gd")
 
 var is_reloading: bool = false
 var is_ads: bool = false
@@ -97,17 +116,18 @@ var _rng: RandomNumberGenerator:
 var _view: Node3D
 var _view_rest_position: Vector3 = Vector3.ZERO
 ## Sits at the barrel tip with the model's own orientation, inside the viewmodel
-## rig - flash and shell VFX hang off this, never off `muzzle` (see the comment on
+## rig - the flash hangs off this, never off `muzzle` (see the comment on
 ## `muzzle` itself for why those are two different points in two different worlds).
 var _muzzle_marker: Node3D
 var _view_kick_offset: Vector3 = Vector3.ZERO
 var _view_kick_rot: float = 0.0
-## Los brazos, hermanos de `_view` y no hijos. Ver ViewmodelArms.
-var _arms: ARMS_SCRIPT
-## El AnimationPlayer del modelo con el clip `reload`, o null si el modelo no
-## trae piezas que se muevan. Nunca reproduce: se lo posiciona por progreso.
-var _parts_player: AnimationPlayer
-var _parts_progress: float = -1.0
+## El lanzador del gancho, colgado del pivot en la muñeca izquierda del modelo.
+var _launcher: LAUNCHER_SCRIPT
+## Segundos que le quedan a la animacion de sacar el arma.
+var _equip_left: float = 0.0
+## 0 con el arma en reposo, 1 con el bloque girado mostrando el lanzador.
+var _grapple_blend: float = 0.0
+var _breath_time: float = 0.0
 
 
 func _ready() -> void:
@@ -313,8 +333,6 @@ func _try_fire() -> void:
 	_view_kick_offset.z = minf(_view_kick_offset.z + view_kick_back, view_kick_max_back)
 	_view_kick_rot = maxf(_view_kick_rot - view_kick_up_degrees, -view_kick_max_degrees)
 	_spawn_muzzle_vfx()
-	if _arms != null:
-		_arms.play_fire()
 	AudioPool.play_3d(fire_sound, global_position, AudioPool.BUS_WEAPONS)
 	fired.emit(_shot_index)
 	EventBus.weapon_fired.emit(data.id)
@@ -437,8 +455,8 @@ func _shot_origin(aim_origin: Vector3, target: Vector3) -> Vector3:
 	return muzzle.global_position
 
 
-## Flash and shell, both hung off `_muzzle_marker` - see that variable's comment
-## for why they can't go anywhere near `muzzle` itself. Plain instantiate, not
+## The flash, hung off `_muzzle_marker` - see that variable's comment
+## for why it can't go anywhere near `muzzle` itself. Plain instantiate, not
 ## ObjectPool: the pool's container lives in the main world, and pooling something
 ## into the wrong World3D is worse than not pooling it at all. Nothing here fires
 ## often enough for that cost to matter - even the SMG tops out at 15/s.
@@ -449,18 +467,6 @@ func _spawn_muzzle_vfx() -> void:
 	var flash: MuzzleFlash = MUZZLE_FLASH_SCENE.instantiate()
 	_muzzle_marker.add_child(flash)
 	flash.play()
-
-	var shell: EjectedShell = EJECTED_SHELL_SCENE.instantiate()
-	_muzzle_marker.add_child(shell)
-	# Reparented to the rig's static slot container immediately: staying under
-	# _muzzle_marker would make the casing ride the weapon's own kick and sway
-	# instead of tumbling on its own, which is the entire point of ejecting it.
-	if viewmodel_parent != null:
-		var eject_transform: Transform3D = shell.global_transform
-		_muzzle_marker.remove_child(shell)
-		viewmodel_parent.add_child(shell)
-		shell.global_transform = eject_transform
-	shell.eject(Vector3.RIGHT, Vector3.UP)
 
 
 func _spawn_projectile(origin: Vector3, direction: Vector3, shot_multiplier: float = 1.0) -> void:
@@ -683,12 +689,14 @@ func _on_empty() -> void:
 ## Instances the weapon's viewmodel under a pivot this component owns. Visibility
 ## already follows this node (WeaponHolder toggles it), so nothing else needs wiring.
 ##
+## The model is the arms and the weapon in one mesh (tools/blender/build_viewmodels.py),
+## so everything that moves on screen - kick, reload, equip, breathing, the grapple
+## turn - moves the whole block through this pivot.
+##
 ## The pivot is not ceremony. Kick is a pitch, and pitch has to happen in the
 ## player's frame - but Godot composes a node's local euler as Y * X * Z, so
 ## pitching the model itself would rotate about an axis the model's own yaw has
-## already turned. Every current weapon is authored with a 90 degree yaw, which
-## turns that pitch a quarter turn sideways: on screen the gun rolls over instead
-## of kicking up. Keeping the pivot unrotated and letting the model carry its own
+## already turned. Keeping the pivot unrotated and letting the model carry its own
 ## orientation underneath means the kick axis is always the screen's.
 func _spawn_viewmodel() -> void:
 	if data.viewmodel == null:
@@ -704,56 +712,64 @@ func _spawn_viewmodel() -> void:
 	_view.add_child(model)
 	model.rotation_degrees = data.viewmodel_rotation_degrees
 	model.scale = Vector3.ONE * data.viewmodel_scale
+	for node: Node in model.find_children("*", "MeshInstance3D", true, false):
+		(node as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	# Solo en el rig: sin su propio mundo, unos brazos a 35cm del ojo se meterian
-	# en cada pared igual que se metia el arma.
+	# Solo en el rig: el cable sale de la camara del viewmodel hacia el mundo del
+	# juego, y sin rig no hay dos camaras entre las que traducirlo.
 	if viewmodel_parent != null:
-		_spawn_arms(host, model)
+		_mount_launcher(model)
 
 	# The pivot no longer lives under this node when a rig is in play, so it cannot
 	# inherit the visibility WeaponHolder toggles here.
 	visibility_changed.connect(_sync_viewmodel_visibility)
 	_sync_viewmodel_visibility()
 	_align_muzzle_to_barrel(model)
-	# Despues de medir: el clip en cero esconde piezas (el cartucho de la
-	# escopeta, en escala casi cero bajo el arma) que no son parte de la silueta.
-	_parts_player = _find_reload_clip(model)
-	_pose_parts(0.0)
 
 
-func _spawn_arms(host: Node3D, model: Node3D) -> void:
-	var arms := ARMS_SCRIPT.new()
-	arms.name = &"ViewArms"
-	host.add_child(arms)
-	arms.position = _view_rest_position
-	arms.build(_model_bounds(model), _view_rest_position,
-		data.viewmodel_grip_offset, data.viewmodel_support_offset,
-		data.viewmodel_grip_rotation_degrees, data.viewmodel_support_rotation_degrees)
-	_arms = arms
+## El lanzador del gancho sobre la muñeca izquierda del modelo, mirando adonde
+## mira el arma. Colgado del pivot y no del modelo: asi no hereda su escala, que
+## cambia de arma a arma, y el lanzador mide lo mismo en las cuatro.
+func _mount_launcher(model: Node3D) -> void:
+	_launcher = LAUNCHER_SCRIPT.new()
+	_launcher.name = &"GrappleLauncher"
+	# Los cuatro viewmodels traen el lanzador modelado en la muñeca: el nodo queda
+	# como el punto de donde sale el cable, sin dibujar otro encima.
+	_launcher.show_body = false
+	_view.add_child(_launcher)
+	_launcher.transform = Transform3D(
+		model.basis.orthonormalized().scaled(Vector3.ONE * data.viewmodel_launcher_scale),
+		model.transform * data.viewmodel_launcher_position)
 
 
 func _sync_viewmodel_visibility() -> void:
 	if _view != null:
 		_view.visible = visible
-	if _arms != null:
-		_arms.visible = visible
+	# Cada vez que el arma aparece, sube desde abajo: cambiar de arma se ve.
+	if visible:
+		_equip_left = equip_time
 
 
 ## Puts the muzzle node at the model's own barrel tip.
 ##
 ## It was authored at a fixed offset guessed before there were models, and guessed
-## short: the rifle's barrel ends 0.38m further out than the node sat, so rounds
-## spawned inside the receiver and appeared to leave from behind the gun. Measuring
-## the mesh means every weapon is right, including ones added later.
+## short: rounds spawned inside the receiver and appeared to leave from behind the
+## gun. The model carries a `Muzzle` node at the tip of its barrel; one without it
+## falls back to the front face of its bounds.
 func _align_muzzle_to_barrel(model: Node3D) -> void:
 	if muzzle == null:
 		return
-	var bounds: AABB = _model_bounds(model)
-	if bounds.size == Vector3.ZERO:
-		return
-	# Forward is -Z, so the tip is the near face; X and Y take the barrel's centre.
-	var centre: Vector3 = bounds.position + bounds.size * 0.5
-	var tip: Vector3 = Vector3(centre.x, centre.y, bounds.position.z)
+	var tip: Vector3
+	var marked := model.find_child(MUZZLE_NODE, true, false) as Node3D
+	if marked != null:
+		tip = model.transform * _relative_transform(model, marked).origin
+	else:
+		var bounds: AABB = _model_bounds(model)
+		if bounds.size == Vector3.ZERO:
+			return
+		# Forward is -Z, so the tip is the near face; X and Y take the centre.
+		var centre: Vector3 = bounds.position + bounds.size * 0.5
+		tip = Vector3(centre.x, centre.y, bounds.position.z)
 	muzzle.position = _view_rest_position + tip
 
 	# The marker is a sibling of the model (both children of _view), so it needs
@@ -776,11 +792,6 @@ func _model_bounds(model: Node3D) -> AABB:
 		if mesh_instance == null or mesh_instance.mesh == null:
 			continue
 		var relative: Transform3D = _relative_transform(model, mesh_instance)
-		# Una pieza en escala casi cero esta escondida (el cartucho de la escopeta,
-		# guardado bajo el arma hasta que la mano lo trae), y como punto suelto
-		# estiraba la caja hacia abajo.
-		if is_zero_approx(relative.basis.determinant()):
-			continue
 		var local: AABB = relative * mesh_instance.mesh.get_aabb()
 		out = local if not found else out.merge(local)
 		found = true
@@ -803,25 +814,53 @@ func _relative_transform(root: Node3D, target: Node3D) -> Transform3D:
 	return result
 
 
-## Cosmetic-only recoil on the pivot - never touches `aim_node`, so it can never
-## nudge where a shot actually lands.
+## Todo lo que mueve el bloque en pantalla, sumado sobre el pivot: kick, recarga,
+## sacar el arma, respiracion y el giro del gancho. Derivado de estado y tiempo y
+## no de tweens, por la misma razon que `_reload_tilt()`: este tick reescribe el
+## pivot cada frame, y una recarga o un cambio cortados vuelven solos al reposo.
+## Cosmetic only - never touches `aim_node`, so it can never nudge where a shot
+## actually lands.
 func _tick_viewmodel(delta: float) -> void:
 	if _view == null:
 		return
 	_view_kick_offset = _view_kick_offset.move_toward(Vector3.ZERO, view_kick_recovery * delta * 0.1)
 	_view_kick_rot = move_toward(_view_kick_rot, 0.0, view_kick_recovery * delta)
+	_equip_left = maxf(_equip_left - delta, 0.0)
+	_breath_time += delta
+	var grappling: bool = _launcher != null and _launcher.is_grappling()
+	_grapple_blend = move_toward(_grapple_blend, 1.0 if grappling else 0.0,
+		delta / maxf(grapple_blend_time, 0.01))
+
 	var reload_progress: float = get_reload_progress()
-	_view.position = _view_rest_position + _view_kick_offset 		+ Vector3.DOWN * (reload_dip * sin(PI * reload_progress))
-	_view.rotation_degrees = Vector3(_view_kick_rot, 0.0, 0.0) + _reload_tilt(reload_progress)
-	_pose_parts(reload_progress)
-	# Los brazos siguen el kick y la bajada en su propio nodo; la inclinacion de
-	# recarga no, porque girarian los hombros con el arma. Esa la reciben como
-	# pose de las manos, que es lo unico que tiene que seguirla.
-	if _arms != null:
-		_arms.position = _view.position
-		_arms.rotation_degrees.x = _view_kick_rot
-		_arms.set_reload_progress(reload_progress)
-		_arms.set_weapon_hold(_arms.basis.inverse() * _view.basis)
+	var equip: float = _equip_amount()
+	var grapple: float = smoothstep(0.0, 1.0, _grapple_blend)
+	var breath: float = sin(_breath_time * idle_breath_speed)
+	_view.position = _view_rest_position + _view_kick_offset \
+		+ Vector3.DOWN * (reload_dip * sin(PI * reload_progress)) \
+		+ Vector3.UP * _reload_seat(reload_progress) \
+		+ equip_drop * equip \
+		+ grapple_offset * grapple \
+		+ Vector3.UP * (idle_breath_height * breath)
+	_view.rotation_degrees = Vector3(_view_kick_rot + equip_pitch_degrees * equip, 0.0,
+			idle_breath_roll_degrees * breath * 0.5 - grapple_roll_degrees * grapple) \
+		+ _reload_tilt(reload_progress)
+
+
+## 1 recien sacada, 0 en posicion. Con smoothstep: arranca rapido y frena al
+## llegar, que es como se levanta un arma.
+func _equip_amount() -> float:
+	if equip_time <= 0.0:
+		return 0.0
+	return 1.0 - smoothstep(0.0, 1.0, 1.0 - _equip_left / equip_time)
+
+
+## El tiron del cargador al entrar: una campana angosta alrededor de
+## `reload_seat_at`, en cero fuera de ella.
+func _reload_seat(progress: float) -> float:
+	if progress <= 0.0 or reload_seat_width <= 0.0:
+		return 0.0
+	var distance: float = absf(progress - reload_seat_at) / reload_seat_width
+	return reload_seat_kick * maxf(1.0 - distance * distance, 0.0)
 
 
 ## La inclinacion de recarga, derivada del progreso en vez de animada por un Tween.
@@ -836,25 +875,6 @@ func _reload_tilt(progress: float) -> Vector3:
 	var amount: float = smoothstep(0.0, reload_tilt_ease, progress) \
 		* (1.0 - smoothstep(1.0 - reload_tilt_ease, 1.0, progress))
 	return data.reload_tilt_degrees * amount
-
-
-func _find_reload_clip(model: Node) -> AnimationPlayer:
-	for node: Node in model.find_children("*", "AnimationPlayer", true, false):
-		var player := node as AnimationPlayer
-		if player.has_animation(RELOAD_CLIP):
-			player.assigned_animation = RELOAD_CLIP
-			return player
-	return null
-
-
-## Pone las piezas del modelo en el cuadro del clip que toca a este progreso. Por
-## progreso y no por reloj, igual que los brazos: una recarga mas rapida por
-## mejora sigue cuadrando, y una cortada vuelve al cuadro cero.
-func _pose_parts(progress: float) -> void:
-	if _parts_player == null or progress == _parts_progress:
-		return
-	_parts_progress = progress
-	_parts_player.seek(_parts_player.get_animation(RELOAD_CLIP).length * progress, true)
 
 
 ## Scoped to this weapon's own id, so WEAPON-category upgrades bought for a

@@ -9,7 +9,11 @@ extends SceneTree
 ## missing the GPU-bound half of the question (glow, particles, decals, the
 ## panel shaders).
 ##
-##     godot --path . -s tools/profile_elite_wave.gd -- [seconds] [fire]
+##     godot --path . -s tools/profile_elite_wave.gd -- [seconds] [fire] [shot=ruta.png]
+##
+## Con `shot=ruta.png` guarda una captura a mitad de la medicion: el antes y el
+## despues de un cambio visual quedan con la imagen y el FPS de la misma corrida,
+## que es lo unico que dice si el cambio se ve mejor y a que precio.
 ##
 ## Con `fire` el jugador dispara sin parar durante la medicion. Es la unica forma
 ## de que el costo de los proyectiles aparezca en el numero: quieto, el arma no
@@ -37,6 +41,8 @@ const MAX_SPAWN_WAIT_SECONDS: float = 90.0
 var _sample_seconds: float = 20.0
 ## Con el gatillo apretado durante la medicion.
 var _firing: bool = false
+## Donde va la captura, vacio si no se pidio.
+var _shot_path: String = ""
 var _holder: Node
 ## Si ya se le pudo apagar el daño al jugador. Ver _make_player_invincible().
 var _invincible: bool = false
@@ -70,6 +76,8 @@ func _initialize() -> void:
 	for argument: String in args:
 		if argument == "fire":
 			_firing = true
+		elif argument.begins_with("shot="):
+			_shot_path = argument.trim_prefix("shot=")
 	if not args.is_empty():
 		_sample_seconds = args[0].to_float()
 	var packed: PackedScene = load(GAME_SCENE_PATH)
@@ -138,6 +146,8 @@ func _process(delta: float) -> bool:
 		var viewport: RID = root.get_viewport_rid()
 		RenderingServer.viewport_set_measure_render_time(viewport, true)
 		_gpu_ms.push_back(RenderingServer.viewport_get_measured_render_time_gpu(viewport))
+		if not _shot_path.is_empty() and _sample_time >= _sample_seconds * 0.5:
+			_save_shot()
 		if _sample_time >= _sample_seconds:
 			_report()
 			quit()
@@ -261,6 +271,17 @@ func _report() -> void:
 	print("  %.1f%% of frames under 60 FPS" % (100.0 * under_60 / _samples.size()))
 	print("  ms per frame: process %.2f  physics %.2f  gpu %.2f (averages)" % [
 		_average(_process_ms), _average(_physics_ms), _average(_gpu_ms)])
+
+
+func _save_shot() -> void:
+	var image: Image = root.get_texture().get_image()
+	var error: Error = image.save_png(_shot_path)
+	if error != OK:
+		push_error("profile_elite_wave: no se pudo guardar %s (%s)" % [
+			_shot_path, error_string(error)])
+	else:
+		print("  captura en %s" % _shot_path)
+	_shot_path = ""
 
 
 func _average(values: Array[float]) -> float:

@@ -10,6 +10,7 @@ scene = ExtResource("2_scene")
 id = &"temp_wall"
 display_name = "Barrier"
 summary = "Puts up a wall that blocks enemies and their shots"
+tag = "WALL"
 cost = 90
 max_carried = 2
 cooldown = 9.0

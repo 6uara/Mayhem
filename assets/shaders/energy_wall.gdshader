@@ -31,7 +31,9 @@ group_uniforms Reticula;
 // Metros de lado de cada hexagono.
 uniform float cell_size : hint_range(0.5, 12.0) = 3.0;
 uniform float line_width : hint_range(0.0, 0.3) = 0.035;
-uniform float grid_strength : hint_range(0.0, 2.0) = 0.5;
+// Tenue: la reticula ocupa media pantalla cada vez que se mira al borde, y mas
+// fuerte tapaba a los enemigos que vienen de ese lado.
+uniform float grid_strength : hint_range(0.0, 2.0) = 0.3;
 // El barrido lento que sube por la pared, para que no se lea como una textura.
 uniform float scan_speed : hint_range(0.0, 4.0) = 0.35;
 uniform float scan_strength : hint_range(0.0, 2.0) = 0.25;

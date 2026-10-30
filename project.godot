@@ -263,3 +263,10 @@ common/physics_interpolation=true
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+
+[shader_globals]
+
+enemy_outline_px={
+"type": "float",
+"value": 1.25
+}

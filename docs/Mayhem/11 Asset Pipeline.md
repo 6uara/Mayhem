@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, assets, tooling]
 estado: referencia
-actualizado: 2026-10-28
+actualizado: 2026-10-30
 ---
 
 # Asset Pipeline
@@ -15,8 +15,8 @@ actualizado: 2026-10-28
   (`gadget_<id>.res`, `grapple_launcher.res`). Each mesh has a `body` and an
   `accent` surface; the game tints the accent. Rerun headless after changing a
   shape.
-- `blender/build_fp_arms.py`,
-  `blender/build_weapons.py`, `blender/build_enemy_models.py`, `blender/build_props.py` — turn the art (`.blend` or Meshy `.glb`)
+- `blender/build_viewmodels.py`,
+  `blender/build_enemy_models.py`, `blender/build_props.py` — turn the art (`.blend` or Meshy `.glb`)
   into the `.glb` the game loads. See [[04 Weapons and Combat#Viewmodel]]
   and [[05 Enemies and AI#Models and model motion]].
 - `preview_viewmodel.gd` — renders weapon + arms from the player's camera (or

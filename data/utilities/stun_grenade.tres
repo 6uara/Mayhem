@@ -10,6 +10,7 @@ scene = ExtResource("2_scene")
 id = &"stun_grenade"
 display_name = "Stun Grenade"
 summary = "Freezes every enemy around where it lands"
+tag = "STUN"
 cost = 70
 max_carried = 3
 cooldown = 5.0

@@ -33,6 +33,10 @@ func _ready() -> void:
 	runtime = ArenaLoader.load_arena(arena, self, piece_catalog)
 	if runtime == null:
 		return
+	# Las opciones que viven en el Environment (la SSAO) se aplican al de esta
+	# arena, que recien existe.
+	SettingsManager.register_world_environment(
+		runtime.get_node_or_null(^"WorldEnvironment") as WorldEnvironment)
 	# Para que un reporte de feedback diga en que arena paso sin preguntarselo al
 	# jugador, que es la clase de dato que escrito a mano no llega nunca.
 	FeedbackManager.set_arena_name(arena.arena_name)

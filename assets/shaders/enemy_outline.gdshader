@@ -12,7 +12,9 @@ shader_type spatial;
 render_mode unshaded, cull_front, shadows_disabled, fog_disabled;
 
 uniform vec4 outline_color : source_color = vec4(1.0, 0.23, 0.33, 1.0);
-uniform float width_px = 3.0;
+// El ancho sale de opciones (video/enemy_outline_px) y es uno para todos:
+// global, para que cambiarlo no tenga que recorrer cada enemigo del pool.
+global uniform float enemy_outline_px;
 uniform float energy = 1.6;
 
 void vertex() {
@@ -20,7 +22,7 @@ void vertex() {
 	vec3 view_normal = normalize((MODELVIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	vec2 clip_normal = (PROJECTION_MATRIX * vec4(view_normal, 0.0)).xy;
 	if (length(clip_normal) > 0.0001) {
-		clip.xy += normalize(clip_normal) * width_px * 2.0 / VIEWPORT_SIZE * clip.w;
+		clip.xy += normalize(clip_normal) * enemy_outline_px * 2.0 / VIEWPORT_SIZE * clip.w;
 	}
 	POSITION = clip;
 }

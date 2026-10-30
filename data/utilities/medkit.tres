@@ -8,6 +8,7 @@ script = ExtResource("1_utility")
 id = &"medkit"
 display_name = "Medkit"
 summary = "Heals you the moment you pick it up"
+tag = "HEAL"
 cost = 0
 max_carried = 0
 cooldown = 0.0

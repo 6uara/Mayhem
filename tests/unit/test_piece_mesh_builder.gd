@@ -220,3 +220,23 @@ func test_floor_variants_are_mixed_in_and_stable() -> void:
 	var again: Node3D = autofree(PieceMeshBuilder.build(piece, _catalog, false, false, Vector3i.ZERO))
 	assert_same((again.get_child(0) as MeshInstance3D).mesh, layout[0], "misma celda, misma baldosa")
 	assert_lt(variant_tiles, layout.size(), "y el resto sigue siendo la base")
+
+
+## El piso se exporta con el mismo metalico que el resto de los props y, con la
+## luna y las luces del coliseo, se veia mojado. `art_shine` lo apaga sin tocar el
+## .glb, que comparten las piezas que si quieren brillar.
+func test_the_floor_art_is_duller_than_the_model_it_comes_from() -> void:
+	var piece: PieceDefinition = _piece(&"floor_2x2")
+	assert_lt(piece.art_shine, 1.0, "el piso pide menos brillo que el modelo")
+	var source: Mesh = null
+	var instance: Node = piece.art_scene.instantiate()
+	for node: Node in instance.find_children("*", "MeshInstance3D", true, false):
+		source = (node as MeshInstance3D).mesh
+		break
+	instance.free()
+	var original := source.surface_get_material(0) as BaseMaterial3D
+	var dulled := PieceMeshBuilder.art_mesh(piece).surface_get_material(0) as BaseMaterial3D
+	assert_almost_eq(dulled.metallic, original.metallic * piece.art_shine, 0.001)
+	assert_almost_eq(dulled.metallic_specular,
+		original.metallic_specular * piece.art_shine, 0.001)
+	assert_ne(dulled, original, "una copia: el material del .glb queda como estaba")

@@ -6,31 +6,24 @@ extends Resource
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export var projectile_scene: PackedScene
-## First-person viewmodel, instantiated under the weapon's ViewModel node.
+## First-person viewmodel: the arms and the weapon in one mesh, as
+## tools/blender/build_viewmodels.py writes it (barrel to -Z, a `Muzzle` node at
+## its tip). Placed with the three fields below; tune them with the weapon viewer
+## (scenes/main/weapon_viewer.tscn).
 @export var viewmodel: PackedScene
 @export var viewmodel_scale: float = 1.0
 @export var viewmodel_offset: Vector3 = Vector3.ZERO
 @export var viewmodel_rotation_degrees: Vector3 = Vector3.ZERO
 ## How far the whole viewmodel tilts while reloading, at the peak of the motion,
-## in the pivot's frame (pitch, yaw, roll). It turns the magazine well or the
-## loading port towards the camera; the moving parts themselves come from the
-## model's own `reload` clip. Lives here rather than in that clip because the
-## arms have to follow it, and they never see the clip.
+## in the pivot's frame (pitch, yaw, roll). Nothing in the model moves on its own,
+## so this tilt and the dip are the reload: it turns the magazine well or the
+## loading port towards the camera.
 @export var reload_tilt_degrees: Vector3 = Vector3.ZERO
-## Where the hands actually hold this weapon, as a correction to what
-## ViewmodelArms measures from the mesh, in metres and in camera axes (+X right,
-## +Y up, -Z forward). The measurement finds the grip of any model; it does not
-## know that a pistol is held high, against the slide. Tune with
-## the weapon viewer (scenes/main/weapon_viewer.tscn).
-@export var viewmodel_grip_offset: Vector3 = Vector3.ZERO
-## Same for the support hand (handguard, or right beside the grip on a pistol).
-@export var viewmodel_support_offset: Vector3 = Vector3.ZERO
-## How each hand turns from its base pose, in degrees and camera axes (applied
-## like a node's rotation_degrees). Offsets only move a hand; a pistol grip is
-## raked back, and a hand that cannot follow it never closes around it.
-@export var viewmodel_grip_rotation_degrees: Vector3 = Vector3.ZERO
-## Same for the support hand.
-@export var viewmodel_support_rotation_degrees: Vector3 = Vector3.ZERO
+## Where the grapple launcher sits on the left wrist of this model, in the
+## model's own space (before `viewmodel_scale`). The cable leaves from it.
+@export var viewmodel_launcher_position: Vector3 = Vector3.ZERO
+## The launcher's size, independent of the weapon's scale.
+@export var viewmodel_launcher_scale: float = 0.55
 
 @export_group("Damage")
 @export var damage: float = 10.0

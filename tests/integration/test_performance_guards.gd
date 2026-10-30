@@ -98,6 +98,8 @@ func test_an_integrated_gpu_starts_lighter() -> void:
 	assert_lt(int(integrated["video/render_scale"]), int(discrete["video/render_scale"]))
 	assert_lt(int(integrated["video/shadow_quality"]), int(discrete["video/shadow_quality"]))
 	assert_eq(int(discrete["video/render_scale"]), 100, "una GPU dedicada arranca como siempre")
+	assert_false(bool(integrated["video/ambient_occlusion"]), "sin SSAO en GPU integrada")
+	assert_true(bool(discrete["video/ambient_occlusion"]))
 
 
 func test_the_sun_draws_two_short_cascades() -> void:

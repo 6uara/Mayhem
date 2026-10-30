@@ -28,6 +28,10 @@ const CABLE_THICKNESS: float = 0.018
 const GLOW_IDLE: float = 1.2
 const GLOW_ACTIVE: float = 4.0
 
+## Si se dibuja el lanzador propio. Los viewmodels de Meshy ya traen uno modelado
+## en la muñeca: ahi esto es solo el punto de donde sale el cable.
+var show_body: bool = true
+
 var _mesh: MeshInstance3D
 var _glow: StandardMaterial3D
 var _cable: MeshInstance3D
@@ -46,6 +50,7 @@ func _ready() -> void:
 	_mesh.mesh = LAUNCHER_MESH
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_mesh)
+	_mesh.visible = show_body
 	var body := StandardMaterial3D.new()
 	body.albedo_color = Tokens.RAISED
 	body.roughness = 0.6

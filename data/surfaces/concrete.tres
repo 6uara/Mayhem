@@ -1,11 +1,13 @@
-[gd_resource type="Resource" script_class="SurfaceMaterialData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="SurfaceMaterialData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/surface_material_data.gd" id="1_data"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/impacts/impact_world.wav" id="2_sound"]
+[ext_resource type="Texture2D" uid="uid://fhltysfj42id" path="res://assets/particles/alpha/scorch_02_a.png" id="3_decal"]
 
 [resource]
 script = ExtResource("1_data")
 id = &"concrete"
 impact_sound = ExtResource("2_sound")
+decal_texture = ExtResource("3_decal")
 accent_color = Color(0.1, 0.1, 0.12, 1)
 spawns_decal = true

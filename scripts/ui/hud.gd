@@ -413,7 +413,7 @@ func _build_ability_bar() -> void:
 	for i: int in UtilityComponent.SLOT_COUNT:
 		var data: UtilityData = _player.utility.get_slot_data(i) if _player.utility != null else null
 		var key: String = UTILITY_KEYS[i] if i < UTILITY_KEYS.size() else ""
-		var slot: Control = _make_slot(_icon_for_utility(data), key)
+		var slot: Control = _make_slot(_icon_for_utility(data), _utility_keybind_text(key, data))
 		(slot.get_meta(&"name") as Label).text = data.display_name.to_upper() if data != null else ""
 		_ability_bar.add_child(slot)
 		_utility_slots.push_back(slot)
@@ -491,6 +491,16 @@ func _make_slot(kind: MayhemIcon.Kind, keybind: String) -> Control:
 	column.set_meta(&"name", name_label)
 	column.set_meta(&"cooldown", cooldown)
 	return column
+
+
+## "Q · STUN": la tecla y, al lado, la palabra del gadget, siempre visibles. Sin
+## tag (o sin gadget en la ranura) queda la tecla sola, como antes.
+static func _utility_keybind_text(key: String, data: UtilityData) -> String:
+	if data == null or data.tag.is_empty():
+		return key
+	if key.is_empty():
+		return data.tag.to_upper()
+	return "%s · %s" % [key, data.tag.to_upper()]
 
 
 func _icon_for_utility(data: UtilityData) -> MayhemIcon.Kind:

@@ -9,6 +9,10 @@ extends Resource
 ## and the HUD show it. Players kept picking gadgets up without knowing what any
 ## of them did; the name alone ("Slow Field") was not enough.
 @export var summary: String = ""
+## Una palabra que va al lado de la tecla en la barra del HUD ("STUN", "WALL").
+## El nombre completo sólo aparece al levantarlo o con el gadget en la mano; con
+## el icono y la tecla solos no se sabía qué tecla tiraba qué en pleno tiroteo.
+@export var tag: String = ""
 @export var scene: PackedScene
 ## Sin uso desde que los gadgets salieron del shop y pasaron a caer de las
 ## gradas. Se deja porque los tres .tres lo tienen serializado y porque un

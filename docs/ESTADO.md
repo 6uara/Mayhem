@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, estado, backlog]
 estado: vivo
-actualizado: 2026-10-28
+actualizado: 2026-10-30
 ---
 
 # MAYHEM — Estado del proyecto
@@ -106,6 +106,25 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 | Gadgets legibles: al levantarlos la HUD dice qué son, qué hacen y con qué tecla; la ranura muestra nombre y cooldown; en modo equipar se ve el arco y el área donde cae; al detonar se abre el aro del área; los enemigos aturdidos llevan chispas y los ralentizados el contorno índigo; barrera y campo lento parpadean antes de terminar. Colores propios y modelos de Meshy para los cuatro | `UtilityData.summary`, `UtilityAimPreview`, `GadgetAreaRing`, `EnemyStatusMarks`, `Tokens.GADGET_*` |
 | Limpieza: fuera el resto del pack de armas viejo, `spiderbot.res`, `ual1_standard.res`, `ammobox_low.res`, `UAL1_Standard_RM.glb` y los `.blend` y scripts viejos del Environmental y el Summoner, que ya no usaba nada | — |
 
+### Lo que entró el 2026-10-30 (pase visual, rama `feat/visual-pass`)
+
+| Qué | Dónde |
+|---|---|
+| Cada ranura de gadget dice tecla y palabra (`Q · STUN`, `X · WALL`, `C · SLOW`) | `UtilityData.tag`, `HUD._utility_keybind_text()` |
+| Muerte de enemigos: esquirlas en el color del arquetipo, humo (flipbook) y un destello de luz. Del pool | `EnemyDeathBurst`, `Tokens.DEATH_*` |
+| Marcas de impacto en concreto y metal (scorch y scratch del pack de partículas), giradas al azar y con fundido | `data/surfaces/`, `ImpactEffect.DECAL_FADE` |
+| Humo que queda después de la explosión del Bomber | `explosion.tscn`, `Explosion.smoke_time` |
+| SSAO en el coliseo, con opción para apagarla (apagada por defecto en GPU integrada); contraste y saturación un poco más altos | `coliseum_env.tres`, `video/ambient_occlusion`, `SettingsManager.register_world_environment()` |
+| Contorno de enemigos más fino (1.25 px, era 2) y con opción de ancho (0.5 a 3 px) | `video/enemy_outline_px`, global de shader `enemy_outline_px` |
+| Piso más mate: un 30 % del metálico y el especular del modelo | `PieceDefinition.art_shine` |
+| Luz de acento: puertas de spawn con luz tenue en reposo, y un cono de luz desde la pantalla gigante | `SpawnDoor.LIGHT_IDLE_ENERGY`, `ArenaColiseum.jumbotron_light_*` |
+| Menos brillo decorativo: ventanas de la ciudad y retícula de la pared de energía | `city_block.gdshader`, `energy_wall.gdshader` |
+| Fotos del juego para comparar un cambio visual | `tools/capture_arena.gd`, `profile_elite_wave.gd shot=` |
+| Viewmodels nuevos: brazos y arma en una sola malla de Meshy por arma, con el lanzador del gancho modelado en la muñeca. Reemplazan al rig de brazos con IK y a las armas sueltas, que se borraron (`ViewmodelArms`, `ViewmodelArmIK`, `fp_arms.glb`, `assets/models/weapons/`, `build_fp_arms.py`, `build_weapons.py`, el clip `reload` por pieza y las correcciones de mano de `WeaponData`) | `tools/blender/build_viewmodels.py`, `assets/models/viewmodels/` |
+| Animación del viewmodel, todo el bloque: sacar el arma (sube desde abajo), respiración, recarga (baja, se inclina y golpea al entrar el cargador), kick y giro al tirar el gancho | `WeaponComponent._tick_viewmodel()` |
+
+Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
@@ -156,8 +175,24 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
   [host_script/](host_script/host_script.md). Las líneas de reglas, rating, tutorial,
   Second Wind, contratos, pedidos del público, pico y retiro del patrocinador ya
   están en el guion exportado (2026-10-16).
-- **Arte de VFX.** Impactos, picada y slide siguen grey-box; decals por superficie
-  en `null`; los flipbooks del pack sin usar (y fuera del build, ver EXPORT).
+- **Arte de VFX.** Picada y slide siguen grey-box. Los impactos tienen marca
+  (scorch y scratch del pack) pero las chispas son las de siempre. De los
+  flipbooks se usan dos humos; el resto sigue fuera del build (ver EXPORT).
+- **Pase visual en juego** (2026-10-30): mirar jugando la muerte de enemigos, el
+  piso mate, la SSAO, la luz de la pantalla gigante y el contorno en 1.25 px; y
+  medir la SSAO en la 680M (este pase solo se midió con la SSAO apagada, que es
+  el default de una integrada).
+- **Viewmodels nuevos, a mano:** tamaño y lugar en pantalla de los cuatro (hoy
+  los mismos números para todos, ajustar con el visor de armas), que el cable
+  del gancho salga de la muñeca de cada uno, y si la recarga sin manos que se
+  muevan alcanza. Los modelos llegan bastante metálicos; si brillan de más, se
+  baja en `build_viewmodels.py`.
+- **`profile_elite_wave.gd` no mide la ola 10.** Al forzarla la run termina
+  (sale "RUN RECORDED" con la ola viva) y el muestreo corre con el juego en la
+  pantalla de fin: da ~240 FPS que no dicen nada. Visto el 2026-10-30.
+- **`EXPORT.md` excluye `assets/models/props/*`**, pero los pisos, paredes,
+  rampas, puertas y la pantalla gigante salen de ahí desde que tienen modelo.
+  Con ese filtro el build se queda sin arte de arena. Revisar antes del release.
 - **Mezcla de audio real** (oídos, auriculares y parlantes).
 - **URL del formulario de feedback** vacía en `data/feedback/feedback_config.tres`.
 - **Iconos de las raras por arma (8) y del bono RECOMPENSA**: geométricos

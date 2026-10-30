@@ -5,7 +5,13 @@ extends Node3D
 ## (SurfaceMaterials.resolve()). Grey-box first pass - the particle/decal art
 ## is replaced in Phase 5.
 
-const LIFETIME: float = 1.2
+## The sparks are gone in half a second; the rest is the mark on the wall, which
+## fades out over its last DECAL_FADE seconds instead of blinking off when the
+## effect goes back to the pool.
+const LIFETIME: float = 3.0
+const DECAL_FADE: float = 1.0
+## What it lasted before there were decals: the sparks and nothing after them.
+const SPARKS_ONLY_LIFETIME: float = 1.2
 
 ## Used only if play_at() is ever called with a null material - should not
 ## happen in practice, since SurfaceMaterials.resolve() always falls back to
@@ -37,6 +43,8 @@ func _process(delta: float) -> void:
 	if not _is_playing:
 		return
 	_timer -= delta
+	if _decal != null and _decal.visible:
+		_decal.modulate.a = clampf(_timer / DECAL_FADE, 0.0, 1.0)
 	if _timer <= 0.0:
 		ObjectPool.release(self)
 
@@ -56,9 +64,16 @@ func play_at(hit_position: Vector3, normal: Vector3, material: SurfaceMaterialDa
 		return
 
 	if _decal != null:
-		_decal.visible = resolved.spawns_decal
+		_decal.visible = resolved.spawns_decal and resolved.decal_texture != null
 		_decal.texture_albedo = resolved.decal_texture
 		_decal.modulate = resolved.accent_color
+		# Spun at random about the normal: the same texture at the same angle made a
+		# burst against a wall read as a row of rubber stamps.
+		_decal.rotate_object_local(Vector3.UP, randf() * TAU)
+	# With no mark there is nothing to wait for after the sparks: back to the
+	# pool early, which with the SMG on the horde is fifteen a second.
+	if _decal == null or not _decal.visible:
+		_timer = SPARKS_ONLY_LIFETIME
 	if _spark_material != null:
 		_spark_material.albedo_color = resolved.accent_color
 	if _particles != null:

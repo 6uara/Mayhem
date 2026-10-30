@@ -73,7 +73,9 @@ func test_the_muzzle_sits_at_the_barrel_not_inside_the_gun() -> void:
 		if weapon._view == null:
 			continue
 		var model: Node3D = weapon._view.get_child(0)
-		var tip: float = weapon._view.position.z + weapon._model_bounds(model).position.z
+		# Contra el reposo y no contra el pivot: el pivot se mueve (sacar el arma,
+		# respirar) y la boca de los tiros no.
+		var tip: float = weapon.data.viewmodel_offset.z + weapon._model_bounds(model).position.z
 		assert_almost_eq(weapon.muzzle.position.z, tip, 0.02,
 			"%s: muzzle should sit at the barrel tip" % weapon.name)
 
@@ -166,7 +168,7 @@ func _hitbox_radius(enemy_data: EnemyData) -> float:
 
 # ---------------------------------------------------------------- muzzle VFX
 
-## The flash/shell marker lives inside the viewmodel rig, at the barrel tip, with
+## The muzzle flash marker lives inside the viewmodel rig, at the barrel tip, with
 ## the model's own orientation - not at `muzzle` itself, which is deliberately in
 ## the main world and would put a flash in a space with no relation to what's
 ## drawn on screen once the player turns.

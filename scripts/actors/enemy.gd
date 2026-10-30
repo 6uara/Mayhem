@@ -165,6 +165,9 @@ const LEAP_CONTACT_HEIGHT: float = 2.0
 ## cuenta. Solo lo usan los arquetipos con `EnemyData.has_fuse`.
 @export var fuse_ring: MeshInstance3D
 @export var flash_color: Color = Color(1.0, 0.9, 0.75)
+## Lo que queda en el aire cuando muere (ver EnemyDeathBurst). Sin escena se va
+## como antes, sin nada.
+@export var death_burst_scene: PackedScene
 
 var data: EnemyData
 var is_active: bool = false
@@ -1113,6 +1116,18 @@ func _detonate() -> void:
 	if not _has_detonated:
 		_has_detonated = true
 		_spawn_blast()
+
+
+## Las esquirlas y el destello de la muerte, en el color del arquetipo. Del pool,
+## como el estallido: el cuerpo vuelve al suyo en este mismo frame.
+func _spawn_death_burst() -> void:
+	if death_burst_scene == null or data == null:
+		return
+	var burst := ObjectPool.acquire(death_burst_scene) as EnemyDeathBurst
+	if burst == null:
+		return
+	burst.play_at(global_position + Vector3.UP * (data.collision_height * 0.5),
+		data.body_color, data.collision_height)
 
 
 ## El estallido en si. Sale del pool y sobrevive al cuerpo que lo causo, que en
@@ -2407,7 +2422,6 @@ func _outline() -> ShaderMaterial:
 	if _outline_material == null:
 		_outline_material = ShaderMaterial.new()
 		_outline_material.shader = OUTLINE_SHADER
-		_outline_material.set_shader_parameter(&"width_px", Tokens.ENEMY_OUTLINE_PX)
 		_outline_material.set_shader_parameter(&"energy", Tokens.ENEMY_OUTLINE_ENERGY)
 	_outline_material.set_shader_parameter(&"outline_color", data.body_color)
 	return _outline_material
@@ -2669,6 +2683,7 @@ func _on_died() -> void:
 		_has_detonated = true
 		_spawn_blast()
 	AudioPool.play_3d(data.death_sound, global_position, AudioPool.BUS_ENEMIES)
+	_spawn_death_burst()
 	# Los dos contestan preguntas distintas y por eso siguen siendo dos: enemy_killed
 	# es "murió uno" y lo cobra el contador de la oleada pase lo que pase;
 	# kill_credited es "y es tuyo", que a partir de ahora no siempre es cierto.

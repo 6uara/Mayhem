@@ -47,6 +47,13 @@ const DEFAULTS: Dictionary = {
 	## 0 bajo, 1 medio, 2 alto. Alto es lo que el proyecto dibujaba antes de que
 	## existiera la opcion (atlas de 4096, filtro suave bajo).
 	"video/shadow_quality": 2,
+	## Oclusion ambiental (SSAO) en las arenas cuyo Environment la trae. Le da
+	## volumen a los props, que sin ella se ven pegados al piso. Apagada por
+	## defecto en GPU integrada, como las sombras altas.
+	"video/ambient_occlusion": true,
+	## Ancho en pixeles del contorno de los enemigos. Igual a
+	## Tokens.ENEMY_OUTLINE_PX (lo comprueba un test); literal porque DEFAULTS es const.
+	"video/enemy_outline_px": 1.25,
 	"audio/master_volume": 1.0,
 	"audio/sfx_volume": 1.0,
 	"audio/music_volume": 0.7,
@@ -82,6 +89,10 @@ const DEFAULTS: Dictionary = {
 var _values: Dictionary = {}
 ## action name -> Array of serialized InputEvent
 var _bindings: Dictionary = {}
+## El de la arena cargada. Ver register_world_environment().
+var _world_environment: WorldEnvironment
+## Si el Environment del tema trae SSAO, antes de que la opcion lo toque.
+var _theme_ssao: bool = false
 
 
 func _ready() -> void:
@@ -125,6 +136,7 @@ func effective_defaults(adapter_type: int = -1) -> Dictionary:
 	if adapter == RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU:
 		values["video/render_scale"] = INTEGRATED_GPU_RENDER_SCALE
 		values["video/shadow_quality"] = INTEGRATED_GPU_SHADOW_QUALITY
+		values["video/ambient_occlusion"] = false
 	return values
 
 
@@ -374,6 +386,38 @@ func _apply_render_quality() -> void:
 		RenderingServer.SHADOW_QUALITY_SOFT_LOW][quality]
 	RenderingServer.directional_soft_shadow_filter_set_quality(filter)
 	RenderingServer.positional_soft_shadow_filter_set_quality(filter)
+
+	RenderingServer.global_shader_parameter_set(&"enemy_outline_px", get_enemy_outline_px())
+	_apply_environment()
+
+
+## El ancho del contorno de los enemigos tal como llega al shader: el elegido,
+## dentro de los limites de Tokens.
+func get_enemy_outline_px() -> float:
+	return clampf(float(get_value("video/enemy_outline_px")),
+		Tokens.ENEMY_OUTLINE_PX_MIN, Tokens.ENEMY_OUTLINE_PX_MAX)
+
+
+## La arena le pasa aca su WorldEnvironment al cargar, para que las opciones que
+## viven en el Environment (hoy la SSAO) le lleguen a ella y a cada cambio
+## posterior. El Environment se duplica: el del tema es un recurso compartido, y
+## apagarle la SSAO lo dejaria apagado para el proximo que lo cargue.
+func register_world_environment(node: WorldEnvironment) -> void:
+	if node == null or node.environment == null:
+		return
+	node.environment = node.environment.duplicate()
+	_world_environment = node
+	_theme_ssao = node.environment.ssao_enabled
+	_apply_environment()
+
+
+## La SSAO se prende solo si el tema la trae: la opcion la puede sacar, no
+## inventarla en una arena cuyo Environment no la ajusto.
+func _apply_environment() -> void:
+	if not is_instance_valid(_world_environment) or _world_environment.environment == null:
+		return
+	_world_environment.environment.ssao_enabled = _theme_ssao \
+		and bool(get_value("video/ambient_occlusion"))
 
 
 func _apply_bindings() -> void:
