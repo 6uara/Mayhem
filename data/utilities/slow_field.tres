@@ -10,6 +10,7 @@ scene = ExtResource("2_scene")
 id = &"slow_field"
 display_name = "Slow Field"
 summary = "Leaves a pool that slows enemies inside it to half speed"
+tag = "SLOW"
 cost = 80
 max_carried = 2
 cooldown = 8.0
