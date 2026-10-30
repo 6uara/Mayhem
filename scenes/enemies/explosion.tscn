@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/explosion.gd" id="1_explosion"]
 [ext_resource type="Texture2D" uid="uid://2hlk276bebmu" path="res://assets/predrawn/explosion_6x5.png" id="2_burst"]
+[ext_resource type="Texture2D" uid="uid://d1ap6tph7l5c3" path="res://assets/flipbooks/explosion_smoke_01_8x8.tga" id="3_smoke"]
 
 [sub_resource type="SphereMesh" id="Mesh_flash"]
 resource_local_to_scene = true
@@ -35,10 +36,39 @@ gravity = Vector3(0, 0, 0)
 anim_speed_min = 1.0
 anim_speed_max = 1.0
 
-[node name="Explosion" type="Node3D" node_paths=PackedStringArray("flash_mesh", "burst")]
+[sub_resource type="StandardMaterial3D" id="Mat_smoke"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.22, 0.2, 0.22, 0.8)
+albedo_texture = ExtResource("3_smoke")
+billboard_mode = 3
+particles_anim_h_frames = 8
+particles_anim_v_frames = 8
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="Mesh_smoke"]
+material = SubResource("Mat_smoke")
+size = Vector2(4, 4)
+
+[sub_resource type="ParticleProcessMaterial" id="Proc_smoke"]
+emission_shape = 1
+emission_sphere_radius = 1.2
+direction = Vector3(0, 1, 0)
+spread = 70.0
+initial_velocity_min = 0.5
+initial_velocity_max = 1.5
+gravity = Vector3(0, 0.8, 0)
+scale_min = 0.8
+scale_max = 1.4
+anim_speed_min = 1.0
+anim_speed_max = 1.0
+
+[node name="Explosion" type="Node3D" node_paths=PackedStringArray("flash_mesh", "burst", "smoke")]
 script = ExtResource("1_explosion")
 flash_mesh = NodePath("Flash")
 burst = NodePath("Burst")
+smoke = NodePath("Smoke")
 
 [node name="Flash" type="MeshInstance3D" parent="."]
 mesh = SubResource("Mesh_flash")
@@ -52,3 +82,12 @@ explosiveness = 1.0
 local_coords = true
 process_material = SubResource("Proc_burst")
 draw_pass_1 = SubResource("Mesh_burst")
+
+[node name="Smoke" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 5
+lifetime = 1.3
+one_shot = true
+explosiveness = 0.85
+process_material = SubResource("Proc_smoke")
+draw_pass_1 = SubResource("Mesh_smoke")

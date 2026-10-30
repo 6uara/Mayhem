@@ -21,3 +21,4 @@ edge_color = Color(0.25, 0.85, 1, 1)
 edge_energy = 1.6
 art_scene = ExtResource("9_art")
 art_variants = Array[PackedScene]([ExtResource("10_damaged"), ExtResource("11_circuits"), ExtResource("12_vent")])
+art_shine = 0.3

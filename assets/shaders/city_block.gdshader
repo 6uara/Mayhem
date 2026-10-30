@@ -20,7 +20,9 @@ render_mode cull_back, shadows_disabled, specular_disabled, unshaded;
 uniform vec3 body_color : source_color = vec3(0.035, 0.032, 0.055);
 uniform vec3 window_cold : source_color = vec3(0.45, 0.85, 1.0);
 uniform vec3 window_warm : source_color = vec3(1.0, 0.62, 0.25);
-uniform float window_energy : hint_range(0.0, 8.0) = 2.6;
+// Bajo a proposito: la ciudad es fondo, y con el bloom a 2.6 competia con los
+// acentos de la pelea (enemigos, pickups), que son lo unico que tiene que brillar.
+uniform float window_energy : hint_range(0.0, 8.0) = 1.7;
 // Ventanas por metro de fachada. Fijo en metros y no en UV para que una torre
 // ancha no tenga ventanas anchas.
 uniform float windows_per_metre : hint_range(0.05, 2.0) = 0.34;

@@ -46,6 +46,10 @@ const SCHEMA: Array = [
 		"choices": [["Off", 0], ["FXAA", 1], ["MSAA 2x", 2], ["MSAA 4x", 3], ["TAA", 4]]},
 	{"key": "video/shadow_quality", "label": "Shadow quality", "type": "option",
 		"choices": [["Low", 0], ["Medium", 1], ["High", 2]]},
+	{"key": "video/ambient_occlusion", "label": "Ambient occlusion", "type": "toggle"},
+	# Limites: Tokens.ENEMY_OUTLINE_PX_MIN / _MAX. Literales porque SCHEMA es const.
+	{"key": "video/enemy_outline_px", "label": "Enemy outline",
+		"type": "slider", "min": 0.5, "max": 3.0, "step": 0.25, "suffix": " px"},
 
 	{"section": "AUDIO"},
 	{"key": "audio/master_volume", "label": "Master", "type": "percent"},
@@ -94,6 +98,9 @@ const TOOLTIPS: Dictionary = {
 	"video/anti_aliasing":
 		"Smooths jagged edges.\nFXAA: cheapest, slightly soft.\nMSAA: sharp edges, costs more.\nTAA: smoothest, can blur in motion.",
 	"video/shadow_quality": "Sharpness of the shadows. Lower it if the game runs slow.",
+	"video/ambient_occlusion":
+		"Soft shading where surfaces meet. Turn off if the game runs slow.",
+	"video/enemy_outline_px": "Width of the glowing edge around every enemy.",
 	"audio/vo_volume": "The Host's voice.",
 	"accessibility/screenshake_enabled":
 		"Camera shake from hits, explosions, landings and dives.",

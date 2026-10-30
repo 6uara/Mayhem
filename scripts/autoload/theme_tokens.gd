@@ -146,8 +146,22 @@ const ARM_SLEEVE     := Color("#1E212B")
 ## Enemy dominant colours. Silhouette is the primary read; colour confirms.
 const ENEMY_RUSHER   := Color("#FF3B54")
 const ENEMY_RANGER   := Color("#FF7A1F")
-const ENEMY_OUTLINE_PX     := 2.0  ## silhouette outline on every enemy model, in its body_color
-const ENEMY_OUTLINE_ENERGY := 1.6
+## Silhouette outline on every enemy model, in its body_color. The default width;
+## the player picks their own in options (`video/enemy_outline_px`), between
+## the two limits. Thinner than the 2 px it was: with the bloom on top it read
+## as a neon tube rather than an edge.
+const ENEMY_OUTLINE_PX     := 1.25
+const ENEMY_OUTLINE_PX_MIN := 0.5
+const ENEMY_OUTLINE_PX_MAX := 3.0
+const ENEMY_OUTLINE_ENERGY := 1.3
+## How an enemy goes when it dies: a burst of shards in its body_color, a puff of
+## smoke and a short flash of light. Before this it vanished between two frames,
+## and a kill was a number with nothing in the world to show for it.
+const DEATH_BURST_LIFE   := 1.0
+const DEATH_FLASH_TIME   := 0.18
+const DEATH_FLASH_ENERGY := 4.0
+## A body this tall gets the burst at scale 1; taller and shorter scale with it.
+const DEATH_BURST_HEIGHT := 1.8
 const ENEMY_ELITE    := Color("#FC3A00")
 const ENEMY_HEALER   := Color("#B45CFF")
 const ENEMY_SUMMONER := Color("#FF3BC1")

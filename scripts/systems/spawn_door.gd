@@ -20,6 +20,10 @@ const TELEGRAPH_TIME: float = 1.2
 
 const PORTAL_IDLE_GLOW: float = 0.3
 const PORTAL_TELEGRAPH_GLOW: float = 2.2
+## The door light at rest. It was zero: seven dark doors were seven black holes
+## in the wall, and the arena had no coloured light but the enemies. Low, so the
+## telegraph (6.0) is still a jump.
+const LIGHT_IDLE_ENERGY: float = 0.6
 
 var _is_telegraphing: bool = false
 var _material: StandardMaterial3D
@@ -43,7 +47,8 @@ func _ready() -> void:
 			_portal_material.set_shader_parameter(&"tint", telegraph_color)
 			portal_mesh.material_override = _portal_material
 	if light != null:
-		light.light_energy = 0.0
+		light.light_color = telegraph_color
+		light.light_energy = LIGHT_IDLE_ENERGY
 
 
 # Public API
@@ -87,7 +92,7 @@ func telegraph() -> void:
 func close() -> void:
 	if light != null:
 		var tween: Tween = create_tween()
-		tween.tween_property(light, "light_energy", 0.0, 0.4)
+		tween.tween_property(light, "light_energy", LIGHT_IDLE_ENERGY, 0.4)
 	if _material != null:
 		_material.emission_energy_multiplier = 0.0
 	if _portal_material != null:

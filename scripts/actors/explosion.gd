@@ -39,8 +39,16 @@ const EDGE_DAMAGE_FRACTION: float = 0.35
 ## sostener esa promesa - se ve del mismo tamaño desde cualquier distancia y no
 ## tiene volumen que leer. Así que el arte se suma y la medida se queda.
 @export var burst: GPUParticles3D
+## El humo que queda flotando cuando el fuego ya se fue. Sin el, la explosion
+## terminaba en el mismo cuadro que la esfera y no dejaba nada en el aire.
+@export var smoke: GPUParticles3D
+## Cuanto sigue en pantalla despues del destello, por el humo. No cambia nada del
+## daño ni de la esfera, que ya terminaron.
+@export var smoke_time: float = 1.1
 
 var _time_left: float = 0.0
+## El destello mas el humo. La explosion vuelve al pool cuando llega a cero.
+var _life_left: float = 0.0
 var _material: StandardMaterial3D
 
 
@@ -52,17 +60,19 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _time_left <= 0.0:
+	if _life_left <= 0.0:
 		return
-	_time_left -= delta
+	_life_left -= delta
+	_time_left = maxf(_time_left - delta, 0.0)
 	# La bola crece y se apaga. Crecer hasta el radio real y no más es lo que
 	# hace que el jugador aprenda de una explosión cuánto abarca la siguiente.
 	var progress: float = clampf(1.0 - _time_left / maxf(flash_time, 0.01), 0.0, 1.0)
 	if flash_mesh != null:
 		flash_mesh.scale = Vector3.ONE * lerpf(0.25, 1.0, progress)
+		flash_mesh.visible = _time_left > 0.0
 	if _material != null:
 		_material.albedo_color.a = 1.0 - progress
-	if _time_left <= 0.0:
+	if _life_left <= 0.0:
 		ObjectPool.release(self)
 
 
@@ -87,6 +97,11 @@ func detonate(radius: float, damage: float, sound: AudioStream = null,
 		flash_mesh.scale = Vector3.ONE * 0.25
 	_fire_burst(radius)
 	_time_left = flash_time
+	_life_left = flash_time + smoke_time
+	if flash_mesh != null:
+		flash_mesh.visible = true
+	if smoke != null:
+		smoke.restart()
 	if _material != null:
 		_material.albedo_color.a = 1.0
 	AudioPool.play_3d(sound, global_position, AudioPool.BUS_ENEMIES)
@@ -123,6 +138,7 @@ func _damage_at(position: Vector3, radius: float, full_damage: float) -> float:
 
 func _on_acquired() -> void:
 	_time_left = 0.0
+	_life_left = 0.0
 	if flash_mesh != null:
 		flash_mesh.scale = Vector3.ONE * 0.25
 	_build_material()
@@ -130,8 +146,11 @@ func _on_acquired() -> void:
 
 func _on_released() -> void:
 	_time_left = 0.0
+	_life_left = 0.0
 	if burst != null:
 		burst.emitting = false
+	if smoke != null:
+		smoke.emitting = false
 
 
 # Private

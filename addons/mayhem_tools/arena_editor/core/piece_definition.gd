@@ -151,6 +151,11 @@ enum Support {
 ## La colision sale de la malla del arte en vez de las cajas greybox. Para la
 ## esquina, cuyas cajas por celda eran tres losas paralelas y no una L.
 @export var art_collision: bool = false
+## Cuanto del brillo del modelo se conserva: 1 es el que trae el .glb, menos le
+## baja el metalico y el especular por igual. Para el piso, que build_props.py
+## exporta con el mismo metalico que todo lo demas y que, con la luna y las luces
+## del coliseo encima, quedaba como un piso mojado.
+@export_range(0.0, 1.0) var art_shine: float = 1.0
 
 
 ## Lo que hay que saber antes de apretar el boton de la paleta, armado de la

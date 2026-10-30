@@ -118,6 +118,12 @@ const PIT_DROP: float = 0.5
 @export var jumbotron_width: float = 12.0
 ## Cuanto queda la punta de arriba por debajo del techo.
 @export var jumbotron_drop: float = 1.5
+## La luz que la pantalla tira sobre el centro de la arena. La luna sola daba un
+## piso parejo, sin un lugar que se lea como el centro del espectaculo. Sin
+## sombra: una sola luz grande con sombra es otro pase de la escena entera.
+@export var jumbotron_light_energy: float = 2.0
+@export var jumbotron_light_color: Color = Color(0.72, 0.84, 1.0)
+@export_range(10.0, 80.0) var jumbotron_light_angle: float = 42.0
 
 ## El publico. Se le pasan las huellas medidas, no una estimacion.
 @export var crowd: CrowdStands
@@ -183,7 +189,7 @@ func setup(bounds: AABB, _theme: ArenaTheme = null) -> void:
 		energy_wall.height = (roof.get_height() if roof != null else wall_height) \
 			- bounds.position.y
 		energy_wall.setup(bounds)
-	_hang_jumbotron(centre)
+	_hang_jumbotron(centre, floor_y)
 
 
 # Public API
@@ -492,7 +498,7 @@ func _build_pit_floor(centre: Vector3, floor_y: float, axes: Vector2) -> void:
 
 ## Cuelga la pantalla del techo, centrada sobre la arena. Se mide la malla para
 ## saber donde queda su punta de arriba en vez de suponerla.
-func _hang_jumbotron(centre: Vector3) -> void:
+func _hang_jumbotron(centre: Vector3, floor_y: float) -> void:
 	if jumbotron_scene == null or roof == null:
 		return
 	var jumbotron := jumbotron_scene.instantiate() as Node3D
@@ -505,6 +511,26 @@ func _hang_jumbotron(centre: Vector3) -> void:
 	jumbotron.scale = Vector3.ONE * jumbotron_width
 	jumbotron.position = Vector3(centre.x,
 		roof.get_height() - jumbotron_drop - top * jumbotron_width, centre.z)
+	if jumbotron_light_energy > 0.0:
+		_light_from_jumbotron(jumbotron.position, floor_y)
+
+
+## Un cono hacia abajo desde la base de la pantalla. Hijo de `_built` y no de la
+## pantalla: la pantalla va escalada por su ancho, y la luz heredaria esa escala.
+func _light_from_jumbotron(at: Vector3, floor_y: float) -> void:
+	var light := SpotLight3D.new()
+	light.name = "JumbotronLight"
+	light.light_color = jumbotron_light_color
+	light.light_energy = jumbotron_light_energy
+	light.shadow_enabled = false
+	light.spot_angle = jumbotron_light_angle
+	light.spot_attenuation = 0.6
+	# Hasta el piso y un poco mas, para que el borde del cono no corte en el suelo.
+	light.spot_range = maxf(at.y - floor_y, 1.0) * 1.3
+	_built.add_child(light)
+	light.position = at
+	# El cono de un SpotLight3D sale por -Z: mirar abajo.
+	light.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
 
 
 ## Cuatro cajas en el borde del area de juego. Sin malla, y fuera del grupo que
