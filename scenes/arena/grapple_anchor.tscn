@@ -28,4 +28,4 @@ script = ExtResource("2_tel")
 meaning = 4
 meshes = [NodePath("../Mesh/Body")]
 overlay = true
-overlay_strength = 0.25
+overlay_strength = 1.0

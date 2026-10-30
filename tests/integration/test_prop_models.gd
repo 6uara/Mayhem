@@ -57,6 +57,17 @@ func test_textured_interactables_glow_over_their_texture() -> void:
 		assert_eq(glow.emission, telegraph.get_color(), "%s: con el color de la ley" % path)
 
 
+## Con mapa de brillo, el overlay pulsa solo en las franjas: parejo sobre toda la
+## malla tapaba la textura del gancho con un violeta liso.
+func test_the_anchor_glow_follows_the_models_glow_map() -> void:
+	var anchor: GrappleAnchor = add_child_autofree(
+		load("res://scenes/arena/grapple_anchor.tscn").instantiate())
+	var glow := anchor.telegraph.meshes[0].material_overlay as StandardMaterial3D
+	assert_not_null(glow.emission_texture, "usa el mapa de brillo del modelo")
+	assert_eq(glow.emission_operator, BaseMaterial3D.EMISSION_OP_MULTIPLY,
+		"y lo multiplica, no lo suma")
+
+
 ## El ancla tiene color propio y su propia luz, que se enciende mas en rango.
 func test_the_grapple_anchor_glows_violet() -> void:
 	var anchor: GrappleAnchor = add_child_autofree(

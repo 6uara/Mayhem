@@ -126,6 +126,13 @@ func _build_materials() -> void:
 			glow.metallic_specular = 0.0
 			glow.emission_enabled = true
 			glow.emission = tint
+			# Si el modelo trae mapa de brillo, el overlay pulsa solo ahi: sumado
+			# parejo sobre toda la malla, el gancho se leia como un bloque violeta
+			# liso y se perdia la textura. Sin mapa (la plataforma) va sobre todo.
+			var glow_map: Texture2D = _glow_map(mesh)
+			if glow_map != null:
+				glow.emission_texture = glow_map
+				glow.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
 			mesh.material_overlay = glow
 			_materials.push_back(glow)
 			continue
@@ -141,6 +148,17 @@ func _build_materials() -> void:
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		mesh.material_override = material
 		_materials.push_back(material)
+
+
+## El mapa de emision del material propio del modelo, si tiene.
+func _glow_map(mesh: MeshInstance3D) -> Texture2D:
+	if mesh.mesh == null:
+		return null
+	for surface: int in mesh.mesh.get_surface_count():
+		var material := mesh.get_active_material(surface) as BaseMaterial3D
+		if material != null and material.emission_enabled and material.emission_texture != null:
+			return material.emission_texture
+	return null
 
 
 func _enter_state() -> void:
