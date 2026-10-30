@@ -1,45 +1,38 @@
-[gd_resource type="Resource" script_class="EnemyData" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="EnemyData" format=3 uid="uid://lhf3t3rrif16"]
 
-[ext_resource type="Script" path="res://scripts/resources/enemy_data.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bjtsflnvsj88u" path="res://scripts/resources/enemy_data.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/ai/tree_rusher.tscn" id="2_tree"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_spawn.wav" id="3_spawn"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_windup.wav" id="4_windup"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_attack.wav" id="5_attack"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/enemies/rusher_death.wav" id="6_death"]
-[ext_resource type="PackedScene" path="res://assets/models/enemies/Melee/Rusher.glb" id="8_model"]
+[ext_resource type="AudioStream" uid="uid://dvnj4na0x1bcg" path="res://assets/audio/sfx/enemies/rusher_spawn.wav" id="3_spawn"]
+[ext_resource type="AudioStream" uid="uid://dnbike05bw5n2" path="res://assets/audio/sfx/enemies/rusher_windup.wav" id="4_windup"]
+[ext_resource type="AudioStream" uid="uid://clrckuo7ri05f" path="res://assets/audio/sfx/enemies/rusher_attack.wav" id="5_attack"]
+[ext_resource type="AudioStream" uid="uid://dixs2yjujbug4" path="res://assets/audio/sfx/enemies/rusher_death.wav" id="6_death"]
+[ext_resource type="PackedScene" uid="uid://bghyxgc68ddld" path="res://assets/models/enemies/Melee/Rusher.glb" id="8_model"]
 
 [sub_resource type="BoxMesh" id="Mesh_rusher"]
 size = Vector3(0.75, 1.4, 1.35)
 
 [resource]
 script = ExtResource("1_script")
-mesh = SubResource("Mesh_rusher")
-model_scene = ExtResource("8_model")
-model_fit_height = 1.4
-archetype = 0
 id = &"rusher"
 display_name = "Rusher"
+behavior_tree = ExtResource("2_tree")
 max_health = 70.0
 move_speed = 7.2
 damage = 12.0
 attack_range = 2.2
 attack_cooldown = 1.2
 mass = 0.8
-stagger_resistance = 0.0
 attack_windup = 0.45
 can_leap = true
-leap_range = 7.0
-leap_flight_time = 0.5
-leap_recovery = 0.5
+mesh = SubResource("Mesh_rusher")
+model_scene = ExtResource("8_model")
+model_fit_height = 1.4
 body_color = Color(1, 0.231, 0.329, 1)
-body_scale = 1.00
-collision_height = 1.20
-collision_radius = 0.50
-hitbox_radius = 0.60
+collision_height = 1.2
+collision_radius = 0.5
+hitbox_radius = 0.6
 head_offset = 1.2
 head_radius = 0.3
-reward_currency = 10
-behavior_tree = ExtResource("2_tree")
 spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")

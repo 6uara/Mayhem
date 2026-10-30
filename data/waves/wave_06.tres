@@ -2,19 +2,18 @@
 
 [ext_resource type="Script" uid="uid://bjqajg2b4inv3" path="res://scripts/resources/wave_data.gd" id="1_wave"]
 [ext_resource type="Script" uid="uid://bau4pganyp7m" path="res://scripts/resources/spawn_group.gd" id="2_group"]
-[ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="e_rusher"]
-[ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="e_ranger"]
-[ext_resource type="Resource" uid="uid://bk401winjlkty" path="res://data/enemies/summoner.tres" id="e_summoner"]
 [ext_resource type="Resource" uid="uid://gaqwoiqvofb6" path="res://data/enemies/bomber.tres" id="e_bomber"]
 [ext_resource type="Resource" uid="uid://niqw77xwlhay" path="res://data/enemies/environmental.tres" id="e_environmental"]
 [ext_resource type="Resource" uid="uid://cdi5iigv8qtk4" path="res://data/enemies/healer.tres" id="e_healer"]
+[ext_resource type="Resource" uid="uid://cv2huca3ahk3j" path="res://data/enemies/ranger.tres" id="e_ranger"]
+[ext_resource type="Resource" uid="uid://lhf3t3rrif16" path="res://data/enemies/rusher.tres" id="e_rusher"]
+[ext_resource type="Resource" uid="uid://bk401winjlkty" path="res://data/enemies/summoner.tres" id="e_summoner"]
 
 [sub_resource type="Resource" id="Group_0"]
 script = ExtResource("2_group")
 enemy_data = ExtResource("e_rusher")
 count = 12
 spawn_door_ids = Array[StringName]([&"door_02", &"door_04"])
-delay = 0.0
 interval = 0.45
 
 [sub_resource type="Resource" id="Group_1"]

@@ -6,7 +6,7 @@
 [ext_resource type="AudioStream" uid="uid://bii72u7uy6426" path="res://assets/audio/sfx/enemies/summoner_windup.wav" id="4_windup"]
 [ext_resource type="AudioStream" uid="uid://c3qnk5s6tq1yw" path="res://assets/audio/sfx/enemies/summoner_attack.wav" id="5_attack"]
 [ext_resource type="AudioStream" uid="uid://dabk8tlghujpe" path="res://assets/audio/sfx/enemies/summoner_death.wav" id="6_death"]
-[ext_resource type="Resource" path="res://data/enemies/rusher.tres" id="7_summon"]
+[ext_resource type="Resource" uid="uid://lhf3t3rrif16" path="res://data/enemies/rusher.tres" id="7_summon"]
 [ext_resource type="PackedScene" uid="uid://ccph4t65knlqb" path="res://assets/models/enemies/Summoner/Summoner.glb" id="8_model"]
 
 [sub_resource type="CylinderMesh" id="Mesh_summoner"]
