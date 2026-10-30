@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://scripts/resources/weapon_data.gd" id="1_weapon"]
 [ext_resource type="Resource" path="res://data/weapons/shotgun_recoil.tres" id="2_recoil"]
@@ -7,16 +7,15 @@
 
 [resource]
 script = ExtResource("1_weapon")
+id = &"shotgun"
+display_name = "Shotgun"
 projectile_scene = ExtResource("3_projectile")
-recoil_pattern = ExtResource("2_recoil")
 viewmodel = ExtResource("4_viewmodel")
 viewmodel_scale = 0.45
-viewmodel_offset = Vector3(0.08, -0.12, -0.36)
+viewmodel_offset = Vector3(0.08, -0.14, -0.36)
 viewmodel_rotation_degrees = Vector3(-7, 0, 0)
 reload_tilt_degrees = Vector3(8, 10, -38)
 viewmodel_launcher_position = Vector3(-0.035, 0.02, -0.06)
-id = &"shotgun"
-display_name = "Shotgun"
 damage = 11.0
 headshot_multiplier = 1.6
 falloff_start = 8.0
@@ -25,10 +24,10 @@ falloff_min_multiplier = 0.25
 fire_rate = 1.4
 projectiles_per_shot = 9
 projectile_speed = 140.0
-projectile_gravity = 0.0
 magazine_size = 6
 reserve_ammo_max = 48
 reload_time = 2.8
+recoil_pattern = ExtResource("2_recoil")
 spread_hipfire = 4.5
 spread_ads = 3.0
 spread_moving_multiplier = 1.3
