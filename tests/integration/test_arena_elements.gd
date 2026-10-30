@@ -181,13 +181,15 @@ func test_the_pool_only_burns_inside_its_own_outline() -> void:
 	assert_true(hazard._is_standing_in_it(target), "dentro del lobulo mas largo")
 
 
-## El snare sigue siendo redondo: su dibujo es un disco y el dano tiene que
-## coincidir con el dibujo.
-func test_the_snare_pool_stays_round() -> void:
+## El snare tambien es un charco, no el disco de cuando era placeholder: mismo
+## shader que el acido, con su contorno, y el freno sigue al dibujo.
+func test_the_snare_pool_is_a_puddle_too() -> void:
 	var snare: HazardZone = _instance("res://scenes/arena/snare_zone.tscn")
 	await wait_physics_frames(1)
-	assert_eq(snare.shape_irregularity, 0.0)
-	assert_eq(snare.reach_at(1.234), 1.0)
+	assert_gt(snare.shape_irregularity, 0.0, "contorno irregular")
+	var material := snare.decal_mesh.material_override as ShaderMaterial
+	assert_eq(material.shader.resource_path, "res://assets/shaders/acid_pool.gdshader",
+		"el shader de charco")
 
 
 func test_hazard_damages_whatever_stands_in_it() -> void:
