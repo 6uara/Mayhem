@@ -1,10 +1,10 @@
 extends Node3D
-## Visor de armas: el arma y los brazos como los ve el jugador, con todo lo que
+## Visor de armas: brazos y arma como los ve el jugador, con todo lo que
 ## decide como quedan en pantalla editable en vivo y un boton para guardarlo.
 ##
-## Existe porque acomodar un viewmodel es mirar: el tamaño del arma contra la
-## mano, donde cae en la pantalla, si la mano agarra la empuñadura o flota al
-## lado. Cada numero de WeaponData que importa para eso tiene su campo aca, y
+## Existe porque acomodar un viewmodel es mirar: el tamaño en pantalla, donde
+## cae, si los codos entran por el borde o se cortan en el aire, donde va el
+## lanzador del gancho. Cada numero de WeaponData que importa tiene su campo, y
 ## cambiarlo rehace el arma en el acto.
 ##
 ## Lo que se ve es lo del juego: el `ViewmodelRig` de verdad (su mundo, su camara,
@@ -29,7 +29,7 @@ const SCALE_STEP: float = 0.01
 const DEGREE_STEP: float = 1.0
 
 ## Las vistas de afuera, relativas a la camara del rig: de costado y de arriba,
-## para ver si la mano toca el arma o la atraviesa.
+## para ver donde quedan los codos y el lanzador.
 const VIEWS: Dictionary = {
 	"Jugador": [],
 	"Costado": [Vector3(0.9, -0.1, -0.35), Vector3(0.1, -0.15, -0.4)],
@@ -41,10 +41,8 @@ const FIELDS: Array = [
 	["ARMA", &"viewmodel_scale", "Escala", TYPE_FLOAT, SCALE_STEP],
 	["ARMA", &"viewmodel_offset", "Posicion", TYPE_VECTOR3, METRE_STEP],
 	["ARMA", &"viewmodel_rotation_degrees", "Giro", TYPE_VECTOR3, DEGREE_STEP],
-	["MANOS", &"viewmodel_grip_offset", "Mano derecha", TYPE_VECTOR3, METRE_STEP],
-	["MANOS", &"viewmodel_support_offset", "Mano izquierda", TYPE_VECTOR3, METRE_STEP],
-	["MANOS", &"viewmodel_grip_rotation_degrees", "Giro derecha", TYPE_VECTOR3, DEGREE_STEP],
-	["MANOS", &"viewmodel_support_rotation_degrees", "Giro izquierda", TYPE_VECTOR3, DEGREE_STEP],
+	["GANCHO", &"viewmodel_launcher_position", "Lanzador", TYPE_VECTOR3, METRE_STEP],
+	["GANCHO", &"viewmodel_launcher_scale", "Tamaño", TYPE_FLOAT, SCALE_STEP],
 	["RECARGA", &"reload_tilt_degrees", "Inclinacion", TYPE_VECTOR3, DEGREE_STEP],
 ]
 
@@ -276,7 +274,7 @@ func _build_ui() -> void:
 	hint.theme_type_variation = &"HUDLabel"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.text = "Ejes de camara: X derecha, Y arriba, Z atras (adelante es negativo). " \
-		+ "Las manos corrigen donde agarran, sobre lo que se mide de la malla."
+		+ "El lanzador va en el espacio del modelo, antes de la escala."
 	hint.add_theme_color_override(&"font_color", Tokens.MUTED)
 	column.add_child(hint)
 

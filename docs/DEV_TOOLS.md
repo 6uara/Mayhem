@@ -150,13 +150,13 @@ playtest, y volver no pierde nada porque la arena nunca salió de memoria.
 
 ## Visor de armas — botón Weapon Viewer (dev) en el menú, o `weapons` en consola
 
-`scenes/main/weapon_viewer.tscn`. El arma y los brazos como los ve el jugador (el
+`scenes/main/weapon_viewer.tscn`. Brazos y arma como los ve el jugador (el
 `ViewmodelRig` y un `WeaponComponent` de verdad, con la arena atrás). A la
-izquierda, por arma: escala, posición y giro del arma, dónde agarra cada mano
-(`viewmodel_grip_offset` / `viewmodel_support_offset`, correcciones sobre lo
-que se mide de la malla) e inclinación de recarga. Cada cambio rehace el arma en
-vivo; **Guardar en el .tres** lo escribe en `data/weapons/`. Vistas de costado y
-de arriba para ver si la mano agarra o atraviesa; botones para recargar y sacar.
+izquierda, por arma: escala, posición y giro del viewmodel, dónde va el lanzador
+del gancho en la muñeca (`viewmodel_launcher_position`, de donde sale el cable)
+e inclinación de recarga. Cada cambio rehace el arma en vivo; **Guardar en el
+.tres** lo escribe en `data/weapons/`. Vistas de costado y de arriba para ver
+dónde quedan los codos; botones para recargar y sacar.
 
 ## Visor de enemigos — botón Enemy Viewer (dev) en el menú, o `viewer` en consola
 
