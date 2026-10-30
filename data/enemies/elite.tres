@@ -37,3 +37,5 @@ windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
 reward_currency = 60
+codex_blurb = "A heavy brute that shrugs off hits that would stagger anything else."
+codex_tip = "Do not trade blows. Keep your distance and empty the magazine into its head."

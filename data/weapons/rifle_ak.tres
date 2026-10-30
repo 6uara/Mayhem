@@ -30,3 +30,4 @@ spread_moving_multiplier = 2.2
 spread_airborne_multiplier = 3.5
 ads_fov = 60.0
 ads_transition_time = 0.16
+codex_blurb = "The all-rounder. Hits hard at range and keeps a steady pace up close."

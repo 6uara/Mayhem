@@ -45,3 +45,5 @@ windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
 reward_currency = 14
+codex_blurb = "Keeps its distance and fires projectiles from the cannon on its arm."
+codex_tip = "Its shots travel: keep strafing and they miss. Close in or grapple to it - up close it has nothing."

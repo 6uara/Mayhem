@@ -10,6 +10,7 @@ extends CanvasLayer
 
 @onready var _root: Control = $Root
 @onready var _resume_button: Button = $Root/Panel/Margin/Layout/ResumeButton
+@onready var _codex_button: Button = $Root/Panel/Margin/Layout/CodexButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
 @onready var _skip_tutorial_button: Button = $Root/Panel/Margin/Layout/SkipTutorialButton
 @onready var _feedback_button: Button = $Root/Panel/Margin/Layout/FeedbackButton
@@ -18,12 +19,16 @@ extends CanvasLayer
 @onready var _settings: SettingsScreen = $Settings
 @onready var _feedback: FeedbackPanel = $Feedback
 
+## Armado por codigo y recien al abrirlo, como en el menu principal.
+var _codex: CodexPanel
+
 
 func _ready() -> void:
 	# Everything here has to keep running while the tree is frozen.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_root.visible = false
 	_resume_button.pressed.connect(_on_resume_pressed)
+	_codex_button.pressed.connect(_on_codex_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
 	_skip_tutorial_button.pressed.connect(_on_skip_tutorial_pressed)
 	_skip_tutorial_button.visible = false
@@ -55,6 +60,8 @@ func _on_game_paused(paused: bool) -> void:
 		_settings.close()
 	if _feedback.visible:
 		_feedback.close()
+	if _codex != null and _codex.visible:
+		_codex.close()
 
 
 func _on_resume_pressed() -> void:
@@ -65,6 +72,23 @@ func _on_resume_pressed() -> void:
 func _on_skip_tutorial_pressed() -> void:
 	TutorialHintManager.skip_tutorial()
 	GameManager.set_paused(false)
+
+
+## "¿Que hacia el Healer?" se pregunta en medio de la run, no en el menu.
+func _on_codex_pressed() -> void:
+	if _codex == null:
+		_codex = CodexPanel.new()
+		_codex.name = "Codex"
+		add_child(_codex)
+		_codex.closed.connect(_on_codex_closed)
+	_root.visible = false
+	_codex.open()
+
+
+func _on_codex_closed() -> void:
+	_on_settings_closed()
+	if _root.visible:
+		_codex_button.grab_focus()
 
 
 func _on_options_pressed() -> void:

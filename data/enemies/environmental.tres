@@ -48,3 +48,5 @@ windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
 reward_currency = 22
+codex_blurb = "An acid tank on legs. Comes in from the flanks and lobs flasks that leave burning pools or a sticky trap."
+codex_tip = "Watch the arc and keep moving. Caught in the trap? Fire the grapple - it pulls you out."

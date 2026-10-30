@@ -56,3 +56,5 @@ death_sound = ExtResource("6_death")
 fuse_sound = ExtResource("7_fuse")
 explosion_sound = ExtResource("8_boom")
 reward_currency = 18
+codex_blurb = "A walking fuse. Tries to come at you from behind, arms when it gets close and blows up a few seconds later."
+codex_tip = "Once armed it cannot be stopped - only moved away from. Killing it detonates it on the spot: shoot it while it stands in the crowd."

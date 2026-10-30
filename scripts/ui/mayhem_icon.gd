@@ -50,6 +50,27 @@ const STROKE: float = 4.0
 		queue_redraw()
 
 
+## El icono de un arma por su id. Vive aca y no en cada pantalla porque la
+## tienda y el codex lo necesitan igual, y un arma nueva se agrega una sola vez.
+static func for_weapon(weapon_id: StringName) -> Kind:
+	match weapon_id:
+		&"rifle_ak", &"rifle": return Kind.RIFLE
+		&"shotgun": return Kind.SHOTGUN
+		&"smg": return Kind.SMG
+		&"pistol": return Kind.PISTOL
+	return Kind.NONE
+
+
+## El icono de un gadget por su id. Lo comparten la HUD y el codex.
+static func for_utility(utility_id: StringName) -> Kind:
+	match utility_id:
+		&"stun_grenade": return Kind.STUN_GRENADE
+		&"temp_wall": return Kind.TEMP_WALL
+		&"slow_field": return Kind.SLOW_FIELD
+		&"medkit": return Kind.LOW_HEALTH
+	return Kind.NONE
+
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if custom_minimum_size == Vector2.ZERO:

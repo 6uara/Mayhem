@@ -37,3 +37,5 @@ spawn_sound = ExtResource("3_spawn")
 windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
+codex_blurb = "Fast melee hunter. Closes the gap at a sprint, then throws itself at you in a committed leap."
+codex_tip = "The leap is aimed when it jumps and never corrected: sidestep or slide at the last moment and it lands empty, standing still for a beat."

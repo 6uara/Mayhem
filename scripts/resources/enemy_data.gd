@@ -290,3 +290,11 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL,
 
 @export_group("Economy")
 @export var reward_currency: int = 10
+
+@export_group("Codex")
+## Que es, en dos lineas que lee el jugador en el codex del menu. El resto de la
+## ficha (vida, velocidad, la ola en que aparece) sale de los numeros de arriba.
+@export_multiline var codex_blurb: String = ""
+## Como se le gana. Es lo que el jugador va a buscar al codex despues de morir
+## contra este arquetipo, asi que va aparte y no mezclado con la descripcion.
+@export_multiline var codex_tip: String = ""
