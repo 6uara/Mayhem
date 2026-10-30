@@ -1,12 +1,33 @@
 ---
 tags: [mayhem, vfx, shaders]
 estado: referencia
-actualizado: 2026-10-20
+actualizado: 2026-10-30
 ---
 
 # VFX and Shaders
 
 Custom `.gdshader` files, all in `assets/shaders/`.
+
+## Toon style (`ToonStyle`, `toon_outline.gdshader`)
+
+Option `video/toon_style`, on by default on the `feat/toon-look` branch. The
+`ToonStyle` autoload watches `node_added`; every lit `BaseMaterial3D` that
+enters the tree switches to `DIFFUSE_TOON`, no direct specular, metallic 0 and no
+normal map. It keeps the original values in a meta, so turning the option off
+restores them. Materials from a `.glb` are shared, so one conversion covers
+every instance. `ShaderMaterial`s and unshaded materials are left alone.
+
+Every `Camera3D` gets a `ToonOutline` child: a full-screen quad running
+`toon_outline.gdshader`. It draws an ink line (`Tokens.TOON_LINE`) where the
+depth curves sharply or neighbouring normals bend, and the line fades past
+60-110 m. It is one screen pass rather than an inverted hull per mesh because
+wave 10 is CPU-bound. Measured with `profile_scene_cost.gd` on an RX 7700 XT at
+1080p: +0.14 ms of GPU and +2 draw calls. The viewmodel SubViewport uses higher
+thresholds, because at a few centimetres every fold of the model turned into a
+line. Anything that writes no depth (particles, VFX) gets no line.
+
+Not done yet: the Meshy textures are still realistic. The full look needs them
+flattened in the Blender pass.
 
 ## `arena_glitch_panel.gdshader`
 

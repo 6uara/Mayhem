@@ -150,6 +150,13 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 
 ## 3. Abierto — necesita una decisión
 
+- **Estilo toon** (rama `feat/toon-look`, prototipo): luz en bandas y línea de
+  tinta, con opción en Video. Falta decidir si se queda; si se queda, aplanar
+  las texturas de Meshy en `tools/blender/` (hoy siguen realistas), revisar la
+  ley de color con la luz en bandas, decidir el default de SSAO, y medirlo en la
+  680M (sólo se midió en una RX 7700 XT: +0.14 ms de GPU con la arena vacía).
+  Detalle en [08 VFX and Shaders](Mayhem/08%20VFX%20and%20Shaders.md).
+
 - **Legibilidad de gadgets, lo que falta del plan:** un paso del tutorial que
   enseñe a levantar y usar un gadget; vista previa del arco también en quick cast (hoy sólo en modo
   equipar, porque en quick cast el gadget sale al apretar); y un sonido y una
