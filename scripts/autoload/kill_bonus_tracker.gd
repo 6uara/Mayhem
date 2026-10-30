@@ -53,6 +53,25 @@ const BONUS_LABEL: Dictionary = {
 	BONUS_MARKED: "RECOMPENSA",
 }
 
+## Que hay que hacer para cobrarlo, en una linea para el codex del menu. Al lado
+## de `BONUS_LABEL` por la misma razon: si la regla de un bono cambia, la
+## explicacion cambia en el mismo archivo y en el mismo commit.
+const BONUS_DESCRIPTION: Dictionary = {
+	BONUS_HEADSHOT: "Kill with a shot to the head.",
+	BONUS_AIRBORNE: "Kill while your feet are off the ground.",
+	BONUS_SPIN: "Kill right after turning a full circle without stopping.",
+	BONUS_GRAPPLE: "Kill while the grapple is pulling you.",
+	BONUS_SLIDE: "Kill while sliding, or just as the slide ends.",
+	BONUS_LONG_SHOT: "Kill from 32 metres away or more.",
+	BONUS_POINT_BLANK: "Kill from closer than 4.5 metres.",
+	BONUS_LAST_ROUND: "Kill with the last round in the magazine.",
+	BONUS_DOUBLE: "A second kill less than 1.5 s after the first.",
+	BONUS_TRIPLE: "The third kill of a streak, each one less than 1.5 s after the last.",
+	BONUS_MAYHEM: "The fourth kill of a streak and every one after it.",
+	BONUS_PRIORITY: "Kill a Healer within three seconds of it healing.",
+	BONUS_MARKED: "Kill an enemy carrying a bounty (MANHUNT rule).",
+}
+
 ## Metros desde los que un tiro cuenta como lejano, y hasta los que cuenta como
 ## a quemarropa. El hueco entre ambos es a proposito: la mayoria de los tiros de
 ## una run caen ahi y no pagan nada extra, que es lo que deja a los bonos
@@ -130,6 +149,11 @@ func _process(delta: float) -> void:
 ## conoce - nunca vacio, para que la HUD no tenga que defenderse.
 static func get_label(bonus_id: StringName) -> String:
 	return String(BONUS_LABEL.get(bonus_id, String(bonus_id).to_upper()))
+
+
+## Como se cobra un bono, o vacio si no hay explicacion escrita.
+static func get_description(bonus_id: StringName) -> String:
+	return String(BONUS_DESCRIPTION.get(bonus_id, ""))
 
 
 func reset() -> void:

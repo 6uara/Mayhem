@@ -35,3 +35,4 @@ spread_airborne_multiplier = 1.6
 ads_fov = 75.0
 ads_transition_time = 0.2
 ads_move_speed_multiplier = 0.8
+codex_blurb = "Nine pellets per shell. Deletes anything in front of it and falls off fast with distance."

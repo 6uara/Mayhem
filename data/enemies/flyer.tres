@@ -48,3 +48,5 @@ windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
 reward_currency = 16
+codex_blurb = "Hovers out of reach and shoots from above, then dives in close every few seconds."
+codex_tip = "Punish the dive: hitting it while it is low knocks it out of the attack."

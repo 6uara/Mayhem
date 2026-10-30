@@ -519,13 +519,7 @@ static func _utility_keybind_text(key: String, data: UtilityData) -> String:
 
 
 func _icon_for_utility(data: UtilityData) -> MayhemIcon.Kind:
-	if data == null:
-		return MayhemIcon.Kind.NONE
-	match data.id:
-		&"stun_grenade": return MayhemIcon.Kind.STUN_GRENADE
-		&"temp_wall": return MayhemIcon.Kind.TEMP_WALL
-		&"slow_field": return MayhemIcon.Kind.SLOW_FIELD
-	return MayhemIcon.Kind.NONE
+	return MayhemIcon.for_utility(data.id) if data != null else MayhemIcon.Kind.NONE
 
 
 # Per-frame state

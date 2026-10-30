@@ -52,3 +52,5 @@ windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
 reward_currency = 20
+codex_blurb = "Heals the enemies around it with a beam. Does no damage of its own."
+codex_tip = "Kill it first: a kill right after it heals pays a style bonus, and everything it was keeping alive goes down faster."

@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, ui, hud]
 estado: referencia
-actualizado: 2026-10-21
+actualizado: 2026-10-30
 ---
 
 # UI and HUD
@@ -233,6 +233,33 @@ pattern and `ui_cancel` handling as `LeaderboardPanel`. Content comes from a
 data constant (`SECTIONS`, same idea as `SettingsScreen.SCHEMA`) rather than
 text authored in the `.tscn` — authorship, engine and tools, typefaces:
 adding a line is adding one entry to `SECTIONS`. No licence text is shown.
+
+## Codex
+
+`scripts/ui/codex_panel.gd` (`CodexPanel`, built in code) +
+`scripts/ui/codex_catalog.gd` (`CodexCatalog`, the entries). Opened from a
+"Codex" button in the main menu and in the pause menu; both build it the first
+time it is opened, not at load. One reference card per thing in the game, all
+visible from the start — it is a reference, not a collectible.
+
+Nine tabs: weapons, upgrades, rares, gadgets, enemies, attachments, house rules
+(rules + contracts), crowd requests and style bonuses. **There is no codex list**:
+every tab reads the pool the game itself reads (`shop_catalog.tres`,
+`crowd_drop_table.tres`, `attachment_catalog.tres`, `rule_pool.tres`,
+`request_pool.tres`, `KillBonusTracker.BONUS_LABEL`), and the enemy tab lists the
+archetypes the ten waves spawn, in order of debut — so the benched Elite is not
+there. A new `.tres` in any pool shows up with no other change.
+
+The text comes from fields that already existed (`description`, `summary`) plus
+three added for it: `WeaponData.codex_blurb`, `EnemyData.codex_blurb` and
+`EnemyData.codex_tip` ("how to beat it"), and `KillBonusTracker.BONUS_DESCRIPTION`
+next to the bonus labels. The numbers (DPS, health, radius, payout…) are derived
+from the resources, never written twice. `test_codex.gd` fails if any entry has
+no name or no text, or if an enemy has no tip.
+
+Keyboard, mouse and gamepad: focusing an entry shows it, Page Up/Down and LB/RB
+change tab. `tools/capture_menu.tscn -- shot.png codex=N` takes a screenshot of
+tab N.
 
 ## Feedback panel
 

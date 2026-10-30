@@ -32,3 +32,4 @@ spread_airborne_multiplier = 2.6
 ads_fov = 62.0
 ads_transition_time = 0.13
 ads_move_speed_multiplier = 0.8
+codex_blurb = "Where every Arsenal run starts. Accurate, quick to reload, and the headshot is what makes it hit hard."

@@ -33,3 +33,4 @@ spread_airborne_multiplier = 1.5
 ads_fov = 70.0
 ads_transition_time = 0.12
 ads_move_speed_multiplier = 0.85
+codex_blurb = "A wall of bullets up close. Low damage per shot, the highest rate of fire and a deep magazine."

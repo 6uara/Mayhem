@@ -73,6 +73,11 @@ tooltip_text = "End the tutorial now and start wave one."
 custom_minimum_size = Vector2(0, 44)
 text = "Skip tutorial"
 
+[node name="CodexButton" type="Button" parent="Root/Panel/Margin/Layout"]
+tooltip_text = "What every weapon, upgrade, gadget, enemy and rule does."
+custom_minimum_size = Vector2(0, 44)
+text = "Codex"
+
 [node name="OptionsButton" type="Button" parent="Root/Panel/Margin/Layout"]
 custom_minimum_size = Vector2(0, 48)
 text = "Options"

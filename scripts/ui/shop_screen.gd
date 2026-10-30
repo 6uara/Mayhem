@@ -546,7 +546,7 @@ func _card_icon(offer: Dictionary) -> Control:
 	var id := StringName(offer.get("id", &""))
 	if int(offer["kind"]) == Shop.Kind.WEAPON:
 		var weapon_icon := MayhemIcon.new()
-		weapon_icon.kind = _weapon_icon_kind(id)
+		weapon_icon.kind = MayhemIcon.for_weapon(id)
 		weapon_icon.color = Tokens.TEXT
 		weapon_icon.custom_minimum_size = Vector2(CARD_ICON_BOX, CARD_ICON_BOX)
 		weapon_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -554,15 +554,6 @@ func _card_icon(offer: Dictionary) -> Control:
 	if not IconSet.has(IconSet.UPGRADE, id):
 		return null
 	return IconSet.make(IconSet.UPGRADE, id, _offer_color(offer), CARD_ICON_BOX)
-
-
-func _weapon_icon_kind(weapon_id: StringName) -> MayhemIcon.Kind:
-	match weapon_id:
-		&"rifle_ak", &"rifle": return MayhemIcon.Kind.RIFLE
-		&"shotgun": return MayhemIcon.Kind.SHOTGUN
-		&"smg": return MayhemIcon.Kind.SMG
-		&"pistol": return MayhemIcon.Kind.PISTOL
-	return MayhemIcon.Kind.NONE
 
 
 ## El color de la categoria, de Tokens y no de una copia local - ver

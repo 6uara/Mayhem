@@ -14,6 +14,7 @@ const WEAPON_VIEWER_SCENE_PATH: String = "res://scenes/main/weapon_viewer.tscn"
 @onready var _play_button: Button = $Root/Panel/Margin/Layout/PlayButton
 @onready var _create_arena_button: Button = $Root/Panel/Margin/Layout/CreateArenaButton
 @onready var _leaderboard_button: Button = $Root/Panel/Margin/Layout/LeaderboardButton
+@onready var _codex_button: Button = $Root/Panel/Margin/Layout/CodexButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
 @onready var _feedback_button: Button = $Root/Panel/Margin/Layout/FeedbackButton
 @onready var _credits_button: Button = $Root/Panel/Margin/Layout/CreditsButton
@@ -28,6 +29,8 @@ const WEAPON_VIEWER_SCENE_PATH: String = "res://scenes/main/weapon_viewer.tscn"
 
 ## Armado por codigo: ver ModeSelect.
 var _mode_select: ModeSelect
+## Armado por codigo y recien al abrirlo: ver CodexPanel.
+var _codex: CodexPanel
 
 
 func _ready() -> void:
@@ -35,6 +38,7 @@ func _ready() -> void:
 	_play_button.pressed.connect(_on_play_pressed)
 	_create_arena_button.pressed.connect(_on_create_arena_pressed)
 	_leaderboard_button.pressed.connect(_on_leaderboard_pressed)
+	_codex_button.pressed.connect(_on_codex_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
 	_feedback_button.pressed.connect(_on_feedback_pressed)
 	_credits_button.pressed.connect(_on_credits_pressed)
@@ -134,6 +138,23 @@ func _add_enemy_viewer_button() -> void:
 func _on_leaderboard_pressed() -> void:
 	_root.visible = false
 	_leaderboard.open(_run_arena_id())
+
+
+## Se arma la primera vez que se abre: lee una docena de catalogos y el menu no
+## tiene por que pagarlo al arrancar si el jugador va directo a Play.
+func _on_codex_pressed() -> void:
+	if _codex == null:
+		_codex = CodexPanel.new()
+		_codex.name = "Codex"
+		add_child(_codex)
+		_codex.closed.connect(_on_codex_closed)
+	_root.visible = false
+	_codex.open()
+
+
+func _on_codex_closed() -> void:
+	_on_panel_closed()
+	_codex_button.grab_focus()
 
 
 func _on_options_pressed() -> void:

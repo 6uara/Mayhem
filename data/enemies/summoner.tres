@@ -51,3 +51,5 @@ windup_sound = ExtResource("4_windup")
 attack_sound = ExtResource("5_attack")
 death_sound = ExtResource("6_death")
 reward_currency = 25
+codex_blurb = "Hangs back and keeps calling Rushers into the arena."
+codex_tip = "Every second it lives is more Rushers. Grapple across and focus it down."

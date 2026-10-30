@@ -133,6 +133,13 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | Environmental de 2.0 m (era 2.5) y un poco más ancho: no pasaba bajo una plataforma de nivel 1, que deja 2.25 m. Un test lo fija para todos los arquetipos | `environmental.tres`, `Tokens.ENEMY_HEIGHT`, `test_every_walker_fits_under_a_first_level_platform` |
 | HUD: las ranuras de gadget quedaban corridas (el nombre invisible ensanchaba su columna); el cartel de oleada limpia pisaba el timer | `HUD._make_slot()`, `Tokens.SLOT_COLUMN_W`, `match_overlay.tscn` |
 
+### Lo que entró el 2026-10-30 (codex, rama `feat/codex`)
+
+| Qué | Dónde |
+|---|---|
+| Codex desde el menú y la pausa: una ficha por arma, mejora, rara, gadget, enemigo, attachment, regla, contrato, pedido del público y bono de estilo, con lo que hace y sus números. Todo visible desde el principio. Lee los mismos pozos que el juego: un `.tres` nuevo aparece solo | `CodexPanel`, `CodexCatalog`, [07 UI and HUD](Mayhem/07%20UI%20and%20HUD.md#codex) |
+| Texto para el jugador donde no había: descripción de cada arma, descripción y "cómo se le gana" de cada enemigo, cómo se cobra cada bono de estilo | `WeaponData.codex_blurb`, `EnemyData.codex_blurb`/`codex_tip`, `KillBonusTracker.BONUS_DESCRIPTION` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
@@ -144,8 +151,7 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 ## 3. Abierto — necesita una decisión
 
 - **Legibilidad de gadgets, lo que falta del plan:** un paso del tutorial que
-  enseñe a levantar y usar un gadget; una ficha por gadget en la pausa (qué hace,
-  radio, duración); vista previa del arco también en quick cast (hoy sólo en modo
+  enseñe a levantar y usar un gadget; vista previa del arco también en quick cast (hoy sólo en modo
   equipar, porque en quick cast el gadget sale al apretar); y un sonido y una
   frase del Host propios por gadget. Los colores nuevos y la marca de aturdido
   están sin playtest.

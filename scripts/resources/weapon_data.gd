@@ -108,6 +108,11 @@ extends Resource
 ## movilidad, que es el pilar del juego.
 @export var self_knockback: float = 0.0
 
+@export_group("Codex")
+## Para que sirve, en dos lineas que lee el jugador en el codex del menu. Los
+## numeros de la ficha salen del resto del recurso.
+@export_multiline var codex_blurb: String = ""
+
 
 ## Damage multiplier from distance falloff.
 func get_falloff_multiplier(distance: float) -> float:
