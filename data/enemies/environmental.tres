@@ -10,8 +10,8 @@
 
 [sub_resource type="CylinderMesh" id="Mesh_environmental"]
 top_radius = 0.28
-bottom_radius = 0.6
-height = 2.5
+bottom_radius = 0.7
+height = 2.0
 radial_segments = 10
 
 [resource]
@@ -21,7 +21,7 @@ display_name = "Environmental"
 archetype = 6
 behavior_tree = ExtResource("2_tree")
 max_health = 85.0
-move_speed = 3.8
+move_speed = 4.6
 damage = 18.0
 attack_range = 18.0
 attack_cooldown = 4.5
@@ -33,13 +33,13 @@ approach_bearing_degrees = 65.0
 approach_bearing_weight = 0.6
 mesh = SubResource("Mesh_environmental")
 model_scene = ExtResource("7_model")
-model_fit_height = 2.4
+model_fit_height = 1.95
 model_emission_max = 2.0
 body_color = Color(0.3725, 0.851, 0.2275, 1)
-collision_height = 2.5
-collision_radius = 0.6
+collision_height = 2.0
+collision_radius = 0.7
 hitbox_radius = 0.8
-head_offset = 2.2
+head_offset = 1.75
 head_radius = 0.3
 model_lean_degrees = 4.0
 model_cast_pop = 0.05

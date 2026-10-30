@@ -187,3 +187,18 @@ func _weapon_paths() -> Array[String]:
 		if name.ends_with(".tres"):
 			found.append("res://data/weapons/" + name)
 	return found
+
+
+## Entre el piso y una plataforma de nivel 1 quedan 2.25 m (una celda de 3 m
+## menos la losa de 0.75 del piso). Un arquetipo mas alto no pasa por debajo y
+## se queda trabado contra el borde: le paso al Environmental, que media 2.5.
+## El Elite queda afuera: esta en el banco (ver docs/ESTADO.md).
+func test_every_walker_fits_under_a_first_level_platform() -> void:
+	var catalog: PieceCatalog = load("res://data/arena_pieces/default_catalog.tres")
+	var floor_piece: PieceDefinition = catalog.get_piece(&"floor_3x3")
+	var clearance: float = catalog.cell_size.y * (1.0 - floor_piece.greybox_extents.y)
+	for archetype: String in Tokens.ENEMY_HEIGHT.keys():
+		if archetype == "elite":
+			continue
+		var data: EnemyData = load("res://data/enemies/%s.tres" % archetype)
+		assert_lt(data.collision_height, clearance, "%s cabe bajo una plataforma" % archetype)
