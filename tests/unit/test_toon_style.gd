@@ -35,6 +35,28 @@ func test_a_lit_material_turns_toon_and_comes_back() -> void:
 	assert_true(material.normal_enabled)
 
 
+## Las texturas aplanadas que escribe tools/blender/flatten_textures.py.
+func test_a_model_texture_swaps_to_its_flat_version_and_back() -> void:
+	var original: Texture2D = load("res://assets/models/props/ramp_Image_0.jpg") as Texture2D
+	var material: StandardMaterial3D = _lit_material()
+	material.albedo_texture = original
+	ToonStyle.convert_material(material)
+	assert_ne(material.albedo_texture, original)
+	assert_eq(material.albedo_texture.resource_path,
+		"res://assets/models/props/ramp_Image_0_toon.png")
+	ToonStyle.restore_material(material)
+	assert_eq(material.albedo_texture, original)
+
+
+func test_a_texture_without_a_flat_version_is_kept() -> void:
+	var material: StandardMaterial3D = _lit_material()
+	material.albedo_texture = ImageTexture.create_from_image(
+		Image.create(4, 4, false, Image.FORMAT_RGB8))
+	var texture: Texture2D = material.albedo_texture
+	ToonStyle.convert_material(material)
+	assert_eq(material.albedo_texture, texture)
+
+
 ## Un VFX o un contorno ya tienen su propio look: la luz en bandas no les cambia
 ## nada y tocarlos solo ensuciaria la lista de lo convertido.
 func test_unshaded_and_shader_materials_are_left_alone() -> void:

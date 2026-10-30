@@ -26,8 +26,15 @@ wave 10 is CPU-bound. Measured with `profile_scene_cost.gd` on an RX 7700 XT at
 thresholds, because at a few centimetres every fold of the model turned into a
 line. Anything that writes no depth (particles, VFX) gets no line.
 
-Not done yet: the Meshy textures are still realistic. The full look needs them
-flattened in the Blender pass.
+**Flat textures.** `tools/list_albedo_textures.gd` lists every colour texture a
+model uses in the game (32 today). `tools/blender/flatten_textures.py` then
+writes `<name>_toon.png` next to each one: a small blur that removes the grime
+Meshy paints on, k-means down to 8 tones per texture, and +15 % saturation. It is
+deterministic. `ToonStyle` swaps a material's albedo for its `_toon.png` while
+the style is on, so turning it off still shows the original textures. Those
+textures are loaded by path, not referenced, so the export must not leave them
+out (see the `assets/models/props/*` note in ESTADO). They weigh 14 MB in all.
+After adding or rebuilding a model, run both tools again.
 
 ## `arena_glitch_panel.gdshader`
 

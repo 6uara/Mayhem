@@ -1,12 +1,13 @@
 extends Node
 ## El estilo toon, prendido o apagado desde opciones (`video/toon_style`).
 ##
-## Dos piezas, las dos sin tocar un asset:
+## Dos piezas:
 ##
 ## - **Luz en bandas.** Cada `BaseMaterial3D` con sombreado que entra al arbol
 ##   pasa a `DIFFUSE_TOON`, sin brillo especular ni metal, y pierde el mapa de
-##   normales, que con la luz en bandas solo agrega ruido. Es el mismo shader
-##   con otra funcion de luz: no cuesta un ciclo. Los `ShaderMaterial` (pisos animados, charcos,
+##   normales, que con la luz en bandas solo agrega ruido. Si su textura de color
+##   tiene version aplanada (`_toon.png`, ver tools/blender/flatten_textures.py),
+##   usa esa. Es el mismo shader con otra funcion de luz: no cuesta un ciclo. Los `ShaderMaterial` (pisos animados, charcos,
 ##   paredes de energia) y lo `unshaded` (VFX, contornos) no se tocan: ya tienen
 ##   su propio look.
 ## - **Linea de tinta.** Un quad pegado a cada `Camera3D` con
@@ -26,6 +27,8 @@ const OUTLINE_SHADER: Shader = preload("res://assets/shaders/toon_outline.gdshad
 const OUTLINE_NODE_NAME: String = "ToonOutline"
 ## Lo que un material tenia antes de convertirse, para poder volver.
 const META_ORIGINAL: StringName = &"toon_original"
+## Lo que se le agrega al nombre de una textura para su version aplanada.
+const TOON_TEXTURE_SUFFIX: String = "_toon.png"
 
 var enabled: bool = false
 
@@ -33,6 +36,9 @@ var enabled: bool = false
 ## superficie de modelo, compartidos) y hace falta poder recorrerlos al apagar.
 var _converted: Array[BaseMaterial3D] = []
 var _outlines: Array[MeshInstance3D] = []
+## Ruta de la variante aplanada -> la textura, o null si no existe. Tambien los
+## ausentes: sin eso, cada material sin variante vuelve a preguntarle al disco.
+var _toon_textures: Dictionary = {}
 ## Nodos que entraron este frame. Se procesan al final del frame y no en
 ## `node_added`: el codigo que arma una malla por script suele asignar la malla o
 ## el material despues del `add_child`.
@@ -94,7 +100,11 @@ func convert_material(material: Material) -> bool:
 		"specular": base.specular_mode,
 		"normal": base.normal_enabled,
 		"metallic": base.metallic,
+		"albedo": base.albedo_texture,
 	})
+	var flat: Texture2D = toon_texture_for(base.albedo_texture)
+	if flat != null:
+		base.albedo_texture = flat
 	base.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
 	# Sin brillo directo y sin metal: con SPECULAR_TOON una rampa de frente al sol
 	# se volvia un manchon blanco plano, y el reflejo de un metal es justo el
@@ -114,7 +124,23 @@ func restore_material(base: BaseMaterial3D) -> void:
 	base.specular_mode = int(original["specular"]) as BaseMaterial3D.SpecularMode
 	base.normal_enabled = bool(original["normal"])
 	base.metallic = float(original["metallic"])
+	base.albedo_texture = original["albedo"] as Texture2D
 	base.remove_meta(META_ORIGINAL)
+
+
+## La version aplanada de una textura de color: `<nombre>_toon.png` al lado de la
+## original, como la escribe tools/blender/flatten_textures.py. Null si no hay
+## (una textura embebida en el .glb, o un modelo que todavia no se aplano): el
+## material queda con la suya y solo cambia la luz.
+func toon_texture_for(texture: Texture2D) -> Texture2D:
+	if texture == null or texture.resource_path.is_empty() \
+			or texture.resource_path.contains("::"):
+		return null
+	var path: String = texture.resource_path.get_basename() + TOON_TEXTURE_SUFFIX
+	if not _toon_textures.has(path):
+		_toon_textures[path] = load(path) as Texture2D \
+			if ResourceLoader.exists(path) else null
+	return _toon_textures[path]
 
 
 ## La linea de tinta de una camara, o null si no tiene.

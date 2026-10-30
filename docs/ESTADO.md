@@ -151,8 +151,9 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 ## 3. Abierto — necesita una decisión
 
 - **Estilo toon** (rama `feat/toon-look`, prototipo): luz en bandas y línea de
-  tinta, con opción en Video. Falta decidir si se queda; si se queda, aplanar
-  las texturas de Meshy en `tools/blender/` (hoy siguen realistas), revisar la
+  tinta y texturas aplanadas (`_toon.png`), con opción en Video. Falta decidir
+  si se queda; si se queda, ajustar el aplanado (8 tonos, desenfoque 2 px) mirando
+  los enemigos de cerca en juego (en las fotos no quedó ninguno a buena distancia), revisar la
   ley de color con la luz en bandas, decidir el default de SSAO, y medirlo en la
   680M (sólo se midió en una RX 7700 XT: +0.14 ms de GPU con la arena vacía).
   Detalle en [08 VFX and Shaders](Mayhem/08%20VFX%20and%20Shaders.md).
