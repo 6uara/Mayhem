@@ -5,8 +5,8 @@ extends "res://tools/shipped_arena_builder.gd"
 ##
 ## Donde The Pit reparte el terreno alto en un anillo y cinco islas, esta lo junta
 ## en un solo lugar: una piramide escalonada de tres terrazas en el centro de un
-## piso abierto. Es rey de la colina. La cima ve toda la arena y baja por cuatro
-## zip lines a cualquier lado; la horda sube por dos escaleras de saltos, una al
+## piso abierto. Es rey de la colina. La cima ve toda la arena y se baja de un
+## salto a cualquier lado; la horda sube por dos escaleras de saltos, una al
 ## oeste y otra al este, y desde el piso no hay donde esconderse de un tirador
 ## arriba salvo los pilares.
 ##
@@ -16,8 +16,9 @@ extends "res://tools/shipped_arena_builder.gd"
 ## el mejor escondite de la arena.
 
 ## Cada terraza: primera celda y ancho del anillo. La primera es la ancha porque
-## es donde aterrizan los zip lines; la segunda tiene dos celdas y no tres porque
-## el cable baja dos alturas en cinco celdas, y con tres le pasaba por adentro.
+## es donde se aterriza al bajar de la cima; la segunda tiene dos celdas y no tres
+## (quedo del zip line que bajaba dos alturas en cinco celdas; los mapas ya no
+## llevan zip lines).
 const TIER_1_ORIGIN: int = 7
 const TIER_1_WIDTH: int = 4
 const TIER_2_ORIGIN: int = 11
@@ -42,7 +43,6 @@ func _build() -> void:
 	_fill_floor(0, Vector2i.ZERO, Vector2i(FLOOR, FLOOR))
 	_build_tiers()
 	_build_climbs()
-	_build_zip_lines()
 	_build_perches()
 	_build_cover()
 	_build_courtyard()
@@ -58,7 +58,7 @@ func _build_tiers() -> void:
 	_floor_ring(2, TIER_2_ORIGIN, TIER_2_WIDTH)
 	_fill_floor(3, Vector2i(SUMMIT_ORIGIN, SUMMIT_ORIGIN), Vector2i(SUMMIT_SIZE, SUMMIT_SIZE))
 	# Parapetos en las esquinas de las dos terrazas: cobertura para el que sube,
-	# lejos de las escaleras y de donde aterrizan los zip lines.
+	# lejos de las escaleras.
 	for level: int in [1, 2]:
 		var low: int = TIER_1_ORIGIN if level == 1 else TIER_2_ORIGIN
 		var high: int = FLOOR - 1 - low
@@ -105,16 +105,6 @@ func _build_climbs() -> void:
 		Vector3i(12, 2, 17), Vector3i(19, 2, 14), Vector3i(14, 2, 12), Vector3i(17, 2, 19),
 	]:
 		_place(&"bounce_pad", cell)
-
-
-## La salida de la cima: cuatro zip lines, uno por cara, que bajan dos alturas en
-## cinco celdas y dejan en la primera terraza. Bajar es rapido y en una sola
-## direccion; volver a subir cuesta.
-func _build_zip_lines() -> void:
-	_place(&"zip_line", Vector3i(15, 3, 13), 2)
-	_place(&"zip_line", Vector3i(16, 3, 18), 0)
-	_place(&"zip_line", Vector3i(13, 3, 16), 1)
-	_place(&"zip_line", Vector3i(18, 3, 15), 3)
 
 
 ## Dos perchas sueltas en esquinas opuestas, sobre las puertas: la contra de la

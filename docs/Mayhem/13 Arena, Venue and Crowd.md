@@ -88,7 +88,7 @@ spawn y navegación.
   | Arena | Archivo | Generador | Carácter |
   |---|---|---|---|
   | *The Pit* (default) | `default_arena.tres` | `tools/make_default_arena.gd` (el `.tres` tiene pads corregidos a mano: no regenerar) | Equilibrada: anillo elevado, islas, perchas |
-  | *The Ziggurat* | `ziggurat_arena.tres` | `tools/make_ziggurat_arena.gd` | Vertical, rey de la colina: pirámide de tres terrazas, 4 zip lines desde la cima, piso abierto con pilares, patio con charcos bajo la cima |
+  | *The Ziggurat* | `ziggurat_arena.tres` | `tools/make_ziggurat_arena.gd` | Vertical, rey de la colina: pirámide de tres terrazas, la cima se baja de un salto, piso abierto con pilares, patio con charcos bajo la cima |
   | *The Foundry* | `foundry_arena.tres` | `tools/make_foundry_arena.gd` | Corta distancia: 12 cuartos y una nave central, pasarela con plataformas que se caen, charcos y campos lentos en las entradas |
 
   Los dos generadores nuevos extienden `tools/shipped_arena_builder.gd`
