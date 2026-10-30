@@ -29,6 +29,8 @@ func _physics_process(delta: float) -> void:
 	if _time_left <= 0.0:
 		_dismiss()
 		return
+	if field_mesh != null:
+		field_mesh.visible = ThrownUtility.ending_blink_visible(_time_left)
 	_refresh_timer -= delta
 	if _refresh_timer <= 0.0:
 		_refresh_timer = REFRESH_INTERVAL

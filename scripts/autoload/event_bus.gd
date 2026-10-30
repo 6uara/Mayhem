@@ -134,6 +134,9 @@ signal crowd_request_ended(request_id: StringName, success: bool)
 ## esta: quien escuche esto -el Host, el HUD- tiene que poder señalar el lugar
 ## antes de que el objeto llegue, o el aviso llega tarde.
 signal crowd_drop_thrown(utility_id: StringName, landing: Vector3)
+## El jugador levanto un gadget del publico (tambien el botiquin). La HUD dice
+## que es y que hace: levantarlo sin saberlo era el feedback mas repetido.
+signal crowd_drop_collected(utility_id: StringName)
 
 # Match state
 signal game_state_changed(new_state: int)

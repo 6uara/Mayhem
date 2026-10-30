@@ -158,6 +158,31 @@ metros. La misma ciudad es el fondo del menú (`menu_backdrop`, ver
   granada / muro / campo lento / botiquin). El pickup suma una carga al slot;
   el **botiquin** (`UtilityData.heal_amount`) cura al levantarlo, solo cae si al
   jugador le falta mas del 20 % de vida y con la vida llena se queda en el piso.
+- **Legibilidad de los gadgets** (playtest: "no se entiende qué hacen"):
+  - *Qué es.* Cada `UtilityData` trae `summary` (qué hace, en una línea) y
+    `describe()` le suma los números desde sus campos. Al levantarlo
+    (`EventBus.crowd_drop_collected`), la HUD lo anuncia con nombre, descripción
+    y tecla las primeras `Tokens.GADGET_CALLOUT_REPEATS` veces de la run; la
+    ranura muestra el nombre un rato, y siempre que está equipado.
+  - *Cuándo se puede.* La ranura tiene un relleno de cooldown y el ícono va en
+    el color del gadget.
+  - *Adónde va.* En modo equipar, `UtilityAimPreview` dibuja el arco y un aro
+    del tamaño del área donde va a caer (`UtilityComponent.predict_arc()`,
+    la misma cuenta que el vuelo).
+  - *Qué abarca.* Al detonar, `GadgetAreaRing` abre un aro hasta el radio del
+    efecto.
+  - *A quién le hizo qué.* `EnemyStatusMarks`: chispas sobre la cabeza y
+    contorno pulsando mientras está aturdido, contorno índigo mientras está
+    ralentizado.
+  - *Cuánto le queda.* La barrera y el campo lento parpadean los últimos
+    `Tokens.GADGET_ENDING_BLINK` segundos.
+  - *Color propio.* `Tokens.GADGET_*`, todos fríos (contrastan con el halo
+    ámbar del pickup) y fuera de la ley de color: antes la granada era el cyan de
+    lo usable y el campo lento el violeta del gancho.
+  - *Modelos.* Los cuatro son de Meshy (`build_props.py` → `gadget_<id>.glb`,
+    con los acentos repintados al color nuevo → `build_gadget_meshes.gd` →
+    `gadget_<id>.res`), en el piso y en el aire. La barrera desplegada es una
+    rejilla de energía (`gadget_barrier.gdshader`) con el proyector a sus pies.
 - **Rating** — la espera entre regalos se acorta con el rating de la
   transmision (ver [[06 Waves and Economy#Rating]]) y con la regla *Crowd frenzy*.
 

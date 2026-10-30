@@ -7,12 +7,13 @@
 script = ExtResource("1_utility")
 id = &"medkit"
 display_name = "Medkit"
+summary = "Heals you the moment you pick it up"
 cost = 0
 max_carried = 0
 cooldown = 0.0
 throw_force = 0.0
 effect_radius = 0.0
 effect_duration = 0.0
-accent_color = Color(0.541, 0.941, 0.769, 1)
+accent_color = Color(0.541176, 0.941176, 0.768627, 1)
 pickup_mesh = ExtResource("9_pickup")
 heal_amount = 35.0

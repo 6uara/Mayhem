@@ -58,6 +58,23 @@ PROPS = {
     # (-Y de Blender): se gira para que marquen el recorrido.
     "moving_platform": {"source": "Meshy_AI_Interactive_Moving_Pl_1028234904_image-to-3d-texture.glb",
                         "faces": 6000, "size": (3.8, 0.4, 3.8), "yaw": -90.0},
+    # Los gadgets que tira el publico, en el piso y en el aire. Centrados en su
+    # origen y a unos 60 cm en su eje mas largo, que es la medida para la que
+    # estan hechos el halo y la caja de agarre del pickup. Los acentos se
+    # repintan al color de cada uno (Tokens.GADGET_*): Meshy los entrego lima y
+    # celeste. build_gadget_meshes.gd saca la malla de cada .glb a su .res.
+    "gadget_stun_grenade": {"source": "Meshy_AI_scifi_stun_grenade_1029212324_texture.glb",
+                            "faces": 4000, "size": (None, 0.6, None), "centered": True},
+    "gadget_slow_field": {"source": "Meshy_AI_slow_field_grenade_1029212320_texture.glb",
+                          "faces": 4000, "size": (0.6, None, None), "centered": True,
+                          "accent": {"hues": (0.42, 0.62), "to": 0.648, "glow": 2.0,
+                                     "min_value": 0.45}},
+    "gadget_temp_wall": {"source": "Meshy_AI_barrier_projector_pro_1029212327_texture.glb",
+                         "faces": 4000, "size": (0.6, None, None), "centered": True,
+                         "accent": {"hues": (0.12, 0.32), "to": 0.558, "glow": 2.0,
+                                    "min_value": 0.45}},
+    "gadget_medkit": {"source": "Meshy_AI_scifi_medkit_1029212332_image-to-3d-texture.glb",
+                      "faces": 4000, "size": (0.6, None, None), "centered": True},
     # El venue lo escala a lo ancho de la arena (ArenaColiseum.jumbotron_width).
     "jumbotron": {"source": "Venue_Jumbotron_3D.glb", "faces": 20000,
                   "size": (1.0, None, None)},
@@ -135,7 +152,7 @@ def build(name, config):
     if config.get("unit"):
         _normalize_unit(body, config.get("z0"), config.get("z1"))
     else:
-        _normalize_size(body, config["size"])
+        _normalize_size(body, config["size"], config.get("centered", False))
     for poly in body.data.polygons:
         poly.use_smooth = True
     if config.get("accent"):
@@ -304,7 +321,9 @@ def _recolor_accent(obj, accent):
     hue = np.where(high == r, ((g - b) / span) % 6.0,
           np.where(high == g, (b - r) / span + 2.0, (r - g) / span + 4.0)) / 6.0
     lo, hi = accent["hues"]
-    mask = (sat > 0.3) & (high > 0.2) & (hue >= lo) & (hue <= hi)
+    # `min_value` deja afuera el cuerpo azul marino, que tiene el mismo tono que
+    # algunos acentos pero mucho menos brillo.
+    mask = (sat > 0.3) & (high > accent.get("min_value", 0.2)) & (hue >= lo) & (hue <= hi)
     target = np.array(colorsys.hsv_to_rgb(accent["to"], 1.0, 1.0), dtype=np.float32)
     # Mismo brillo y saturacion que tenia el acento, otro tono.
     recolored = (low[:, None] + (high - low)[:, None] * target[None, :])
@@ -354,7 +373,7 @@ def _normalize_unit(obj, z0, z1):
     obj.data.transform(to_unit)
 
 
-def _normalize_size(obj, wanted):
+def _normalize_size(obj, wanted, centered=False):
     low, high = _bounds(obj)
     size = high - low
     # (ancho, alto, profundidad) es (x, z, y) en Blender.
@@ -365,7 +384,8 @@ def _normalize_size(obj, wanted):
     sx, sz, sy = scale
     centre = (low + high) * 0.5
     obj.data.transform(Matrix.Diagonal((sx, sy, sz, 1.0))
-                       @ Matrix.Translation((-centre.x, -centre.y, -low.z)))
+                       @ Matrix.Translation((-centre.x, -centre.y,
+                                             -(centre.z if centered else low.z))))
 
 
 main()

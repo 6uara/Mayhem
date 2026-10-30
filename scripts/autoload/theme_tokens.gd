@@ -93,6 +93,10 @@ const SUBTITLE_FADE_IN   := 0.12
 const SUBTITLE_HOLD_MIN  := 1.20
 const SUBTITLE_FADE_OUT  := 0.20
 const ANNOUNCE_LIFE      := 3.00
+## Gadgets: how many pickups of each per run get the full "what it does" callout,
+## and how long the slot shows the gadget's name after a pickup.
+const GADGET_CALLOUT_REPEATS := 2
+const GADGET_NAME_LIFE       := 2.5
 const LOW_HEALTH_PULSE   := 1.10  ## continuous, ease-in-out
 const LOW_AMMO_BLINK     := 0.90  ## continuous, step (on/off)
 const HAZARD_WARNING     := 0.60  ## telegraph before a hazard can damage
@@ -208,6 +212,24 @@ const SPAWN           := Color("#FF3BC1")  ## "enemies come from here" — doors
 ## pad and platform it was hard to pick out. Violet, clear of the SPAWN magenta and
 ## of the enemies' crimson.
 const WORLD_GRAPPLE   := Color("#A855FF")
+
+## Gadgets: the colour each one reads in, on the floor (the core inside the amber
+## pickup halo), in the HUD, on its effect and on the enemies it touches. All cool,
+## so the core stands out against the amber halo, and clear of the law colours:
+## the stun grenade was traversal cyan and the slow field grapple violet, which is
+## half of why players could not tell what a gadget was doing. The shape
+## (MayhemIcon and the pickup mesh) carries the rest.
+const GADGET_STUN    := Color("#F2F6FF")  ## electric white — lightning
+const GADGET_SLOW    := Color("#5B6CFF")  ## indigo — hourglass
+const GADGET_BARRIER := Color("#8FD3FF")  ## sky blue — shield
+const GADGET_MEDKIT  := HEAL
+## The ring over a stunned enemy: how far above its head, and how fast it turns.
+const STATUS_RING_LIFT  := 0.35
+const STATUS_RING_SPEED := 4.0
+## How long the area ring of a gadget takes to open to its full radius and fade.
+const GADGET_AREA_FLASH := 0.45
+## Seconds before a barrier or slow field ends that it starts blinking.
+const GADGET_ENDING_BLINK := 1.5
 
 ## Arena telegraph timings (seconds)
 const PLATFORM_WARNING       := 1.50

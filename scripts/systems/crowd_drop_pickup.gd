@@ -137,6 +137,7 @@ func collect(player: Player) -> bool:
 		return false
 	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
 	collected.emit(data.id)
+	EventBus.crowd_drop_collected.emit(data.id)
 	_set_available(false)
 	ObjectPool.release(self)
 	return true
@@ -151,6 +152,7 @@ func _collect_heal(player: Player) -> bool:
 	player.health.heal(data.heal_amount)
 	AudioPool.play_3d(pickup_sound, global_position, AudioPool.BUS_WORLD)
 	collected.emit(data.id)
+	EventBus.crowd_drop_collected.emit(data.id)
 	_set_available(false)
 	ObjectPool.release(self)
 	return true
@@ -238,15 +240,31 @@ func _apply_accent() -> void:
 		return
 	core.mesh = data.pickup_mesh
 	core.material_override = null
+	var array_mesh := data.pickup_mesh as ArrayMesh
+	# Un modelo con textura (los de Meshy) no trae superficie "accent": su color
+	# ya viene pintado en sus acentos, y teñirlo le borraria la textura. Se queda
+	# con su material; el color lo repite la luz.
+	if not _has_accent_surface(array_mesh):
+		for surface: int in data.pickup_mesh.get_surface_count():
+			core.set_surface_override_material(surface, null)
+		return
 	var body := StandardMaterial3D.new()
 	body.albedo_color = Tokens.LINE
 	body.roughness = 0.7
 	body.metallic = 0.3
-	var array_mesh := data.pickup_mesh as ArrayMesh
 	for surface: int in data.pickup_mesh.get_surface_count():
 		var is_accent: bool = array_mesh != null \
 			and array_mesh.surface_get_name(surface) == "accent"
 		core.set_surface_override_material(surface, glow if is_accent else body)
+
+
+func _has_accent_surface(mesh: ArrayMesh) -> bool:
+	if mesh == null:
+		return false
+	for surface: int in mesh.get_surface_count():
+		if mesh.surface_get_name(surface) == "accent":
+			return true
+	return false
 
 
 ## Un reproductor propio en loop y no una voz del pool: el zumbido tiene que

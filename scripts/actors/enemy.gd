@@ -21,6 +21,7 @@ const JUMP_COOLDOWN: float = 0.9
 ## ya se haya regenerado.
 const MODEL_MOTION_SCRIPT := preload("res://scripts/components/enemy_model_motion.gd")
 const OUTLINE_SHADER: Shader = preload("res://assets/shaders/enemy_outline.gdshader")
+const STATUS_MARKS_SCRIPT := preload("res://scripts/components/enemy_status_marks.gd")
 ## A jump that ends this close to where it started got the enemy nowhere.
 ##
 ## The bug this measures: an enemy wedged against a lip or a railing hops, lands
@@ -208,6 +209,8 @@ var _glow_material: StandardMaterial3D
 ## enemy_outline.gdshader). Uno por enemigo: el destello va encadenado a el
 ## (`next_pass`) y se prende y apaga por enemigo.
 var _outline_material: ShaderMaterial
+## Chispas de aturdido y contorno de ralentizado. Ver EnemyStatusMarks.
+var _status_marks: STATUS_MARKS_SCRIPT
 ## Flota, oscila, se inclina: la animacion procedural del modelo, cuando el
 ## arquetipo pide alguna o el modelo trae clips. Ver EnemyModelMotion.
 var _motion: MODEL_MOTION_SCRIPT
@@ -475,6 +478,11 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	# hace que ya el primero llegue escalonado.
 	_attack_cooldown_left = randf() * enemy_data.attack_cooldown if enemy_data != null else 0.0
 	_slow_multiplier = 1.0
+	if _status_marks == null:
+		_status_marks = STATUS_MARKS_SCRIPT.new()
+		_status_marks.name = &"StatusMarks"
+		add_child(_status_marks)
+	_status_marks.setup(self)
 	# Pooleado: el cuerpo puede venir de haber sido una bomba. Una espoleta
 	# heredada explotaria a los dos segundos de spawnear un Rusher.
 	_fuse_armed = false
@@ -882,6 +890,8 @@ func is_staggered() -> bool:
 ## behavior tree's attack branch rather than merely standing still.
 func apply_stun(duration: float) -> void:
 	_stagger_timer = maxf(_stagger_timer, duration)
+	if _status_marks != null:
+		_status_marks.stun(duration)
 	staggered.emit()
 
 
@@ -889,10 +899,14 @@ func apply_stun(duration: float) -> void:
 ## cleared when it leaves or the field expires.
 func apply_slow(multiplier: float) -> void:
 	_slow_multiplier = clampf(multiplier, 0.05, 1.0)
+	if _status_marks != null:
+		_status_marks.set_slowed(_slow_multiplier < 1.0)
 
 
 func clear_slow() -> void:
 	_slow_multiplier = 1.0
+	if _status_marks != null:
+		_status_marks.set_slowed(false)
 
 
 ## Radius of the shootable volume. Falls back to the body capsule when the archetype
@@ -2397,6 +2411,13 @@ func _outline() -> ShaderMaterial:
 		_outline_material.set_shader_parameter(&"energy", Tokens.ENEMY_OUTLINE_ENERGY)
 	_outline_material.set_shader_parameter(&"outline_color", data.body_color)
 	return _outline_material
+
+
+## El color del contorno ahora mismo: el del arquetipo, o el del gadget que lo
+## esta afectando (EnemyStatusMarks).
+func set_outline_color(colour: Color) -> void:
+	if _outline_material != null:
+		_outline_material.set_shader_parameter(&"outline_color", colour)
 
 
 func _glow_level() -> float:

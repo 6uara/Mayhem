@@ -1,14 +1,13 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/systems/temp_wall.gd" id="1_wall"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/world/temp_wall.wav" id="2_sound"]
+[ext_resource type="Shader" path="res://assets/shaders/gadget_barrier.gdshader" id="3_shader"]
+[ext_resource type="ArrayMesh" path="res://assets/models/meshes/gadget_temp_wall.res" id="4_mesh"]
 
-[sub_resource type="StandardMaterial3D" id="Mat_wall"]
-transparency = 1
-albedo_color = Color(0.4, 0.75, 0.85, 0.55)
-emission_enabled = true
-emission = Color(0.3, 0.7, 0.9, 1)
-emission_energy_multiplier = 0.5
+[sub_resource type="ShaderMaterial" id="Mat_wall"]
+shader = ExtResource("3_shader")
+shader_parameter/color = Color(0.560784, 0.827451, 1, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_wall"]
 material = SubResource("Mat_wall")
@@ -23,6 +22,10 @@ fuse_time = 0.05
 wall_body = NodePath("WallBody")
 wall_mesh = NodePath("WallMesh")
 activate_sound = ExtResource("2_sound")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0.1, 0)
+mesh = ExtResource("4_mesh")
 
 [node name="WallMesh" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)

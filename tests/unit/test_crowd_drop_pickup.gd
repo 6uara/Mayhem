@@ -123,20 +123,17 @@ func test_the_arc_lands_where_it_was_aimed() -> void:
 func test_the_core_wears_the_colour_of_what_it_is() -> void:
 	# Tres gadgets que se ven iguales de lejos convierten el pickup en una
 	# sorpresa, y la decision de si vale la pena cruzar la arena se toma antes de
-	# llegar, no al llegar. Con forma propia, lo que se tiñe son sus acentos.
+	# llegar, no al llegar. Los modelos traen su color pintado en los acentos
+	# (build_props.py) y conservan su textura; la luz repite el color del gadget.
 	var pickup: CrowdDropPickup = _pickup()
 	var data: UtilityData = _stun_grenade()
 	pickup.throw_from_stands(Vector3.ZERO, Vector3.UP, data)
-	var mesh := pickup.core.mesh as ArrayMesh
-	var tinted: int = 0
-	for surface: int in mesh.get_surface_count():
-		if mesh.surface_get_name(surface) != "accent":
-			continue
-		var material := pickup.core.get_surface_override_material(surface) as StandardMaterial3D
-		assert_not_null(material, "el acento se tiñe con el color del gadget")
-		assert_eq(material.albedo_color, data.accent_color)
-		tinted += 1
-	assert_gt(tinted, 0, "la malla tiene una superficie de acento")
+	assert_same(pickup.core.mesh, data.pickup_mesh, "lleva el modelo del gadget")
+	assert_null(pickup.core.material_override, "sin pintar encima")
+	for surface: int in pickup.core.mesh.get_surface_count():
+		assert_null(pickup.core.get_surface_override_material(surface),
+			"la textura del modelo queda")
+	assert_eq(pickup.light.light_color, data.accent_color, "la luz es del color del gadget")
 
 
 ## La forma es lo que separa a los cuatro de lejos, y para un daltonico, lo

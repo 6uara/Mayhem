@@ -103,6 +103,7 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 | Ancla de grapple con color propio (violeta, 5° significado de la ley de color) y luz propia, que se enciende más en rango | `Tokens.WORLD_GRAPPLE`, `TelegraphComponent.Meaning.GRAPPLE`, `GrappleAnchor.light` |
 | Más luz en la arena (luna, ambiente y exposición), y armas más chicas y más bajas en pantalla, con brazos a escala | `coliseum.tres`, `coliseum_env.tres`, `viewmodel_scale`, `ViewmodelArms.ARM_SCALE` |
 | Paredes (1x1, 2x1, esquina) y cobertura baja con modelo. La esquina choca con su L | `build_props.py`, `PieceDefinition.art_bounds` / `art_collision` |
+| Gadgets legibles: al levantarlos la HUD dice qué son, qué hacen y con qué tecla; la ranura muestra nombre y cooldown; en modo equipar se ve el arco y el área donde cae; al detonar se abre el aro del área; los enemigos aturdidos llevan chispas y los ralentizados el contorno índigo; barrera y campo lento parpadean antes de terminar. Colores propios y modelos de Meshy para los cuatro | `UtilityData.summary`, `UtilityAimPreview`, `GadgetAreaRing`, `EnemyStatusMarks`, `Tokens.GADGET_*` |
 | Limpieza: fuera el resto del pack de armas viejo, `spiderbot.res`, `ual1_standard.res`, `ammobox_low.res`, `UAL1_Standard_RM.glb` y los `.blend` y scripts viejos del Environmental y el Summoner, que ya no usaba nada | — |
 
 ## 2. Bloquea el release
@@ -115,6 +116,12 @@ Feedback de los profesores. Rama `feat/teacher-feedback`.
 
 ## 3. Abierto — necesita una decisión
 
+- **Legibilidad de gadgets, lo que falta del plan:** un paso del tutorial que
+  enseñe a levantar y usar un gadget; una ficha por gadget en la pausa (qué hace,
+  radio, duración); vista previa del arco también en quick cast (hoy sólo en modo
+  equipar, porque en quick cast el gadget sale al apretar); y un sonido y una
+  frase del Host propios por gadget. Los colores nuevos y la marca de aturdido
+  están sin playtest.
 - **El charco de atrapado en una ola con el contrato NO HOOK** no tiene salida:
   desde que salió el dash (2026-10-21) el gancho es la única forma de romperlo, por
   decisión del dueño. O el contrato se excluye cuando hay Environmental en la ola,

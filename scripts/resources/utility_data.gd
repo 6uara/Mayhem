@@ -5,6 +5,10 @@ extends Resource
 
 @export var id: StringName = &""
 @export var display_name: String = ""
+## What it does, in one line a player reads while running: the pickup callout
+## and the HUD show it. Players kept picking gadgets up without knowing what any
+## of them did; the name alone ("Slow Field") was not enough.
+@export var summary: String = ""
 @export var scene: PackedScene
 ## Sin uso desde que los gadgets salieron del shop y pasaron a caer de las
 ## gradas. Se deja porque los tres .tres lo tienen serializado y porque un
@@ -42,3 +46,13 @@ extends Resource
 
 func is_heal() -> bool:
 	return heal_amount > 0.0
+
+
+## `summary` with the numbers that go with it, read from the fields themselves so
+## the text cannot drift from the balance: "... - 2.5 s" or "... - +35 health".
+func describe() -> String:
+	if is_heal():
+		return "%s - +%d health" % [summary, roundi(heal_amount)]
+	if effect_duration > 0.0:
+		return "%s - %s s" % [summary, String.num(effect_duration, 1).trim_suffix(".0")]
+	return summary
