@@ -166,6 +166,33 @@ The editor itself always reports `editor` and `debug`, so `dev` behavior works w
 in-editor if you check `OS.has_feature("dev") or OS.has_feature("editor")` — see
 `scripts/systems/recoil_visualizer.gd` for the one place in the codebase that does this today.
 
+## Saves: the build has its own folder
+
+`application/config/use_custom_user_dir.template` puts an exported build's
+`user://` in `%APPDATA%\Mayhem`. The editor, the test suite and the `tools/`
+scripts keep using `%APPDATA%\Godot\app_userdata\Mayhem`. Before this (fixed
+2026-10-31) both shared one folder: anything run from the editor (a test run, a
+capture, a dev session) marked the opening tutorial as done and wrote to the
+leaderboard of the build the player opens. A player who already has saves in the
+old folder starts fresh once.
+
+## What only breaks in a build
+
+Exported `.tres` files become binary `.res` behind a `.remap`. Pass
+`ResourceLoader.load()` **no type hint with a `class_name`**: the binary loader
+does not know script classes and answers "file not found". `ArenaIO.load_arena`
+did that, and in the build every arena failed to load. The arena list showed
+0 pieces, and any arena you picked played the default one. In the editor it
+worked, because the text loader reads the `.tres`.
+
+To check that kind of thing without opening the build by hand, run the exported
+pack with the editor binary, which does take `-s`:
+
+```
+godot --headless --path . --export-pack "Windows Desktop" out/Mayhem.pck
+godot --headless --main-pack out/Mayhem.pck -s some_check.gd
+```
+
 ## Checklist before tagging a build
 
 1. `godot --headless -s addons/gut/gut_cmdln.gd -gexit` passes.

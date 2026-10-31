@@ -28,7 +28,12 @@ static func save(arena: ArenaData, path: String) -> Error:
 static func load_arena(path: String) -> ArenaData:
 	if path.get_extension().to_lower() == JSON_EXTENSION:
 		return load_json(path)
-	var resource: Resource = ResourceLoader.load(path, "ArenaData", ResourceLoader.CACHE_MODE_IGNORE)
+	# Sin pista de tipo: "ArenaData" es un class_name, no una clase del motor, y en
+	# un build exportado el cargador binario no la reconoce y responde "archivo no
+	# encontrado". En el editor andaba (el .tres lo lee el cargador de texto) y en
+	# el ejecutable ninguna arena cargaba: la lista mostraba 0 piezas y cualquier
+	# arena elegida caia en la default. El `as ArenaData` de abajo ya filtra.
+	var resource: Resource = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
 	var arena := resource as ArenaData
 	if arena == null:
 		push_error("ArenaIO: '%s' is not an arena." % path)
