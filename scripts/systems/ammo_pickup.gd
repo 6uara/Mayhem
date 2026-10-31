@@ -46,6 +46,8 @@ func _ready() -> void:
 		material.emission_energy_multiplier = 1.4
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		geometry.material_override = material
+	# El borde de "esto importa" del estilo Claridad, en el ambar de levantar.
+	SemanticOutline.attach_all(mesh, Tokens.WORLD_PICKUP)
 	if light != null:
 		light.light_color = Tokens.WORLD_PICKUP
 	_start_idle_sound()

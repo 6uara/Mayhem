@@ -44,6 +44,12 @@ vec2 cell_id(vec2 uv, float scale) {
 	return floor(uv * scale);
 }
 
+// 1 en el cuenco del coliseo (ArenaColiseum), que es fondo; 0 en los pickups y
+// los pads que usan este mismo shader y se juegan.
+uniform float recede_strength = 0.0;
+
+#include "res://assets/shaders/background_recede.gdshaderinc"
+
 void fragment() {
 	// Triplanar blend so the same shader tiles cleanly across the floor (XZ)
 	// and every wall (XY or ZY) without stretching at the CSGBox seams.
@@ -89,8 +95,8 @@ void fragment() {
 
 	float emission_mask = clamp(lines + pulse * 0.8 + scan_glow * lines, 0.0, 1.6);
 
-	ALBEDO = mix(base_color.rgb, line_color.rgb, lines * 0.5);
-	EMISSION = line_color.rgb * (emission_energy * emission_mask + fresnel_glow);
+	ALBEDO = recede(mix(base_color.rgb, line_color.rgb, lines * 0.5), recede_strength);
+	EMISSION = recede(line_color.rgb, recede_strength) * (emission_energy * emission_mask + fresnel_glow);
 	ROUGHNESS = roughness_value;
 	METALLIC = metallic_value;
 }

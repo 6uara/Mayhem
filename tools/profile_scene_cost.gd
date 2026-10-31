@@ -17,7 +17,7 @@ extends SceneTree
 ##   noglow      apaga el glow del entorno
 ##   nohud       esconde la HUD
 ##   noviewmodel no dibuja el arma en primera persona (su SubViewport aparte)
-##   style=X     estilo visual: standard, neon o toon (ver VisualStyle)
+##   style=X     estilo visual: standard, clarity o toon (ver VisualStyle)
 ##   hidehud=X   esconde y apaga el hijo X de la HUD (Reticle, SpeedLines...)
 ##   freeze=X    apaga el procesamiento del hijo X de game.tscn (HUD, ArenaHost...)
 ##
@@ -87,7 +87,7 @@ func _apply_options() -> void:
 	var style: int = -1
 	for option: String in _options:
 		if option.begins_with("style="):
-			style = ["standard", "neon", "toon"].find(option.trim_prefix("style="))
+			style = ["standard", "clarity", "toon"].find(option.trim_prefix("style="))
 	if style >= 0:
 		var settings: Node = root.get_node_or_null(^"SettingsManager")
 		if settings != null:

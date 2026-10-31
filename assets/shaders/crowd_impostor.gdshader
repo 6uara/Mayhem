@@ -100,6 +100,8 @@ float segment(vec2 point, vec2 from, vec2 to) {
 	return length(point - from - span * t);
 }
 
+#include "res://assets/shaders/background_recede.gdshaderinc"
+
 void fragment() {
 	// Coordenadas centradas en el eje del cuerpo: x = 0 en el medio, y = 0 en
 	// los pies. Asi la silueta se escribe con las proporciones a la vista.
@@ -149,7 +151,7 @@ void fragment() {
 	if (alpha < 0.5) {
 		discard;
 	}
-	ALBEDO = albedo;
+	ALBEDO = recede(albedo, 1.0);
 	ROUGHNESS = 1.0;
 	METALLIC = 0.0;
 }

@@ -46,6 +46,8 @@ func _ready() -> void:
 			_portal_material = source.duplicate() as ShaderMaterial
 			_portal_material.set_shader_parameter(&"tint", telegraph_color)
 			portal_mesh.material_override = _portal_material
+	# El marco con el borde del estilo Claridad: de aca salen enemigos.
+	SemanticOutline.attach(frame_mesh, telegraph_color)
 	if light != null:
 		light.light_color = telegraph_color
 		light.light_energy = LIGHT_IDLE_ENERGY

@@ -271,3 +271,11 @@ enemy_outline_px={
 "type": "float",
 "value": 1.25
 }
+semantic_outline_px={
+"type": "float",
+"value": 0.0
+}
+background_dim={
+"type": "float",
+"value": 0.0
+}

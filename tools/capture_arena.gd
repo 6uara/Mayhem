@@ -4,12 +4,12 @@ extends SceneTree
 ## (sin tutorial) con el jugador invulnerable, y guarda una foto mirando para
 ## adelante y otra dada vuelta.
 ##
-##     godot --path . --resolution 1600x900 -s tools/capture_arena.gd -- carpeta [segundos] [kill] [weapon=smg] [style=standard|neon|toon] [ink=N]
+##     godot --path . --resolution 1600x900 -s tools/capture_arena.gd -- carpeta [segundos] [kill] [weapon=smg] [style=standard|clarity|toon] [ink=N]
 ##
 ## La primera foto mira al enemigo mas cercano. Con `kill` mueren todos justo
 ## antes, para ver como muere un enemigo.
 ##
-## `style=standard|neon|toon` fuerza el estilo visual (ver VisualStyle) sin tocar las
+## `style=standard|clarity|toon` fuerza el estilo visual (ver VisualStyle) sin tocar las
 ## opciones guardadas: para sacar el antes y el despues con la misma semilla.
 ## `ink=N` pone la linea de tinta en N px (video/toon_line_px), tambien sin guardar.
 ##
@@ -55,7 +55,7 @@ func _initialize() -> void:
 	_kill = args.has("kill")
 	for argument: String in args:
 		if argument.begins_with("style="):
-			_style = ["standard", "neon", "toon"].find(argument.trim_prefix("style="))
+			_style = ["standard", "clarity", "toon"].find(argument.trim_prefix("style="))
 		if argument.begins_with("ink="):
 			_ink = argument.trim_prefix("ink=").to_float()
 			if _style < 0:

@@ -8,53 +8,66 @@ actualizado: 2026-10-30
 
 Custom `.gdshader` files, all in `assets/shaders/`.
 
-## Visual styles (`VisualStyle`, `edge_lines.gdshader`, `broadcast_post.gdshader`)
+## Visual styles (`VisualStyle`, `SemanticOutline`, `background_recede.gdshaderinc`)
 
-Option `video/visual_style`: Standard, **Neon broadcast** (default on the
-`feat/visual-style` branch) or Toon. The `VisualStyle` autoload watches
-`node_added`, so every model, pooled enemy and camera picks up the style without
-any scene being touched, and switching styles live puts everything back first.
+Option `video/visual_style`: Standard, **Clarity** (default on the
+`feat/visual-style` branch) or Toon.
 
-**Neon broadcast** adds two things and leaves every material as modelled:
+**Clarity** is aimed at a player who has never seen the game. It has one rule:
+**if it has an edge, it matters**, and the colour says what it does.
 
-- **A light edge on world silhouettes.** Every world `Camera3D` gets a
-  `StyleEdges` child: a full-screen quad running `edge_lines.gdshader` in depth
-  only (`near_side_only`, normals off), in `Tokens.NEON_EDGE` above 1 so that
-  the arena glow lifts it. It is a cool off-white, not a law colour: cyan would
-  say "yours" about every wall. The first-person weapon gets no edge.
-- **The TV-camera pass.** `broadcast_post.gdshader` sits on a `CanvasLayer` at
-  layer 1, owned by the autoload. Autoloads come before the scene in the tree,
-  so at the same layer it draws over the world and the weapon (layer 0) and
-  under the HUD. It applies a grade (contrast, shadows towards
-  `Tokens.BROADCAST_SHADOW`), faint scanlines, a vignette, and chromatic
-  aberration at the screen edges. The aberration grows with a hit
-  (`EventBus.player_hit`) and with speed above 14 m/s. It only shows while there
-  is a local player, and `accessibility/reduce_flashing` turns the pulse off.
+- **Semantic outlines.** `SemanticOutline.attach()` hangs
+  `semantic_outline.gdshader` on an object, in the colour of its meaning. The
+  shader is the enemy outline technique: an inverted hull, inflated in screen
+  pixels. It goes on the mesh's overlay, or chained (`next_pass`) behind an
+  overlay the object already has. Who asks for one:
+  - every `TelegraphComponent` except hazards, which are flat pools with no
+    silhouette to outline;
+  - ammo pickups (`WORLD_PICKUP`);
+  - crowd-drop gadgets (their accent);
+  - bounce pads (`WORLD_TRAVERSAL`);
+  - spawn door frames (their telegraph colour).
+
+  Enemies keep their own outline. The objects always ask, but the outline is
+  only hung while `SemanticOutline.enabled`. Hung with width 0, it would still
+  cost a draw call per mesh.
+- **The background recedes.** The coliseum bowl (`recede_strength` 1, set by
+  `ArenaColiseum`), the crowd, the city and the energy wall (0.8: it is the
+  arena boundary) call `recede()` from the include. It takes away colour and
+  brightness according to the global `background_dim`. Before this, the
+  background was the loudest thing on screen, and in cyan, which the law
+  reserves for "yours". The panel shader also runs on pickups and pads, so its
+  `recede_strength` defaults to 0 there.
+
+The map itself gets no outline. A first try, "neon broadcast", put a light edge
+on every silhouette plus a TV-camera pass. With everything outlined nothing
+stood out, so it was dropped; it is in the branch history.
 
 **Toon** (kept as an option) converts every lit `BaseMaterial3D` to
 `DIFFUSE_TOON`, with no direct specular, metallic 0 and no normal map. It swaps
-the albedo for its flat `_toon.png` and draws a dark ink line
-(`Tokens.TOON_LINE`, `video/toon_line_px`) from depth and normals, with higher
-thresholds on the viewmodel. Originals live in a meta and come back on any
-other style. Against a night arena the ink has little to read against: that is
-why Neon replaced it as the default.
-
-`ShaderMaterial`s, unshaded materials and anything that writes no depth
-(particles, VFX) are never touched. The lines are one screen pass, not an
-inverted hull per mesh, because wave 10 is CPU-bound.
+the albedo for its flat `_toon.png` and inks every camera with
+`edge_lines.gdshader`, a depth-and-normal pass with higher thresholds on the
+viewmodel. The `VisualStyle` autoload does this through `node_added`, keeps the
+originals in a meta and restores them on any other style. Against a night arena
+the ink has little to read against.
 
 Cost: `profile_scene_cost.gd -- 10 style=X`, empty arena, RX 7700 XT, 1080p.
-GPU per frame: Standard 2.33 ms, Neon 2.53 ms, Toon 2.46 ms, with +2 draw calls
-for either style. Not measured on the 680M.
+
+| Style | GPU per frame | Draw calls |
+|---|---|---|
+| Standard | 2.33 ms | 182 |
+| Clarity | 2.37 ms | 227 (the outlines: +45) |
+| Toon | 2.46 ms | 184 |
+
+Not measured on the 680M.
 
 **Flat textures (Toon only).** `tools/list_albedo_textures.gd` lists the colour
 textures the game's models use (32). `tools/blender/flatten_textures.py` writes
 `<name>_toon.png` next to each one: a small blur, k-means down to 8 tones, and
-+15 % saturation, deterministic. They are loaded by path, not referenced, so the
-export must keep them (see the `assets/models/props/*` note in ESTADO). They
-weigh 14 MB. After adding or rebuilding a model, run both tools again.
++15 % saturation, deterministic. They are loaded by path, so the export must keep
+them. They weigh 14 MB.
 
-To compare: `capture_arena.gd -- dir 9 style=standard|neon|toon [ink=N]`.
+To compare: `capture_arena.gd -- dir 9 style=standard|clarity|toon [ink=N]`.
 
 ## `arena_glitch_panel.gdshader`
 

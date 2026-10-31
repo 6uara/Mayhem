@@ -77,6 +77,8 @@ float hex_edge(vec2 point) {
 	return min(min(sides.x, sides.y), sides.z) * 0.866;
 }
 
+#include "res://assets/shaders/background_recede.gdshaderinc"
+
 void fragment() {
 	// Coordenadas sobre la pared, en metros: la altura, y el avance a lo largo
 	// de ella. Se toman del mundo y no de la UV para que las cuatro paredes
@@ -113,6 +115,7 @@ void fragment() {
 
 	float amount = clamp(base + grid * (0.35 + rim) + scan * rim
 		+ ripple * ripple_strength, 0.0, 4.0);
-	ALBEDO = wall_color * amount;
+	// Es el limite de la arena: retrocede menos que el resto del fondo.
+	ALBEDO = recede(wall_color * amount, 0.8);
 	ALPHA = 1.0;
 }

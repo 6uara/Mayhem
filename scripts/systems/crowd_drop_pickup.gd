@@ -226,6 +226,9 @@ func _set_available(available: bool) -> void:
 func _apply_accent() -> void:
 	if core == null or data == null:
 		return
+	# El borde de "esto importa" del estilo Claridad, en el color del gadget: de
+	# lejos dice que hay algo para levantar y cual es.
+	SemanticOutline.attach(core, data.accent_color)
 	var glow := StandardMaterial3D.new()
 	glow.albedo_color = data.accent_color
 	glow.emission_enabled = true

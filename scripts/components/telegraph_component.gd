@@ -148,6 +148,17 @@ func _build_materials() -> void:
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		mesh.material_override = material
 		_materials.push_back(material)
+	_attach_outlines(tint)
+
+
+## El borde de "esto se usa" del estilo Claridad (SemanticOutline). Los peligros
+## no: son charcos y zonas planas, sin silueta que delinear, y ya brillan solos.
+func _attach_outlines(tint: Color) -> void:
+	if meaning == Meaning.HAZARD:
+		return
+	for mesh: MeshInstance3D in meshes:
+		if mesh != null and not (mesh.material_override is ShaderMaterial):
+			SemanticOutline.attach(mesh, tint)
 
 
 ## El mapa de emision del material propio del modelo, si tiene.

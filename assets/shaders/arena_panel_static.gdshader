@@ -41,6 +41,12 @@ float grid_line(vec2 uv, float scale, float width) {
 	return smoothstep(0.5 - width, 0.5, edge);
 }
 
+// 1 en el cuenco del coliseo (ArenaColiseum), que es fondo; 0 en los pickups y
+// los pads que usan este mismo shader y se juegan.
+uniform float recede_strength = 0.0;
+
+#include "res://assets/shaders/background_recede.gdshaderinc"
+
 void fragment() {
 	vec3 blend = abs(world_normal);
 	blend = blend / max(blend.x + blend.y + blend.z, 0.0001);
@@ -59,8 +65,8 @@ void fragment() {
 		+ mix(0.5, 1.0, hash21(floor(uv_y * grid_scale))) * blend.y
 		+ mix(0.5, 1.0, hash21(floor(uv_z * grid_scale))) * blend.z;
 
-	ALBEDO = mix(base_color.rgb, line_color.rgb, lines * 0.5);
-	EMISSION = line_color.rgb * (emission_energy * clamp(lines, 0.0, 1.6)
+	ALBEDO = recede(mix(base_color.rgb, line_color.rgb, lines * 0.5), recede_strength);
+	EMISSION = recede(line_color.rgb, recede_strength) * (emission_energy * clamp(lines, 0.0, 1.6)
 		+ fresnel * fresnel_strength * cell_shine);
 	ROUGHNESS = roughness_value;
 	METALLIC = metallic_value;

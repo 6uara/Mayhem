@@ -160,14 +160,11 @@ const ENEMY_OUTLINE_PX_MAX := 3.0
 const ENEMY_OUTLINE_ENERGY := 1.3
 ## Visual styles (`video/visual_style`, VisualStyle).
 ##
-## Neon broadcast: a thin edge of light on world silhouettes. A cool off-white and
-## not a law colour: cyan would say "yours" about every wall in the arena.
-const NEON_EDGE        := Color("#C9D6FF")
-const NEON_EDGE_ALPHA  := 0.45
-const NEON_EDGE_ENERGY := 1.6
-const NEON_EDGE_PX     := 1.5
-## Where the shadows lean in the broadcast grade.
-const BROADCAST_SHADOW := Color("#1A2A6C")
+## Clarity (the default): only what is played gets an edge, in the colour of
+## what it means (SemanticOutline), and the venue behind the arena recedes
+## (background_recede.gdshaderinc) so it stops competing with the fight.
+const SEMANTIC_OUTLINE_PX := 1.5
+const BACKGROUND_DIM      := 0.65
 ##
 ## Toon: the dark ink line drawn wherever
 ## depth or surface direction breaks. VOID, not black: the same deepest shade the

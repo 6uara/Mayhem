@@ -151,13 +151,15 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 ## 3. Abierto — necesita una decisión
 
 - **Estilo visual** (rama `feat/visual-style`, prototipo): opción en Video con
-  Estándar, Neón de transmisión (default de la rama) y Toon. El toon se probó
-  primero y la tinta no se leía sobre la arena de noche, y en brazos y arma era
-  demasiado; queda como opción. Falta jugar el neón y decidir si va a `develop`
-  y con qué default; ajustar a ojo el filo, la viñeta y el pulso de daño y
-  velocidad; y medirlo en la 680M (en una RX 7700 XT: +0.20 ms de GPU con la
-  arena vacía). Las 32 texturas `_toon.png` (14 MB) solo sirven al toon: si el
-  toon no queda, se borran. Detalle en [08 VFX and Shaders](Mayhem/08%20VFX%20and%20Shaders.md).
+  Estándar, Claridad (default de la rama) y Toon. Claridad: borde sólo en lo
+  que se juega, en el color de su significado, y el fondo (cuenco, público,
+  ciudad, pared de energía) retrocede. Antes se probaron el toon (la tinta no se
+  leía de noche y en brazos y arma era demasiado; queda como opción) y un neón
+  con filo en todo el mapa (excesivo; descartado). Falta jugarlo con alguien que
+  no conozca el juego, ajustar `SEMANTIC_OUTLINE_PX` y `BACKGROUND_DIM`, y
+  medirlo en la 680M (en una RX 7700 XT: +45 draw calls y +0.04 ms de GPU).
+  Las 32 texturas `_toon.png` (14 MB) sólo sirven al toon: si el toon no queda,
+  se borran. Detalle en [08 VFX and Shaders](Mayhem/08%20VFX%20and%20Shaders.md).
 
 - **Legibilidad de gadgets, lo que falta del plan:** un paso del tutorial que
   enseñe a levantar y usar un gadget; vista previa del arco también en quick cast (hoy sólo en modo

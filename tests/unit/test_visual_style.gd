@@ -84,9 +84,9 @@ func test_toon_converts_a_mesh_entering_the_tree() -> void:
 	assert_eq(material.diffuse_mode, BaseMaterial3D.DIFFUSE_TOON)
 
 
-## El neon es una capa encima: los materiales quedan como llegaron.
-func test_neon_leaves_materials_as_modelled() -> void:
-	VisualStyle.set_style(VisualStyle.Style.NEON)
+## Claridad no toca materiales: lo suyo son dos globales de shader.
+func test_clarity_leaves_materials_as_modelled() -> void:
+	VisualStyle.set_style(VisualStyle.Style.CLARITY)
 	var material: StandardMaterial3D = _lit_material()
 	_mesh_with(material)
 	await wait_process_frames(2)
@@ -94,44 +94,74 @@ func test_neon_leaves_materials_as_modelled() -> void:
 	assert_true(material.normal_enabled)
 
 
-func test_every_camera_gets_edges_and_loses_them_in_standard() -> void:
-	VisualStyle.set_style(VisualStyle.Style.NEON)
+func test_clarity_turns_on_the_edges_of_what_matters_and_fades_the_stands() -> void:
+	VisualStyle.set_style(VisualStyle.Style.CLARITY)
+	assert_eq(VisualStyle.get_semantic_outline_px(),
+		Tokens.SEMANTIC_OUTLINE_PX)
+	assert_eq(VisualStyle.get_background_dim(),
+		Tokens.BACKGROUND_DIM)
+	VisualStyle.set_style(VisualStyle.Style.STANDARD)
+	assert_eq(VisualStyle.get_semantic_outline_px(), 0.0)
+	assert_eq(VisualStyle.get_background_dim(), 0.0)
+
+
+## Con todo delineado nada se destaca: el mapa no lleva borde en Claridad.
+func test_clarity_draws_no_line_over_the_map() -> void:
+	VisualStyle.set_style(VisualStyle.Style.CLARITY)
+	var camera := Camera3D.new()
+	add_child_autofree(camera)
+	await wait_process_frames(2)
+	assert_null(VisualStyle.get_edges(camera))
+
+
+func test_toon_inks_every_camera_and_standard_takes_it_back() -> void:
+	VisualStyle.set_style(VisualStyle.Style.TOON)
 	var camera := Camera3D.new()
 	add_child_autofree(camera)
 	await wait_process_frames(2)
 	assert_not_null(VisualStyle.get_edges(camera))
-
 	VisualStyle.set_style(VisualStyle.Style.STANDARD)
 	assert_null(VisualStyle.get_edges(camera))
 
 
-## En neon el arma queda como esta: en la pasada del toon se notaba demasiado.
-func test_neon_draws_no_edge_on_the_first_person_weapon() -> void:
-	VisualStyle.set_style(VisualStyle.Style.NEON)
-	var viewport := SubViewport.new()
-	viewport.own_world_3d = true
-	add_child_autofree(viewport)
-	var camera := Camera3D.new()
-	viewport.add_child(camera)
-	await wait_process_frames(2)
-	assert_null(VisualStyle.get_edges(camera))
+func test_an_outline_chains_behind_an_existing_overlay() -> void:
+	var mesh := MeshInstance3D.new()
+	add_child_autofree(mesh)
+	var glow := StandardMaterial3D.new()
+	mesh.material_overlay = glow
+	VisualStyle.set_style(VisualStyle.Style.CLARITY)
+	var outline: ShaderMaterial = SemanticOutline.attach(mesh, Tokens.WORLD_GRAPPLE)
+	assert_eq(mesh.material_overlay, glow, "el brillo sigue arriba")
+	assert_eq(glow.next_pass, outline, "y el borde va detras")
+	# Rearmar con otro color no duplica: el mismo borde, otro color.
+	assert_eq(SemanticOutline.attach(mesh, Tokens.WORLD_PICKUP), outline)
 
 
-func test_switching_style_swaps_the_edge_kind() -> void:
-	VisualStyle.set_style(VisualStyle.Style.NEON)
-	var camera := Camera3D.new()
-	add_child_autofree(camera)
-	await wait_process_frames(2)
-	var neon: Material = VisualStyle.get_edges(camera).material_override
-	VisualStyle.set_style(VisualStyle.Style.TOON)
-	assert_ne(VisualStyle.get_edges(camera).material_override, neon)
+## Lo que se juega lleva borde en el color de su significado; el peligro no, es
+## un charco sin silueta.
+func test_telegraphs_outline_what_you_use_but_not_hazards() -> void:
+	var anchor_mesh := MeshInstance3D.new()
+	anchor_mesh.mesh = BoxMesh.new()
+	var anchor := TelegraphComponent.new()
+	anchor.meaning = TelegraphComponent.Meaning.GRAPPLE
+	anchor.meshes = [anchor_mesh]
+	add_child_autofree(anchor_mesh)
+	add_child_autofree(anchor)
+	assert_true(anchor_mesh.has_meta(SemanticOutline.META))
+	VisualStyle.set_style(VisualStyle.Style.CLARITY)
+	assert_true(SemanticOutline.is_chained(anchor_mesh), "colgado en Claridad")
+	VisualStyle.set_style(VisualStyle.Style.STANDARD)
+	assert_false(SemanticOutline.is_chained(anchor_mesh),
+		"y descolgado fuera: con ancho 0 seguiria costando un draw call")
 
-
-## La pasada de transmision es de la partida: sin jugador (menu, pruebas) no se ve.
-func test_the_broadcast_pass_needs_a_player() -> void:
-	VisualStyle.set_style(VisualStyle.Style.NEON)
-	await wait_process_frames(2)
-	assert_eq(VisualStyle.is_broadcast_visible(), Players.local() != null)
+	var hazard_mesh := MeshInstance3D.new()
+	hazard_mesh.mesh = BoxMesh.new()
+	var hazard := TelegraphComponent.new()
+	hazard.meaning = TelegraphComponent.Meaning.HAZARD
+	hazard.meshes = [hazard_mesh]
+	add_child_autofree(hazard_mesh)
+	add_child_autofree(hazard)
+	assert_false(hazard_mesh.has_meta(SemanticOutline.META))
 
 
 func test_the_default_ink_width_is_the_token() -> void:

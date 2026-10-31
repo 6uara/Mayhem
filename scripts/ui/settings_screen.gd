@@ -52,7 +52,7 @@ const SCHEMA: Array = [
 		"type": "slider", "min": 0.5, "max": 3.0, "step": 0.25, "suffix": " px"},
 	# Valores: VisualStyle.Style. Literales porque SCHEMA es const.
 	{"key": "video/visual_style", "label": "Visual style", "type": "option",
-		"choices": [["Standard", 0], ["Neon broadcast", 1], ["Toon", 2]]},
+		"choices": [["Standard", 0], ["Clarity", 1], ["Toon", 2]]},
 	# Limites: Tokens.TOON_LINE_PX_MIN / _MAX. Literales porque SCHEMA es const.
 	{"key": "video/toon_line_px", "label": "Toon ink line",
 		"type": "slider", "min": 1.0, "max": 4.0, "step": 0.5, "suffix": " px"},
@@ -110,7 +110,7 @@ const TOOLTIPS: Dictionary = {
 	"video/toon_line_px":
 		"Width of the dark ink line in the Toon style.\nEnemy outline is the coloured glow around enemies.",
 	"video/visual_style":
-		"Standard: the world as modelled.\nNeon broadcast: a light edge on silhouettes and a TV-camera look.\nToon: banded light, flat textures and an ink line.",
+		"Standard: the world as modelled.\nClarity: only what matters has an edge, in the colour of what it does, and the stands fade back.\nToon: banded light, flat textures and an ink line.",
 	"audio/vo_volume": "The Host's voice.",
 	"accessibility/screenshake_enabled":
 		"Camera shake from hits, explosions, landings and dives.",

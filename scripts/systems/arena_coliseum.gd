@@ -607,6 +607,8 @@ func _panel_material(lines: Color, energy: float,
 	material.set_shader_parameter(&"roughness_value", concrete_roughness)
 	material.set_shader_parameter(&"metallic_value", 0.15)
 	material.set_shader_parameter(&"fresnel_power", 3.0)
+	# El cuenco es fondo: en el estilo Claridad retrocede (background_recede).
+	material.set_shader_parameter(&"recede_strength", 1.0)
 	# El fresnel tambien enciende, y sobre una superficie curva de este tamano
 	# recorre la tribuna a medida que el jugador gira. Bajo, para que el brillo
 	# no sea otra cosa que se mueve.

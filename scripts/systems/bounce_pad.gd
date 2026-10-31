@@ -30,6 +30,8 @@ extends Area3D
 ## model (assets/models/props/jump_pad.glb) keeps its texture, whose brackets
 ## are cyan already, and the ring around it carries the token.
 func _apply_colour_law() -> void:
+	# El borde de "esto se usa" del estilo Claridad, tambien sobre el modelo.
+	SemanticOutline.attach_all(_mesh, Tokens.WORLD_TRAVERSAL)
 	var geometry := _mesh as GeometryInstance3D
 	if geometry == null:
 		return
