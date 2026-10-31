@@ -1,12 +1,75 @@
 ---
 tags: [mayhem, vfx, shaders]
 estado: referencia
-actualizado: 2026-10-20
+actualizado: 2026-10-30
 ---
 
 # VFX and Shaders
 
 Custom `.gdshader` files, all in `assets/shaders/`.
+
+## Visual styles (`VisualStyle`, `SemanticOutline`, `background_recede.gdshaderinc`)
+
+Option `video/visual_style`: Standard, **Clarity** (default on the
+`feat/visual-style` branch) or Toon.
+
+**Clarity** is aimed at a player who has never seen the game. It has one rule:
+**if it has an edge, it matters**, and the colour says what it does.
+
+- **Semantic outlines.** `SemanticOutline.attach()` hangs
+  `semantic_outline.gdshader` on an object, in the colour of its meaning. The
+  shader is the enemy outline technique: an inverted hull, inflated in screen
+  pixels. It goes on the mesh's overlay, or chained (`next_pass`) behind an
+  overlay the object already has. Who asks for one:
+  - every `TelegraphComponent` except hazards, which are flat pools with no
+    silhouette to outline;
+  - ammo pickups (`WORLD_PICKUP`);
+  - crowd-drop gadgets (their accent);
+  - bounce pads (`WORLD_TRAVERSAL`);
+  - spawn door frames (their telegraph colour), only while the door telegraphs
+    a spawn (`SemanticOutline.set_active()`): seven doors always outlined were
+    seven more things to look at with nothing happening.
+
+  Enemies keep their own outline. The objects always ask, but the outline is
+  only hung while `SemanticOutline.enabled`. Hung with width 0, it would still
+  cost a draw call per mesh.
+- **The background recedes.** The coliseum bowl (`recede_strength` 1, set by
+  `ArenaColiseum`), the crowd, the city and the energy wall (0.8: it is the
+  arena boundary) call `recede()` from the include. It takes away colour and
+  brightness according to the global `background_dim`. Before this, the
+  background was the loudest thing on screen, and in cyan, which the law
+  reserves for "yours". The panel shader also runs on pickups and pads, so its
+  `recede_strength` defaults to 0 there.
+
+The map itself gets no outline. A first try, "neon broadcast", put a light edge
+on every silhouette plus a TV-camera pass. With everything outlined nothing
+stood out, so it was dropped; it is in the branch history.
+
+**Toon** (kept as an option) converts every lit `BaseMaterial3D` to
+`DIFFUSE_TOON`, with no direct specular, metallic 0 and no normal map. It swaps
+the albedo for its flat `_toon.png` and inks every camera with
+`edge_lines.gdshader`, a depth-and-normal pass with higher thresholds on the
+viewmodel. The `VisualStyle` autoload does this through `node_added`, keeps the
+originals in a meta and restores them on any other style. Against a night arena
+the ink has little to read against.
+
+Cost: `profile_scene_cost.gd -- 10 style=X`, empty arena, RX 7700 XT, 1080p.
+
+| Style | GPU per frame | Draw calls |
+|---|---|---|
+| Standard | 2.33 ms | 182 |
+| Clarity | 2.40 ms | 223 (the outlines: +41, doors at rest without one) |
+| Toon | 2.46 ms | 184 |
+
+Not measured on the 680M.
+
+**Flat textures (Toon only).** `tools/list_albedo_textures.gd` lists the colour
+textures the game's models use (32). `tools/blender/flatten_textures.py` writes
+`<name>_toon.png` next to each one: a small blur, k-means down to 8 tones, and
++15 % saturation, deterministic. They are loaded by path, so the export must keep
+them. They weigh 14 MB.
+
+To compare: `capture_arena.gd -- dir 9 style=standard|clarity|toon [ink=N]`.
 
 ## `arena_glitch_panel.gdshader`
 

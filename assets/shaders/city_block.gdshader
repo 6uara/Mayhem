@@ -51,6 +51,8 @@ void vertex() {
 	v_normal_local = NORMAL;
 }
 
+#include "res://assets/shaders/background_recede.gdshaderinc"
+
 void fragment() {
 	// Sin salidas tempranas: el lenguaje de shaders de Godot no acepta `return`
 	// dentro de fragment(), asi que las dos caras se resuelven y se elige.
@@ -77,5 +79,5 @@ void fragment() {
 	vec3 window = mix(window_cold, window_warm, step(0.5, v_warmth));
 	vec3 wall = mix(body_color, window * window_energy, lit);
 
-	ALBEDO = is_roof ? roof : wall;
+	ALBEDO = recede(is_roof ? roof : wall, 1.0);
 }

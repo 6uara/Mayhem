@@ -54,6 +54,11 @@ const DEFAULTS: Dictionary = {
 	## Ancho en pixeles del contorno de los enemigos. Igual a
 	## Tokens.ENEMY_OUTLINE_PX (lo comprueba un test); literal porque DEFAULTS es const.
 	"video/enemy_outline_px": 1.25,
+	## Estilo visual: VisualStyle.Style (0 estandar, 1 claridad, 2
+	## toon). Literal porque DEFAULTS es const.
+	"video/visual_style": 1,
+	## Ancho de la linea de tinta del toon. Igual a Tokens.TOON_LINE_PX.
+	"video/toon_line_px": 3.0,
 	"audio/master_volume": 1.0,
 	"audio/sfx_volume": 1.0,
 	"audio/music_volume": 0.7,

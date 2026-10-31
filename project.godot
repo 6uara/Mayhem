@@ -48,6 +48,7 @@ BalanceHub="*res://scripts/autoload/balance_hub.gd"
 ArenaSession="*res://scripts/autoload/arena_session.gd"
 DevConsole="*res://scripts/autoload/dev_console.gd"
 FeedbackManager="*res://scripts/autoload/feedback_manager.gd"
+VisualStyle="*res://scripts/autoload/visual_style.gd"
 BeehaveGlobalMetrics="*uid://c3ktl6ontsdt7"
 BeehaveGlobalDebugger="*uid://bl3ma400hpvsh"
 
@@ -269,4 +270,12 @@ rendering_device/driver.windows="d3d12"
 enemy_outline_px={
 "type": "float",
 "value": 1.25
+}
+semantic_outline_px={
+"type": "float",
+"value": 0.0
+}
+background_dim={
+"type": "float",
+"value": 0.0
 }

@@ -4,10 +4,14 @@ extends SceneTree
 ## (sin tutorial) con el jugador invulnerable, y guarda una foto mirando para
 ## adelante y otra dada vuelta.
 ##
-##     godot --path . --resolution 1600x900 -s tools/capture_arena.gd -- carpeta [segundos] [kill] [weapon=smg]
+##     godot --path . --resolution 1600x900 -s tools/capture_arena.gd -- carpeta [segundos] [kill] [weapon=smg] [style=standard|clarity|toon] [ink=N]
 ##
 ## La primera foto mira al enemigo mas cercano. Con `kill` mueren todos justo
 ## antes, para ver como muere un enemigo.
+##
+## `style=standard|clarity|toon` fuerza el estilo visual (ver VisualStyle) sin tocar las
+## opciones guardadas: para sacar el antes y el despues con la misma semilla.
+## `ink=N` pone la linea de tinta en N px (video/toon_line_px), tambien sin guardar.
 ##
 ## Deja `carpeta/arena_a.png` y `carpeta/arena_b.png`. `segundos` (default 14) es
 ## cuanto espera desde que carga hasta la primera foto: tiene que alcanzar para
@@ -32,6 +36,10 @@ var _kill: bool = false
 var _killed: bool = false
 ## Con `weapon=<id>`: el arma en la mano para la foto, en vez de la pistola.
 var _weapon_id: StringName = &""
+## Con `style=`: VisualStyle.Style. -1 deja lo que digan las opciones.
+var _style: int = -1
+## Con `ink=N`: el ancho de la linea de tinta. 0 deja el de las opciones.
+var _ink: float = 0.0
 var _armed: bool = false
 var _time: float = 0.0
 var _game: Node
@@ -46,6 +54,12 @@ func _initialize() -> void:
 		_wait = args[1].to_float()
 	_kill = args.has("kill")
 	for argument: String in args:
+		if argument.begins_with("style="):
+			_style = ["standard", "clarity", "toon"].find(argument.trim_prefix("style="))
+		if argument.begins_with("ink="):
+			_ink = argument.trim_prefix("ink=").to_float()
+			if _style < 0:
+				_style = 2
 		if argument.begins_with("weapon="):
 			_weapon_id = StringName(argument.trim_prefix("weapon="))
 	_game = (load(GAME_SCENE_PATH) as PackedScene).instantiate()
@@ -58,6 +72,9 @@ func _initialize() -> void:
 
 func _process(delta: float) -> bool:
 	_time += delta
+	if _style >= 0:
+		_force_style(_style)
+		_style = -1
 	_make_player_invincible()
 	if not _armed and _weapon_id != &"" and _time >= 1.0:
 		_arm()
@@ -147,3 +164,17 @@ func _save(file_name: String) -> void:
 		push_error("capture_arena: no se pudo guardar %s (%s)" % [path, error_string(error)])
 	else:
 		print("capture_arena: %s" % path)
+
+
+## En el primer cuadro y no en _initialize: ahi los autoloads todavia no entraron
+## al arbol, y SettingsManager pisaria el valor al cargar las opciones. En
+## memoria, sin guardar.
+func _force_style(value: int) -> void:
+	var settings: Node = root.get_node_or_null(^"SettingsManager")
+	if settings != null:
+		settings.call(&"set_value", "video/visual_style", value)
+		if _ink > 0.0:
+			settings.call(&"set_value", "video/toon_line_px", _ink)
+	var toon: Node = root.get_node_or_null(^"VisualStyle")
+	if toon != null:
+		toon.call(&"refresh")

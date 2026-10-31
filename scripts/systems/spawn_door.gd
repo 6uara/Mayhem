@@ -46,6 +46,11 @@ func _ready() -> void:
 			_portal_material = source.duplicate() as ShaderMaterial
 			_portal_material.set_shader_parameter(&"tint", telegraph_color)
 			portal_mesh.material_override = _portal_material
+	# El borde del estilo Claridad, apagado: siete puertas siempre delineadas eran
+	# siete cosas mas que mirar sin que pasara nada. Se prende en `telegraph()`,
+	# cuando de verdad sale algo, y se apaga en `close()`.
+	SemanticOutline.attach(frame_mesh, telegraph_color)
+	SemanticOutline.set_active(frame_mesh, false)
 	if light != null:
 		light.light_color = telegraph_color
 		light.light_energy = LIGHT_IDLE_ENERGY
@@ -66,6 +71,7 @@ func telegraph() -> void:
 		await get_tree().create_timer(TELEGRAPH_TIME, false).timeout
 		return
 	_is_telegraphing = true
+	SemanticOutline.set_active(frame_mesh, true)
 	AudioPool.play_3d(open_sound, global_position, AudioPool.BUS_WORLD)
 
 	var tween: Tween = create_tween()
@@ -90,6 +96,7 @@ func telegraph() -> void:
 
 ## Dims the door once its group has finished spawning.
 func close() -> void:
+	SemanticOutline.set_active(frame_mesh, false)
 	if light != null:
 		var tween: Tween = create_tween()
 		tween.tween_property(light, "light_energy", LIGHT_IDLE_ENERGY, 0.4)

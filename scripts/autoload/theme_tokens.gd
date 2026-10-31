@@ -158,6 +158,24 @@ const ENEMY_OUTLINE_PX     := 1.25
 const ENEMY_OUTLINE_PX_MIN := 0.5
 const ENEMY_OUTLINE_PX_MAX := 3.0
 const ENEMY_OUTLINE_ENERGY := 1.3
+## Visual styles (`video/visual_style`, VisualStyle).
+##
+## Clarity (the default): only what is played gets an edge, in the colour of
+## what it means (SemanticOutline), and the venue behind the arena recedes
+## (background_recede.gdshaderinc) so it stops competing with the fight.
+const SEMANTIC_OUTLINE_PX := 2.0
+const BACKGROUND_DIM      := 0.65
+##
+## Toon: the dark ink line drawn wherever
+## depth or surface direction breaks. VOID, not black: the same deepest shade the
+## UI uses, so the world and the HUD share one ink.
+const TOON_LINE        := Color("#07080B")
+## The default width; the player picks their own in options
+## (`video/toon_line_px`). 1 px vanished against the dark arena, and 2 still
+## read as a hairline at 1440p.
+const TOON_LINE_PX     := 3.0
+const TOON_LINE_PX_MIN := 1.0
+const TOON_LINE_PX_MAX := 4.0
 ## How an enemy goes when it dies: a burst of shards in its body_color, a puff of
 ## smoke and a short flash of light. Before this it vanished between two frames,
 ## and a kill was a number with nothing in the world to show for it.
