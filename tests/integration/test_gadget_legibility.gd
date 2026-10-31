@@ -60,8 +60,28 @@ func test_picking_one_up_says_what_it_is() -> void:
 	EventBus.crowd_drop_collected.emit(&"stun_grenade")
 	var title: Label = hud.get_node("Root/AnnounceLayer/Title")
 	var tag: Label = hud.get_node("Root/AnnounceLayer/TagPill/Tag")
-	assert_eq(tag.text, "STUN GRENADE", "el nombre")
-	assert_string_contains(title.text, _data(&"stun_grenade").summary, "y lo que hace")
+	var detail: Label = hud.get_node("Root/AnnounceLayer/Detail")
+	assert_eq(title.text, "STUN GRENADE", "el nombre, como titulo")
+	assert_string_contains(tag.text, "GADGET")
+	assert_true(detail.visible)
+	assert_string_contains(detail.text, _data(&"stun_grenade").summary, "y lo que hace")
+
+
+## Una descripcion larga no puede ensanchar el cartel: corrido hacia un costado
+## es como se veia antes de que la descripcion bajara a su propia linea.
+func test_a_long_description_wraps_instead_of_widening_the_banner() -> void:
+	var hud: CanvasLayer = add_child_autofree(load("res://scenes/ui/hud.tscn").instantiate())
+	await wait_process_frames(2)
+	var layer: Control = hud.get_node("Root/AnnounceLayer")
+	var width: float = layer.size.x
+	hud.call(&"announce", "GADGET", "SLOW FIELD", Tokens.GADGET_SLOW,
+		"Leaves a pool that slows enemies inside it to half speed - 6 s, and some more words to be long")
+	await wait_process_frames(2)
+	assert_almost_eq(layer.size.x, width, 1.0)
+
+	hud.call(&"announce", "WAVE 2", "", Tokens.REWARD)
+	assert_false((hud.get_node("Root/AnnounceLayer/Detail") as Label).visible,
+		"el aviso de oleada no arrastra la descripcion del gadget")
 
 
 # ------------------------------------------------------------------ apuntado

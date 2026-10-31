@@ -413,6 +413,14 @@ text = "WAVE"
 [node name="Title" type="Label" parent="Root/AnnounceLayer"]
 theme_type_variation = &"Announce"
 horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Detail" type="Label" parent="Root/AnnounceLayer"]
+visible = false
+theme_type_variation = &"Subtitle"
+horizontal_alignment = 1
+autowrap_mode = 3
+max_lines_visible = 2
 
 [node name="BroadcastBug" type="Control" parent="Root"]
 script = ExtResource("8_bug")
