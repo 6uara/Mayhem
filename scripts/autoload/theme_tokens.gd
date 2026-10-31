@@ -163,7 +163,7 @@ const ENEMY_OUTLINE_ENERGY := 1.3
 ## Clarity (the default): only what is played gets an edge, in the colour of
 ## what it means (SemanticOutline), and the venue behind the arena recedes
 ## (background_recede.gdshaderinc) so it stops competing with the fight.
-const SEMANTIC_OUTLINE_PX := 1.5
+const SEMANTIC_OUTLINE_PX := 2.0
 const BACKGROUND_DIM      := 0.65
 ##
 ## Toon: the dark ink line drawn wherever

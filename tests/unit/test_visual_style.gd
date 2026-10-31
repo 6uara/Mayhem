@@ -166,3 +166,17 @@ func test_telegraphs_outline_what_you_use_but_not_hazards() -> void:
 
 func test_the_default_ink_width_is_the_token() -> void:
 	assert_eq(float(SettingsManager.DEFAULTS["video/toon_line_px"]), Tokens.TOON_LINE_PX)
+
+
+## Siete puertas siempre delineadas eran siete cosas mas que mirar sin que pasara
+## nada: el borde sale cuando la puerta anuncia enemigos y se va al cerrarse.
+func test_a_spawn_door_is_outlined_only_while_it_spawns() -> void:
+	VisualStyle.set_style(VisualStyle.Style.CLARITY)
+	var door: SpawnDoor = add_child_autofree(
+		(load("res://scenes/arena/spawn_door.tscn") as PackedScene).instantiate())
+	await wait_process_frames(1)
+	assert_false(SemanticOutline.is_chained(door.frame_mesh), "en reposo, sin borde")
+	door.telegraph()
+	assert_true(SemanticOutline.is_chained(door.frame_mesh), "anunciando, con borde")
+	door.close()
+	assert_false(SemanticOutline.is_chained(door.frame_mesh), "cerrada, sin borde")

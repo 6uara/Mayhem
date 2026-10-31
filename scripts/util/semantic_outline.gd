@@ -15,6 +15,9 @@ extends RefCounted
 const SHADER: Shader = preload("res://assets/shaders/semantic_outline.gdshader")
 const META: StringName = &"semantic_outline"
 const GROUP: StringName = &"semantic_outline"
+## Un objeto puede pedir su borde y tenerlo apagado hasta que importe (la puerta
+## de spawn: solo mientras salen enemigos). Ver `set_active()`.
+const META_ACTIVE: StringName = &"semantic_outline_active"
 
 ## Si los bordes se cuelgan. Lo maneja VisualStyle con `set_enabled()`.
 static var enabled: bool = false
@@ -33,9 +36,17 @@ static func attach(geometry: GeometryInstance3D, color: Color) -> ShaderMaterial
 		geometry.set_meta(META, material)
 		geometry.add_to_group(GROUP)
 	material.set_shader_parameter(&"outline_color", color)
-	if enabled:
-		_chain(geometry, material)
+	_sync(geometry, material)
 	return material
+
+
+## Prende o apaga el borde de un objeto que ya lo pidio, sin soltarlo: la puerta
+## de spawn lo prende al anunciar enemigos y lo apaga al cerrarse.
+static func set_active(geometry: GeometryInstance3D, active: bool) -> void:
+	if geometry == null or not geometry.has_meta(META):
+		return
+	geometry.set_meta(META_ACTIVE, active)
+	_sync(geometry, geometry.get_meta(META) as ShaderMaterial)
 
 
 ## El borde sobre cada malla de un modelo (el `root` incluido): un modelo de Meshy
@@ -57,11 +68,15 @@ static func set_enabled(value: bool, tree: SceneTree) -> void:
 		return
 	for node: Node in tree.get_nodes_in_group(GROUP):
 		var geometry := node as GeometryInstance3D
-		var material: ShaderMaterial = geometry.get_meta(META) as ShaderMaterial
-		if enabled:
-			_chain(geometry, material)
-		else:
-			_unchain(geometry, material)
+		_sync(geometry, geometry.get_meta(META) as ShaderMaterial)
+
+
+## Colgado si el estilo lo pide y el objeto no lo tiene apagado.
+static func _sync(geometry: GeometryInstance3D, material: ShaderMaterial) -> void:
+	if enabled and bool(geometry.get_meta(META_ACTIVE, true)):
+		_chain(geometry, material)
+	else:
+		_unchain(geometry, material)
 
 
 ## Si el borde esta colgado de `geometry`. Para las pruebas.

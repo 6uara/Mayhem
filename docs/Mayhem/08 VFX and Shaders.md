@@ -26,7 +26,9 @@ Option `video/visual_style`: Standard, **Clarity** (default on the
   - ammo pickups (`WORLD_PICKUP`);
   - crowd-drop gadgets (their accent);
   - bounce pads (`WORLD_TRAVERSAL`);
-  - spawn door frames (their telegraph colour).
+  - spawn door frames (their telegraph colour), only while the door telegraphs
+    a spawn (`SemanticOutline.set_active()`): seven doors always outlined were
+    seven more things to look at with nothing happening.
 
   Enemies keep their own outline. The objects always ask, but the outline is
   only hung while `SemanticOutline.enabled`. Hung with width 0, it would still
@@ -56,7 +58,7 @@ Cost: `profile_scene_cost.gd -- 10 style=X`, empty arena, RX 7700 XT, 1080p.
 | Style | GPU per frame | Draw calls |
 |---|---|---|
 | Standard | 2.33 ms | 182 |
-| Clarity | 2.37 ms | 227 (the outlines: +45) |
+| Clarity | 2.40 ms | 223 (the outlines: +41, doors at rest without one) |
 | Toon | 2.46 ms | 184 |
 
 Not measured on the 680M.
