@@ -1,11 +1,17 @@
 shader_type spatial;
-// El contorno del estilo toon: una linea oscura donde cambia la profundidad o la
-// orientacion de la superficie, sobre toda la pantalla y en un solo pase.
+// Lineas sobre los bordes del mundo, en un solo pase de pantalla: donde la
+// profundidad salta o la superficie dobla. VisualStyle lo usa de dos formas:
 //
-// Ancho por opciones (video/toon_line_px): el muestreo se hace a esa distancia,
-// asi que la franja donde se detecta el quiebre -la linea- crece con el.
+// - Toon: tinta oscura en siluetas y quiebres (line_color oscuro, energy 1).
+// - Neon: un filo de luz solo en las siluetas y solo del lado del objeto
+//   (near_side_only, normales apagadas con normal_threshold > 2), con energia
+//   por encima de 1 para que el glow de la arena lo levante. Sobre un juego de
+//   noche una linea oscura no tiene contra que leerse; una clara si.
 //
-// Va en un quad pegado a la camara (ToonStyle lo pone) y no como un casco
+// El ancho (line_px) es la distancia de muestreo, asi que la franja donde se
+// detecta el borde -la linea- crece con el.
+//
+// Va en un quad pegado a la camara (VisualStyle lo pone) y no como un casco
 // invertido por malla, como el de los enemigos: duplicar cada malla de la arena
 // duplica draw calls, y con la ola 10 el techo ya es la CPU. Esto cuesta lo mismo
 // con un enemigo que con cuarenta, y lo paga la GPU.
@@ -19,14 +25,20 @@ uniform sampler2D depth_texture : hint_depth_texture, filter_nearest, repeat_dis
 uniform sampler2D normal_texture : hint_normal_roughness_texture, filter_nearest, repeat_disable;
 
 uniform vec4 line_color : source_color = vec4(0.027, 0.031, 0.043, 1.0);
+// Por encima de 1 la linea entra al glow (es unshaded: el color sale tal cual).
+uniform float line_energy = 1.0;
 // Ancho en pixeles de la resolucion de render.
 uniform float line_px = 3.0;
 // Cuanto tiene que saltar la profundidad, relativa a la del pixel, para que haya
 // linea. Relativa y por segunda derivada: un piso visto de costado cambia mucho
 // de profundidad pero en forma pareja, y no tiene que llenarse de rayas.
 uniform float depth_threshold = 0.04;
-// 1 - coseno entre normales vecinas a partir del cual hay linea (0.3 ~ 45 grados).
+// 1 - coseno entre normales vecinas a partir del cual hay linea (0.3 ~ 45
+// grados). Por encima de 2 nunca hay: solo siluetas.
 uniform float normal_threshold = 0.3;
+// Solo el lado cercano del borde: el filo queda sobre el objeto y no como un
+// halo sobre lo que tiene detras.
+uniform bool near_side_only = false;
 // Desde donde la linea se va apagando, en metros: lejos todo es borde y la
 // ciudad del fondo se volveria ruido.
 uniform float fade_start = 90.0;
@@ -64,16 +76,23 @@ void fragment() {
 	float curvature = (abs(left + right - 2.0 * center) + abs(up + down - 2.0 * center))
 		/ max(center, 0.001);
 	float depth_edge = step(depth_threshold, curvature);
+	if (near_side_only) {
+		float farthest = max(max(left, right), max(up, down));
+		depth_edge *= step(depth_threshold, (farthest - center) / max(center, 0.001));
+	}
 
-	vec3 n = view_normal(SCREEN_UV);
-	float bend = max(max(1.0 - dot(n, view_normal(SCREEN_UV + dx)),
-		1.0 - dot(n, view_normal(SCREEN_UV - dx))),
-		max(1.0 - dot(n, view_normal(SCREEN_UV + dy)),
-		1.0 - dot(n, view_normal(SCREEN_UV - dy))));
-	float normal_edge = step(normal_threshold, bend);
+	float normal_edge = 0.0;
+	if (normal_threshold <= 2.0) {
+		vec3 n = view_normal(SCREEN_UV);
+		float bend = max(max(1.0 - dot(n, view_normal(SCREEN_UV + dx)),
+			1.0 - dot(n, view_normal(SCREEN_UV - dx))),
+			max(1.0 - dot(n, view_normal(SCREEN_UV + dy)),
+			1.0 - dot(n, view_normal(SCREEN_UV - dy))));
+		normal_edge = step(normal_threshold, bend);
+	}
 
 	float edge = max(depth_edge, normal_edge);
 	edge *= 1.0 - smoothstep(fade_start, fade_end, min(center, min(left, min(right, min(up, down)))));
-	ALBEDO = line_color.rgb;
+	ALBEDO = line_color.rgb * line_energy;
 	ALPHA = edge * line_color.a;
 }

@@ -8,33 +8,53 @@ actualizado: 2026-10-30
 
 Custom `.gdshader` files, all in `assets/shaders/`.
 
-## Toon style (`ToonStyle`, `toon_outline.gdshader`)
+## Visual styles (`VisualStyle`, `edge_lines.gdshader`, `broadcast_post.gdshader`)
 
-Option `video/toon_style`, on by default on the `feat/toon-look` branch. The
-`ToonStyle` autoload watches `node_added`; every lit `BaseMaterial3D` that
-enters the tree switches to `DIFFUSE_TOON`, no direct specular, metallic 0 and no
-normal map. It keeps the original values in a meta, so turning the option off
-restores them. Materials from a `.glb` are shared, so one conversion covers
-every instance. `ShaderMaterial`s and unshaded materials are left alone.
+Option `video/visual_style`: Standard, **Neon broadcast** (default on the
+`feat/visual-style` branch) or Toon. The `VisualStyle` autoload watches
+`node_added`, so every model, pooled enemy and camera picks up the style without
+any scene being touched, and switching styles live puts everything back first.
 
-Every `Camera3D` gets a `ToonOutline` child: a full-screen quad running
-`toon_outline.gdshader`. It draws an ink line (`Tokens.TOON_LINE`) where the
-depth curves sharply or neighbouring normals bend, and the line fades past
-60-110 m. It is one screen pass rather than an inverted hull per mesh because
-wave 10 is CPU-bound. Measured with `profile_scene_cost.gd` on an RX 7700 XT at
-1080p: +0.14 ms of GPU and +2 draw calls. The viewmodel SubViewport uses higher
-thresholds, because at a few centimetres every fold of the model turned into a
-line. Anything that writes no depth (particles, VFX) gets no line.
+**Neon broadcast** adds two things and leaves every material as modelled:
 
-**Flat textures.** `tools/list_albedo_textures.gd` lists every colour texture a
-model uses in the game (32 today). `tools/blender/flatten_textures.py` then
-writes `<name>_toon.png` next to each one: a small blur that removes the grime
-Meshy paints on, k-means down to 8 tones per texture, and +15 % saturation. It is
-deterministic. `ToonStyle` swaps a material's albedo for its `_toon.png` while
-the style is on, so turning it off still shows the original textures. Those
-textures are loaded by path, not referenced, so the export must not leave them
-out (see the `assets/models/props/*` note in ESTADO). They weigh 14 MB in all.
-After adding or rebuilding a model, run both tools again.
+- **A light edge on world silhouettes.** Every world `Camera3D` gets a
+  `StyleEdges` child: a full-screen quad running `edge_lines.gdshader` in depth
+  only (`near_side_only`, normals off), in `Tokens.NEON_EDGE` above 1 so that
+  the arena glow lifts it. It is a cool off-white, not a law colour: cyan would
+  say "yours" about every wall. The first-person weapon gets no edge.
+- **The TV-camera pass.** `broadcast_post.gdshader` sits on a `CanvasLayer` at
+  layer 1, owned by the autoload. Autoloads come before the scene in the tree,
+  so at the same layer it draws over the world and the weapon (layer 0) and
+  under the HUD. It applies a grade (contrast, shadows towards
+  `Tokens.BROADCAST_SHADOW`), faint scanlines, a vignette, and chromatic
+  aberration at the screen edges. The aberration grows with a hit
+  (`EventBus.player_hit`) and with speed above 14 m/s. It only shows while there
+  is a local player, and `accessibility/reduce_flashing` turns the pulse off.
+
+**Toon** (kept as an option) converts every lit `BaseMaterial3D` to
+`DIFFUSE_TOON`, with no direct specular, metallic 0 and no normal map. It swaps
+the albedo for its flat `_toon.png` and draws a dark ink line
+(`Tokens.TOON_LINE`, `video/toon_line_px`) from depth and normals, with higher
+thresholds on the viewmodel. Originals live in a meta and come back on any
+other style. Against a night arena the ink has little to read against: that is
+why Neon replaced it as the default.
+
+`ShaderMaterial`s, unshaded materials and anything that writes no depth
+(particles, VFX) are never touched. The lines are one screen pass, not an
+inverted hull per mesh, because wave 10 is CPU-bound.
+
+Cost: `profile_scene_cost.gd -- 10 style=X`, empty arena, RX 7700 XT, 1080p.
+GPU per frame: Standard 2.33 ms, Neon 2.53 ms, Toon 2.46 ms, with +2 draw calls
+for either style. Not measured on the 680M.
+
+**Flat textures (Toon only).** `tools/list_albedo_textures.gd` lists the colour
+textures the game's models use (32). `tools/blender/flatten_textures.py` writes
+`<name>_toon.png` next to each one: a small blur, k-means down to 8 tones, and
++15 % saturation, deterministic. They are loaded by path, not referenced, so the
+export must keep them (see the `assets/models/props/*` note in ESTADO). They
+weigh 14 MB. After adding or rebuilding a model, run both tools again.
+
+To compare: `capture_arena.gd -- dir 9 style=standard|neon|toon [ink=N]`.
 
 ## `arena_glitch_panel.gdshader`
 

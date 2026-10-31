@@ -50,7 +50,9 @@ const SCHEMA: Array = [
 	# Limites: Tokens.ENEMY_OUTLINE_PX_MIN / _MAX. Literales porque SCHEMA es const.
 	{"key": "video/enemy_outline_px", "label": "Enemy outline",
 		"type": "slider", "min": 0.5, "max": 3.0, "step": 0.25, "suffix": " px"},
-	{"key": "video/toon_style", "label": "Toon style", "type": "toggle"},
+	# Valores: VisualStyle.Style. Literales porque SCHEMA es const.
+	{"key": "video/visual_style", "label": "Visual style", "type": "option",
+		"choices": [["Standard", 0], ["Neon broadcast", 1], ["Toon", 2]]},
 	# Limites: Tokens.TOON_LINE_PX_MIN / _MAX. Literales porque SCHEMA es const.
 	{"key": "video/toon_line_px", "label": "Toon ink line",
 		"type": "slider", "min": 1.0, "max": 4.0, "step": 0.5, "suffix": " px"},
@@ -106,9 +108,9 @@ const TOOLTIPS: Dictionary = {
 		"Soft shading where surfaces meet. Turn off if the game runs slow.",
 	"video/enemy_outline_px": "Width of the glowing edge around every enemy.",
 	"video/toon_line_px":
-		"Width of the dark ink line around everything in toon style.\nEnemy outline is the coloured glow around enemies.",
-	"video/toon_style":
-		"Flat, banded lighting and an ink line around everything.\nOff draws the world with realistic shading.",
+		"Width of the dark ink line in the Toon style.\nEnemy outline is the coloured glow around enemies.",
+	"video/visual_style":
+		"Standard: the world as modelled.\nNeon broadcast: a light edge on silhouettes and a TV-camera look.\nToon: banded light, flat textures and an ink line.",
 	"audio/vo_volume": "The Host's voice.",
 	"accessibility/screenshake_enabled":
 		"Camera shake from hits, explosions, landings and dives.",
