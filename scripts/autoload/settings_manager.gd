@@ -56,6 +56,8 @@ const DEFAULTS: Dictionary = {
 	"video/enemy_outline_px": 1.25,
 	## Estilo toon: luz en bandas y linea de tinta. Ver ToonStyle.
 	"video/toon_style": true,
+	## Ancho de la linea de tinta del toon. Igual a Tokens.TOON_LINE_PX.
+	"video/toon_line_px": 3.0,
 	"audio/master_volume": 1.0,
 	"audio/sfx_volume": 1.0,
 	"audio/music_volume": 0.7,

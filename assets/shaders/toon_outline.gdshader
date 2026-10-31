@@ -2,6 +2,9 @@ shader_type spatial;
 // El contorno del estilo toon: una linea oscura donde cambia la profundidad o la
 // orientacion de la superficie, sobre toda la pantalla y en un solo pase.
 //
+// Ancho por opciones (video/toon_line_px): el muestreo se hace a esa distancia,
+// asi que la franja donde se detecta el quiebre -la linea- crece con el.
+//
 // Va en un quad pegado a la camara (ToonStyle lo pone) y no como un casco
 // invertido por malla, como el de los enemigos: duplicar cada malla de la arena
 // duplica draw calls, y con la ola 10 el techo ya es la CPU. Esto cuesta lo mismo
@@ -17,7 +20,7 @@ uniform sampler2D normal_texture : hint_normal_roughness_texture, filter_nearest
 
 uniform vec4 line_color : source_color = vec4(0.027, 0.031, 0.043, 1.0);
 // Ancho en pixeles de la resolucion de render.
-uniform float line_px = 1.0;
+uniform float line_px = 3.0;
 // Cuanto tiene que saltar la profundidad, relativa a la del pixel, para que haya
 // linea. Relativa y por segunda derivada: un piso visto de costado cambia mucho
 // de profundidad pero en forma pareja, y no tiene que llenarse de rayas.
@@ -26,8 +29,8 @@ uniform float depth_threshold = 0.04;
 uniform float normal_threshold = 0.3;
 // Desde donde la linea se va apagando, en metros: lejos todo es borde y la
 // ciudad del fondo se volveria ruido.
-uniform float fade_start = 60.0;
-uniform float fade_end = 110.0;
+uniform float fade_start = 90.0;
+uniform float fade_end = 160.0;
 
 void vertex() {
 	POSITION = vec4(VERTEX.xy, 1.0, 1.0);

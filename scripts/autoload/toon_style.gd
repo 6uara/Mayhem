@@ -70,9 +70,20 @@ func _ready() -> void:
 
 # Public API
 
-## Lee la opcion y prende o apaga. Lo llama `settings_applied`.
+## Lee las opciones: prende o apaga, y el ancho de la linea. Lo llama
+## `settings_applied`.
 func refresh() -> void:
+	var width: float = get_line_px()
+	_outline_material.set_shader_parameter(&"line_px", width)
+	_viewmodel_outline_material.set_shader_parameter(&"line_px", width)
 	set_enabled(bool(SettingsManager.get_value("video/toon_style")))
+
+
+## El ancho de la linea tal como llega al shader: el elegido, dentro de los
+## limites de Tokens.
+func get_line_px() -> float:
+	return clampf(float(SettingsManager.get_value("video/toon_line_px")),
+		Tokens.TOON_LINE_PX_MIN, Tokens.TOON_LINE_PX_MAX)
 
 
 func set_enabled(value: bool) -> void:

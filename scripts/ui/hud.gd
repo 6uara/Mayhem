@@ -55,6 +55,7 @@ const DAMAGE_FLASH_FULL_AT: float = 40.0
 @onready var _announce: VBoxContainer = $Root/AnnounceLayer
 @onready var _announce_tag: Label = $Root/AnnounceLayer/TagPill/Tag
 @onready var _announce_title: Label = $Root/AnnounceLayer/Title
+@onready var _announce_detail: Label = $Root/AnnounceLayer/Detail
 @onready var _damage_indicators: DamageIndicators = $Root/DamageIndicators
 @onready var _state_overlays: Control = $Root/StateOverlays
 @onready var _speed_lines: SpeedLinesOverlay = $Root/StateOverlays/SpeedLines
@@ -814,10 +815,11 @@ func _on_crowd_drop_collected(utility_id: StringName) -> void:
 		_slot_name_left[slot] = Tokens.GADGET_NAME_LIFE
 	if seen > Tokens.GADGET_CALLOUT_REPEATS:
 		return
-	var line: String = data.describe()
+	# El nombre es el titulo; la pastilla dice que es y con que tecla se tira.
+	var tag: String = "GADGET"
 	if slot >= 0 and slot < UTILITY_KEYS.size():
-		line += "   [%s]" % UTILITY_KEYS[slot]
-	announce(data.display_name.to_upper(), line, data.accent_color)
+		tag += "  ·  %s" % UTILITY_KEYS[slot]
+	announce(tag, data.display_name.to_upper(), data.accent_color, data.describe())
 
 
 func _on_utility_changed() -> void:
@@ -912,11 +914,17 @@ func _on_wave_started(wave_index: int, config: WaveData) -> void:
 # Overlays
 
 ## Tag pill, display title, accent rule. Sits at y=180, clear of the no-UI zone.
-func announce(tag: String, title: String, tint: Color) -> void:
+## `detail` es una linea de texto comun debajo del titulo, para lo que hay que
+## leer (que hace un gadget). Antes iba como titulo, en la letra de 64 px: no
+## entraba, ensanchaba el cartel hacia un costado y el nombre quedaba chico en la
+## pastilla de arriba.
+func announce(tag: String, title: String, tint: Color, detail: String = "") -> void:
 	_announce_tag.text = tag
 	_announce_tag.get_parent().self_modulate = tint
 	_announce_title.text = title
 	_announce_title.visible = not title.is_empty()
+	_announce_detail.text = detail
+	_announce_detail.visible = not detail.is_empty()
 	_announce.visible = true
 	_announce_timer = Tokens.ANNOUNCE_LIFE
 	# Cae desde mas grande y rebota a su tamaño: el cartel aterriza, no aparece.

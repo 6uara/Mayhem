@@ -90,3 +90,7 @@ func test_every_camera_gets_an_ink_line_and_loses_it_when_turned_off() -> void:
 	ToonStyle.set_enabled(false)
 	await wait_process_frames(1)
 	assert_null(ToonStyle.get_outline(camera))
+
+
+func test_the_default_ink_width_is_the_token() -> void:
+	assert_eq(float(SettingsManager.DEFAULTS["video/toon_line_px"]), Tokens.TOON_LINE_PX)

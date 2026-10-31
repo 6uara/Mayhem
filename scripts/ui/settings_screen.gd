@@ -51,6 +51,9 @@ const SCHEMA: Array = [
 	{"key": "video/enemy_outline_px", "label": "Enemy outline",
 		"type": "slider", "min": 0.5, "max": 3.0, "step": 0.25, "suffix": " px"},
 	{"key": "video/toon_style", "label": "Toon style", "type": "toggle"},
+	# Limites: Tokens.TOON_LINE_PX_MIN / _MAX. Literales porque SCHEMA es const.
+	{"key": "video/toon_line_px", "label": "Toon ink line",
+		"type": "slider", "min": 1.0, "max": 4.0, "step": 0.5, "suffix": " px"},
 
 	{"section": "AUDIO"},
 	{"key": "audio/master_volume", "label": "Master", "type": "percent"},
@@ -102,9 +105,10 @@ const TOOLTIPS: Dictionary = {
 	"video/ambient_occlusion":
 		"Soft shading where surfaces meet. Turn off if the game runs slow.",
 	"video/enemy_outline_px": "Width of the glowing edge around every enemy.",
+	"video/toon_line_px":
+		"Width of the dark ink line around everything in toon style.\nEnemy outline is the coloured glow around enemies.",
 	"video/toon_style":
-		"Flat, banded lighting and an ink line around everything.
-Off draws the world with realistic shading.",
+		"Flat, banded lighting and an ink line around everything.\nOff draws the world with realistic shading.",
 	"audio/vo_volume": "The Host's voice.",
 	"accessibility/screenshake_enabled":
 		"Camera shake from hits, explosions, landings and dives.",

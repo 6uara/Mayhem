@@ -11,6 +11,7 @@ extends SceneTree
 ##
 ## `toon=on` o `toon=off` fuerza el estilo toon (ver ToonStyle) sin tocar las
 ## opciones guardadas: para sacar el antes y el despues con la misma semilla.
+## `ink=N` pone la linea de tinta en N px (video/toon_line_px), tambien sin guardar.
 ##
 ## Deja `carpeta/arena_a.png` y `carpeta/arena_b.png`. `segundos` (default 14) es
 ## cuanto espera desde que carga hasta la primera foto: tiene que alcanzar para
@@ -37,6 +38,8 @@ var _killed: bool = false
 var _weapon_id: StringName = &""
 ## Con `toon=on/off`: 1 o 0. -1 deja lo que digan las opciones.
 var _toon: int = -1
+## Con `ink=N`: el ancho de la linea de tinta. 0 deja el de las opciones.
+var _ink: float = 0.0
 var _armed: bool = false
 var _time: float = 0.0
 var _game: Node
@@ -53,6 +56,10 @@ func _initialize() -> void:
 	for argument: String in args:
 		if argument.begins_with("toon="):
 			_toon = 1 if argument == "toon=on" else 0
+		if argument.begins_with("ink="):
+			_ink = argument.trim_prefix("ink=").to_float()
+			if _toon < 0:
+				_toon = 1
 		if argument.begins_with("weapon="):
 			_weapon_id = StringName(argument.trim_prefix("weapon="))
 	_game = (load(GAME_SCENE_PATH) as PackedScene).instantiate()
@@ -166,6 +173,8 @@ func _force_toon(on: bool) -> void:
 	var settings: Node = root.get_node_or_null(^"SettingsManager")
 	if settings != null:
 		settings.call(&"set_value", "video/toon_style", on)
+		if _ink > 0.0:
+			settings.call(&"set_value", "video/toon_line_px", _ink)
 	var toon: Node = root.get_node_or_null(^"ToonStyle")
 	if toon != null:
-		toon.call(&"set_enabled", on)
+		toon.call(&"refresh")
