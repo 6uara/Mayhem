@@ -73,6 +73,26 @@ func test_a_full_slot_leaves_it_on_the_ground() -> void:
 	assert_true(pickup.is_available, "y sigue estando ahi")
 
 
+## body_entered avisa una vez: quien se queda parado encima con la ranura llena
+## y gasta una carga tiene que levantarlo sin salir y volver a entrar.
+func test_standing_on_it_takes_it_once_the_slot_has_room() -> void:
+	var player: Player = _player()
+	var data: UtilityData = _stun_grenade()
+	var slot: int = player.utility.find_slot(data.id)
+	for _i: int in data.max_carried:
+		player.utility.add_charge(data.id)
+	var pickup: CrowdDropPickup = _pickup()
+	pickup.global_position = player.global_position + Vector3.UP * 0.5
+	_land(pickup, data)
+	await wait_physics_frames(4)
+	assert_true(pickup.is_available, "con la ranura llena se queda")
+
+	player.utility._carried[slot] -= 1
+	await wait_physics_frames(4)
+	assert_false(pickup.is_available, "con lugar, se levanta parado encima")
+	assert_eq(player.utility.get_carried(slot), data.max_carried)
+
+
 func test_it_cannot_be_taken_before_it_lands() -> void:
 	var player: Player = _player()
 	var data: UtilityData = _stun_grenade()

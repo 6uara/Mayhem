@@ -2687,7 +2687,12 @@ func _on_died() -> void:
 	# Los dos contestan preguntas distintas y por eso siguen siendo dos: enemy_killed
 	# es "murió uno" y lo cobra el contador de la oleada pase lo que pase;
 	# kill_credited es "y es tuyo", que a partir de ahora no siempre es cierto.
-	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
+	#
+	# El cobro va antes que enemy_killed, y el orden importa: con la ultima kill de
+	# la oleada, enemy_killed cierra la oleada en el acto (WaveManager), y eso
+	# cierra la regla, el contrato y el pedido del publico y arma el desglose.
+	# Cobrada despues, esa kill no sumaba al desglose, no contaba para el pedido
+	# y no llevaba el multiplicador de la regla.
 	if _killed_by_the_player():
 		# Antes de kill_scored: KillBonusTracker juzga esa kill en el mismo
 		# frame y es quien consume la marca.
@@ -2698,6 +2703,7 @@ func _on_died() -> void:
 		# EventBus.kill_scored.
 		EventBus.kill_scored.emit(data.id, global_position, _last_hit_headshot,
 			data.reward_currency)
+	EventBus.enemy_killed.emit(data.id, global_position, data.reward_currency)
 	ObjectPool.release(self)
 
 

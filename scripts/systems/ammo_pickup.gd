@@ -64,6 +64,14 @@ func _process(delta: float) -> void:
 	if mesh != null:
 		mesh.rotate_y(delta * 1.6)
 		mesh.position.y = _rest_height + sin(_bob_time * 2.2) * 0.12
+	# body_entered avisa una sola vez. Quien entro con la reserva llena, o estaba
+	# parado encima cuando la caja reaparecio, no la levantaba hasta salir y
+	# volver a entrar: se queda parado sobre la caja, dispara, y no pasa nada.
+	if has_overlapping_bodies():
+		for body: Node3D in get_overlapping_bodies():
+			_on_body_entered(body)
+			if not is_available:
+				return
 
 
 # Private

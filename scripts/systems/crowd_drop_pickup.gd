@@ -94,6 +94,14 @@ func _process(delta: float) -> void:
 	_bob_time += delta
 	if core != null:
 		core.position.y = _rest_height + sin(_bob_time * 2.2) * 0.12
+	# body_entered avisa una sola vez: quien estaba encima con la ranura llena o
+	# la vida entera no lo levantaba despues de gastar una carga o recibir un
+	# golpe, salvo saliendo y volviendo a entrar. Igual que AmmoPickup.
+	if hitbox != null and hitbox.monitoring and hitbox.has_overlapping_bodies():
+		for body: Node3D in hitbox.get_overlapping_bodies():
+			_on_body_entered(body)
+			if not is_available:
+				return
 
 
 # Public API
