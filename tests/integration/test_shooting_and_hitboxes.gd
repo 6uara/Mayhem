@@ -201,6 +201,32 @@ func test_firing_spawns_muzzle_vfx_without_error() -> void:
 	assert_gt(marker.get_child_count(), 0, "the flash should have spawned on the marker")
 
 
+## Disparar tiene que ser lo mas fluido posible: un fogonazo por arma, reusado,
+## en vez de un nodo y un material nuevos por tiro.
+func test_sustained_fire_reuses_one_muzzle_flash() -> void:
+	var player: Player = _player()
+	await wait_physics_frames(2)
+	var weapon: WeaponComponent = player.weapon
+	var marker: Node3D = weapon._view.get_node_or_null("MuzzleMarker")
+	for _i: int in 5:
+		weapon._cooldown = 0.0
+		weapon.set_trigger(true)
+		weapon.set_trigger(false)
+		await wait_physics_frames(1)
+	var flashes: Array[Node] = marker.get_children().filter(
+		func(node: Node) -> bool: return node is MuzzleFlash)
+	assert_eq(flashes.size(), 1, "cinco tiros, un solo fogonazo")
+
+
+## Nada de lo que hace el disparo frena el tiempo: ni un impacto, ni un headshot,
+## ni una kill. El hitstop que lo hacia salio a proposito (2026-11-02).
+func test_hits_and_kills_never_slow_time() -> void:
+	EventBus.damage_dealt.emit(null, 10.0, false)
+	EventBus.damage_dealt.emit(null, 10.0, true)
+	EventBus.kill_scored.emit(&"rusher", Vector3.ZERO, true, 10)
+	assert_eq(Engine.time_scale, 1.0)
+
+
 # ------------------------------------------------------------- impact material
 
 const IMPACT_SCENE: String = "res://scenes/vfx/impact_effect.tscn"

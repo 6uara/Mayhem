@@ -1,7 +1,7 @@
 class_name DamageNumberSpawner
 extends Node
 ## Pools a floating DamageNumber over whatever EventBus.damage_dealt names as
-## the target - the same signal HitstopController already consumes, so this
+## the target - the one signal every hit goes through, so this
 ## never becomes a second source of truth for how much damage landed.
 ##
 ## `target` on that signal carries no exact hit position, only the Node that

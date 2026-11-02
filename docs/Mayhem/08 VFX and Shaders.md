@@ -247,8 +247,8 @@ already varies sound per material; only the audio content lags. See
 ## Floating damage numbers
 
 `DamageNumberSpawner` (`scripts/systems/damage_number_spawner.gd`, a node in
-`game.tscn` beside `HitstopController`) listens to the same
-`EventBus.damage_dealt` signal `HitstopController` already does, and shows a
+`game.tscn`) listens to
+`EventBus.damage_dealt`, and shows a
 `DamageNumber` (`scripts/ui/damage_number.gd` + `scenes/vfx/damage_number.tscn`
 — a billboarded `Label3D`) over whatever got hit.
 
@@ -292,7 +292,7 @@ clear, and a second fade kills it again before the very edge.
 not hardcoded, since "fast" depends on the mobility upgrade catalogue's own
 numbers. The shown intensity chases that target via `move_toward()` on
 `_physics_process` (not idle `_process` - doesn't reliably tick under the
-headless test runner, same reason `HitstopController` ticks on physics too)
+headless test runner)
 rather than snapping, so a strafe correction or a half-second of ground
 friction reads as a smooth ramp rather than a flicker. Gated by its own
 `accessibility/speed_lines_enabled` setting — a distinct discomfort trigger

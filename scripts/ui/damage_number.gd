@@ -1,8 +1,8 @@
 class_name DamageNumber
 extends Node3D
 ## Floating damage number over whatever a hit landed on. Cosmetic only -
-## driven by EventBus.damage_dealt, the same signal HitstopController already
-## consumes, so this never becomes a second source of truth for damage.
+## driven by EventBus.damage_dealt, the one signal every hit goes through, so
+## this never becomes a second source of truth for damage.
 ##
 ## No exact hit_position travels on that signal (only `target`), so this spawns
 ## near the target's own position rather than the precise impact point - close

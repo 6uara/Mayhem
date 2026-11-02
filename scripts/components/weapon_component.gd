@@ -119,6 +119,7 @@ var _view_rest_position: Vector3 = Vector3.ZERO
 ## rig - the flash hangs off this, never off `muzzle` (see the comment on
 ## `muzzle` itself for why those are two different points in two different worlds).
 var _muzzle_marker: Node3D
+var _muzzle_flash: MuzzleFlash
 var _view_kick_offset: Vector3 = Vector3.ZERO
 var _view_kick_rot: float = 0.0
 ## El lanzador del gancho, colgado del pivot en la muñeca izquierda del modelo.
@@ -456,17 +457,15 @@ func _shot_origin(aim_origin: Vector3, target: Vector3) -> Vector3:
 
 
 ## The flash, hung off `_muzzle_marker` - see that variable's comment
-## for why it can't go anywhere near `muzzle` itself. Plain instantiate, not
-## ObjectPool: the pool's container lives in the main world, and pooling something
-## into the wrong World3D is worse than not pooling it at all. Nothing here fires
-## often enough for that cost to matter - even the SMG tops out at 15/s.
+## for why it can't go anywhere near `muzzle` itself. One flash per weapon,
+## created on the first shot and restarted on every one after: see MuzzleFlash.
 func _spawn_muzzle_vfx() -> void:
 	if _muzzle_marker == null:
 		return
-
-	var flash: MuzzleFlash = MUZZLE_FLASH_SCENE.instantiate()
-	_muzzle_marker.add_child(flash)
-	flash.play()
+	if _muzzle_flash == null:
+		_muzzle_flash = MUZZLE_FLASH_SCENE.instantiate()
+		_muzzle_marker.add_child(_muzzle_flash)
+	_muzzle_flash.play()
 
 
 func _spawn_projectile(origin: Vector3, direction: Vector3, shot_multiplier: float = 1.0) -> void:
