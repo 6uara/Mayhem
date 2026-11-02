@@ -100,10 +100,34 @@ var kill_points: int = 0
 var style_points: int = 0
 var wave_points: int = 0
 
+## Para la pantalla de fin: con los totales solos no se ve DONDE se fue la run.
+## Una entrada por oleada jugada: `{ wave, duration, damage, kills, cleared }`.
+## La oleada en la que se murio entra con `cleared = false` y el tiempo que duro.
+var wave_log: Array[Dictionary] = []
+## Kills por tipo de enemigo (id -> cantidad).
+var kills_by_type: Dictionary = {}
+## Kills por arma (id -> cantidad), atribuidas al ultimo arma disparada o
+## equipada. Un charco o una granada caen en el arma que se tenia en la mano.
+var kills_by_weapon: Dictionary = {}
+## Daño hecho a enemigos, y disparos. Sin precision: la escopeta dispara ocho
+## perdigones por tiro y "aciertos sobre disparos" mezclaria las dos cosas.
+var damage_done: float = 0.0
+var shots_fired: int = 0
+## El rating de transmision mas alto que se alcanzo (indice de tier).
+var peak_tier: int = 0
+
 ## Los trofeos de la run terminada. Vacio mientras se juega.
 var _trophies: Array[StringName] = []
 ## La billetera la ultima vez que se miro, para sacar cuanto subio.
 var _last_currency: int = 0
+## La oleada en curso, para `wave_log`. El tiempo se cuenta aca y no con el
+## reloj del sistema: la pausa no es tiempo de oleada.
+var _in_wave: bool = false
+var _wave_index: int = 0
+var _wave_time: float = 0.0
+var _wave_kills: int = 0
+var _wave_damage: float = 0.0
+var _weapon: StringName = &""
 
 
 func _ready() -> void:
@@ -117,7 +141,17 @@ func _ready() -> void:
 	EventBus.purchase_made.connect(_on_purchase_made.unbind(2))
 	EventBus.run_finished.connect(_on_run_finished)
 	EventBus.currency_changed.connect(_on_currency_changed)
+	EventBus.wave_started.connect(_on_wave_started.unbind(1))
+	EventBus.weapon_fired.connect(_on_weapon_fired)
+	EventBus.weapon_switched.connect(_on_weapon_switched)
+	EventBus.damage_dealt.connect(_on_damage_dealt)
+	EventBus.rating_tier_changed.connect(_on_rating_tier_changed)
 	_last_currency = EconomyManager.currency
+
+
+func _process(delta: float) -> void:
+	if _in_wave:
+		_wave_time += delta
 
 
 # Public API
@@ -169,6 +203,17 @@ func reset() -> void:
 	kill_points = 0
 	style_points = 0
 	wave_points = 0
+	wave_log.clear()
+	kills_by_type.clear()
+	kills_by_weapon.clear()
+	damage_done = 0.0
+	shots_fired = 0
+	peak_tier = 0
+	_in_wave = false
+	_wave_time = 0.0
+	_wave_kills = 0
+	_wave_damage = 0.0
+	_weapon = &""
 	_trophies.clear()
 
 
@@ -259,13 +304,59 @@ func _on_player_hit(amount: float, cause: StringName) -> void:
 
 func _on_player_died() -> void:
 	killed_by = _last_hit_cause
+	if _in_wave:
+		_close_wave(_wave_time, false)
 
 
-func _on_kill_scored(_enemy_type: StringName, _position: Vector3, was_headshot: bool,
+func _on_kill_scored(enemy_type: StringName, _position: Vector3, was_headshot: bool,
 		_reward: int) -> void:
 	kills += 1
 	if was_headshot:
 		headshots += 1
+	kills_by_type[enemy_type] = int(kills_by_type.get(enemy_type, 0)) + 1
+	if _weapon != &"":
+		kills_by_weapon[_weapon] = int(kills_by_weapon.get(_weapon, 0)) + 1
+	if _in_wave:
+		_wave_kills += 1
+
+
+func _on_wave_started(wave_index: int) -> void:
+	_in_wave = true
+	_wave_index = wave_index
+	_wave_time = 0.0
+	_wave_kills = 0
+	_wave_damage = 0.0
+
+
+func _close_wave(duration: float, cleared: bool) -> void:
+	_in_wave = false
+	wave_log.append({
+		"wave": _wave_index,
+		"duration": duration,
+		"damage": _wave_damage,
+		"kills": _wave_kills,
+		"cleared": cleared,
+	})
+
+
+func _on_weapon_fired(weapon_id: StringName) -> void:
+	shots_fired += 1
+	_weapon = weapon_id
+
+
+func _on_weapon_switched(weapon_id: StringName) -> void:
+	_weapon = weapon_id
+
+
+## Solo lo que se le hace a un enemigo: el hitbox del jugador emite la misma
+## señal cuando le pegan.
+func _on_damage_dealt(target: Node, amount: float, _is_headshot: bool) -> void:
+	if target is Enemy:
+		damage_done += amount
+
+
+func _on_rating_tier_changed(tier: int, _went_up: bool) -> void:
+	peak_tier = maxi(peak_tier, tier)
 
 
 func _on_kill_payout(_reward: int, bonus_ids: Array, bonus_total: int,
@@ -287,10 +378,15 @@ func _on_kill_credited(reward: int) -> void:
 func _on_player_damaged(amount: float) -> void:
 	damage_taken += amount
 	hits_taken += 1
+	if _in_wave:
+		_wave_damage += amount
 
 
-func _on_wave_completed(wave_index: int, _duration: float, wave_damage: float) -> void:
+func _on_wave_completed(wave_index: int, duration: float, wave_damage: float) -> void:
 	wave_points += _config().score_per_wave * (wave_index + 1)
+	_wave_index = wave_index
+	_wave_damage = wave_damage
+	_close_wave(duration, true)
 	if wave_damage <= 0.0:
 		flawless_waves += 1
 

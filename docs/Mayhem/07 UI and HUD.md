@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, ui, hud]
 estado: referencia
-actualizado: 2026-10-30
+actualizado: 2026-11-02
 ---
 
 # UI and HUD
@@ -150,6 +150,31 @@ immediately (consistent with every other row applying live) and persists via
 victory/game-over screens. Restart reloads the scene outright rather than
 unwinding state — the "under 2 seconds back to shooting" constraint is easier to
 hit that way than by resetting every system by hand.
+
+**The end screen (2026-11-02)** is a run analysis, not a paragraph. A meta line
+(arena, mode, how far, time, run code, Best) and `RunSummary`
+(`scripts/ui/run_summary.gd`, built in code) under the title:
+
+- **Score** counting up, a `NEW BEST` / `BEST n (-x)` badge against the best
+  *before* this run, and one split bar of where it came from (kills, style,
+  waves, victory bonus).
+- **Combat**: kills, headshot rate, damage dealt and taken, shots, hits,
+  flawless waves, money earned, purchases, peak rating.
+- **Waves**: `WaveChart`, one bar per wave - height is time, the number is
+  kills, colour goes cyan (flawless) to red with damage taken; the death wave is
+  hatched red, unreached waves are outlines. Hover a bar for its numbers.
+- **Threats**: the killer as a headline, damage taken by source and kills by
+  enemy, each bar in the enemy's `body_color`.
+- Trophies as chips, kills per weapon, mastery lines.
+
+All of it reads `RunRecord`, which now also keeps `wave_log`, `kills_by_type`,
+`kills_by_weapon`, `damage_done`, `shots_fired` and `peak_tier`.
+
+Victory and defeat differ before a word is read: `run_end.gdshader` on the
+background (warm light from above, slow rays, rising sparks / red edges,
+scanlines, an interference band), the title lands gold with a punch or arrives
+red with a shake. Both settle within `STATE_SETTLE_MAX`; `reduce_flashing`
+freezes the background and skips the count-up.
 
 ## Main menu
 
