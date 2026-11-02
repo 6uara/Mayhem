@@ -106,6 +106,14 @@ const LOW_AMMO_BLINK     := 0.90  ## continuous, step (on/off)
 const HAZARD_WARNING     := 0.60  ## telegraph before a hazard can damage
 const HAZARD_EVAPORATE   := 0.40  ## a temporary pool drying up after it stops damaging
 const STATE_SETTLE_MAX   := 0.40  ## nothing else may animate longer than this
+## The shot's weight on screen, replacing the hitstop (2026-11-02): an edge
+## darkening that never reaches the reticle zone, in VOID so it cannot be read as
+## damage (that vignette is ENEMY). Kept faint on purpose - fifteen a second on
+## the SMG must stay texture, never a strobe.
+const SHOT_PULSE_LIFE    := 0.09
+const SHOT_PULSE_ALPHA   := 0.07
+const KILL_PULSE_LIFE    := 0.18
+const KILL_PULSE_ALPHA   := 0.14
 
 ## UI punch (UiMotion). Every one-shot stays under STATE_SETTLE_MAX: the motion
 ## answers an action, it never makes the player wait for it.

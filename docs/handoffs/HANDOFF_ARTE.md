@@ -67,7 +67,7 @@ THE COLOR LAW - NON-NEGOTIABLE
 Interactive things use exactly one of four meanings, each with a color AND a
 shape (the game must read correctly for colorblind players):
 - CYAN  #35E0D4, SQUARE / bracket shapes = "you can use this" (traversal:
-  jump pads, grapple anchors, zip lines, moving platforms, the player's own
+  jump pads, grapple anchors, moving platforms, the player's own
   gear).
 - ORANGE #FC3A00, TRIANGLE / 45-degree hazard stripes = "this will hurt you"
   (traps, warnings). Acid pools are acid green #C6FF3D as a SUBSTANCE, framed
@@ -255,7 +255,6 @@ maneja `TelegraphComponent` (reposo → aviso → activo); el modelo tiene que
 |---|---|---|
 | **Bounce pad** | Cian / cuadrado | Lanza ~8 m hacia arriba. Tope 6 por arena. En juego ya es cian (`bounce_pad.gd` lo tiñe); el verde que quedaba en la escena se corrigió el 2026-10-20 |
 | **Grapple anchor** | Cian / cuadrado | Siempre a 6 m o más de altura. Se apunta desde 28 m: silueta clara contra el cielo y las gradas |
-| **Zip line** | Cian | Dos postes y un cable; se recorre a 16 m/s |
 | **Jump link** | Cian | Marca un salto entre dos puntos que los enemigos también usan |
 | **Moving platform** | Cian + recorrido | Plataforma de 3,8×3,8 m que va y viene; tiene que mostrar hacia dónde va |
 | **Blinking platform** | Cian → aviso | Al pisarla avisa 1,5 s parpadeando, desaparece y deja un contorno gris punteado |
@@ -269,8 +268,8 @@ BOARD 4 - INTERACTIVE ARENA ELEMENTS. Ten objects for the night arena, each
 shown in 3/4 view in three states side by side: IDLE, WARNING, ACTIVE.
 Strictly apply the color law (color + shape):
 CYAN #35E0D4 + square shapes: a jump pad (launches the player 8 m up), a
-grapple anchor (mounted high, readable silhouette against the sky), a zip
-line (two posts + cable), a jump-link marker pair, a 3.8 m moving platform
+grapple anchor (mounted high, readable silhouette against the sky), a
+jump-link marker pair, a 3.8 m moving platform
 that shows its travel direction, a blinking platform (warning = fast blink,
 then gone, leaving a dashed grey outline).
 ORANGE #FC3A00 + triangles / 45-degree stripes: the frame and warning

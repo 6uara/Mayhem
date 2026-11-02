@@ -390,6 +390,11 @@ func _handle_action_input() -> void:
 		return
 
 	if Input.is_action_just_pressed("grapple") and grapple != null and grapple.try_fire():
+		# Saliendo de un slide: el gancho no pasa por _stand_up(), y si el tiron
+		# terminaba con los pies en el piso la camara quedaba a altura de slide y
+		# el proximo slide salia sin impulso.
+		if state == State.SLIDING:
+			_stand_up()
 		state = State.GRAPPLING
 		_fast_falling = false
 		break_snare()

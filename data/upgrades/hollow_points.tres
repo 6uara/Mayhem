@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3 uid="uid://qsa0l0i25x6v"]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"weapon_damage"
+operation = 1
+value = 1.22
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"magazine_size"
+operation = 1
+value = 0.85
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"hollow_points"
+display_name = "Hollow Points"
+description = "+22% damage, 15% smaller magazine."
+cost = 360
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
+max_stacks = 2

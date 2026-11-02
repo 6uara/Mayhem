@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3 uid="uid://cf4nqkb7ngepk"]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"max_health"
+value = 15.0
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"damage_taken_multiplier"
+operation = 1
+value = 0.94
+
+[sub_resource type="Resource" id="Mod_2"]
+script = ExtResource("2_mod")
+stat_key = &"move_speed"
+operation = 1
+value = 0.96
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"riot_padding"
+display_name = "Riot Padding"
+description = "+15 max health, take 6% less damage, 4% slower."
+cost = 400
+category = 2
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1"), SubResource("Mod_2")])
+max_stacks = 2

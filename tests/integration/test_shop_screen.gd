@@ -188,3 +188,27 @@ func test_a_rare_offer_gets_its_shine() -> void:
 		.filter(func(node: Node) -> bool: return not node.is_queued_for_deletion())
 	assert_true(cards[0].has_node(^"RareShine"), "la rara brilla")
 	assert_false(cards[1].has_node(^"RareShine"), "la comun no")
+
+
+# Layout
+
+## Un playtest reporto que a la quinta oleada la tienda se quedo sin cartas y
+## sin boton para avanzar, y solo se salia por el reloj. La columna "YOUR BUILD"
+## crecia una fila por mejora: con quince o mas empujaba el panel mas alla de
+## los 1080 de alto y el pie -el boton de avanzar- quedaba fuera de pantalla.
+## Ahora la lista scrollea y el panel mide lo mismo tenga lo que tenga.
+func test_a_long_build_does_not_push_the_shop_off_screen() -> void:
+	var catalog: ShopCatalog = load("res://data/economy/shop_catalog.tres")
+	await _open({"kills": 100, "completion_bonus": 50, "contract_bonus": 80,
+		"show_bonus": 40, "damage_loss": 20})
+	var panel: Control = _screen.get_node("Root/Panel")
+	var empty_height: float = panel.get_combined_minimum_size().y
+	for upgrade: UpgradeData in catalog.upgrades + catalog.rare_upgrades:
+		UpgradeManager.add_upgrade(upgrade, &"pistol")
+	await wait_physics_frames(2)
+	var full_height: float = panel.get_combined_minimum_size().y
+	assert_almost_eq(full_height, empty_height, 1.0,
+		"la lista de mejoras no agranda el panel")
+	# 1080 de alto de diseño, menos los margenes del panel en la escena.
+	assert_lt(full_height, 1080.0 - panel.offset_top + panel.offset_bottom,
+		"el panel entra entero en una pantalla de 1080")

@@ -58,8 +58,8 @@ enum Support {
 
 @export_group("Traversal links")
 ## Cells this piece connects its own cell to, beyond the four neighbours - a
-## bounce pad reaching two levels up, a jump link crossing a gap, a zip line
-## dropping across the arena. Unrotated, like `footprint`.
+## bounce pad reaching two levels up, a jump link crossing a gap.
+## Unrotated, like `footprint`.
 ##
 ## Without this the flood fill would call an arena that is only crossable by pad
 ## "unreachable" and refuse to save it, and the enemies would never use the link

@@ -20,6 +20,9 @@ func _flash() -> void:
 	# Placeholder pop until the VFX pass.
 	flash_mesh.visible = true
 	flash_mesh.scale = Vector3.ONE * 0.2
+	# Pooleada: la granada anterior dejo el destello en transparencia 1 al
+	# apagarse, y sin esto la segunda que sale del pool aturde sin destello.
+	flash_mesh.transparency = 0.0
 	var tween: Tween = create_tween()
 	var radius: float = data.effect_radius if data != null else 5.0
 	tween.tween_property(flash_mesh, "scale", Vector3.ONE * radius, 0.18)

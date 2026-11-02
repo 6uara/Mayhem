@@ -14,6 +14,6 @@ script = ExtResource("1_upgrade")
 id = &"ads_speed"
 display_name = "Snap Aim"
 description = "Aims down sights 30% faster."
-cost = 150
+cost = 210
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 max_stacks = 2

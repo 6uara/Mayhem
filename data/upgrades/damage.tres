@@ -14,6 +14,6 @@ script = ExtResource("1_upgrade")
 id = &"damage"
 display_name = "Hollow Points"
 description = "+10% weapon damage."
-cost = 300
+cost = 420
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 max_stacks = 3

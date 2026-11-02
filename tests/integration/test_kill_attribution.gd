@@ -121,6 +121,26 @@ func test_an_unclaimed_kill_still_ends_up_in_the_wave_count() -> void:
 	assert_signal_emit_count(EventBus, "enemy_killed", 1, "murio uno igual")
 
 
+## La ultima kill de una oleada la cierra en el acto: enemy_killed llega a
+## WaveManager, que arma el desglose y cierra la regla, el contrato y el pedido
+## del publico. Si el cobro llegaba despues, esa kill no figuraba en el desglose,
+## no contaba para el pedido y no llevaba el multiplicador de la regla.
+func test_a_kill_is_paid_before_the_death_closes_the_wave() -> void:
+	var enemy: Enemy = await _spawn(RUSHER)
+	var order: Array[StringName] = []
+	var on_scored := func(_t: StringName, _p: Vector3, _h: bool, _r: int) -> void:
+		order.append(&"kill_scored")
+	var on_killed := func(_t: StringName, _p: Vector3, _r: int) -> void:
+		order.append(&"enemy_killed")
+	EventBus.kill_scored.connect(on_scored)
+	EventBus.enemy_killed.connect(on_killed)
+	enemy.health.apply_damage(enemy.health.max_health, _fake_player)
+	EventBus.kill_scored.disconnect(on_scored)
+	EventBus.enemy_killed.disconnect(on_killed)
+	assert_eq(order, [&"kill_scored", &"enemy_killed"] as Array[StringName],
+		"primero se cobra, despues se cuenta la muerte")
+
+
 # --------------------------------------------------------- la cadena del Bomber
 
 ## El corazon de §5.4: el jugador vuela al Bomber, la explosion mata al Rusher, y

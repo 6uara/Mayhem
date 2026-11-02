@@ -227,7 +227,12 @@ theme_override_constants/separation = 12
 theme_type_variation = &"HUDLabel"
 text = "YOUR BUILD"
 
-[node name="List" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage/Side/Build/VBox"]
+[node name="Scroll" type="ScrollContainer" parent="Root/Panel/VBox/ShopPage/Side/Build/VBox"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 3
+
+[node name="List" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage/Side/Build/VBox/Scroll"]
+size_flags_horizontal = 3
 script = ExtResource("6_bonus_list")
 
 [node name="Main" type="VBoxContainer" parent="Root/Panel/VBox/ShopPage"]

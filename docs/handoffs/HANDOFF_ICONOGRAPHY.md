@@ -257,7 +257,7 @@ pero el editor es una herramienta y no parte de la run.
 Piezas: `floor_1x1`, `floor_2x2`, `floor_3x3`, `wall_1x1`, `wall_2x1`,
 `wall_corner`, `pillar_1x1`, `platform_2x2`, `catwalk_1x3`, `ramp_1x1`,
 `ramp_2x1`, `cover_low`, `moving_platform`, `disappearing_platform`,
-`bounce_pad`, `jump_link`, `zip_line`, `grapple_anchor`, `hazard_zone`,
+`bounce_pad`, `jump_link`, `grapple_anchor`, `hazard_zone`,
 `snare_zone`, `ammo_pickup`.
 
 La ley de color de la arena ya los separa en tres familias y **los iconos tienen

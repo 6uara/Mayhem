@@ -31,8 +31,7 @@ func _ready() -> void:
 
 
 ## Physics, not idle process - idle _process frames don't reliably advance
-## under the headless test runner (the same reason HitstopController ticks on
-## _physics_process too; see its own docstring). No visual cost either way at
+## under the headless test runner. No visual cost either way at
 ## typical frame/physics rates.
 func _physics_process(delta: float) -> void:
 	if is_equal_approx(_shown_intensity, _target_intensity):

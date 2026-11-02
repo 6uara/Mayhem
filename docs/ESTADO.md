@@ -21,7 +21,7 @@ Base: rama `feat/systems-expansion` sobre `develop` @ `5bc7109`. Suite: ver
 
 **Todo el trabajo de sistemas está hecho.** El loop completo existe y está
 cubierto por tests: diez oleadas, ocho arquetipos (siete en rotación, el Elite en
-el banco), cuatro armas, dos modos de juego, 20 mejoras comunes y 8 raras, tienda
+el banco), cuatro armas, dos modos de juego, 24 mejoras comunes y 16 raras, tienda
 con reroll, bonos de estilo, rating de la transmisión, reglas de transmisión por
 oleada, curación (mejora y botiquín del público), trofeos, tabla por arena, Host
 con guion completo en subtítulos, tutorial de arranque, coliseo generado con
@@ -140,13 +140,26 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | Codex desde el menú y la pausa: una ficha por arma, mejora, rara, gadget, enemigo, attachment, regla, contrato, pedido del público y bono de estilo, con lo que hace y sus números. Todo visible desde el principio. Lee los mismos pozos que el juego: un `.tres` nuevo aparece solo | `CodexPanel`, `CodexCatalog`, [07 UI and HUD](Mayhem/07%20UI%20and%20HUD.md#codex) |
 | Texto para el jugador donde no había: descripción de cada arma, descripción y "cómo se le gana" de cada enemigo, cómo se cobra cada bono de estilo | `WeaponData.codex_blurb`, `EnemyData.codex_blurb`/`codex_tip`, `KillBonusTracker.BONUS_DESCRIPTION` |
 
+### Lo que entró el 2026-11-02 (revisión de bugs, rama `fix/review-bugs`)
+
+| Qué | Dónde |
+|---|---|
+| Tienda: la columna YOUR BUILD crecía una fila por mejora y con ~15 empujaba el panel fuera de los 1080 de alto; el botón de avanzar quedaba fuera de pantalla y sólo se salía por el reloj (reporte de un jugador en la ola 5). Ahora scrollea | `shop_screen.tscn` (`Build/VBox/Scroll`), `test_a_long_build_does_not_push_the_shop_off_screen` |
+| Tienda: la R del reroll cobraba con el menú de pausa abierto; una mejora atada a un arma no se ofrece con otra en la mano | `ShopScreen._on_reroll_pressed()`, `Shop._build_pool()` |
+| Mejoras más caras: comunes ×1.4, raras ×1.25. Seis comunes nuevas, con contrapartida: Hair Trigger, Hollow Points, Speed Loader, Tension Spool, Featherweight y Riot Padding (iconos geométricos provisorios). Sin playtest | `data/upgrades/`, `shop_catalog.tres` |
+| Fuera las zip lines: script, escena, pieza del editor, la acción `interact` (F) y su retícula. Una arena guardada con una zip line carga igual: una pieza que no está en el catálogo es aviso, no error | `Player`, `HUD`, `Validator` |
+| La última kill de una oleada se cobra antes de cerrarla: entra al desglose, lleva el multiplicador de la regla y cuenta para el pedido del público | `Enemy._on_died()` |
+| La caja de munición y los regalos del público se levantan estando encima en cuanto hay lugar, sin salir y volver a entrar | `AmmoPickup`, `CrowdDropPickup` |
+| La granada aturdidora reciclada del pool vuelve a mostrar el destello; el gancho desde un slide ya no deja la cámara baja | `StunGrenade._flash()`, `MovementComponent._handle_action_input()` |
+| Sin hitstop: ni impactos, ni headshots, ni kills frenan el tiempo (`Engine.time_scale`). El peso del tiro pasa a un sacudón de cámara leve (roll de décimas de grado) y un oscurecimiento leve de los bordes, más fuerte en una kill. Sin playtest. El fogonazo del arma es uno por arma y se reinicia en cada tiro, en vez de crear un nodo y un material por disparo | `HitstopController` (borrado), `CameraRecoilComponent` grupo Shake, `ShotPulseOverlay`, `Tokens.SHOT_PULSE_*`, `MuzzleFlash` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
 | R1 | **Modelos** de piezas de arena, interactuables y un enemigo (Elite). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19; los brazos de Meshy, 2026-10-28, llegaron sin textura y usan un material liso hasta que haya una), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas, enemigos e impactos.** Armas (2026-10-31): SMG, rifle y escopeta tienen disparo, recarga y vacío nuevos, armados de packs CC0 (Kenney Sci-fi Sounds y "gun reload sounds" de OpenGameArt; no piden créditos); la pistola se quedó con los suyos a propósito. Los disparos son capas de estallido, metal y grave: suenan a arma sci-fi, no a pólvora; para algo realista quedan el pack de f8studios (licencia sin confirmar) o Sonniss GDC. Enemigos (2026-10-31): Ranger, Bomber, Healer, Summoner, Environmental y Flyer con sonidos nuevos de los mismos packs más "monster sound effects 2" y "80 CC0 creature SFX #2" (CC0), varias voces con modulación en anillo para que suenen a robot; el Rusher entero, el ataque y la mecha del Bomber y la muerte del Healer se quedaron con los suyos a propósito. El Elite (en el banco) y los impactos siguen con los de `tools/generate_placeholder_sfx.py`. Falta la mezcla real en juego | Audio |
-| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, del hitstop suave, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
+| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 
 ## 3. Abierto — necesita una decisión
 
@@ -231,7 +244,7 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
   oleada con joystick, el tutorial completo, el giro de los enemigos con la IA a
   ritmo espaciado, y la **interpolacion de fisica** (rama
   `feat/physics-interpolation`) en un monitor de mas de 60 Hz: correr, slide,
-  dash, grapple, zip line, enemigos saliendo de las puertas, trazadoras, haces
+  dash, grapple, enemigos saliendo de las puertas, trazadoras, haces
   del Healer y numeros de daño. Ningun test ve un frame dibujado.
   Tambien el **movimiento de la UI** (rama `feat/ui-juice`): reparto de cartas,
   brillo y sonido de la rara, golpe de los numeros de la HUD, cartel de oleada;

@@ -4,8 +4,8 @@ extends Node
 ##
 ## SPEC-VIEWMODELS 3.4: all seven telegraph types are the same thing - a mesh, an
 ## unlit emissive material and a state enum. Centralising it is what makes the
-## arena legible: "cyan pulsing" means the same thing on an anchor, a pad and a
-## zip line, because it is literally the same code.
+## arena legible: "cyan pulsing" means the same thing on a pad and on a
+## platform, because it is literally the same code.
 ##
 ## Every state pairs colour with MOTION (pulse, fill, rise, blink), so a
 ## colour-blind player reads the signal from the animation alone.
