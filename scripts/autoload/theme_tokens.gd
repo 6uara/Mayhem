@@ -127,6 +127,11 @@ const UI_STAGGER         := 0.06  ## between cards dealt in a row
 const UI_SHAKE_TIME      := 0.24  ## "no": a refused purchase
 const UI_SHAKE_PX        := 9.0
 const ANNOUNCE_POP_SCALE := 1.35  ## the wave banner lands from bigger
+## Run end screen: the score counts up from zero and the mood background lands
+## loud and settles, both inside STATE_SETTLE_MAX - Restart must never wait.
+const RUN_END_COUNT_TIME := 0.40
+const RUN_END_INTRO_TIME := 0.40
+const RUN_END_DIM        := 0.88  ## how much of the frozen arena the background hides
 const RARE_REVEAL_DELAY  := 0.18  ## a rare card lands a beat after the rest
 const RARE_REVEAL_SCALE  := 1.16
 const RARE_GLOW_PERIOD   := 1.40  ## continuous, like LOW_HEALTH_PULSE

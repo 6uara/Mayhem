@@ -195,3 +195,51 @@ func test_the_starting_wallet_is_not_earnings() -> void:
 	assert_eq(RunRecord.earned, 0)
 	EconomyManager.reset()
 	assert_eq(RunRecord.earned, 0, "volver a la plata inicial tampoco es ganar")
+
+
+# --------------------------------------------------------------- la run por oleada
+
+## La pantalla de fin dibuja una barra por oleada: cada una entra al log con su
+## tiempo, su daño y sus kills.
+func test_each_cleared_wave_is_logged_with_its_numbers() -> void:
+	EventBus.wave_started.emit(0, null)
+	EventBus.kill_scored.emit(&"rusher", Vector3.ZERO, false, 10)
+	EventBus.kill_scored.emit(&"ranger", Vector3.ZERO, true, 10)
+	EventBus.wave_completed.emit(0, 31.5, 12.0)
+	assert_eq(RunRecord.wave_log.size(), 1)
+	var entry: Dictionary = RunRecord.wave_log[0]
+	assert_eq(int(entry.wave), 0)
+	assert_almost_eq(float(entry.duration), 31.5, 0.001)
+	assert_almost_eq(float(entry.damage), 12.0, 0.001)
+	assert_eq(int(entry.kills), 2)
+	assert_true(bool(entry.cleared))
+
+
+## La oleada en la que se muere tambien entra, marcada: es la que mas importa.
+func test_the_wave_you_died_on_is_logged_as_not_cleared() -> void:
+	EventBus.wave_started.emit(3, null)
+	EventBus.player_damaged.emit(40.0, 0.0)
+	EventBus.player_died.emit()
+	assert_eq(RunRecord.wave_log.size(), 1)
+	assert_eq(int(RunRecord.wave_log[0].wave), 3)
+	assert_false(bool(RunRecord.wave_log[0].cleared))
+	assert_almost_eq(float(RunRecord.wave_log[0].damage), 40.0, 0.001)
+
+
+func test_kills_are_split_by_enemy_and_by_weapon() -> void:
+	EventBus.weapon_switched.emit(&"shotgun")
+	EventBus.kill_scored.emit(&"rusher", Vector3.ZERO, false, 10)
+	EventBus.weapon_fired.emit(&"rifle")
+	EventBus.kill_scored.emit(&"rusher", Vector3.ZERO, false, 10)
+	assert_eq(int(RunRecord.kills_by_type[&"rusher"]), 2)
+	assert_eq(int(RunRecord.kills_by_weapon[&"shotgun"]), 1)
+	assert_eq(int(RunRecord.kills_by_weapon[&"rifle"]), 1)
+	assert_eq(RunRecord.shots_fired, 1)
+
+
+func test_reset_forgets_the_wave_log() -> void:
+	EventBus.wave_started.emit(0, null)
+	EventBus.wave_completed.emit(0, 10.0, 0.0)
+	RunRecord.reset()
+	assert_eq(RunRecord.wave_log.size(), 0)
+	assert_eq(RunRecord.kills_by_type.size(), 0)
