@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="UpgradeData" load_steps=6 format=3]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"move_speed"
+operation = 1
+value = 1.06
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"air_control"
+operation = 1
+value = 1.15
+
+[sub_resource type="Resource" id="Mod_2"]
+script = ExtResource("2_mod")
+stat_key = &"max_health"
+value = -10.0
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"featherweight"
+display_name = "Featherweight"
+description = "+6% move speed, +15% air control, -10 max health."
+cost = 300
+category = 0
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1"), SubResource("Mod_2")])
+max_stacks = 2
