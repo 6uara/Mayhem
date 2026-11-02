@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Theme" path="res://ui/mayhem_theme.tres" id="0_theme"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
@@ -19,6 +19,8 @@
 [ext_resource type="Texture2D" path="res://ui/icons/econ/econ_enemies_left.svg" id="18_ic_left"]
 [ext_resource type="Texture2D" path="res://ui/icons/econ/econ_ammo.svg" id="19_ic_ammo"]
 [ext_resource type="Shader" path="res://assets/shaders/speed_lines.gdshader" id="13_speedlines_shader"]
+[ext_resource type="Script" path="res://scripts/ui/shot_pulse_overlay.gd" id="22_shot_pulse"]
+[ext_resource type="Shader" path="res://assets/shaders/shot_pulse.gdshader" id="23_shot_pulse_shader"]
 
 [sub_resource type="Gradient" id="Grad_vignette"]
 offsets = PackedFloat32Array(0, 0.45, 1)
@@ -50,6 +52,12 @@ shader_parameter/intensity = 0.0
 shader_parameter/line_count = 28
 shader_parameter/inner_radius = 0.35
 shader_parameter/line_color = Color(0.902, 0.91, 0.937, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shot_pulse"]
+shader = ExtResource("23_shot_pulse_shader")
+shader_parameter/intensity = 0.0
+shader_parameter/pulse_color = Color(0.027, 0.031, 0.043, 1)
+shader_parameter/inner_radius = 0.45
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -461,6 +469,18 @@ mouse_filter = 2
 [node name="SpeedLines" type="ColorRect" parent="Root/StateOverlays"]
 script = ExtResource("12_speedlines")
 material = SubResource("ShaderMaterial_speedlines")
+anchors_preset = 15
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="ShotPulse" type="ColorRect" parent="Root/StateOverlays"]
+visible = false
+script = ExtResource("22_shot_pulse")
+material = SubResource("ShaderMaterial_shot_pulse")
 anchors_preset = 15
 anchor_left = 0
 anchor_top = 0

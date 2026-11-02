@@ -298,6 +298,24 @@ friction reads as a smooth ramp rather than a flicker. Gated by its own
 `accessibility/speed_lines_enabled` setting — a distinct discomfort trigger
 from screenshake, so it doesn't ride along with that toggle.
 
+## Shot feel (no hitstop)
+
+There is no hitstop: nothing touches `Engine.time_scale` on a hit, headshot or
+kill (removed 2026-11-02, shooting has to stay fluid). A shot's weight comes
+from two faint effects instead:
+
+- **Camera shake** — `CameraRecoilComponent`, group Shake. Each shot adds
+  `shot_shake × visual_kick_multiplier` of trauma (capped at 1, decaying at
+  `shake_decay`/s); the rig rolls up to `shake_roll_degrees` and sways up to
+  `shake_offset` metres, scaled by trauma. It lives on the rig, under the aim
+  pivot, so it never moves a shot. Off with `accessibility/screenshake_enabled`.
+- **Edge pulse** — `ShotPulseOverlay` + `shot_pulse.gdshader`, in the HUD's
+  `StateOverlays`. A `VOID` darkening of the screen edges, never the reticle
+  zone: `Tokens.SHOT_PULSE_*` per shot, `Tokens.KILL_PULSE_*` per kill, and a
+  shot never cuts a kill's pulse short. No screen-texture read (a full-screen
+  copy at 15 shots/s is not worth it on an iGPU), and the node hides itself at
+  zero. Off with `accessibility/reduce_flashing`.
+
 ## Color law tie-in
 
 `tint` on the portal shader is set to match `Tokens.SPAWN` at the `.tscn`

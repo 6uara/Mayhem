@@ -151,7 +151,7 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | La última kill de una oleada se cobra antes de cerrarla: entra al desglose, lleva el multiplicador de la regla y cuenta para el pedido del público | `Enemy._on_died()` |
 | La caja de munición y los regalos del público se levantan estando encima en cuanto hay lugar, sin salir y volver a entrar | `AmmoPickup`, `CrowdDropPickup` |
 | La granada aturdidora reciclada del pool vuelve a mostrar el destello; el gancho desde un slide ya no deja la cámara baja | `StunGrenade._flash()`, `MovementComponent._handle_action_input()` |
-| Sin hitstop: ni impactos, ni headshots, ni kills frenan el tiempo (`Engine.time_scale`). El fogonazo del arma es uno por arma y se reinicia en cada tiro, en vez de crear un nodo y un material por disparo | `HitstopController` (borrado), `MuzzleFlash`, `WeaponComponent._spawn_muzzle_vfx()` |
+| Sin hitstop: ni impactos, ni headshots, ni kills frenan el tiempo (`Engine.time_scale`). El peso del tiro pasa a un sacudón de cámara leve (roll de décimas de grado) y un oscurecimiento leve de los bordes, más fuerte en una kill. Sin playtest. El fogonazo del arma es uno por arma y se reinicia en cada tiro, en vez de crear un nodo y un material por disparo | `HitstopController` (borrado), `CameraRecoilComponent` grupo Shake, `ShotPulseOverlay`, `Tokens.SHOT_PULSE_*`, `MuzzleFlash` |
 
 ## 2. Bloquea el release
 
