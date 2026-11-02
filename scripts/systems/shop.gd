@@ -273,6 +273,10 @@ func _build_pool() -> Array[Dictionary]:
 		# crash on a null catalogue entry, and this runs on every shop open and reroll.
 		if upgrade == null:
 			continue
+		# La misma regla que las raras: una mejora atada a ciertas armas no se
+		# ofrece con otra en la mano, donde se pagaria y no haria nada.
+		if not upgrade.fits_weapon(equipped_id):
+			continue
 		# A WEAPON upgrade is scoped to whatever is equipped right now - it is
 		# offered/maxed-out per weapon, not once for the whole run.
 		var scope: StringName = equipped_id if upgrade.category == UpgradeData.Category.WEAPON \

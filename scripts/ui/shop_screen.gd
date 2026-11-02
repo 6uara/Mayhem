@@ -409,7 +409,10 @@ func _on_reroll_cost_changed(cost: int) -> void:
 
 
 func _on_reroll_pressed() -> void:
-	if shop == null:
+	# La R es el atajo del boton, y la tienda corre en PROCESS_MODE_ALWAYS: con
+	# el menu de pausa arriba, la R rerolleaba igual y cobraba. Las teclas de
+	# compra ya se callan en pausa (ver `_input`).
+	if shop == null or GameManager.is_paused:
 		return
 	_deal_next = true
 	if shop.reroll() != EconomyManager.PurchaseResult.OK:

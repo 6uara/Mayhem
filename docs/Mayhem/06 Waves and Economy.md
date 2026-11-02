@@ -91,7 +91,10 @@ that the teacher playtest read as noise). `open(breakdown, wave_index,
 duration_seconds)` fills **step 1, the shop**: a side column with the wave
 report (`_fill_report()`: one aligned row per income source, rows for
 contract, show and `damage_loss` only when they moved money, and an EARNED
-total) and the build (`BonusList`), and the offers in the middle. Cards are
+total) and the build (`BonusList`, inside a `ScrollContainer` so a long build
+scrolls instead of growing the panel past the screen and pushing the START
+button off it - the "wave 5 shop with no cards and no button" report), and the
+offers in the middle. Cards are
 built procedurally (`_make_card()`) from a `ChamferStyleBox` panel whose rail is
 the category colour (`Tokens.CATEGORY_COLOR`, text colour for a weapon): key
 hint, icon, category, name, description, stacks as `SegmentStrip` pips, then
