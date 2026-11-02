@@ -51,9 +51,13 @@ static func _check_placements(arena: ArenaData, catalog: PieceCatalog,
 	for entry: PlacementEntry in arena.placements:
 		var piece: PieceDefinition = catalog.get_piece(entry.piece_id)
 		if piece == null:
+			# Aviso y no error: el loader ya saltea lo que no conoce, y una pieza que
+			# salio del juego (la zip line) no puede dejar inservible una arena que
+			# alguien armo cuando existia.
 			issues.append(ValidationIssue.make(&"unknown_piece",
-				ValidationIssue.Severity.ERROR,
-				"No piece named '%s' in the catalog." % entry.piece_id, entry.cell))
+				ValidationIssue.Severity.WARNING,
+				"No piece named '%s' in the catalog; it is skipped." % entry.piece_id,
+				entry.cell))
 			continue
 		for offset: Vector3i in piece.get_footprint(entry.rotation):
 			if not arena.is_in_bounds(entry.cell + offset):
@@ -140,7 +144,7 @@ static func _check_connectivity(arena: ArenaData, graph: GridGraph,
 		return issues  # Reachability is meaningless without a place to start.
 
 	# Enemies have to be able to walk between their door and the player, so this
-	# flood ignores pads and zip lines: an arena crossable only by bounce pad is
+	# flood ignores pads: an arena crossable only by bounce pad is
 	# a broken arena for the horde even though the player can get around it.
 	var reached: Dictionary = Reachability.flood(graph, arena.player_spawn, false)
 	for spawn: EnemySpawnEntry in arena.enemy_spawns:

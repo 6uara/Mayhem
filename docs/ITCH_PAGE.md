@@ -33,7 +33,7 @@ CONTROLS
   Space           jump                LMB         fire
   Ctrl            crouch / slide      RMB         aim down sights
   Ctrl (in air)   dive into a slide   R           reload
-  E               grapple             F           interact
+  E               grapple
   Q / X / C       utilities           1-4         weapons
   Wheel           cycle weapons       Esc         pause
 

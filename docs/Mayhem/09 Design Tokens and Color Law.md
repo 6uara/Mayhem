@@ -25,7 +25,7 @@ const WORLD_GRAPPLE := Color("#A855FF")  # "you can hook onto this" — grapple 
 
 **No other color may appear on an interactive surface, and none of these five is
 ever reused for a second meaning.** Every telegraphed object in the arena — grapple
-anchors, zip lines, moving/disappearing platforms, hazard pools, spawn doors — is
+anchors, moving/disappearing platforms, hazard pools, spawn doors — is
 one of exactly these five meanings, enforced structurally by `TelegraphComponent.Meaning`
 (see [[01 Architecture#The telegraph contract]]) and checked directly by
 `tests/integration/test_arena_elements.gd::test_the_five_meanings_never_share_a_colour`.

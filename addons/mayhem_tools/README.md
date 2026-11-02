@@ -78,7 +78,7 @@ para cambiar de altura. Cambiá de herramienta para borrar o poner spawns.
 
 ## Piezas de traversal y enlaces
 
-`bounce_pad`, `jump_link`, `zip_line`, `grapple_anchor`, `moving_platform` y
+`bounce_pad`, `jump_link`, `grapple_anchor`, `moving_platform` y
 `hazard_zone` son piezas del catálogo que instancian las escenas que el juego ya
 tiene. Las que mueven al jugador declaran además un **enlace**:
 

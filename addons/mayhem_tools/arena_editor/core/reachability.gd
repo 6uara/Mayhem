@@ -8,7 +8,7 @@ extends RefCounted
 
 ## Every cell reachable from `start`, as a set (cell -> true).
 ##
-## `for_player` decides whether pads, zip lines and other player-only traversal
+## `for_player` decides whether pads and other player-only traversal
 ## count. "Can the player get there" and "can an enemy path there" are different
 ## questions and the validator asks both.
 static func flood(graph: GridGraph, start: Vector3i, for_player: bool = false) -> Dictionary:

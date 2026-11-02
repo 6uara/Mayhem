@@ -5,7 +5,7 @@ extends Node
 ## - **Claridad** (el default). Pensado para que un jugador nuevo sepa que mirar.
 ##   Una sola regla: **si tiene borde, importa**, y el color dice que hace. Los
 ##   enemigos ya tenian el suyo; ahora lo tienen tambien lo que se usa (anclas,
-##   pads, zip lines, plataformas), lo que se levanta (municion, gadgets) y las
+##   pads, plataformas), lo que se levanta (municion, gadgets) y las
 ##   puertas de donde salen enemigos (SemanticOutline). El mapa no lleva borde, y
 ##   el fondo -cuenco, publico, ciudad, pared de energia- retrocede: menos color y
 ##   menos brillo (background_recede.gdshaderinc). Antes el fondo era lo mas

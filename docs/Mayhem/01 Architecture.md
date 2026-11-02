@@ -92,7 +92,7 @@ empty `spawn_door_ids`) are otherwise silent.
 
 ## The telegraph contract
 
-Every interactive/dangerous object in the arena — grapple anchors, zip lines,
+Every interactive/dangerous object in the arena — grapple anchors,
 moving/disappearing platforms, hazard pools, spawn doors — runs through the same
 `TelegraphComponent`: one mesh, one unlit emissive material, one state enum
 (`IDLE` / `AVAILABLE` / `WARNING` / `ACTIVE`), one of five meanings (`TRAVERSAL` /

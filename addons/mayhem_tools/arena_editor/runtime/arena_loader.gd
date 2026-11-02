@@ -79,7 +79,7 @@ static func piece_position(piece: PieceDefinition, entry: PlacementEntry,
 
 ## A jump link the enemies can use becomes a real NavigationLink3D, so the same
 ## edge the validator counted is the edge the navmesh offers. Player-only links -
-## bounce pads, zip lines - are deliberately not published here: nothing in the
+## bounce pads - are deliberately not published here: nothing in the
 ## horde can ride them, and a link they cannot honour sends them off a ledge.
 static func _build_navigation_links(runtime: ArenaRuntime, graph: GridGraph,
 		catalog: PieceCatalog) -> void:

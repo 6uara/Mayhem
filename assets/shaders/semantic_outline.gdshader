@@ -1,5 +1,5 @@
 shader_type spatial;
-// El borde de lo que se juega: anclas de gancho, pads, zip lines, plataformas,
+// El borde de lo que se juega: anclas de gancho, pads, plataformas,
 // puertas de spawn mientras salen enemigos, municion y gadgets tirados, cada uno en el color de su
 // significado (TelegraphComponent.get_color(), el acento del gadget).
 //

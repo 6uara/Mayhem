@@ -77,7 +77,7 @@ spawn y navegación.
   El jump link sigue invisible a propósito: es una ayuda de navegación para los
   enemigos (ver `jump_link.gd`).
 - **Topes por pieza** (`max_instances`): los interactuables tienen techo para que
-  una arena no deje de ser legible (6 bounce pads, 12 anclas, 4 zip lines…).
+  una arena no deje de ser legible (6 bounce pads, 12 anclas…).
 - **Navegación:** dos sistemas con roles separados — grilla + A* para el editor,
   navmesh horneado en runtime para los enemigos. Ver
   [DECISION_navegacion_arenas](../decisiones/DECISION_navegacion_arenas.md).
@@ -131,8 +131,8 @@ onda desde ese punto. Hasta 8 ondas simultáneas (`MAX_IMPACTS`).
 ### ArenaRoof
 
 `scripts/systems/arena_roof.gd`. Anillo estructural, vigas y óculo abierto
-(`oculus_share`). Existe por una razón de juego: con gancho, picadas, pads y zip
-lines, un techo abierto obliga a decidir qué pasa cuando alguien lo supera.
+(`oculus_share`). Existe por una razón de juego: con gancho, picadas y pads,
+un techo abierto obliga a decidir qué pasa cuando alguien lo supera.
 Colisión: una caja plana. Los haces de luz se sacaron en playtest (competían
 con el área de juego).
 

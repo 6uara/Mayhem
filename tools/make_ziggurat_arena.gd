@@ -17,8 +17,8 @@ extends "res://tools/shipped_arena_builder.gd"
 
 ## Cada terraza: primera celda y ancho del anillo. La primera es la ancha porque
 ## es donde se aterriza al bajar de la cima; la segunda tiene dos celdas y no tres
-## (quedo del zip line que bajaba dos alturas en cinco celdas; los mapas ya no
-## llevan zip lines).
+## (quedo de la zip line que bajaba dos alturas en cinco celdas; la zip line
+## salio del juego).
 const TIER_1_ORIGIN: int = 7
 const TIER_1_WIDTH: int = 4
 const TIER_2_ORIGIN: int = 11

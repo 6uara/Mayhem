@@ -25,7 +25,7 @@ var body_occupancy: Dictionary = {}
 ## walkable cell -> metres from the cell floor to the surface an agent stands on.
 var surface_height: Dictionary = {}
 ## from cell -> Array of {"to": Vector3i, "players_only": bool} - the traversal a
-## bounce pad, jump link or zip line adds on top of walking.
+## bounce pad or jump link adds on top of walking.
 var links: Dictionary = {}
 
 
@@ -69,7 +69,7 @@ func add_link(from: Vector3i, to: Vector3i, players_only: bool, one_way: bool) -
 
 
 ## Every link leaving `cell`. `for_player` is the whole point of the flag: the
-## player rides pads and zip lines, enemies only get the links they can path.
+## player rides pads, enemies only get the links they can path.
 func links_from(cell: Vector3i, for_player: bool) -> Array[Vector3i]:
 	var out: Array[Vector3i] = []
 	for link: Dictionary in links.get(cell, []):

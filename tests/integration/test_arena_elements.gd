@@ -39,7 +39,6 @@ func test_every_element_declares_the_right_meaning() -> void:
 	var expected: Dictionary = {
 		"res://scenes/arena/grapple_anchor.tscn": TelegraphComponent.Meaning.GRAPPLE,
 		"res://scenes/arena/moving_platform.tscn": TelegraphComponent.Meaning.TRAVERSAL,
-		"res://scenes/arena/zip_line.tscn": TelegraphComponent.Meaning.TRAVERSAL,
 		"res://scenes/arena/disappearing_platform.tscn": TelegraphComponent.Meaning.TRAVERSAL,
 		"res://scenes/arena/hazard_zone.tscn": TelegraphComponent.Meaning.HAZARD,
 	}
@@ -289,116 +288,6 @@ func test_moving_platform_syncs_to_physics_so_riders_are_carried() -> void:
 	var platform: MovingPlatform = _instance("res://scenes/arena/moving_platform.tscn")
 	assert_true(platform.sync_to_physics,
 		"without this the physics server will not carry a CharacterBody3D")
-
-
-# -------------------------------------------------------------------- zip lines
-
-func test_zip_line_carries_a_rider_to_the_end() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	line.speed = 40.0
-
-	# Arrival has to be measured when the ride ends: after the dismount the rider
-	# keeps their exit momentum and is legitimately long gone.
-	#
-	# The array is not decoration - GDScript lambdas capture by value, so assigning
-	# to a plain local inside the callback would never reach this scope.
-	var arrival: Array[Vector3] = [Vector3.ZERO]
-	line.ride_finished.connect(func() -> void: arrival[0] = player.global_position)
-
-	assert_true(line.try_mount(player), "mounting an empty line works")
-	assert_true(line.is_occupied)
-	await wait_seconds(1.5)
-	assert_false(line.is_occupied, "the ride ends on its own")
-	assert_lt(arrival[0].distance_to(line.end_point.global_position), 3.0,
-		"the rider arrives")
-
-
-func test_a_zip_line_takes_one_rider() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	assert_true(line.try_mount(player))
-	assert_false(line.try_mount(player), "already occupied")
-
-
-## A ride that dumps you at zero speed is a punishment for using it.
-func test_dismount_keeps_most_of_the_speed() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	line.speed = 20.0
-	line.try_mount(player)
-	await wait_seconds(1.6)
-	assert_gt(player.velocity.length(), line.speed * line.exit_speed_fraction * 0.8,
-		"exit momentum is preserved")
-
-
-## Una linea con el pasajero desaparecido a mitad del viaje se quedaba ocupada
-## para siempre: el guard de instancia valida salia sin soltar, y nadie la podia
-## volver a usar en toda la partida.
-func test_a_rider_that_vanishes_frees_the_line() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var rider := CharacterBody3D.new()
-	add_child(rider)
-	assert_true(line.try_mount(rider))
-	rider.free()
-	await wait_physics_frames(3)
-	assert_false(line.is_occupied, "la linea vuelve a estar disponible")
-	assert_true(line.can_mount())
-
-
-func test_a_line_without_an_end_never_offers_a_ride() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	line.end_point = null
-	assert_false(line.can_mount(), "un cable a ninguna parte no es un cable")
-	assert_false(line.try_mount(_instance("res://scenes/player/player.tscn")))
-
-
-## Deja la linea delante de la reticula, corrida `side` metros al costado. La
-## camara va en la cabeza y no en los pies, asi que una linea puesta en el
-## origen del jugador esta veinte grados por debajo de donde esta mirando - que
-## es un caso real, pero no es el que estos casos quieren medir.
-func _line_in_front(line: ZipLine, player: Player, side: float, ahead: float) -> void:
-	player.global_position = Vector3.ZERO
-	await wait_physics_frames(1)
-	line.global_position = player.head.global_position + Vector3(side, 0.0, -ahead)
-	await wait_physics_frames(2)
-
-
-## La condicion que le faltaba, la misma que el grapple: apuntarle cerca alcanza,
-## y el jugador se entera de que puede subirse antes de apretar el boton.
-func test_looking_near_a_line_is_enough_to_mount_it() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	# Corrida de la reticula pero dentro del cono: sin la asistencia este es
-	# exactamente el caso que el playtest reportaba como "no anda".
-	await _line_in_front(line, player, 0.3, 4.0)
-	assert_true(player.is_zip_line_in_range, "la reticula ya lo dice")
-	player._try_interact()
-	assert_true(line.is_occupied, "y el boton lo cumple")
-
-
-func test_a_line_well_off_to_the_side_is_not_grabbed_for_you() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	await _line_in_front(line, player, 4.0, 4.0)
-	assert_false(player.is_zip_line_in_range, "45 grados no es un pixel de error")
-
-
-func test_a_line_too_far_away_is_not_offered() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	await _line_in_front(line, player, 0.0, Player.ZIP_LINE_RANGE * 3.0)
-	assert_false(player.is_zip_line_in_range)
-
-
-func test_an_occupied_line_stops_offering_itself() -> void:
-	var line: ZipLine = _instance("res://scenes/arena/zip_line.tscn")
-	var player: Player = _instance("res://scenes/player/player.tscn")
-	var other := CharacterBody3D.new()
-	add_child_autofree(other)
-	assert_true(line.try_mount(other))
-	await _line_in_front(line, player, 0.3, 4.0)
-	assert_false(player.is_zip_line_in_range, "ya tiene pasajero")
 
 
 ## Reported from playtest: standing on a platform above a pool still cost health.
