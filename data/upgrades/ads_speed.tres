@@ -17,3 +17,4 @@ description = "Aims down sights 30% faster."
 cost = 210
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 max_stacks = 2
+tags = Array[StringName]([&"precision"])

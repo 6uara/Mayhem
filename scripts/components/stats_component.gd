@@ -49,6 +49,9 @@ const FIRST_SHOT_DAMAGE: StringName = &"first_shot_damage"
 ## Multiplica la penalidad de dispersion por moverse o estar en el aire: 0 la
 ## borra. Base 1.
 const MOVING_SPREAD_PENALTY: StringName = &"moving_spread_penalty"
+## Multiplica el multiplicador de cabeza del arma (WeaponData.headshot_multiplier).
+## Base 1. Lo mueve Deadeye, una vez por mejora de precision.
+const HEADSHOT_DAMAGE_MULTIPLIER: StringName = &"headshot_damage_multiplier"
 
 signal stats_changed()
 

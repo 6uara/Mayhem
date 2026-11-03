@@ -23,3 +23,4 @@ description = "+22% damage, 15% smaller magazine."
 cost = 360
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
 max_stacks = 2
+tags = Array[StringName]([&"firepower"])

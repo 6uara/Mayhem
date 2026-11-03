@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"airborne_damage_multiplier"
+value = 0.06
+per_tag = &"air"
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"aerialist"
+display_name = "Aerialist"
+description = "+6% damage in the air for every AIR upgrade you own."
+cost = 520
+category = 0
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
+is_rare = true

@@ -188,6 +188,12 @@ Agregado el 2026-10-16 (sin cita, decisiones posteriores al brief):
   rating suba.
 - **Pedidos del público**: desde la ola 2 la tribuna pide algo concreto ("un 360",
   "tres en el aire") con tiempo límite; cumplirlo paga rating, plata y un regalo.
+- **Familias y sinergia** (2026-11-03): cada mejora lleva una o dos etiquetas
+  (aire, momentum, gancho, precisión, armadura, munición, potencia, estilo), y
+  cuatro raras escalan con cuántas de una familia hay en el build. Dos de ellas
+  cobran con otra familia (anti-sinergia explícita: Streamliner y Bulwark se
+  oponen). Siguen siendo solo StatModifiers: un modificador con `per_tag` entra
+  una vez por mejora de esa familia.
 - **Mejoras raras por arma**: dos por arma, que agregan una regla al tiro
   (atraviesa, salpica, empuja, slug). Solo se ofrecen con esa arma en la mano.
 - **Una run tiene semilla**: la tienda, las reglas, los contratos, los pedidos,

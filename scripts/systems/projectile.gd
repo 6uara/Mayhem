@@ -34,8 +34,10 @@ var _tracer_impacts: bool = false
 
 
 ## Arms the projectile. `direction` is expected normalized.
+## `headshot_override`: el multiplicador de cabeza ya con el build (Deadeye); -1
+## usa el del arma pelado.
 func launch(from: Vector3, direction: Vector3, data: WeaponData, shooter: Node,
-		damage_override: float = -1.0) -> void:
+		damage_override: float = -1.0, headshot_override: float = -1.0) -> void:
 	global_position = from
 	_origin = from
 	_velocity = direction * data.projectile_speed
@@ -44,7 +46,7 @@ func launch(from: Vector3, direction: Vector3, data: WeaponData, shooter: Node,
 	_falloff_start = data.falloff_start
 	_falloff_end = data.falloff_end
 	_falloff_min = data.falloff_min_multiplier
-	_headshot_multiplier = data.headshot_multiplier
+	_headshot_multiplier = data.headshot_multiplier if headshot_override < 0.0 		else headshot_override
 	_shooter = shooter
 	_lifetime = 0.0
 	_is_active = true

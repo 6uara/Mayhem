@@ -24,3 +24,4 @@ cost = 380
 category = 2
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
 is_rare = true
+tags = Array[StringName]([&"style"])

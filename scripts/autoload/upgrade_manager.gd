@@ -80,9 +80,51 @@ func get_modifiers_for(stat_key: StringName, weapon_id: StringName = &"") -> Arr
 		var stacks: int = int(_stacks[key])
 		for modifier: StatModifier in data.stat_modifiers:
 			if modifier != null and modifier.stat_key == stat_key:
-				for _i: int in stacks:
+				# Una rara de sinergia entra una vez por mejora de su familia.
+				var copies: int = stacks if modifier.per_tag == &"" \
+					else stacks * count_tag(modifier.per_tag, weapon_id)
+				for _i: int in copies:
 					result.push_back(modifier)
 	return result
+
+
+## Cuantos stacks de mejoras con la etiqueta `tag` cuentan para `weapon_id`: las
+## globales siempre, las de arma solo las de esa arma - la misma regla de alcance
+## que `get_modifiers_for()`.
+func count_tag(tag: StringName, weapon_id: StringName = &"") -> int:
+	var total: int = 0
+	for key: StringName in _owned:
+		var data: UpgradeData = _owned[key]
+		if not data.tags.has(tag):
+			continue
+		if data.category == UpgradeData.Category.WEAPON and _key(data.id, weapon_id) != key:
+			continue
+		total += int(_stacks[key])
+	return total
+
+
+## Las raras del build que escalan con alguna etiqueta de `data`: lo que la
+## tienda muestra en la tarjeta ("FEEDS AERIALIST", "COSTS STREAMLINER").
+## `{ "id", "name", "penalty" }` por rara y por sentido.
+func get_synergy_links(data: UpgradeData) -> Array[Dictionary]:
+	var links: Array[Dictionary] = []
+	if data == null or data.tags.is_empty():
+		return links
+	var seen: Dictionary = {}
+	for key: StringName in _owned:
+		var owned: UpgradeData = _owned[key]
+		if owned == data:
+			continue
+		for modifier: StatModifier in owned.stat_modifiers:
+			if modifier == null or modifier.per_tag == &"" or not data.tags.has(modifier.per_tag):
+				continue
+			var mark: String = "%s:%s" % [owned.id, modifier.per_tag_is_penalty]
+			if seen.has(mark):
+				continue
+			seen[mark] = true
+			links.append({"id": owned.id, "name": owned.display_name,
+				"penalty": modifier.per_tag_is_penalty})
+	return links
 
 
 ## `weapon_id` is required for `data.category == Category.WEAPON` - an unscoped

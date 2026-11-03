@@ -164,13 +164,21 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | El reporte de feedback guarda las capas y el log de la última run adentro | `FeedbackManager.save_report()` |
 | Aviso de ataque fuera de cuadro: chevron hueco en el borde que se llena con la preparación del enemigo. Opción en HUD, encendida. Sin playtest | `ThreatIndicators`, `Tokens.THREAT_*`, `hud/threat_indicators` |
 
+### Lo que entró el 2026-11-03 (sinergias, rama `feat/upgrade-synergies`)
+
+| Qué | Dónde |
+|---|---|
+| Familias de mejoras: cada una de las 40 lleva una o dos etiquetas (aire, momentum, gancho, precisión, armadura, munición, potencia, estilo) | `UpgradeData.tags`, `data/upgrades/` |
+| Cuatro raras que escalan con una familia: Aerialist (aire), Deadeye (precisión, de arma), Streamliner (momentum, cobra vida por armadura) y Bulwark (armadura, cobra velocidad por momentum). Iconos geométricos provisorios. Sin playtest | `StatModifier.per_tag`, `UpgradeManager.count_tag()`, `HEADSHOT_DAMAGE_MULTIPLIER` |
+| La tarjeta de la tienda dice la familia, qué rara del build alimenta o le cobra, y cuánto de su familia hay; el Codex muestra FAMILY y SCALES WITH | `Shop.synergy_fields()`, `ShopScreen._add_synergy_lines()`, `CodexCatalog` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
 | R1 | **Modelos** de piezas de arena, interactuables y un enemigo (Elite). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19; los brazos de Meshy, 2026-10-28, llegaron sin textura y usan un material liso hasta que haya una), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
 | R2 | **Audio de armas, enemigos e impactos.** Armas (2026-10-31): SMG, rifle y escopeta tienen disparo, recarga y vacío nuevos, armados de packs CC0 (Kenney Sci-fi Sounds y "gun reload sounds" de OpenGameArt; no piden créditos); la pistola se quedó con los suyos a propósito. Los disparos son capas de estallido, metal y grave: suenan a arma sci-fi, no a pólvora; para algo realista quedan el pack de f8studios (licencia sin confirmar) o Sonniss GDC. Enemigos (2026-10-31): Ranger, Bomber, Healer, Summoner, Environmental y Flyer con sonidos nuevos de los mismos packs más "monster sound effects 2" y "80 CC0 creature SFX #2" (CC0), varias voces con modulación en anillo para que suenen a robot; el Rusher entero, el ataque y la mecha del Bomber y la muerte del Healer se quedaron con los suyos a propósito. El Elite (en el banco) y los impactos siguen con los de `tools/generate_placeholder_sfx.py`. Falta la mezcla real en juego | Audio |
-| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-10-21: los números de la caída rápida, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
+| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-11-03: los números y costos de las cuatro raras de sinergia. Desde el 2026-10-21: los números de la caída rápida, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 
 ## 3. Abierto — necesita una decisión
 
@@ -244,7 +252,7 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
   Con ese filtro el build se queda sin arte de arena. Revisar antes del release.
 - **Mezcla de audio real** (oídos, auriculares y parlantes).
 - **URL del formulario de feedback** vacía en `data/feedback/feedback_config.tres`.
-- **Iconos de las raras por arma (8) y del bono RECOMPENSA**: geométricos
+- **Iconos de las raras por arma (8), de las raras de sinergia (4) y del bono RECOMPENSA**: geométricos
   provisorios, en el mismo lenguaje que los de las raras globales.
 - **Variantes de enemigo y oleadas con alternativas**: esperan los modelos de
   todos los enemigos (R1). Diseño en [PLAN_MEJORAS §5](planes/PLAN_MEJORAS.md).

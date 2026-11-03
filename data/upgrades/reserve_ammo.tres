@@ -17,3 +17,4 @@ description = "+40% reserve ammo capacity."
 cost = 270
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 max_stacks = 2
+tags = Array[StringName]([&"ammo"])

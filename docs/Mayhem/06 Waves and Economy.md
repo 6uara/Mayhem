@@ -182,6 +182,30 @@ the rule is off until bought; the rules live in `PlayerPerks`, `WeaponComponent`
 the common upgrade *Nanoweave* (`HEALTH_REGEN`, after `PlayerPerks.REGEN_DELAY`
 without damage) and the crowd's medkit (see [[13 Arena, Venue and Crowd]]).
 
+## Upgrade families and synergy rares
+
+Every upgrade carries one or two **tags** (`UpgradeData.tags`, the `TAG_*`
+constants: `air`, `momentum`, `grapple`, `precision`, `armor`, `ammo`,
+`firepower`, `style`). A `StatModifier` with `per_tag` set enters the aggregation
+**once per owned stack of an upgrade with that tag** instead of once
+(`UpgradeManager.get_modifiers_for()` → `count_tag()`, same weapon scoping as
+everything else), so a synergy rare is still "only StatModifiers" and the
+ADD → MULTIPLY → OVERRIDE order does not change.
+
+| Rare | Scales | Cost |
+|---|---|---|
+| Aerialist | +6 % airborne damage per `air` | — |
+| Deadeye (weapon) | +8 % headshot damage per `precision` (`HEADSHOT_DAMAGE_MULTIPLIER`, read by `WeaponComponent.headshot_multiplier_for()` for hitscan and bullet) | — |
+| Streamliner | +0.25 m/s run speed per `momentum` | −6 max health per `armor` |
+| Bulwark | −3 % damage taken per `armor` | −0.2 m/s per `momentum` |
+
+`per_tag_is_penalty` marks the cost half. The shop card shows the tags, and for
+each owned synergy rare an offer feeds (`^ FEEDS AERIALIST`, player cyan) or
+costs (`v COSTS BULWARK`, enemy red, arrow as the shape); a synergy rare on
+offer says how much of its family the build already has (`YOUR BUILD AIR x3`).
+`Shop.synergy_fields()`, `UpgradeManager.get_synergy_links()`. The Codex lists
+FAMILY and SCALES WITH. Numbers unplaytested.
+
 ## Rating
 
 `BroadcastRating` (autoload, `data/economy/rating_config.tres`). 0-100. A kill

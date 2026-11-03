@@ -17,3 +17,4 @@ description = "Recoil pattern is 18% smaller. The pattern itself never changes."
 cost = 360
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 max_stacks = 3
+tags = Array[StringName]([&"precision"])

@@ -18,3 +18,4 @@ cost = 530
 category = 0
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 is_rare = true
+tags = Array[StringName]([&"air"])

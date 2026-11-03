@@ -24,3 +24,4 @@ cost = 170
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
 is_temporary = true
 duration = 90.0
+tags = Array[StringName]([&"momentum", &"firepower"])

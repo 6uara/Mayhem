@@ -493,6 +493,7 @@ func _make_card(offer: Dictionary, index: int) -> Control:
 	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	description.add_theme_color_override(&"font_color", Color(Tokens.TEXT, 0.85))
 	card.add_child(description)
+	_add_synergy_lines(card, offer)
 
 	# Los stacks como pips: "owned 1/3" habia que leerlo, tres rayitas con una
 	# llena se ven.
@@ -525,6 +526,40 @@ func _make_card(offer: Dictionary, index: int) -> Control:
 	bottom.add_child(button)
 	card.add_child(bottom)
 	return panel
+
+
+## Las etiquetas y la sinergia, debajo de la descripcion: "AIR · MOMENTUM",
+## "FEEDS AERIALIST" en el color del jugador, "COSTS BULWARK" en el de daño, y
+## en una rara de sinergia cuanto de su familia ya hay. Es lo que hace visible
+## la decision: sin esto una rara que escala se compraba sin saber con que.
+func _add_synergy_lines(card: VBoxContainer, offer: Dictionary) -> void:
+	var tags: String = String(offer.get("tags", ""))
+	if tags != "":
+		var tag_label := Label.new()
+		tag_label.name = "Tags"
+		tag_label.theme_type_variation = &"HUDLabel"
+		tag_label.text = tags
+		tag_label.add_theme_color_override(&"font_color", Tokens.MUTED)
+		card.add_child(tag_label)
+	var scaling: String = String(offer.get("scaling", ""))
+	if scaling != "":
+		var scaling_label := Label.new()
+		scaling_label.name = "Scaling"
+		scaling_label.theme_type_variation = &"HUDLabel"
+		scaling_label.text = "YOUR BUILD  %s" % scaling
+		scaling_label.add_theme_color_override(&"font_color", Tokens.PLAYER)
+		card.add_child(scaling_label)
+	for link: Dictionary in offer.get("links", []):
+		var penalty: bool = bool(link.get("penalty", false))
+		var link_label := Label.new()
+		link_label.name = "Link"
+		link_label.theme_type_variation = &"HUDLabel"
+		# Flecha arriba / abajo ademas del color: el color nunca es la unica señal.
+		link_label.text = "%s %s %s" % ["v" if penalty else "^",
+			"COSTS" if penalty else "FEEDS", String(link.get("name", "")).to_upper()]
+		link_label.add_theme_color_override(&"font_color",
+			Tokens.ENEMY if penalty else Tokens.PLAYER)
+		card.add_child(link_label)
 
 
 ## Panel de tarjeta con su margen ya puesto: el contenido va en `get_child(0)`.

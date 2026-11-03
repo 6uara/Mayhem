@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"damage_taken_multiplier"
+value = -0.03
+per_tag = &"armor"
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"move_speed"
+value = -0.2
+per_tag = &"momentum"
+per_tag_is_penalty = true
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"bulwark"
+display_name = "Bulwark"
+description = "Take 3% less damage for every ARMOR upgrade. -0.2 m/s run speed for every MOMENTUM upgrade."
+cost = 480
+category = 2
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
+is_rare = true

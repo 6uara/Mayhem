@@ -193,6 +193,22 @@ func _rare_offer(upgrade: UpgradeData, equipped: StringName) -> Dictionary:
 		"category": int(upgrade.category),
 		"owned": UpgradeManager.get_stacks(upgrade.id, scope),
 		"max_stacks": upgrade.max_stacks, "weapon_id": scope, "rare": true,
+	}.merged(synergy_fields(upgrade, scope))
+
+
+## Lo que la tarjeta dice de la sinergia, armado al sortear: las etiquetas
+## (`tags`), que raras del build alimenta o le cobran (`links`) y, para una rara
+## de sinergia, cuantas mejoras de su familia ya hay (`scaling`). Ver
+## UpgradeManager.get_synergy_links().
+static func synergy_fields(upgrade: UpgradeData, scope: StringName) -> Dictionary:
+	var scaling: Array[String] = []
+	for tag: StringName in upgrade.get_scaling_tags():
+		scaling.append("%s x%d" % [UpgradeData.TAG_LABELS.get(tag, String(tag).to_upper()),
+			UpgradeManager.count_tag(tag, scope)])
+	return {
+		"tags": upgrade.get_tag_text(),
+		"links": UpgradeManager.get_synergy_links(upgrade),
+		"scaling": ", ".join(scaling),
 	}
 
 
@@ -290,7 +306,7 @@ func _build_pool() -> Array[Dictionary]:
 			"owned": UpgradeManager.get_stacks(upgrade.id, scope),
 			"max_stacks": upgrade.max_stacks,
 			"weapon_id": scope,
-		})
+		}.merged(synergy_fields(upgrade, scope)))
 
 	# En el modo de un arma sola la tienda no vende armas: el arma se eligio en el
 	# menu y es la de toda la run.

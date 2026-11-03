@@ -47,10 +47,14 @@
 [ext_resource type="Resource" path="res://data/upgrades/speed_loader.tres" id="33_speed_loader"]
 [ext_resource type="Resource" path="res://data/upgrades/tension_spool.tres" id="33_tension_spool"]
 [ext_resource type="Script" uid="uid://bfuhm2du7ec3e" path="res://scripts/resources/weapon_data.gd" id="43_pokod"]
+[ext_resource type="Resource" path="res://data/upgrades/aerialist.tres" id="40_aerialist"]
+[ext_resource type="Resource" path="res://data/upgrades/deadeye.tres" id="40_deadeye"]
+[ext_resource type="Resource" path="res://data/upgrades/streamliner.tres" id="40_streamliner"]
+[ext_resource type="Resource" path="res://data/upgrades/bulwark.tres" id="40_bulwark"]
 
 [resource]
 script = ExtResource("1_catalog")
 weapons = Array[ExtResource("43_pokod")]([ExtResource("2_rifle_ak"), ExtResource("3_shotgun"), ExtResource("4_smg"), ExtResource("5_pistol")])
 weapon_prices = PackedInt32Array(400, 450, 380, 150)
 upgrades = Array[ExtResource("1_jfkcv")]([ExtResource("8_move_speed"), ExtResource("9_jump_height"), ExtResource("10_air_control"), ExtResource("11_grapple_range"), ExtResource("12_grapple_cooldown"), ExtResource("13_magazine"), ExtResource("14_fire_rate"), ExtResource("15_recoil_control"), ExtResource("16_stability"), ExtResource("17_reload_speed"), ExtResource("18_ads_speed"), ExtResource("19_reserve_ammo"), ExtResource("20_damage"), ExtResource("21_max_health"), ExtResource("22_damage_reduction"), ExtResource("23_adrenaline"), ExtResource("24_grapple_aim_assist"), ExtResource("30_nanoweave"), ExtResource("33_hair_trigger"), ExtResource("33_hollow_points"), ExtResource("33_speed_loader"), ExtResource("33_tension_spool"), ExtResource("33_featherweight"), ExtResource("33_riot_padding")])
-rare_upgrades = Array[ExtResource("1_jfkcv")]([ExtResource("31_slide_loader"), ExtResource("31_ram_slide"), ExtResource("31_air_ace"), ExtResource("31_headhunter"), ExtResource("31_momentum_plating"), ExtResource("31_showman"), ExtResource("31_second_wind"), ExtResource("31_pad_charger"), ExtResource("32_penetrator"), ExtResource("32_last_word"), ExtResource("32_hot_rounds"), ExtResource("32_run_and_gun"), ExtResource("32_ap_rounds"), ExtResource("32_marksman_trigger"), ExtResource("32_slug"), ExtResource("32_blast_jump")])
+rare_upgrades = Array[ExtResource("1_jfkcv")]([ExtResource("31_slide_loader"), ExtResource("31_ram_slide"), ExtResource("31_air_ace"), ExtResource("31_headhunter"), ExtResource("31_momentum_plating"), ExtResource("31_showman"), ExtResource("31_second_wind"), ExtResource("31_pad_charger"), ExtResource("32_penetrator"), ExtResource("32_last_word"), ExtResource("32_hot_rounds"), ExtResource("32_run_and_gun"), ExtResource("32_ap_rounds"), ExtResource("32_marksman_trigger"), ExtResource("32_slug"), ExtResource("32_blast_jump"), ExtResource("40_aerialist"), ExtResource("40_deadeye"), ExtResource("40_streamliner"), ExtResource("40_bulwark")])
