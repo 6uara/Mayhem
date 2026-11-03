@@ -12,8 +12,7 @@ abiertos de [PLAN_PULIDO](historial/PLAN_PULIDO.md) (septiembre), que quedan en
 el historial. Cuando algo se cierra se borra de acá y se anota en el commit; cuando
 aparece algo nuevo, se agrega acá y no en un plan suelto.
 
-Base: rama `feat/systems-expansion` sobre `develop` @ `5bc7109`. Suite: ver
-[TESTING.md](TESTING.md#estado-actual-de-la-suite).
+Base: `develop`. Suite: ver [TESTING.md](TESTING.md#estado-actual-de-la-suite).
 
 ---
 
@@ -21,7 +20,7 @@ Base: rama `feat/systems-expansion` sobre `develop` @ `5bc7109`. Suite: ver
 
 **Todo el trabajo de sistemas está hecho.** El loop completo existe y está
 cubierto por tests: diez oleadas, ocho arquetipos (siete en rotación, el Elite en
-el banco), cuatro armas, dos modos de juego, 24 mejoras comunes y 16 raras, tienda
+el banco), cuatro armas, dos modos de juego, 24 mejoras comunes y 20 raras (cuatro de sinergia), tienda
 con reroll, bonos de estilo, rating de la transmisión, reglas de transmisión por
 oleada, curación (mejora y botiquín del público), trofeos, tabla por arena, Host
 con guion completo en subtítulos, tutorial de arranque, coliseo generado con
@@ -273,9 +272,6 @@ de mover cuerpos de la ola 10.
 - **`profile_elite_wave.gd` no mide la ola 10.** Al forzarla la run termina
   (sale "RUN RECORDED" con la ola viva) y el muestreo corre con el juego en la
   pantalla de fin: da ~240 FPS que no dicen nada. Visto el 2026-10-30.
-- **`EXPORT.md` excluye `assets/models/props/*`**, pero los pisos, paredes,
-  rampas, puertas y la pantalla gigante salen de ahí desde que tienen modelo.
-  Con ese filtro el build se queda sin arte de arena. Revisar antes del release.
 - **Mezcla de audio real** (oídos, auriculares y parlantes).
 - **URL del formulario de feedback** vacía en `data/feedback/feedback_config.tres`.
 - **Iconos de las raras por arma (8), de las raras de sinergia (4) y del bono RECOMPENSA**: geométricos
@@ -289,7 +285,7 @@ de mover cuerpos de la ola 10.
   oleada con joystick, el tutorial completo, el giro de los enemigos con la IA a
   ritmo espaciado, y la **interpolacion de fisica** (rama
   `feat/physics-interpolation`) en un monitor de mas de 60 Hz: correr, slide,
-  dash, grapple, enemigos saliendo de las puertas, trazadoras, haces
+  caida rapida, grapple, enemigos saliendo de las puertas, trazadoras, haces
   del Healer y numeros de daño. Ningun test ve un frame dibujado.
   Tambien el **movimiento de la UI** (rama `feat/ui-juice`): reparto de cartas,
   brillo y sonido de la rara, golpe de los numeros de la HUD, cartel de oleada;
@@ -313,6 +309,16 @@ público y ciudad sin sombra; shader del cuenco sin animación; sol con 2 cascad
 a 60 m; IA de Beehave a ritmo espaciado por distancia; overlay de destello solo
 mientras brilla; SubViewport del arma recortado; defaults más livianos en GPU
 integrada; packs de arte sin usar fuera del export.
+
+**Re-medido el 2026-11-03** (misma máquina, `profile_elite_wave.gd -- 10`, con
+el editor abierto al lado): la ola 10 ahora junta **49** enemigos y da **~25 FPS**
+(process ~31 ms, physics ~8-10 ms, GPU ~33 ms). Es lo mismo antes y después de
+las ramas del 2026-11-03 (25.2 contra 25.5): los cambios de CPU no se notan
+porque el techo volvió a ser la GPU. La caída desde los ~40 del 2026-10-09 viene
+de lo que entró en el medio (oleadas más grandes, modelos de Meshy, SSAO,
+contornos, muerte de enemigos con partículas) y no está atribuida todavía. Hay
+mucho ruido entre corridas en esta máquina (una corrida dio 17 FPS y la
+siguiente 25): medir siempre dos veces.
 
 **Sigue sin llegar a 60 en esta máquina con la ola 10**, y el techo ahora es la
 CPU: el paso de física cuesta ~13 ms con 42 enemigos (Beehave ~3 ms, mover los
