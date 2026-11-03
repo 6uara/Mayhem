@@ -155,8 +155,12 @@ func prepare_offer(wave_index: int, wave: WaveData) -> void:
 	if not enabled:
 		return
 	_offer_wave = wave_index
-	_offer_rules = pick_many(wave_index, wave, pool.offer_size if pool != null else 1)
-	_offer_contract = pick_contract(wave_index, wave)
+	# Cada mitad de la oferta con su capa: el playtest puede apagar las reglas y
+	# dejar los contratos, o al reves (PlaytestLayers).
+	if PlaytestLayers.is_on(PlaytestLayers.RULES):
+		_offer_rules = pick_many(wave_index, wave, pool.offer_size if pool != null else 1)
+	if PlaytestLayers.is_on(PlaytestLayers.CONTRACTS):
+		_offer_contract = pick_contract(wave_index, wave)
 	_chosen_rule = _offer_rules[0] if not _offer_rules.is_empty() else null
 	var ids: Array = []
 	for rule: BroadcastRule in _offer_rules:
@@ -348,6 +352,8 @@ func _on_wave_started(wave_index: int, wave: WaveData) -> void:
 			start_contract(signed)
 		return
 	_clear_offer()
+	if not PlaytestLayers.is_on(PlaytestLayers.RULES):
+		return
 	var picked: BroadcastRule = pick_for(wave_index, wave)
 	if picked != null:
 		start_rule(picked)

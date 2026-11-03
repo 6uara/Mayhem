@@ -366,11 +366,27 @@ or `self`) and the cause of the killing hit; `get_death_recap()` feeds the end
 screen ("Killed by Bomber - 62% of your damage came from Ranger").
 
 `RunLogger` (`scripts/systems/run_logger.gd`) is its playtest sibling: one JSON
-per run in `user://runs/`, format 2. Per run: seed (share-code format), mode,
-weapon, worn attachments, shop offers per visit (with `rare`), damage by cause,
-`killed_by`, death position. Per wave: damage by cause, rules offered / picked,
-contract and what it paid, rating peak and average (sampled each second of
-fight), crowd requests and whether they were met.
+per run in `user://runs/`, format 4. Per run: seed (share-code format), mode,
+weapon, worn attachments, `layers_off` (the show layers a playtest turned off,
+see below), shop offers per visit (with `rare`), damage by cause, `killed_by`,
+death position. Per wave: damage by cause, rules offered / picked, contract and
+what it paid, rating peak and average (sampled each second of fight), crowd
+requests and whether they were met, `gadgets_used`, `shop_seconds` (real time
+in the shop *before* that wave, -1 for the first) and `movement` (seconds
+sliding / airborne / grappling / standing still on the ground, average speed,
+grapple and fast-fall counts, sampled every frame). `tools/summarize_runs.py`
+reads a folder of them; the protocol is [PLAYTEST.md](../PLAYTEST.md).
+
+### Show layers (playtest)
+
+`PlaytestLayers` (`scripts/util/playtest_layers.gd`, static) says whether each of
+the four layers on top of the fight is on: `rating`, `rules`, `contracts`,
+`crowd_requests`. Source, in order of precedence: a runtime override (tests,
+console `layers`), the command line (`Mayhem.exe -- --layers=-rating`), then
+`data/playtest/playtest_layers.tres` (all on). `MatchDirector.apply_layers()`
+turns them on at `start_match()`; `BroadcastRules.prepare_offer()` drops the
+rules half or the contract half of the offer by layer; `RatingMeter` hides
+without the rating. A run without a layer is logged as such.
 
 ## CombatDirector
 

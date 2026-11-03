@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, estado, backlog]
 estado: vivo
-actualizado: 2026-10-30
+actualizado: 2026-11-03
 ---
 
 # MAYHEM — Estado del proyecto
@@ -152,6 +152,17 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | La caja de munición y los regalos del público se levantan estando encima en cuanto hay lugar, sin salir y volver a entrar | `AmmoPickup`, `CrowdDropPickup` |
 | La granada aturdidora reciclada del pool vuelve a mostrar el destello; el gancho desde un slide ya no deja la cámara baja | `StunGrenade._flash()`, `MovementComponent._handle_action_input()` |
 | Sin hitstop: ni impactos, ni headshots, ni kills frenan el tiempo (`Engine.time_scale`). El peso del tiro pasa a un sacudón de cámara leve (roll de décimas de grado) y un oscurecimiento leve de los bordes, más fuerte en una kill. Sin playtest. El fogonazo del arma es uno por arma y se reinicia en cada tiro, en vez de crear un nodo y un material por disparo | `HitstopController` (borrado), `CameraRecoilComponent` grupo Shake, `ShotPulseOverlay`, `Tokens.SHOT_PULSE_*`, `MuzzleFlash` |
+
+### Lo que entró el 2026-11-03 (preparar el playtest, rama `feat/playtest-prep`)
+
+| Qué | Dónde |
+|---|---|
+| Protocolo de playtest escrito: quién juega, qué se observa, entrevista, qué contesta cada campo del log | [PLAYTEST.md](PLAYTEST.md) |
+| Capas del show que se apagan para una tanda de prueba: rating, reglas, contratos, pedidos del público. Por línea de comandos en un build exportado (`-- --layers=-rating`), por consola (`layers`) o por `.tres`. Todo encendido por defecto | `PlaytestLayers`, `data/playtest/playtest_layers.tres`, `MatchDirector.apply_layers()` |
+| Log formato 4: capas apagadas, uso de la movilidad por oleada (slide, aire, gancho, parado, velocidad media, ganchos, picadas), gadgets tirados, tiempo en la tienda | `RunLogger` |
+| Resumen de una tanda: muertes por ola, qué mata, contratos, pedidos, movilidad por ola, separado por capas | `tools/summarize_runs.py` |
+| El reporte de feedback guarda las capas y el log de la última run adentro | `FeedbackManager.save_report()` |
+| Aviso de ataque fuera de cuadro: chevron hueco en el borde que se llena con la preparación del enemigo. Opción en HUD, encendida. Sin playtest | `ThreatIndicators`, `Tokens.THREAT_*`, `hud/threat_indicators` |
 
 ## 2. Bloquea el release
 

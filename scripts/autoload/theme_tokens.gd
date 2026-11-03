@@ -93,6 +93,19 @@ const KILL_CONFIRM_SCALE := 1.35
 const DAMAGE_PULSE       := 0.35
 const DAMAGE_CHEVRON_LIFE := 1.20
 const DAMAGE_CHEVRON_RADIUS := 260.0
+## El aviso de un ataque que se prepara fuera de cuadro (ThreatIndicators): mas
+## afuera que el chevron de daño, para que "te va a pegar" no se confunda con
+## "te pego". Mas alla del alcance no avisa: a 40 m nada de la horda llega antes
+## de que el jugador se de vuelta.
+const THREAT_CHEVRON_RADIUS := 400.0
+const THREAT_CHEVRON_SIZE   := Vector2(72, 28)
+const THREAT_CHEVRON_LINE   := 3.0
+const THREAT_MAX_RANGE      := 40.0
+## Margen hacia adentro del borde, en fraccion de la pantalla, dentro del cual un
+## enemigo ya cuenta como a la vista.
+const THREAT_SCREEN_INSET   := 0.06
+## A que altura del cuerpo se mira si esta en cuadro: el pecho, no los pies.
+const THREAT_AIM_HEIGHT     := 1.0
 const SUBTITLE_FADE_IN   := 0.12
 const SUBTITLE_HOLD_MIN  := 1.20
 const SUBTITLE_FADE_OUT  := 0.20

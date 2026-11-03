@@ -21,9 +21,16 @@ const MAX_LOGS: int = 30
 ## publico, ofertas de la tienda y donde se murio.
 ## 3: presion de retirada por oleada (`retreat_avg`, `retreat_peak`), para ajustar
 ## `data/combat/retreat_pressure.tres` con datos.
-const FORMAT_VERSION: int = 3
+## 4: para el protocolo de playtest (docs/PLAYTEST.md): las capas apagadas
+## (`layers_off`), el uso de la movilidad por oleada (`movement`), los gadgets
+## tirados (`gadgets_used`) y el tiempo en la tienda antes de cada oleada
+## (`shop_seconds`).
+const FORMAT_VERSION: int = 4
 ## Cada cuanto se muestrean el rating y la retirada durante una oleada, en segundos.
 const RATING_SAMPLE_INTERVAL: float = 1.0
+## Debajo de esta velocidad horizontal, en el piso, el jugador cuenta como parado.
+## Caminar despacio para apuntar no es quedarse quieto; un metro por segundo si.
+const STILL_SPEED: float = 1.0
 
 ## Donde se escribe. Variable y no solo la constante para que un test escriba en
 ## su propia carpeta y no entre las runs de quien juega en esa maquina.
@@ -38,6 +45,12 @@ var _rating_samples: int = 0
 var _rating_sum: float = 0.0
 var _rating_timer: float = 0.0
 var _retreat_sum: float = 0.0
+## Cuando se abrio la tienda, en msec. Solo vale con `_shop_open`.
+var _shop_opened_msec: int = 0
+var _shop_open: bool = false
+## Lo que estuvo abierta la ultima tienda, hasta que la reclama la oleada que sigue.
+var _pending_shop_seconds: float = -1.0
+var _speed_sum: float = 0.0
 
 
 func _ready() -> void:
@@ -56,6 +69,11 @@ func _ready() -> void:
 	EventBus.purchase_made.connect(_on_purchase_made)
 	EventBus.weapon_fired.connect(_on_weapon_fired)
 	EventBus.run_finished.connect(_on_run_finished)
+	EventBus.grapple_started.connect(_on_grapple_started.unbind(1))
+	EventBus.fast_fall_landed.connect(_on_fast_fall_landed)
+	EventBus.shop_opened.connect(_on_shop_opened)
+	EventBus.shop_closed.connect(_on_shop_closed)
+	EventBus.local_player_spawned.connect(_on_local_player_spawned)
 
 
 ## El rating se muestrea solo con una oleada abierta: en la tienda no se mueve y
@@ -63,6 +81,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _wave.is_empty() or bool(_wave["cleared"]):
 		return
+	_sample_movement(delta)
 	_rating_timer -= delta
 	if _rating_timer > 0.0:
 		return
@@ -105,6 +124,9 @@ func _begin_run() -> void:
 		"mode": GameManager.mode_label(GameManager.run_mode),
 		"weapon": String(GameManager.get_starting_weapon_id()),
 		"attachments": Armory.get_loadout_ids(),
+		# Una run sin rating no se compara con una que lo tuvo: el resumen de
+		# playtest separa por esto (tools/summarize_runs.py --by-layers).
+		"layers_off": PlaytestLayers.get_disabled(),
 		"waves": [],
 		"purchases": [],
 		"shop_offers": [],
@@ -140,16 +162,27 @@ func _on_wave_started(wave_index: int, config: WaveData) -> void:
 		"retreat_peak": 0.0,
 		"retreat_avg": 0.0,
 		"crowd_requests": [],
+		"gadgets_used": 0,
+		# La tienda que precedio a esta oleada; -1 en la primera, que no tiene.
+		"shop_seconds": -1.0,
+		# Segundos en cada estado y velocidad media: si el pilar de la movilidad se
+		# juega o si se pelea parado. `seconds` es el total muestreado.
+		"movement": {"seconds": 0.0, "slide_s": 0.0, "air_s": 0.0, "grapple_s": 0.0,
+			"still_s": 0.0, "avg_speed": 0.0, "grapples": 0, "fast_falls": 0},
 	}
 	# La oferta se arma en la tienda, antes de que la oleada exista: queda
 	# guardada hasta que esta la reclama.
 	if not _pending_offer.is_empty():
 		_wave["rules_offered"] = _pending_offer
 		_pending_offer = []
+	if _pending_shop_seconds >= 0.0:
+		_wave["shop_seconds"] = snappedf(_pending_shop_seconds, 0.1)
+		_pending_shop_seconds = -1.0
 	_rating_samples = 0
 	_rating_sum = 0.0
 	_rating_timer = 0.0
 	_retreat_sum = 0.0
+	_speed_sum = 0.0
 	(_log["waves"] as Array).append(_wave)
 
 
@@ -159,6 +192,7 @@ func _on_wave_completed(_wave_index: int, duration: float, damage_taken: float) 
 	_wave["duration"] = snappedf(duration, 0.01)
 	_wave["damage_taken"] = snappedf(damage_taken, 0.1)
 	_wave["cleared"] = true
+	_round_movement()
 
 
 func _on_kill_scored(enemy_type: StringName, _position: Vector3, was_headshot: bool,
@@ -268,6 +302,8 @@ func _on_run_finished(score: int, total_time: float, waves_cleared: int,
 	_log["currency_left"] = EconomyManager.currency
 	# Donde termino, cuando no fue una victoria: la ola que estaba abierta.
 	_log["died_in_wave"] = -1 if victory else int(_wave.get("index", -1))
+	if not bool(_wave.get("cleared", true)):
+		_round_movement()
 	# Se va anotando el ultimo golpe; solo queda si de verdad fue el ultimo.
 	if victory:
 		_log["killed_by"] = ""
@@ -275,6 +311,80 @@ func _on_run_finished(score: int, total_time: float, waves_cleared: int,
 	_log = {}
 	_wave = {}
 	_pending_offer = []
+	_pending_shop_seconds = -1.0
+	_shop_open = false
+
+
+## Un frame de la oleada en el estado de movimiento en que esta el jugador. Cada
+## frame y no cada segundo como el rating: un slide dura medio segundo, y
+## muestrearlo a 1 Hz lo perderia casi siempre.
+func _sample_movement(delta: float) -> void:
+	var player := Players.local() as Player
+	if player == null or player.movement == null or player.is_dead:
+		return
+	var movement: Dictionary = _wave["movement"]
+	var speed: float = Vector2(player.velocity.x, player.velocity.z).length()
+	movement["seconds"] = float(movement["seconds"]) + delta
+	match player.movement.state:
+		MovementComponent.State.SLIDING:
+			movement["slide_s"] = float(movement["slide_s"]) + delta
+		MovementComponent.State.AIRBORNE:
+			movement["air_s"] = float(movement["air_s"]) + delta
+		MovementComponent.State.GRAPPLING:
+			movement["grapple_s"] = float(movement["grapple_s"]) + delta
+		MovementComponent.State.GROUNDED:
+			if speed < STILL_SPEED:
+				movement["still_s"] = float(movement["still_s"]) + delta
+	_speed_sum += speed * delta
+	movement["avg_speed"] = snappedf(_speed_sum / maxf(float(movement["seconds"]), 0.001), 0.01)
+
+
+## Redondea los segundos de movimiento al cerrar: el JSON se lee a mano.
+func _round_movement() -> void:
+	if _wave.is_empty():
+		return
+	var movement: Dictionary = _wave["movement"]
+	for key: String in ["seconds", "slide_s", "air_s", "grapple_s", "still_s"]:
+		movement[key] = snappedf(float(movement[key]), 0.1)
+
+
+func _on_grapple_started() -> void:
+	if not _wave.is_empty() and not bool(_wave["cleared"]):
+		var movement: Dictionary = _wave["movement"]
+		movement["grapples"] = int(movement["grapples"]) + 1
+
+
+func _on_fast_fall_landed() -> void:
+	if not _wave.is_empty() and not bool(_wave["cleared"]):
+		var movement: Dictionary = _wave["movement"]
+		movement["fast_falls"] = int(movement["fast_falls"]) + 1
+
+
+func _on_local_player_spawned(player: Node3D) -> void:
+	var typed := player as Player
+	if typed == null or typed.utility == null:
+		return
+	if not typed.utility.utility_used.is_connected(_on_utility_used):
+		typed.utility.utility_used.connect(_on_utility_used)
+
+
+func _on_utility_used(_slot: int, _data: UtilityData) -> void:
+	if not _wave.is_empty() and not bool(_wave["cleared"]):
+		_wave["gadgets_used"] = int(_wave["gadgets_used"]) + 1
+
+
+func _on_shop_opened() -> void:
+	_shop_opened_msec = Time.get_ticks_msec()
+	_shop_open = true
+
+
+## Lo que estuvo abierta, en tiempo real: la tienda congela el arbol, asi que el
+## reloj del juego no corre ahi adentro.
+func _on_shop_closed() -> void:
+	if not _shop_open:
+		return
+	_shop_open = false
+	_pending_shop_seconds = float(Time.get_ticks_msec() - _shop_opened_msec) / 1000.0
 
 
 func _write() -> void:

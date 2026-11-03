@@ -48,6 +48,11 @@ world affordance (not just HUD) runs on.
 - `PowerUpChip` — one active temporary upgrade + its countdown.
 - `DamageIndicators` — directional chevrons at a fixed radius, rotated toward
   whatever hit the player.
+- `ThreatIndicators` — hollow chevrons further out (`Tokens.THREAT_*`) for an
+  attack winding up **off screen**, within 40 m, filling with the enemy's
+  `windup_progress`. An enemy in frame (with a 6 % inset) gets none: its own
+  glow is the tell. Setting `hud/threat_indicators`, on by default. Built by
+  `HUD._build_threat_indicators()`, just above `DamageIndicators`.
 - `BroadcastBug` / `HostMark` — the "Host" broadcast-layer presentation: amber
   top edge, LIVE tag, a crossed-ring mark reused across favicon/broadcast
   bug/floor decals/loading screens.

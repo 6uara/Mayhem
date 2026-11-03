@@ -82,13 +82,9 @@ func start_match() -> void:
 	# partida" es una decision de este director, no un efecto secundario.
 	RunRecord.reset()
 	BroadcastRating.reset()
-	BroadcastRating.tracking = true
 	BroadcastRules.reset()
-	BroadcastRules.enabled = broadcast_rules_enabled
-	# Los pedidos del publico van con las reglas: son las dos voces del show, y
-	# una escena armada a mano para una prueba no quiere ninguna.
 	CrowdRequests.reset()
-	CrowdRequests.enabled = broadcast_rules_enabled
+	apply_layers(broadcast_rules_enabled)
 	WaveManager.reset()
 	WaveManager.setup(waves)
 	GameManager.start_run()
@@ -103,6 +99,22 @@ func _exit_tree() -> void:
 	BroadcastRules.end_rule()
 	CrowdRequests.enabled = false
 	CrowdRequests.reset()
+
+
+## Enciende las capas del show para una partida: el rating siempre que su capa
+## este encendida, y las reglas, los contratos y los pedidos del publico solo en
+## una escena que los pide (`rules_scene`) y con su capa encendida. Las capas las
+## apaga el playtest (PlaytestLayers, docs/PLAYTEST.md); en el juego tal como
+## sale van todas. Estatica para que los tests la prueben sin armar un director.
+static func apply_layers(rules_scene: bool) -> void:
+	BroadcastRating.tracking = PlaytestLayers.is_on(PlaytestLayers.RATING)
+	# Reglas y contratos viven en el mismo sistema: basta una de las dos capas
+	# para que el Host ofrezca algo. Cual de las dos lo decide `prepare_offer()`.
+	BroadcastRules.enabled = rules_scene and (PlaytestLayers.is_on(PlaytestLayers.RULES)
+		or PlaytestLayers.is_on(PlaytestLayers.CONTRACTS))
+	# Los pedidos del publico van con las reglas: son las dos voces del show, y
+	# una escena armada a mano para una prueba no quiere ninguna.
+	CrowdRequests.enabled = rules_scene and PlaytestLayers.is_on(PlaytestLayers.CROWD_REQUESTS)
 
 
 func get_match_time() -> float:

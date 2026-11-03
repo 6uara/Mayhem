@@ -33,6 +33,7 @@ docs/
 ├─ EXPORT.md
 ├─ ITCH_PAGE.md
 ├─ TESTING.md
+├─ PLAYTEST.md
 ├─ Mayhem/            vault técnico (Obsidian): el código tal como está
 ├─ planes/            planes abiertos
 ├─ handoffs/          pedidos a terceros (arte, iconos)
@@ -52,6 +53,7 @@ importaba el CSV del guion como traducción). Tampoco viaja en los builds (ver e
 - [EXPORT.md](EXPORT.md) — presets, filtros, checklist antes de taggear un build.
 - [ITCH_PAGE.md](ITCH_PAGE.md) — textos de la página de itch.io.
 - [TESTING.md](TESTING.md) — cómo correr la suite, convenciones, estado.
+- [PLAYTEST.md](PLAYTEST.md) — protocolo de playtest: capas, observación, entrevista, logs.
 - [`addons/mayhem_tools/README.md`](../addons/mayhem_tools/README.md) — el plugin de editor (arenas y balance).
 
 ## Planes y handoffs abiertos

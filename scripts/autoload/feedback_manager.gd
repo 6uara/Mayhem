@@ -72,6 +72,11 @@ func build_report(body: String, category: String) -> Dictionary:
 		"resolution": "%dx%d" % [
 			DisplayServer.window_get_size().x, DisplayServer.window_get_size().y],
 		"fps": Engine.get_frames_per_second(),
+		# Con que capas del show se jugo (docs/PLAYTEST.md) y cual es el log de la
+		# ultima run: el reporte dice "la ola 7 estaba imposible" y el log dice
+		# por que.
+		"layers_off": ", ".join(PlaytestLayers.get_disabled()),
+		"last_run_log": latest_run_log().get_file(),
 	}
 
 
@@ -85,7 +90,7 @@ func format_report(report: Dictionary) -> String:
 	lines.append("")
 	lines.append("---")
 	for key: String in ["version", "date", "session_seconds", "arena", "wave",
-			"score", "os", "gpu", "resolution", "fps"]:
+			"score", "os", "gpu", "resolution", "fps", "layers_off", "last_run_log"]:
 		lines.append("- %s: %s" % [key, report.get(key, "-")])
 	return "\n".join(lines)
 
@@ -99,12 +104,35 @@ func save_report(report: Dictionary) -> String:
 			push_error("FeedbackManager: cannot create %s" % FEEDBACK_DIR)
 			return ""
 	var path: String = "%s/feedback_%d.json" % [FEEDBACK_DIR, Time.get_unix_time_from_system()]
+	# El log de la ultima run va adentro del archivo, no al lado: el reporte que se
+	# manda es uno solo, y un adjunto aparte es el que se olvida.
+	var saved: Dictionary = report.duplicate()
+	var log_path: String = latest_run_log()
+	if log_path != "":
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(log_path))
+		if parsed is Dictionary:
+			saved["last_run"] = parsed
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("FeedbackManager: cannot write %s" % path)
 		return ""
-	file.store_string(JSON.stringify(report, "\t"))
+	file.store_string(JSON.stringify(saved, "\t"))
 	return path
+
+
+## La ruta del log de RunLogger mas nuevo, o vacio si no hay ninguno. El nombre
+## lleva la fecha en ISO, asi que el ultimo en orden alfabetico es el ultimo.
+func latest_run_log(log_dir: String = RunLogger.LOG_DIR) -> String:
+	if not DirAccess.dir_exists_absolute(log_dir):
+		return ""
+	var logs: Array[String] = []
+	for file_name: String in DirAccess.get_files_at(log_dir):
+		if file_name.begins_with("run_") and file_name.ends_with(".json"):
+			logs.append(file_name)
+	if logs.is_empty():
+		return ""
+	logs.sort()
+	return "%s/%s" % [log_dir, logs[-1]]
 
 
 func copy_report(report: Dictionary) -> void:
