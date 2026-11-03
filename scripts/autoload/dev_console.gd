@@ -104,6 +104,8 @@ func _register_commands() -> void:
 	_add("balance", "", "Reload the balance resources from disk.", _cmd_balance)
 	_add("shop", "", "Open the shop screen right now.", _cmd_shop)
 	_add("stats", "", "Wave, enemies, currency, fps.", _cmd_stats)
+	_add("layers", "[spec]", "Show layers, or set them: -rating,+rules / none / all. Next run.",
+		_cmd_layers)
 	_add("viewer", "", "Open the enemy viewer (models and animations).", _cmd_viewer)
 	_add("weapons", "", "Open the weapon viewer (tune viewmodels and save).", _cmd_weapons)
 	_add("clear", "", "Clear the console output.", _cmd_clear)
@@ -330,6 +332,19 @@ func _cmd_stats(_args: PackedStringArray) -> String:
 		WaveManager.current_index + 1, WaveManager.waves.size(),
 		WaveManager.get_alive_count(), EconomyManager.currency,
 		Engine.get_frames_per_second()]
+
+
+## Las capas del show (PlaytestLayers). Cambiarlas pesa desde la proxima run: la
+## que corre ya repartio reglas y encendio el rating.
+func _cmd_layers(args: PackedStringArray) -> String:
+	if args.size() > 0:
+		var parsed: Dictionary = PlaytestLayers.parse(" ".join(args))
+		for layer: StringName in parsed:
+			PlaytestLayers.set_override(layer, bool(parsed[layer]))
+	var parts: PackedStringArray = PackedStringArray()
+	for layer: StringName in PlaytestLayers.ALL:
+		parts.append("%s %s" % [layer, "on" if PlaytestLayers.is_on(layer) else "OFF"])
+	return " | ".join(parts)
 
 
 func _cmd_clear(_args: PackedStringArray) -> String:

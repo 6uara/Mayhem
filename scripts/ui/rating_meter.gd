@@ -32,6 +32,9 @@ func _ready() -> void:
 	_bar_fill.color = Tokens.REWARD
 	_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bar_back.add_child(_bar_fill)
+	# Sin la capa del rating (una tanda de playtest sin el) el medidor no dice
+	# nada: quedaria clavado en OFF AIR x1.0 y se leeria como que algo anda mal.
+	visible = PlaytestLayers.is_on(PlaytestLayers.RATING)
 	BroadcastRating.changed.connect(_on_changed)
 	_on_changed(BroadcastRating.value, BroadcastRating.get_tier())
 

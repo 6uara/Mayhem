@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="PlaytestLayersConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/playtest_layers_config.gd" id="1_layers"]
+
+; Todo encendido: es el juego tal como sale. Para una tanda de playtest sin una
+; capa, mejor la linea de comandos (`-- --layers=-rating`) que tocar esto: ver
+; docs/PLAYTEST.md.
+[resource]
+script = ExtResource("1_layers")

@@ -133,3 +133,40 @@ func test_offers_rules_contracts_and_requests_are_logged() -> void:
 	assert_eq(String(wave["contract"]), "grounded")
 	assert_eq(int(wave["contract_paid"]), 200)
 	assert_true(bool((wave["crowd_requests"] as Array)[0]["success"]))
+
+
+# ------------------------------------------------------------------ formato 4: playtest
+
+func test_the_log_names_the_layers_that_were_off() -> void:
+	PlaytestLayers.set_override(PlaytestLayers.RATING, false)
+	EventBus.wave_started.emit(0, _wave(40.0))
+	var layers: Array = _logger.get_current_log()["layers_off"]
+	PlaytestLayers.clear_overrides()
+	assert_eq(layers, ["rating"])
+
+
+func test_grapples_and_fast_falls_count_per_wave() -> void:
+	EventBus.wave_started.emit(0, _wave(40.0))
+	EventBus.grapple_started.emit(Vector3.ZERO)
+	EventBus.grapple_started.emit(Vector3.ZERO)
+	EventBus.fast_fall_landed.emit()
+	var movement: Dictionary = (_logger.get_current_log()["waves"][0] as Dictionary)["movement"]
+	assert_eq(int(movement["grapples"]), 2)
+	assert_eq(int(movement["fast_falls"]), 1)
+
+
+func test_the_time_in_the_shop_goes_to_the_wave_that_follows_it() -> void:
+	EventBus.wave_started.emit(0, _wave(40.0))
+	EventBus.wave_completed.emit(0, 30.0, 0.0)
+	EventBus.shop_opened.emit()
+	_logger._shop_opened_msec -= 7000
+	EventBus.shop_closed.emit()
+	EventBus.wave_started.emit(1, _wave(40.0))
+	var waves: Array = _logger.get_current_log()["waves"]
+	assert_eq(float((waves[0] as Dictionary)["shop_seconds"]), -1.0, "la primera no tiene tienda")
+	assert_almost_eq(float((waves[1] as Dictionary)["shop_seconds"]), 7.0, 0.2)
+
+
+func test_the_format_is_four() -> void:
+	EventBus.wave_started.emit(0, _wave(40.0))
+	assert_eq(int(_logger.get_current_log()["format"]), 4)

@@ -39,6 +39,7 @@ Flecha arriba/abajo recorre el historial, Tab completa el nombre del comando.
 | `shop` | Abre la tienda sin tener que limpiar una ronda |
 | `balance` | Recarga los `.tres` de balance desde disco |
 | `stats` | Ronda, enemigos, moneda, fps |
+| `layers [spec]` | Muestra las capas del show, o las cambia (`-rating,+rules`, `none`, `all`) desde la próxima run. Ver [PLAYTEST.md](PLAYTEST.md#capas-del-show) |
 | `clear`, `quit` | |
 
 Los comandos viven en el diccionario `_commands` como datos: agregar uno es una
