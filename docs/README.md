@@ -51,6 +51,7 @@ importaba el CSV del guion como traducción). Tampoco viaja en los builds (ver e
 - [ADDONS.md](ADDONS.md) — addons instalados, parches locales, política para sumar uno.
 - [DEV_TOOLS.md](DEV_TOOLS.md) — consola de dev, panel de bonos, editor de arenas in-game, visor de enemigos.
 - [EXPORT.md](EXPORT.md) — presets, filtros, checklist antes de taggear un build.
+- [`CHANGELOG.md`](../CHANGELOG.md) — generado con `tools/changelog.py` desde los Conventional Commits; versión semántica desde `v0.3.0`.
 - [ITCH_PAGE.md](ITCH_PAGE.md) — textos de la página de itch.io.
 - [TESTING.md](TESTING.md) — cómo correr la suite, convenciones, estado.
 - [PLAYTEST.md](PLAYTEST.md) — protocolo de playtest: capas, observación, entrevista, logs.

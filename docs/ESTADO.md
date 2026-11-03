@@ -192,6 +192,12 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 después (§5). Los dos cambios de CPU apuntan a los ~2.8 ms de navegación y ~2.5 ms
 de mover cuerpos de la ola 10.
 
+### Lo que entró el 2026-11-03 (changelog, rama `chore/changelog-semver`)
+
+| Qué | Dónde |
+|---|---|
+| `CHANGELOG.md` generado desde los Conventional Commits, con la versión que toca según semver (en 0.x un cambio que rompe sube la minor). Tag `v0.3.0` (local, retroactivo, sobre `7290bf7`, el commit que puso esa versión) como punto de partida. El paso va primero en el checklist del build | `tools/changelog.py`, [EXPORT.md](EXPORT.md#checklist-before-tagging-a-build) |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
