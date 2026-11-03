@@ -133,7 +133,7 @@ func test_a_stunned_enemy_shows_it_and_stops_showing_it() -> void:
 
 func test_a_slowed_enemy_wears_the_slow_colour() -> void:
 	var enemy: Enemy = await _enemy()
-	var outline := enemy._model_meshes[0].material_overlay as ShaderMaterial
+	var outline := enemy.presentation.model_meshes[0].material_overlay as ShaderMaterial
 	enemy.apply_slow(0.45)
 	assert_eq(outline.get_shader_parameter(&"outline_color"), Tokens.GADGET_SLOW)
 	enemy.clear_slow()

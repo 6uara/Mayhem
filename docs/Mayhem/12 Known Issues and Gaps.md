@@ -79,9 +79,14 @@ frames behind the loading cover (`GameManager._warm_shaders()`).
   failed once in a full run (2026-10-23: "esta parado" / "el salto sale") and
   passed 3/3 alone. The rusher spawns 1 m from the player, so its own tree can
   leap before the test does. Same rule as above.
-- **`enemy.gd` is ~2400 lines**, and the locomotion/navigation block (`_steer`
-  to `_stop_horizontal`, ~900 lines) is the part most edits touch. Splitting it
-  is planned, after the playtest, on its own branch.
+- **`enemy.gd` is ~2480 lines** after the presentation moved out to
+  `EnemyPresentation` (2026-11-03, branch `chore/split-enemy`). The
+  locomotion/navigation block (`_steer` to `_stop_horizontal`, ~900 lines) is
+  still inside and is the part most edits touch. It was left for its own pass on
+  purpose: ground steering, jump links, the stuck detector and the flyer share
+  state (`_detour_time`, `_detour_sign`, `_stuck_time`, `_jump_cooldown_left`,
+  `_blocked_links`) that ~40 test lines read directly, so moving it is moving
+  that state too, with the tests, in one go.
 
 ## Minor drift
 

@@ -321,7 +321,7 @@ cuerpos ~2.5 ms, navegación ~2.8 ms, Jolt ~1.7 ms). Lo que queda está en
 
 ## 6. Abierto — técnico
 
-- Partir `enemy.gd` (~2450 líneas) — después del playtest, en su rama.
+- Partir `enemy.gd`: la presentación ya salió a `EnemyPresentation` (rama `chore/split-enemy`, 2026-11-03; ~2480 líneas). Falta el bloque de locomoción (~900 líneas), que comparte estado con el volador y el detector de atasco y que ~40 líneas de tests leen directo: ver [12 Known Issues](Mayhem/12%20Known%20Issues%20and%20Gaps.md#fragile).
 - Deudas y puntos frágiles: [12 Known Issues and Gaps](Mayhem/12%20Known%20Issues%20and%20Gaps.md).
 
 ## 7. Ciclo de release

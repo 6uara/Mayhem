@@ -8,8 +8,15 @@ actualizado: 2026-10-28
 
 ## One scene, eight archetypes
 
-`scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~2400 lines, the largest
-script in the codebase by a wide margin) is shared by every archetype. `EnemyData`
+`scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~2480 lines, the largest
+script in the codebase by a wide margin) is shared by every archetype. How it
+looks - the model or the grey-box capsule, the hit / wind-up / heal glow, the
+archetype outline, the Healer's halo and tether markers, the Manhunt ring - lives
+in `EnemyPresentation` (`scripts/components/enemy_presentation.gd`, a RefCounted
+owned by the enemy, 2026-11-03): `Enemy` decides *when* it glows
+(`_set_glow()`, `_glow_level()`, `set_outline_color()` are one-line delegates),
+the presentation decides *how*. Tests reach the model through
+`enemy.presentation.model`, `.model_meshes`, `.motion`, `.model_bounds`. `EnemyData`
 (`scripts/resources/enemy_data.gd`) supplies everything that makes a Rusher a
 Rusher: silhouette, stats, behavior tree, audio. `Enemy` itself is architecture-
 agnostic — it reads `data.*` and never branches on archetype by name.
