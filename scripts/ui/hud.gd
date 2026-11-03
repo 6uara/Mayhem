@@ -137,6 +137,7 @@ func _ready() -> void:
 	_reload_prompt.visible = false
 	_on_currency_changed(EconomyManager.currency)
 	_build_rating_meter()
+	_build_threat_indicators()
 	_build_rule_chip()
 	_build_tutorial_panel()
 	TutorialHintManager.tutorial_step_shown.connect(_on_tutorial_step_shown)
@@ -161,6 +162,17 @@ func _build_rating_meter() -> void:
 	meter.name = "RatingMeter"
 	cluster.add_child(meter)
 	cluster.move_child(meter, _currency.get_parent().get_index() + 1)
+
+
+## Los avisos de ataques fuera de cuadro, a pantalla completa como los chevrons
+## de daño y justo encima de ellos: los dos hablan del mismo enemigo, antes y
+## despues del golpe.
+func _build_threat_indicators() -> void:
+	var threats := ThreatIndicators.new()
+	threats.name = "ThreatIndicators"
+	threats.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_damage_indicators.get_parent().add_child(threats)
+	_damage_indicators.get_parent().move_child(threats, _damage_indicators.get_index())
 
 
 ## La regla de transmision de la oleada, visible toda la oleada debajo del

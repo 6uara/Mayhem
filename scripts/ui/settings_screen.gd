@@ -83,6 +83,7 @@ const SCHEMA: Array = [
 	{"key": "hud/crosshair_dot", "label": "Centre dot", "type": "toggle"},
 	{"key": "hud/crosshair_color", "label": "Crosshair colour", "type": "color"},
 	{"key": "hud/damage_indicators", "label": "Damage indicators", "type": "toggle"},
+	{"key": "hud/threat_indicators", "label": "Off-screen attack warnings", "type": "toggle"},
 	{"key": "hud/damage_numbers", "label": "Damage numbers", "type": "toggle"},
 ]
 
@@ -122,6 +123,8 @@ const TOOLTIPS: Dictionary = {
 	"accessibility/speed_lines_enabled": "Streaks at the edge of the screen when moving fast.",
 	"hud/scale": "Size of the HUD.",
 	"hud/damage_indicators": "Arrows around the crosshair pointing to whatever hit you.",
+	"hud/threat_indicators":
+		"Hollow arrows at the edge of the screen for an attack winding up where you cannot see it.",
 	"hud/damage_numbers": "The damage of each hit, floating over the enemy.",
 }
 ## For every key binding button in CONTROLS.

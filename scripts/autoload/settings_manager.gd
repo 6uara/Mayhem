@@ -88,6 +88,7 @@ const DEFAULTS: Dictionary = {
 	"hud/crosshair_color": Color("#E6E8EF"),
 	"hud/crosshair_dot": true,
 	"hud/damage_indicators": true,
+	"hud/threat_indicators": true,
 	"hud/damage_numbers": true,
 }
 
