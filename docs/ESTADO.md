@@ -172,6 +172,14 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | Cuatro raras que escalan con una familia: Aerialist (aire), Deadeye (precisión, de arma), Streamliner (momentum, cobra vida por armadura) y Bulwark (armadura, cobra velocidad por momentum). Iconos geométricos provisorios. Sin playtest | `StatModifier.per_tag`, `UpgradeManager.count_tag()`, `HEADSHOT_DAMAGE_MULTIPLIER` |
 | La tarjeta de la tienda dice la familia, qué rara del build alimenta o le cobra, y cuánto de su familia hay; el Codex muestra FAMILY y SCALES WITH | `Shop.synergy_fields()`, `ShopScreen._add_synergy_lines()`, `CodexCatalog` |
 
+### Lo que entró el 2026-11-03 (mejores momentos, rama `feat/run-highlights`)
+
+| Qué | Dónde |
+|---|---|
+| Pantalla de fin con los tres mejores momentos de la run (rafaga, racha sin daño, velocidad, kill con más bonos, tiro más largo, headshots, oleadas limpias, oleada más rápida contra su par), pesados contra lo que hace una run buena | `RunHighlights`, `RunSummary._build_moments()`, `RunRecord` |
+| Tarjeta para compartir: PNG de 1200x630 con resultado, puntaje, momentos, trofeos y código de la run, en `user://share/`. Sirve para la página de itch y el trailer | `ShareCard`, botón *Save run card* en `MatchOverlay` |
+| El texto que se copia suma el mejor momento | `MatchOverlay._on_run_finished()` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |

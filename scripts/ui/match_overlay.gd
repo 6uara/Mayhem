@@ -26,6 +26,11 @@ var _pending_info: Dictionary = {}
 ## codigo que la vuelve a jugar. Ver RunSeed.
 var _share_text: String = ""
 var _copy_button: Button
+var _card_button: Button
+## Lo que la tarjeta para compartir dibuja. Ver ShareCard.build().
+var _card_info: Dictionary = {}
+## Donde quedo la ultima tarjeta guardada, para abrir la carpeta.
+var _card_path: String = ""
 var _summary: RunSummary
 
 
@@ -52,6 +57,13 @@ func _ready() -> void:
 	_copy_button.pressed.connect(_on_copy_pressed)
 	_copy_button.custom_minimum_size = _restart_button.custom_minimum_size
 	_restart_button.get_parent().add_child(_copy_button)
+	_card_button = Button.new()
+	_card_button.name = "SaveCardButton"
+	_card_button.text = "Save run card"
+	_card_button.tooltip_text = "Saves an image of this run - score, best moments and the code - to share."
+	_card_button.pressed.connect(_on_card_pressed)
+	_card_button.custom_minimum_size = _restart_button.custom_minimum_size
+	_restart_button.get_parent().add_child(_card_button)
 	# El analisis de la run, entre el titulo y los botones. Armado por codigo:
 	# depende de cuantas oleadas, enemigos y trofeos hubo.
 	_summary = RunSummary.new()
@@ -128,8 +140,26 @@ func _on_run_finished(score: int, total_time: float, waves_cleared: int,
 		"recap": "" if victory else death_recap_line(RunRecord.get_death_recap()) \
 			.get_slice("  -  ", 1),
 		"lines": mastery_lines(Armory.get_last_report()),
+		"highlights": RunHighlights.pick(RunHighlights.from_run_record()),
 	}
 	_share_text = share_line(score, waves_cleared, victory)
+	var top: Array = _pending_info["highlights"]
+	if not top.is_empty():
+		_share_text += "  |  %s" % RunHighlights.line(top[0])
+	var code: String = RunSeed.make_code(RunSeed.run_seed, GameManager.run_mode,
+		GameManager.get_starting_weapon_id())
+	var trophies: Array[String] = []
+	for trophy: StringName in RunRecord.get_trophies():
+		trophies.append(RunRecord.get_label(trophy))
+	_card_info = {
+		"victory": victory,
+		"score": score,
+		"reached": reached,
+		"context": "%s  -  %s  -  %s" % [arena, mode, _format_time(total_time)],
+		"code": code,
+		"highlights": top,
+		"trophies": trophies,
+	}
 	_pending_details += "  -  RUN CODE %s" % RunSeed.make_code(RunSeed.run_seed,
 		GameManager.run_mode, GameManager.get_starting_weapon_id())
 	_banner.text = ""
@@ -185,6 +215,20 @@ static func share_line(score: int, waves_cleared: int, victory: bool) -> String:
 		RunSeed.make_code(RunSeed.run_seed, GameManager.run_mode, weapon)]
 
 
+## Primera vez: guarda la tarjeta. Despues: abre la carpeta donde quedo, que es
+## lo que hace falta para subirla a algun lado.
+func _on_card_pressed() -> void:
+	if _card_path != "":
+		OS.shell_show_in_file_manager(ProjectSettings.globalize_path(_card_path))
+		return
+	_card_button.disabled = true
+	var stem: String = "mayhem_%s_%s" % [String(_card_info.get("code", "run")),
+		Time.get_datetime_string_from_system(false, false).replace(":", "-")]
+	_card_path = await ShareCard.save_png(self, _card_info, stem)
+	_card_button.disabled = false
+	_card_button.text = "Open card folder" if _card_path != "" else "Could not save the card"
+
+
 func _on_copy_pressed() -> void:
 	DisplayServer.clipboard_set(_share_text)
 	_copy_button.text = "Copied"
@@ -200,6 +244,8 @@ func _on_score_saved() -> void:
 ## aterriza dorado o llega temblando en rojo.
 func _show_end(victory: bool, details: String) -> void:
 	_copy_button.text = "Copy run code"
+	_card_button.text = "Save run card"
+	_card_path = ""
 	_end_title.text = "VICTORY" if victory else "GAME OVER"
 	_end_title.add_theme_color_override(&"font_color",
 		Tokens.REWARD if victory else Tokens.ENEMY)

@@ -63,6 +63,9 @@ const SURGEON_KILLS: int = 5
 const SNIPER_KILLS: int = 10
 const TYCOON_EARNINGS: int = 3000
 const BLITZ_SECONDS: float = 480.0
+## La ventana de una rafaga de kills para los mejores momentos (RunHighlights).
+## La misma del bono MAYHEM, que es la que el jugador ya conoce.
+const BURST_WINDOW: float = 1.5
 
 var kills: int = 0
 var headshots: int = 0
@@ -116,6 +119,23 @@ var shots_fired: int = 0
 ## El rating de transmision mas alto que se alcanzo (indice de tier).
 var peak_tier: int = 0
 
+## Para los mejores momentos de la pantalla de fin y la tarjeta (RunHighlights):
+## la rafaga mas grande (kills dentro de BURST_WINDOW), la racha mas larga sin
+## recibir daño, la velocidad horizontal maxima en pelea, la kill con mas bonos
+## (y lo que pago) y la kill mas lejana, en metros.
+var best_burst: int = 0
+var best_streak: int = 0
+var top_speed: float = 0.0
+var best_style_bonuses: int = 0
+var best_style_total: int = 0
+var longest_kill: float = 0.0
+## Reloj de la run en segundos de juego (sin pausa), para medir las rafagas.
+var _run_clock: float = 0.0
+var _burst_times: Array[float] = []
+var _streak: int = 0
+## El par de la oleada en curso, para que `wave_log` lo lleve.
+var _wave_par: float = 0.0
+
 ## Los trofeos de la run terminada. Vacio mientras se juega.
 var _trophies: Array[StringName] = []
 ## La billetera la ultima vez que se miro, para sacar cuanto subio.
@@ -141,7 +161,7 @@ func _ready() -> void:
 	EventBus.purchase_made.connect(_on_purchase_made.unbind(2))
 	EventBus.run_finished.connect(_on_run_finished)
 	EventBus.currency_changed.connect(_on_currency_changed)
-	EventBus.wave_started.connect(_on_wave_started.unbind(1))
+	EventBus.wave_started.connect(_on_wave_started)
 	EventBus.weapon_fired.connect(_on_weapon_fired)
 	EventBus.weapon_switched.connect(_on_weapon_switched)
 	EventBus.damage_dealt.connect(_on_damage_dealt)
@@ -150,8 +170,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_run_clock += delta
 	if _in_wave:
 		_wave_time += delta
+		_sample_speed()
 
 
 # Public API
@@ -209,6 +231,16 @@ func reset() -> void:
 	damage_done = 0.0
 	shots_fired = 0
 	peak_tier = 0
+	best_burst = 0
+	best_streak = 0
+	top_speed = 0.0
+	best_style_bonuses = 0
+	best_style_total = 0
+	longest_kill = 0.0
+	_run_clock = 0.0
+	_burst_times.clear()
+	_streak = 0
+	_wave_par = 0.0
 	_in_wave = false
 	_wave_time = 0.0
 	_wave_kills = 0
@@ -308,9 +340,10 @@ func _on_player_died() -> void:
 		_close_wave(_wave_time, false)
 
 
-func _on_kill_scored(enemy_type: StringName, _position: Vector3, was_headshot: bool,
+func _on_kill_scored(enemy_type: StringName, position: Vector3, was_headshot: bool,
 		_reward: int) -> void:
 	kills += 1
+	_note_moment(position)
 	if was_headshot:
 		headshots += 1
 	kills_by_type[enemy_type] = int(kills_by_type.get(enemy_type, 0)) + 1
@@ -320,7 +353,8 @@ func _on_kill_scored(enemy_type: StringName, _position: Vector3, was_headshot: b
 		_wave_kills += 1
 
 
-func _on_wave_started(wave_index: int) -> void:
+func _on_wave_started(wave_index: int, config: WaveData) -> void:
+	_wave_par = config.par_time if config != null else 0.0
 	_in_wave = true
 	_wave_index = wave_index
 	_wave_time = 0.0
@@ -336,6 +370,7 @@ func _close_wave(duration: float, cleared: bool) -> void:
 		"damage": _wave_damage,
 		"kills": _wave_kills,
 		"cleared": cleared,
+		"par": _wave_par,
 	})
 
 
@@ -367,6 +402,10 @@ func _on_kill_payout(_reward: int, bonus_ids: Array, bonus_total: int,
 		* EconomyManager.get_style_multiplier()))
 	for id: StringName in bonus_ids:
 		bonus_counts[id] = int(bonus_counts.get(id, 0)) + 1
+	if bonus_ids.size() > best_style_bonuses \
+			or (bonus_ids.size() == best_style_bonuses and bonus_total > best_style_total):
+		best_style_bonuses = bonus_ids.size()
+		best_style_total = bonus_total
 
 
 func _on_kill_credited(reward: int) -> void:
@@ -376,6 +415,7 @@ func _on_kill_credited(reward: int) -> void:
 ## El contador de golpes va aparte del de daño porque las preguntas son
 ## distintas: INTOCABLE pregunta cuantas veces te tocaron, no cuanto dolio.
 func _on_player_damaged(amount: float) -> void:
+	_streak = 0
 	damage_taken += amount
 	hits_taken += 1
 	if _in_wave:
@@ -405,6 +445,25 @@ func _on_purchase_made() -> void:
 func _on_run_finished(_score: int, total_time: float, _waves_cleared: int,
 		victory: bool) -> void:
 	_trophies = evaluate(total_time, victory)
+
+
+## La kill en la rafaga, en la racha, y su distancia al jugador.
+func _note_moment(position: Vector3) -> void:
+	_burst_times.append(_run_clock)
+	while not _burst_times.is_empty() and _run_clock - _burst_times[0] > BURST_WINDOW:
+		_burst_times.pop_front()
+	best_burst = maxi(best_burst, _burst_times.size())
+	_streak += 1
+	best_streak = maxi(best_streak, _streak)
+	var player: Node3D = Players.local()
+	if player != null and position != Vector3.ZERO:
+		longest_kill = maxf(longest_kill, player.global_position.distance_to(position))
+
+
+func _sample_speed() -> void:
+	var player := Players.local() as CharacterBody3D
+	if player != null:
+		top_speed = maxf(top_speed, Vector2(player.velocity.x, player.velocity.z).length())
 
 
 func _config() -> EconomyConfig:

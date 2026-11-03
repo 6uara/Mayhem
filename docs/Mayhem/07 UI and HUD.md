@@ -163,6 +163,13 @@ hit that way than by resetting every system by hand.
 - **Score** counting up, a `NEW BEST` / `BEST n (-x)` badge against the best
   *before* this run, and one split bar of where it came from (kills, style,
   waves, victory bonus).
+- **Moments** (2026-11-03): up to three boxes with the run's best moments,
+  picked by `RunHighlights` (`scripts/systems/run_highlights.gd`): biggest
+  burst (kills inside `RunRecord.BURST_WINDOW`), longest no-damage streak, top
+  speed, the kill with most bonuses, longest kill, headshot share (from 20
+  kills), clean waves, fastest wave against its par. Each is weighed against a
+  reference ("what a good run does", `REF_*`) so the most notable comes first,
+  not the biggest number; below `MIN_WEIGHT` it is not shown.
 - **Combat**: kills, headshot rate, damage dealt and taken, shots, hits,
   flawless waves, money earned, purchases, peak rating.
 - **Waves**: `WaveChart`, one bar per wave - height is time, the number is
@@ -172,8 +179,16 @@ hit that way than by resetting every system by hand.
   enemy, each bar in the enemy's `body_color`.
 - Trophies as chips, kills per weapon, mastery lines.
 
-All of it reads `RunRecord`, which now also keeps `wave_log`, `kills_by_type`,
-`kills_by_weapon`, `damage_done`, `shots_fired` and `peak_tier`.
+All of it reads `RunRecord`, which now also keeps `wave_log` (with each wave's
+`par`), `kills_by_type`, `kills_by_weapon`, `damage_done`, `shots_fired`,
+`peak_tier`, and for the moments `best_burst`, `best_streak`, `top_speed`,
+`best_style_bonuses`/`best_style_total` and `longest_kill`.
+
+**Share card**: *Save run card* draws `ShareCard` (`scripts/ui/share_card.gd`)
+in its own `SubViewport` at 1200x630 (the social preview size) and saves a PNG
+to `user://share/`: result, score, the three moments, trophies and the run
+code. A second press opens the folder. *Copy run code* now appends the top
+moment to the line.
 
 Victory and defeat differ before a word is read: `run_end.gdshader` on the
 background (warm light from above, slow rays, rising sparks / red edges,
