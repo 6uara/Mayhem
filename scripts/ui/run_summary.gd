@@ -39,6 +39,9 @@ func show_run(info: Dictionary) -> void:
 		remove_child(child)
 		child.queue_free()
 	add_child(_build_score(info))
+	var moments: Control = _build_moments(info)
+	if moments != null:
+		add_child(moments)
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override(&"separation", Tokens.CLUSTER_GAP)
 	columns.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -138,6 +141,25 @@ func _build_score(info: Dictionary) -> Control:
 		legend.add_child(key)
 	if bar.get_child_count() == 0:
 		bar.add_child(_track(1.0))
+	return row
+
+
+## Los mejores momentos de la run (RunHighlights), en cajas como las de la
+## tarjeta para compartir: lo que se cuenta de la run, arriba de lo que se
+## analiza. Nulo si la run no dejo ninguno.
+func _build_moments(info: Dictionary) -> Control:
+	var highlights: Array = info.get("highlights", [])
+	if highlights.is_empty():
+		return null
+	var row := HBoxContainer.new()
+	row.name = "Moments"
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override(&"separation", Tokens.CLUSTER_GAP)
+	for highlight: Dictionary in highlights:
+		var box: Control = ShareCard.moment_box(highlight)
+		box.custom_minimum_size = Vector2(COLUMN_MIN_WIDTH * 0.7, 0.0)
+		box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		row.add_child(box)
 	return row
 
 
