@@ -106,6 +106,10 @@ static func moment_box(highlight: Dictionary, large: bool = false) -> Control:
 ## se pudo. Asincrona: espera a que el SubViewport dibuje. `host` es cualquier
 ## nodo en el arbol, donde se cuelga el viewport mientras dura.
 static func save_png(host: Node, info: Dictionary, file_stem: String) -> String:
+	# Sin render no hay imagen, y el `frame_post_draw` que se espera abajo puede
+	# no llegar nunca con el servidor nulo.
+	if DisplayServer.get_name() == "headless":
+		return ""
 	var viewport := SubViewport.new()
 	viewport.size = CARD_SIZE
 	viewport.transparent_bg = false

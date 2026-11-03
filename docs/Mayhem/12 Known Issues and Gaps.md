@@ -102,14 +102,6 @@ frames behind the loading cover (`GameManager._warm_shaders()`).
   `SurfaceMaterialData.decal_texture` is null: the per-surface system is real,
   the samples and decals are placeholders. Arena pieces resolve to the
   `concrete` default.
-- **Two sources of truth for kill rewards.** The game pays
-  `EnemyData.reward_currency` (`enemy.gd` → `kill_credited`). The balance
-  editor's economy curve (`balance_editor/core/curve_evaluator.gd`) reads
-  `EconomyConfig.get_kill_reward()` instead, which only knows five of the eight
-  archetypes and returns 0 for Bomber, Environmental and Flyer. The two agree
-  today for the original five by coincidence of values; the curve under-counts
-  every wave from 6 on. Tuning `EconomyConfig.kill_reward_*` changes the curve
-  and not the game.
 - **`test_arena_navigation.gd` still loads `greybox_arena.tscn`**, the
   hand-built arena that no longer ships. The tests are valid against that
   scene, but they no longer cover the arena the game actually loads.
