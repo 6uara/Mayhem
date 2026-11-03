@@ -29,3 +29,4 @@ cost = 300
 category = 0
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1"), SubResource("Mod_2")])
 max_stacks = 2
+tags = Array[StringName]([&"momentum", &"air"])

@@ -477,7 +477,8 @@ func _spawn_projectile(origin: Vector3, direction: Vector3, shot_multiplier: flo
 	if typed == null:
 		push_error("WeaponComponent: %s projectile_scene is not a Projectile" % data.id)
 		return
-	typed.launch(origin, direction, data, body, get_damage() * shot_multiplier)
+	typed.launch(origin, direction, data, body, get_damage() * shot_multiplier,
+		headshot_multiplier_for(data))
 
 
 ## Perdigones por disparo, con las mejoras: el slug de la escopeta los vuelve uno.
@@ -536,7 +537,7 @@ func _shot_damage_multiplier() -> float:
 func _hit_hitbox(hitbox: HitboxComponent, damage: float, distance: float, point: Vector3) -> void:
 	var dealt: float = damage * _falloff_at(distance)
 	if hitbox.is_headshot_zone:
-		dealt *= data.headshot_multiplier
+		dealt *= headshot_multiplier_for(data)
 	hitbox.take_hit(dealt, point, body)
 
 
@@ -878,6 +879,15 @@ func _reload_tilt(progress: float) -> Vector3:
 
 ## Scoped to this weapon's own id, so WEAPON-category upgrades bought for a
 ## different (previously equipped) weapon never leak into this one's stats.
+## El multiplicador de cabeza del arma con lo que el build le suma (Deadeye). El
+## mismo para hitscan y para bala: la bala lo recibe al salir.
+static func headshot_multiplier_for(weapon: WeaponData) -> float:
+	if weapon == null:
+		return 1.0
+	return weapon.headshot_multiplier * UpgradeManager.get_stat(
+		StatsComponent.HEADSHOT_DAMAGE_MULTIPLIER, 1.0, weapon.id)
+
+
 func _stat(stat_key: StringName, base_value: float) -> float:
 	if stats == null:
 		return base_value

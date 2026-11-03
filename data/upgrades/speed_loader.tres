@@ -23,3 +23,4 @@ description = "Reloads 15% faster, +20% reserve ammo."
 cost = 300
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
 max_stacks = 2
+tags = Array[StringName]([&"ammo"])

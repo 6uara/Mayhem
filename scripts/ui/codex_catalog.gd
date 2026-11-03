@@ -141,6 +141,13 @@ static func upgrade_entries(shop: ShopCatalog, rare: bool) -> Array[Dictionary]:
 			stats.append(["LASTS", "%d s" % roundi(upgrade.duration)])
 		if not upgrade.weapon_ids.is_empty():
 			stats.append(["ONLY WITH", _weapon_names(shop, upgrade.weapon_ids)])
+		if not upgrade.tags.is_empty():
+			stats.append(["FAMILY", upgrade.get_tag_text()])
+		var scaling: PackedStringArray = PackedStringArray()
+		for tag: StringName in upgrade.get_scaling_tags():
+			scaling.append(String(UpgradeData.TAG_LABELS.get(tag, String(tag).to_upper())))
+		if not scaling.is_empty():
+			stats.append(["SCALES WITH", " · ".join(scaling)])
 		if rare:
 			stats.append(["OFFERED", "From wave %d, at most one per visit" % shop.rare_from_wave])
 		var entry: Dictionary = _entry(upgrade.id, upgrade.display_name,

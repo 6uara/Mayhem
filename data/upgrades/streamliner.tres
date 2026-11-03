@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" uid="uid://c0sue5b3517vt" path="res://scripts/resources/upgrade_data.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://dj5ypd8tfk11c" path="res://scripts/resources/stat_modifier.gd" id="2_mod"]
+
+[sub_resource type="Resource" id="Mod_0"]
+script = ExtResource("2_mod")
+stat_key = &"move_speed"
+value = 0.25
+per_tag = &"momentum"
+
+[sub_resource type="Resource" id="Mod_1"]
+script = ExtResource("2_mod")
+stat_key = &"max_health"
+value = -6.0
+per_tag = &"armor"
+per_tag_is_penalty = true
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"streamliner"
+display_name = "Streamliner"
+description = "+0.25 m/s run speed for every MOMENTUM upgrade. -6 max health for every ARMOR upgrade."
+cost = 480
+category = 0
+stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0"), SubResource("Mod_1")])
+is_rare = true

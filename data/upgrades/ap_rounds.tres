@@ -17,3 +17,4 @@ cost = 450
 stat_modifiers = Array[ExtResource("2_mod")]([SubResource("Mod_0")])
 is_rare = true
 weapon_ids = Array[StringName]([&"rifle_ak"])
+tags = Array[StringName]([&"firepower"])
