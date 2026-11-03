@@ -82,6 +82,20 @@ const WARP_STEP: float = 1.0
 ## bajo un techo no alcanza nunca, y ahi el volador queda temblando contra el
 ## rincon porque nadie le ofrece otra salida.
 const FLIGHT_BLOCKED_TIME: float = 0.8
+## Cuanto tiene que moverse el destino para volver a pedirle camino al navmesh.
+##
+## Medido en la ola 10 (ESTADO §5): la navegacion era ~2.8 ms del paso de fisica.
+## Las hojas del arbol mandan el destino en cada tick, y casi siempre es el mismo
+## punto corrido unos centimetros (el jugador que se mueve, el carril que se
+## cierra); NavigationAgent3D recalcula el camino entero cada vez que
+## `target_position` cambia, por poco que sea. Debajo de esto el camino viejo
+## sigue llevando al mismo lugar: el ultimo tramo se camina recto igual.
+const REPATH_DISTANCE: float = 0.75
+## Cuantos frames seguidos puede saltear `move_and_slide()` un enemigo quieto en el
+## piso. No infinitos: `is_on_floor()` es la respuesta del ultimo
+## `move_and_slide()`, y un piso que desaparece (la plataforma que se cae) solo se
+## entera en el proximo. Uno de cada cuatro alcanza para caerse a tiempo.
+const IDLE_SLIDE_SKIP: int = 3
 
 # Separacion (la unica regla de boids que este juego quiere)
 #
@@ -341,6 +355,9 @@ var _links: Array[JumpLink] = []
 ## not resolved yet - or from a previous, navmesh-less arena - would leave it
 ## straight-line steering for its whole life.
 var _navmesh_latched: bool = false
+## Frames seguidos que se salteo `move_and_slide()` estando quieto. Ver
+## IDLE_SLIDE_SKIP.
+var _idle_slide_skips: int = 0
 
 
 func _ready() -> void:
@@ -442,6 +459,10 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 
+	if _can_skip_slide():
+		_idle_slide_skips += 1
+		return
+	_idle_slide_skips = 0
 	move_and_slide()
 	if is_flying():
 		# Las dos de abajo son maquinaria de caminar: una juzga si el salto que
@@ -827,12 +848,29 @@ func set_move_target(target: Vector3) -> void:
 	target = ground_anchored_position(target) if is_flying() else navigable_position(target)
 	move_target = target
 	is_moving = true
-	if agent != null:
+	if agent != null and (agent.is_navigation_finished()
+			or agent.target_position.distance_squared_to(target) > REPATH_DISTANCE * REPATH_DISTANCE):
 		agent.target_position = target
 
 
 func stop_moving() -> void:
 	is_moving = false
+
+
+## Un enemigo de a pie quieto en el piso -telegrafiando, kiteando a distancia,
+## esperando su ficha del director- no tiene nada que resolver en
+## `move_and_slide()`: sin velocidad no hay colision nueva. Se saltea, hasta
+## IDLE_SLIDE_SKIP frames seguidos. Una plataforma que lo lleva (velocidad de
+## plataforma) o un empujon (velocidad) lo vuelven a mover en el mismo frame.
+func _can_skip_slide() -> bool:
+	return _idle_slide_skips < IDLE_SLIDE_SKIP \
+		and not is_flying() \
+		and is_on_floor() \
+		and velocity == Vector3.ZERO \
+		and get_platform_velocity() == Vector3.ZERO \
+		and not is_moving \
+		and not _is_leaping \
+		and not _is_traversing_link
 
 
 ## Yaw-only turn toward the player; enemies never pitch.

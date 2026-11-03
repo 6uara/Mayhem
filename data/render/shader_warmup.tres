@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ShaderWarmupList" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/shader_warmup_list.gd" id="1_list"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/explosion.tscn" id="2_explosion"]
+[ext_resource type="PackedScene" path="res://scenes/vfx/impact_effect.tscn" id="3_impact"]
+[ext_resource type="PackedScene" path="res://scenes/vfx/enemy_death_burst.tscn" id="4_burst"]
+[ext_resource type="PackedScene" path="res://scenes/vfx/muzzle_flash.tscn" id="5_muzzle"]
+[ext_resource type="PackedScene" path="res://scenes/utilities/stun_grenade.tscn" id="6_stun"]
+[ext_resource type="PackedScene" path="res://scenes/utilities/slow_field.tscn" id="7_slow"]
+[ext_resource type="PackedScene" path="res://scenes/utilities/temp_wall.tscn" id="8_wall"]
+[ext_resource type="PackedScene" path="res://scenes/arena/hazard_zone.tscn" id="9_hazard"]
+[ext_resource type="PackedScene" path="res://scenes/arena/snare_zone.tscn" id="10_snare"]
+[ext_resource type="PackedScene" path="res://scenes/arena/fire_pool.tscn" id="11_fire"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy_flask.tscn" id="12_flask"]
+
+; Lo que aparece recien en la pelea y no esta en la arena desde el arranque. Lo
+; que ya esta a la vista al cargar (piso, paredes, puertas, el publico) compila
+; solo en el primer frame, detras de la misma transicion.
+[resource]
+script = ExtResource("1_list")
+scenes = Array[PackedScene]([ExtResource("2_explosion"), ExtResource("3_impact"), ExtResource("4_burst"), ExtResource("5_muzzle"), ExtResource("6_stun"), ExtResource("7_slow"), ExtResource("8_wall"), ExtResource("9_hazard"), ExtResource("10_snare"), ExtResource("11_fire"), ExtResource("12_flask")])

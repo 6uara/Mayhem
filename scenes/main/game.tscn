@@ -38,6 +38,8 @@
 [ext_resource type="Resource" path="res://data/waves/wave_08.tres" id="w08"]
 [ext_resource type="Resource" path="res://data/waves/wave_09.tres" id="w09"]
 [ext_resource type="Resource" path="res://data/waves/wave_10.tres" id="w10"]
+[ext_resource type="Script" path="res://scripts/systems/shader_warmup.gd" id="90_warmup"]
+[ext_resource type="Resource" path="res://data/render/shader_warmup.tres" id="91_warmup_list"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_point"]
 shading_mode = 0
@@ -92,6 +94,10 @@ prewarm_count = 56
 script = ExtResource("15_prewarmer")
 scenes = Array[PackedScene]([ExtResource("15_projectile"), ExtResource("15_impact"), ExtResource("15_enemy_projectile"), ExtResource("15_explosion"), ExtResource("15_death_burst")])
 counts = PackedInt32Array(32, 32, 16, 4, 8)
+
+[node name="ShaderWarmup" type="Node3D" parent="."]
+script = ExtResource("90_warmup")
+list = ExtResource("91_warmup_list")
 
 [node name="RunLogger" type="Node" parent="."]
 script = ExtResource("16_run_logger")

@@ -187,6 +187,7 @@ func _restart_run() -> void:
 		await _reveal()
 		return
 	await _await_scene_swap(previous)
+	await _warm_shaders()
 	start_run()
 	await _reveal()
 
@@ -411,6 +412,16 @@ func _prepare_scene(path: String) -> PackedScene:
 	if scene == null:
 		push_error("GameManager: %s is not a PackedScene" % path)
 	return scene
+
+
+## Con la pantalla todavia tapada, dibuja una vez lo que la pelea va a mostrar
+## por primera vez (ShaderWarmup), para que el tiron de compilar caiga aca y no
+## en el primer disparo. Una escena sin ShaderWarmup no espera nada.
+func _warm_shaders() -> void:
+	for node: Node in get_tree().get_nodes_in_group(ShaderWarmup.GROUP):
+		var warmup := node as ShaderWarmup
+		if warmup != null:
+			await warmup.run()
 
 
 ## Takes the cover - and the loading screen under it - back off.

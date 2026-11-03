@@ -180,6 +180,18 @@ Se probó AgX en lugar de ACES y quedó ACES, con más contraste en los neones.
 | Tarjeta para compartir: PNG de 1200x630 con resultado, puntaje, momentos, trofeos y código de la run, en `user://share/`. Sirve para la página de itch y el trailer | `ShareCard`, botón *Save run card* en `MatchOverlay` |
 | El texto que se copia suma el mejor momento | `MatchOverlay._on_run_finished()` |
 
+### Lo que entró el 2026-11-03 (CPU y shaders, rama `chore/enemy-cpu-and-shader-warmup`)
+
+| Qué | Dónde |
+|---|---|
+| Un enemigo no le pide camino nuevo al navmesh si el destino se movió menos de 0.75 m y el camino viejo sigue vigente. Era el primer paso de [PLAN_MEJORAS §4.0](planes/PLAN_MEJORAS.md) | `Enemy.set_move_target()`, `REPATH_DISTANCE` |
+| Un enemigo de a pie quieto en el piso saltea `move_and_slide()` hasta 3 frames seguidos (uno de cada cuatro corre igual, para enterarse si el piso desaparece) | `Enemy._can_skip_slide()`, `IDLE_SLIDE_SKIP` |
+| Precalentado de shaders: con la pantalla todavía tapada, se dibuja dos frames una copia sin scripts ni colisión de cada efecto de pelea y de cada modelo de enemigo | `ShaderWarmup`, `data/render/shader_warmup.tres`, `GameManager._warm_shaders()` |
+
+**Sin medir todavía**: falta correr `tools/profile_elite_wave.gd` en la 680M antes y
+después (§5). Los dos cambios de CPU apuntan a los ~2.8 ms de navegación y ~2.5 ms
+de mover cuerpos de la ola 10.
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |

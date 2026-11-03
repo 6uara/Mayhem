@@ -331,7 +331,7 @@ arena vacía, sacando partes).
 | 4.4 Materiales por instancia | **Hecho de otra forma**: el overlay del destello se pone solo mientras brilla (antes cada parte de cada modelo se dibujaba dos veces) |
 | 4.5 Sombras | **Hecho**: cuenco, foso, público y ciudad sin sombra; sol con 2 cascadas hasta 60 m |
 | 4.6 IA | **Hecho el ritmo**: el árbol decide cada 2 frames de cerca, 3 a media distancia y 4 de lejos; el giro se reparte entre frames y los timers usan `get_ai_delta()`. Partir `enemy.gd` **no**: es un refactor sin ganancia medible por sí mismo |
-| 4.7 Compilación de shaders | **No hecho**: Godot 4.7 compila con ubershaders en segundo plano; falta medir si queda algún tirón antes de escribir un warm-up |
+| 4.7 Compilación de shaders | **Hecho 2026-11-03, sin medir**: `ShaderWarmup` dibuja una copia de cada efecto y modelo detrás de la transición (ver 4.7) |
 | 4.8 Tamaño del build | **Hecho en parte**: `tools/find_unused_assets.py` encuentra 154 MB sin usar y las carpetas enteras van al `exclude_filter`. Audio a Ogg, no |
 | Nuevo: arma en primera persona | Su SubViewport es un segundo pase 3D completo (~3.5 ms de GPU a resolución nativa). Se le sacaron el atlas de sombras y el AA y sigue la escala de render; el costo fijo queda |
 | Nuevo: defaults por hardware | Con GPU integrada el primer arranque va a 75 % de escala y sombras medias |
@@ -340,11 +340,11 @@ arena vacía, sacando partes).
 ~13 ms (Beehave ~3, mover cuerpos ~2.5, navegación ~2.8, Jolt ~1.7). Los
 siguientes pasos, en orden de retorno esperado:
 
-1. **Navegación**: medir cuántas consultas de camino hace la horda por segundo; si
-   `set_move_target()` re-pide camino por cambios chicos de destino, poner un
-   umbral de distancia antes de asignar `agent.target_position`.
-2. **`move_and_slide()` de enemigos quietos**: saltearlo cuando la velocidad es
-   cero y está apoyado (kiteando a distancia, telegrafiando).
+1. **Navegación**: *(hecho 2026-11-03, sin medir)* umbral de 0.75 m antes de
+   asignar `agent.target_position` (`Enemy.REPATH_DISTANCE`).
+2. **`move_and_slide()` de enemigos quietos**: *(hecho 2026-11-03, sin medir)*
+   se saltea hasta 3 frames seguidos con velocidad cero en el piso
+   (`Enemy._can_skip_slide()`).
 3. **Beehave**: el costo restante es sobre todo la maquinaria del addon (escrituras
    al blackboard por nodo y por tick), no las hojas. Un parche local más, o un
    árbol propio para los arquetipos simples.

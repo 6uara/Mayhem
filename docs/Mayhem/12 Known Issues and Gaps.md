@@ -37,6 +37,14 @@ removed (`nocrowd`, `novenue`, `noshadows`, `noglow`, `noviewmodel`,
 `freeze=<node>`...). `tools/profile_damage_numbers.gd` isolates damage numbers
 and hurt VFX. Still not covered: a real firefight with the camera moving.
 
+Two CPU savings landed 2026-11-03 and are **not measured yet**: a repath only
+when the destination moved more than `Enemy.REPATH_DISTANCE` (0.75 m), and
+`move_and_slide()` skipped up to `IDLE_SLIDE_SKIP` (3) frames in a row for a
+walker standing still on the floor. A consequence worth knowing: an idle enemy's
+`is_on_floor()` can be up to three frames stale. `ShaderWarmup` draws a
+script-less, collision-less copy of every combat effect and enemy model for two
+frames behind the loading cover (`GameManager._warm_shaders()`).
+
 ## Needs a human, not another unattended pass
 
 - **Audio mix.** `tools/configure_audio_mix.gd` applies a gain hierarchy and a
