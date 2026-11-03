@@ -45,7 +45,7 @@ func _spawn(id: String) -> Enemy:
 func _drawn_radii(enemy: Enemy) -> PackedFloat32Array:
 	var meshes: Array[MeshInstance3D] = []
 	if enemy.data.model_scene != null:
-		meshes = enemy._model_meshes
+		meshes = enemy.presentation.model_meshes
 	elif enemy.mesh_instance != null:
 		meshes = [enemy.mesh_instance]
 	var to_body: Transform3D = enemy.global_transform.affine_inverse()

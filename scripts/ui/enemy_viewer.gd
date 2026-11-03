@@ -224,7 +224,7 @@ func _on_hitboxes_toggled(on: bool) -> void:
 
 
 func _on_clip_pressed(clip: StringName) -> void:
-	var motion: Node = _enemy._motion
+	var motion: Node = _enemy.presentation.motion
 	if motion != null:
 		motion.set_clip_override(clip)
 
@@ -320,7 +320,7 @@ func _clear_hitbox_meshes() -> void:
 func _rebuild_clip_list() -> void:
 	for child: Node in _clip_list.get_children():
 		child.queue_free()
-	var motion: Node = _enemy._motion
+	var motion: Node = _enemy.presentation.motion
 	var clips: Array[StringName] = []
 	if motion != null:
 		clips = motion.get_clip_names()

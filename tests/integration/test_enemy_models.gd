@@ -18,7 +18,7 @@ func _body_space_bounds(enemy: Enemy) -> AABB:
 	var out := AABB()
 	var found: bool = false
 	var to_body: Transform3D = enemy.global_transform.affine_inverse()
-	for mesh_node: MeshInstance3D in enemy._model_meshes:
+	for mesh_node: MeshInstance3D in enemy.presentation.model_meshes:
 		if mesh_node.mesh == null:
 			continue
 		var box: AABB = to_body * mesh_node.global_transform * mesh_node.mesh.get_aabb()
@@ -145,12 +145,12 @@ func test_the_bomber_floats_above_the_floor() -> void:
 	floor_body.add_child(shape)
 	add_child_autofree(floor_body)
 	var enemy: Enemy = await _spawn("bomber")
-	assert_not_null(enemy._motion, "el bomber tiene animacion procedural")
+	assert_not_null(enemy.presentation.motion, "el bomber tiene animacion procedural")
 	var lowest: float = INF
 	for _i: int in 90:
 		await wait_frames(1)
-		var bottom: float = enemy._model.position.y \
-			+ enemy._model_bounds.position.y * enemy._model.scale.y
+		var bottom: float = enemy.presentation.model.position.y \
+			+ enemy.presentation.model_bounds.position.y * enemy.presentation.model.scale.y
 		lowest = minf(lowest, bottom)
 	assert_gt(lowest, 0.2, "la base del modelo nunca baja al piso (%0.2f)" % lowest)
 	assert_almost_eq(enemy.global_position.y, 0.0, 0.3, "el cuerpo sigue en el piso")
@@ -159,12 +159,12 @@ func test_the_bomber_floats_above_the_floor() -> void:
 ## Curar se ve en el cuerpo del Healer, no solo en los haces.
 func test_the_healer_pops_when_it_heals() -> void:
 	var enemy: Enemy = await _spawn("healer")
-	assert_not_null(enemy._motion)
+	assert_not_null(enemy.presentation.motion)
 	await wait_frames(2)
-	var rest_scale: float = enemy._model.scale.x
+	var rest_scale: float = enemy.presentation.model.scale.x
 	enemy.ability_used.emit()
 	await wait_seconds(0.2)
-	assert_gt(enemy._model.scale.x, rest_scale * 1.03, "se infla al curar")
+	assert_gt(enemy.presentation.model.scale.x, rest_scale * 1.03, "se infla al curar")
 
 
 ## Hit flashes and wind-ups drive one knob now, whichever way the enemy is drawn.
@@ -185,8 +185,8 @@ func test_lighting_up_works_with_a_model_and_without_one() -> void:
 func test_the_summoner_plays_its_cast_clip_when_it_summons() -> void:
 	var enemy: Enemy = await _spawn("summoner")
 	assert_not_null(enemy.data.model_scene, "el summoner tiene modelo")
-	assert_not_null(enemy._motion, "y animacion")
-	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	assert_not_null(enemy.presentation.motion, "y animacion")
+	var clips: Array[StringName] = enemy.presentation.motion.get_clip_names()
 	for clip: StringName in [&"idle", &"move", &"cast"]:
 		assert_has(clips, clip, "trae el clip %s" % clip)
 	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
@@ -231,7 +231,7 @@ func test_model_glow_is_capped_below_the_hit_flash() -> void:
 	enemy.setup(data, Vector3.ZERO)
 	await wait_physics_frames(1)
 	var glowing: int = 0
-	for found: MeshInstance3D in enemy._model_meshes:
+	for found: MeshInstance3D in enemy.presentation.model_meshes:
 		var active := found.get_active_material(0) as BaseMaterial3D
 		if active == null or not active.emission_enabled:
 			continue
@@ -246,8 +246,8 @@ func test_model_glow_is_capped_below_the_hit_flash() -> void:
 func test_the_environmental_kicks_its_launcher_when_it_throws() -> void:
 	var enemy: Enemy = await _spawn("environmental")
 	assert_not_null(enemy.data.model_scene, "el environmental tiene modelo")
-	assert_not_null(enemy._motion, "y animacion")
-	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	assert_not_null(enemy.presentation.motion, "y animacion")
+	var clips: Array[StringName] = enemy.presentation.motion.get_clip_names()
 	for clip: StringName in [&"idle", &"walk", &"attack"]:
 		assert_has(clips, clip, "trae el clip %s" % clip)
 	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
@@ -272,8 +272,8 @@ func test_the_environmental_stands_at_its_fit_height() -> void:
 ## attack: el retroceso del cañon en el instante del tiro.
 func test_the_ranger_recoils_when_it_fires() -> void:
 	var enemy: Enemy = await _spawn("ranger")
-	assert_not_null(enemy._motion, "el ranger tiene animacion")
-	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	assert_not_null(enemy.presentation.motion, "el ranger tiene animacion")
+	var clips: Array[StringName] = enemy.presentation.motion.get_clip_names()
 	for clip: StringName in [&"idle", &"run", &"attack"]:
 		assert_has(clips, clip, "trae el clip %s" % clip)
 	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
@@ -293,8 +293,8 @@ func test_the_ranger_stands_at_its_fit_height() -> void:
 ## acompaña al salto: ActionLeapAttack emite ability_used al despegar.
 func test_the_rusher_lunges_when_it_leaps() -> void:
 	var enemy: Enemy = await _spawn("rusher")
-	assert_not_null(enemy._motion, "el rusher tiene animacion")
-	var clips: Array[StringName] = enemy._motion.get_clip_names()
+	assert_not_null(enemy.presentation.motion, "el rusher tiene animacion")
+	var clips: Array[StringName] = enemy.presentation.motion.get_clip_names()
 	for clip: StringName in [&"idle", &"run", &"attack"]:
 		assert_has(clips, clip, "trae el clip %s" % clip)
 	var player: AnimationPlayer = _find(enemy, "AnimationPlayer")
@@ -316,13 +316,13 @@ func test_the_new_models_need_no_orientation_fix() -> void:
 ## impacto va encima sin sacarlo.
 func test_every_model_is_outlined_in_its_colour() -> void:
 	var enemy: Enemy = await _spawn("rusher")
-	assert_gt(enemy._model_meshes.size(), 0, "precondicion: tiene modelo")
-	var outline := enemy._model_meshes[0].material_overlay as ShaderMaterial
+	assert_gt(enemy.presentation.model_meshes.size(), 0, "precondicion: tiene modelo")
+	var outline := enemy.presentation.model_meshes[0].material_overlay as ShaderMaterial
 	assert_not_null(outline, "el contorno va como overlay")
 	assert_eq(outline.get_shader_parameter(&"outline_color"), enemy.data.body_color,
 		"del color del arquetipo")
 	enemy._set_glow(1.0)
-	assert_same(enemy._model_meshes[0].material_overlay, outline, "el destello no lo saca")
-	assert_same(outline.next_pass, enemy._glow_material, "va encadenado detras")
+	assert_same(enemy.presentation.model_meshes[0].material_overlay, outline, "el destello no lo saca")
+	assert_same(outline.next_pass, enemy.presentation.glow_material, "va encadenado detras")
 	enemy._set_glow(0.0)
 	assert_null(outline.next_pass, "y se apaga")
