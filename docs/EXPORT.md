@@ -195,6 +195,13 @@ godot --headless --main-pack out/Mayhem.pck -s some_check.gd
 
 ## Checklist before tagging a build
 
+0. Changelog y versión: `python tools/changelog.py --write --bump` arma la sección
+   desde los Conventional Commits y sube `application/config/version` (semver; en
+   0.x un cambio que rompe sube la minor). Revisar el texto, commitear
+   `chore(release): vX.Y.Z` y taggear `vX.Y.Z` sobre ese commit: el tag es desde
+   donde arranca la próxima corrida. Sin `--bump` escribe una sección
+   "Sin publicar".
+
 1. `godot --headless -s addons/gut/gut_cmdln.gd -gexit` passes.
 2. Export templates match the editor version exactly (4.7-stable).
 3. Export both Windows presets and confirm the log actually honours the exclude filter for
