@@ -39,6 +39,8 @@ var _elapsed: float = 0.0
 var _gap_left: float = -1.0
 var _player: Player
 var _move_origin: Vector3 = Vector3.ZERO
+var _key_ready: bool = true
+var _nudged: bool = false
 
 
 func _ready() -> void:
@@ -51,6 +53,9 @@ func _ready() -> void:
 	EventBus.weapon_fired.connect(_on_goal.bind(&"fire").unbind(1))
 	EventBus.weapon_reloaded.connect(_on_goal.bind(&"reload").unbind(1))
 	EventBus.weapon_ads_changed.connect(_on_ads_changed)
+	# Un rebind desde la pausa, o agarrar el joystick: el paso se vuelve a escribir.
+	EventBus.settings_applied.connect(_show_current_step)
+	TutorialHintManager.input_device_changed.connect(_show_current_step.unbind(1))
 
 
 func _exit_tree() -> void:
@@ -83,6 +88,7 @@ func _process(delta: float) -> void:
 	if step.goal == &"move" and _moved_enough():
 		_complete_step()
 		return
+	_tick_guidance(step)
 	if step.max_time > 0.0 and _elapsed >= step.max_time:
 		_advance()
 
@@ -127,21 +133,70 @@ func get_step_count() -> int:
 	return _steps.size()
 
 
-## El texto de un paso con cada `{accion}` cambiada por su tecla actual.
+## El texto de un paso con cada `{accion}` cambiada por su tecla actual, en texto
+## plano: sin marcas de color.
 static func resolve_text(text: String) -> String:
+	return _substitute_keys(_strip_colors(text), "%s")
+
+
+## Lo mismo para la HUD, en BBCode: las teclas resaltadas y los colores pintados.
+static func resolve_rich_text(text: String) -> String:
+	var key_format: String = "[color=#%s]%%s[/color]" % Tokens.PLAYER.to_html(false)
+	var out: String = _substitute_keys(text, key_format)
+	var colors: Dictionary = _text_colors()
+	for tag: String in colors:
+		var tint: Color = colors[tag]
+		out = out.replace("[%s]" % tag, "[color=#%s]" % tint.to_html(false))
+		out = out.replace("[/%s]" % tag, "[/color]")
+	return out
+
+
+## Las teclas que nombra un texto, en orden y sin repetir. `move` son las cuatro.
+static func actions_in(text: String) -> Array[StringName]:
+	var actions: Array[StringName] = []
+	for found: RegExMatch in _placeholder_regex().search_all(text):
+		var action := StringName(found.get_string(1))
+		if not actions.has(action) and (action == &"move" or InputMap.has_action(action)):
+			actions.append(action)
+	return actions
+
+
+## Los colores que un texto puede nombrar. Ver `TutorialStep.text`.
+static func _text_colors() -> Dictionary:
+	return {
+		"player": Tokens.WORLD_TRAVERSAL, "grapple": Tokens.WORLD_GRAPPLE,
+		"hazard": Tokens.WORLD_HAZARD, "reward": Tokens.WORLD_PICKUP, "spawn": Tokens.SPAWN,
+	}
+
+
+static func _substitute_keys(text: String, key_format: String) -> String:
 	var out: String = text
 	if out.contains("{move}"):
 		var keys: PackedStringArray = PackedStringArray()
-		for action: StringName in [&"move_forward", &"move_left", &"move_back", &"move_right"]:
-			keys.append(TutorialHintManager.key_label(action))
-		out = out.replace("{move}", "".join(keys))
-	var regex := RegEx.new()
-	regex.compile("\\{([a-z_]+)\\}")
-	for found: RegExMatch in regex.search_all(out):
+		for action: StringName in TutorialKeys.MOVE_ACTIONS:
+			var label: String = TutorialHintManager.key_label(action)
+			# Con el joystick las cuatro son "Left Stick".
+			if not keys.has(label):
+				keys.append(label)
+		out = out.replace("{move}", key_format % "".join(keys))
+	for found: RegExMatch in _placeholder_regex().search_all(out):
 		var action := StringName(found.get_string(1))
 		if InputMap.has_action(action):
-			out = out.replace(found.get_string(0), TutorialHintManager.key_label(action))
+			out = out.replace(found.get_string(0), key_format % TutorialHintManager.key_label(action))
 	return out
+
+
+static func _strip_colors(text: String) -> String:
+	var out: String = text
+	for tag: String in _text_colors():
+		out = out.replace("[%s]" % tag, "").replace("[/%s]" % tag, "")
+	return out
+
+
+static func _placeholder_regex() -> RegEx:
+	var regex := RegEx.new()
+	regex.compile("\\{([a-z_0-9]+)\\}")
+	return regex
 
 
 # Private
@@ -155,6 +210,54 @@ func _bind_player() -> void:
 				_player.movement.jumped.connect(_on_jumped)
 			if not _player.movement.state_changed.is_connected(_on_movement_state):
 				_player.movement.state_changed.connect(_on_movement_state)
+
+
+## Lo que guia sin esperar: si la tecla ya sirve, y la ayuda para quien no le sale.
+func _tick_guidance(step: TutorialStep) -> void:
+	var key_ready: bool = _is_key_ready(step)
+	if key_ready != _key_ready:
+		_key_ready = key_ready
+		TutorialHintManager.set_tutorial_key_ready(key_ready)
+	if not _nudged and step.nudge != "" and _elapsed >= step.nudge_after:
+		_nudged = true
+		TutorialHintManager.nudge_tutorial(resolve_rich_text(step.nudge))
+
+
+## Sin jugador dice que si: mejor una tecla encendida de mas que un paso sin tecla.
+func _is_key_ready(step: TutorialStep) -> bool:
+	if _player == null or not is_instance_valid(_player):
+		return true
+	match step.ready_when:
+		&"running":
+			if _player.movement == null:
+				return true
+			var horizontal := Vector2(_player.velocity.x, _player.velocity.z)
+			return horizontal.length() >= _player.movement.slide_min_speed
+		&"airborne":
+			return _player.movement == null \
+				or _player.movement.state == MovementComponent.State.AIRBORNE
+		&"anchor_in_range":
+			return _player.grapple == null or _player.grapple.is_anchor_in_range
+	return true
+
+
+## El nodo del grupo mas cercano al jugador, o null.
+func _waypoint_for(step: TutorialStep) -> Node3D:
+	if step.waypoint_group == &"" or not is_inside_tree():
+		return null
+	var nearest: Node3D = null
+	var best: float = INF
+	for node: Node in get_tree().get_nodes_in_group(step.waypoint_group):
+		var candidate := node as Node3D
+		if candidate == null:
+			continue
+		var distance: float = 0.0
+		if _player != null and is_instance_valid(_player):
+			distance = _player.global_position.distance_squared_to(candidate.global_position)
+		if distance < best:
+			best = distance
+			nearest = candidate
+	return nearest
 
 
 func _on_ads_changed(is_ads: bool) -> void:
@@ -192,6 +295,7 @@ func _complete_step() -> void:
 	if step != null and step.teaches_hint != &"":
 		SaveManager.mark_hint_seen(step.teaches_hint)
 	TutorialHintManager.complete_tutorial_step()
+	TutorialHintManager.set_tutorial_waypoint(null)
 	_gap_left = STEP_GAP
 
 
@@ -207,8 +311,20 @@ func _advance() -> void:
 	var step: TutorialStep = _steps[_index]
 	if step.goal == &"move" and _player != null and is_instance_valid(_player):
 		_move_origin = _player.global_position
-	TutorialHintManager.show_tutorial_step(step.title, resolve_text(step.text),
-		_index, _steps.size(), step.goal == &"")
+	_nudged = false
+	_key_ready = _is_key_ready(step)
+	_show_current_step()
+	TutorialHintManager.set_tutorial_waypoint(_waypoint_for(step))
+
+
+func _show_current_step() -> void:
+	var step: TutorialStep = current_step()
+	# En la pausa entre pasos el cumplido ya esta en pantalla: no se le borra.
+	if not is_running or step == null or _gap_left >= 0.0:
+		return
+	var text: String = step.nudge if _nudged else step.text
+	TutorialHintManager.show_tutorial_step(step.title, resolve_rich_text(text), _index,
+		_steps.size(), step.goal == &"", actions_in(step.text), step.setup_action, _key_ready)
 
 
 func _step_applies(step: TutorialStep) -> bool:
@@ -224,6 +340,7 @@ func _finish(skipped: bool) -> void:
 	is_running = false
 	_index = -1
 	SaveManager.mark_hint_seen(COMPLETED_ID)
+	TutorialHintManager.set_tutorial_waypoint(null)
 	TutorialHintManager.end_tutorial(self)
 	if not skipped:
 		NarratorManager.say(&"tutorial_done")

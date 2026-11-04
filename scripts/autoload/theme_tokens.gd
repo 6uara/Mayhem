@@ -79,6 +79,23 @@ const PAR_BAR_SIZE      := Vector2(360, 4)
 const POWERUP_BAR_W     := 230
 const ICON_GRID         := 64
 const ICON_STROKE       := 4
+## Las teclas del tutorial (KeyCap): grandes, porque son lo primero que se tiene que
+## ver del panel. Dos filas de WASD tienen que entrar en la banda de los carteles.
+const KEY_CAP_H         := 40
+const KEY_CAP_MOUSE_W   := 30
+const KEY_CAP_PADDING   := 12
+const KEY_CAP_GAP       := 4
+const KEY_CAP_GROUP_GAP := 12
+const KEY_CAP_BORDER    := 2.0
+const KEY_CAP_CHAMFER   := 6.0
+## El ancho minimo del texto al lado de las teclas.
+const TUTORIAL_TEXT_W   := 520
+## El marcador del objetivo de un paso (TutorialWaypoint): lo que se aparta del
+## borde cuando el objetivo esta fuera de pantalla, y su tamaño.
+const WAYPOINT_MARGIN   := 96.0
+const WAYPOINT_SIZE     := 14.0
+const WAYPOINT_STROKE   := 3.0
+const WAYPOINT_LABEL_W  := 80.0
 
 # ---------------------------------------------------------------- Thresholds
 const LOW_HEALTH_PCT := 0.30
@@ -103,6 +120,7 @@ const GADGET_CALLOUT_REPEATS := 2
 const GADGET_NAME_LIFE       := 2.5
 const LOW_HEALTH_PULSE   := 1.10  ## continuous, ease-in-out
 const LOW_AMMO_BLINK     := 0.90  ## continuous, step (on/off)
+const KEY_CAP_PULSE      := 0.90  ## continuous: the key the tutorial is asking for
 const HAZARD_WARNING     := 0.60  ## telegraph before a hazard can damage
 const HAZARD_EVAPORATE   := 0.40  ## a temporary pool drying up after it stops damaging
 const STATE_SETTLE_MAX   := 0.40  ## nothing else may animate longer than this

@@ -18,9 +18,20 @@ extends Node
 signal hint_shown(text: String, duration: float)
 signal hint_hidden()
 ## El tutorial de arranque (TutorialDirector) pasa por aca para llegar a la HUD,
-## que ya escuchaba a este autoload. `is_info` es un paso que pasa solo.
-signal tutorial_step_shown(title: String, text: String, index: int, total: int, is_info: bool)
+## que ya escuchaba a este autoload. `is_info` es un paso que pasa solo. `text` trae
+## BBCode; `actions` son las teclas que nombra, en orden, y `setup_action` la que hay
+## que apretar antes para que sirvan.
+signal tutorial_step_shown(title: String, text: String, index: int, total: int, is_info: bool,
+		actions: Array[StringName], setup_action: StringName, key_ready: bool)
 signal tutorial_step_completed()
+## La tecla que pide el paso ya sirve (o dejo de servir).
+signal tutorial_key_ready_changed(key_ready: bool)
+## El jugador lleva rato sin poder: una ayuda mas concreta. BBCode, como `text`.
+signal tutorial_nudged(text: String)
+## Lo que el paso pide buscar en la arena. Null lo saca.
+signal tutorial_waypoint_changed(target: Node3D)
+## Teclado y mouse, o joystick: lo que la pantalla tiene que nombrar cambio.
+signal input_device_changed(uses_gamepad: bool)
 signal tutorial_ended()
 
 const CATALOG_PATH: String = "res://data/tutorial/tutorial_hints.tres"
@@ -28,6 +39,8 @@ const CATALOG_PATH: String = "res://data/tutorial/tutorial_hints.tres"
 ## unbounded - if the player has ignored four mechanics' worth of hints
 ## already, a fifth queued behind them would show stale advice anyway.
 const MAX_QUEUED: int = 4
+## Cuanto hay que mover un stick o gatillo para que cuente como agarrar el joystick.
+const STICK_WAKE: float = 0.5
 
 var _hints_by_id: Dictionary = {}  # StringName -> TutorialHint
 var _queue: Array[TutorialHint] = []
@@ -38,6 +51,7 @@ var _movement: MovementComponent
 ## vez se callan: los dos usan la misma banda de la pantalla, y el tutorial ya
 ## esta enseñando lo mismo.
 var _tutorial: Node
+var _uses_gamepad: bool = false
 
 
 func _ready() -> void:
@@ -58,6 +72,22 @@ func _process(delta: float) -> void:
 	_time_left -= delta
 	if _time_left <= 0.0:
 		_finish_current()
+
+
+## El ultimo dispositivo con el que se apreto algo. Sin el movimiento del mouse: un
+## jugador de joystick que lo roza con la mano no quiere que cambie toda la pantalla.
+## Sin el stick apenas movido, por la misma razon, y porque los sticks derivan.
+func _input(event: InputEvent) -> void:
+	var pad: bool = _uses_gamepad
+	if event is InputEventKey or event is InputEventMouseButton:
+		pad = false
+	elif event is InputEventJoypadButton:
+		pad = true
+	elif event is InputEventJoypadMotion:
+		pad = pad or absf((event as InputEventJoypadMotion).axis_value) >= STICK_WAKE
+	if pad != _uses_gamepad:
+		_uses_gamepad = pad
+		input_device_changed.emit(pad)
 
 
 # Signal handlers - EventBus
@@ -191,18 +221,45 @@ func skip_tutorial() -> void:
 		_tutorial.call(&"skip")
 
 
-func show_tutorial_step(title: String, text: String, index: int, total: int,
-		is_info: bool) -> void:
-	tutorial_step_shown.emit(title, text, index, total, is_info)
+func show_tutorial_step(title: String, text: String, index: int, total: int, is_info: bool,
+		actions: Array[StringName], setup_action: StringName, key_ready: bool) -> void:
+	tutorial_step_shown.emit(title, text, index, total, is_info, actions, setup_action, key_ready)
 
 
 func complete_tutorial_step() -> void:
 	tutorial_step_completed.emit()
 
 
+func set_tutorial_key_ready(key_ready: bool) -> void:
+	tutorial_key_ready_changed.emit(key_ready)
+
+
+func nudge_tutorial(text: String) -> void:
+	tutorial_nudged.emit(text)
+
+
+func set_tutorial_waypoint(target: Node3D) -> void:
+	tutorial_waypoint_changed.emit(target)
+
+
+func uses_gamepad() -> bool:
+	return _uses_gamepad
+
+
 ## La tecla que tiene asignada `action` ahora mismo, como se escribe en pantalla.
 func key_label(action: StringName) -> String:
 	return _key_label(action)
+
+
+## El evento de `action` que la pantalla tiene que nombrar: el del dispositivo en
+## uso y, si en ese no tiene ninguno, el que tenga.
+func prompt_event(action: StringName) -> InputEvent:
+	var preferred: InputEvent = SettingsManager.get_gamepad_event(action) if _uses_gamepad \
+		else SettingsManager.get_primary_event(action)
+	if preferred != null or not InputMap.has_action(action):
+		return preferred
+	var events: Array[InputEvent] = InputMap.action_get_events(action)
+	return events[0] if not events.is_empty() else null
 
 
 ## Substitutes the live-bound key for `hint.action`'s first key event into the
@@ -219,13 +276,5 @@ func _text_has_placeholder(text: String) -> bool:
 
 
 func _key_label(action: StringName) -> String:
-	if not InputMap.has_action(action):
-		return "?"
-	for event: InputEvent in InputMap.action_get_events(action):
-		var key: InputEventKey = event as InputEventKey
-		if key != null:
-			return OS.get_keycode_string(key.physical_keycode)
-		var mouse: InputEventMouseButton = event as InputEventMouseButton
-		if mouse != null:
-			return "MOUSE %d" % mouse.button_index
-	return "?"
+	var event: InputEvent = prompt_event(action)
+	return SettingsManager.describe_event(event) if event != null else "?"

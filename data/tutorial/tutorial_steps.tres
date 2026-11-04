@@ -17,7 +17,7 @@ teaches_hint = &"move"
 script = ExtResource("2_step")
 goal = &"jump"
 title = "JUMP"
-text = "Jump with {jump}. Hold it against a ledge to climb."
+text = "Jump with {jump}. Jump into a ledge to climb it."
 duration = 5.0
 max_time = 15.0
 requires_group = &""
@@ -32,6 +32,10 @@ duration = 5.0
 max_time = 20.0
 requires_group = &""
 teaches_hint = &"slide"
+ready_when = &"running"
+setup_action = &"move_forward"
+nudge = "Build speed first: hold {move_forward}, then press {crouch_slide} while you run."
+nudge_after = 8.0
 
 [sub_resource type="Resource" id="Step_3"]
 script = ExtResource("2_step")
@@ -42,16 +46,24 @@ duration = 5.0
 max_time = 15.0
 requires_group = &""
 teaches_hint = &"fast_fall"
+ready_when = &"airborne"
+setup_action = &"jump"
+nudge = "It only works in the air: jump with {jump}, then press {crouch_slide} before you land."
+nudge_after = 7.0
 
 [sub_resource type="Resource" id="Step_4"]
 script = ExtResource("2_step")
 goal = &"grapple"
 title = "GRAPPLE"
-text = "Look at a cyan anchor up high and press {grapple} to swing to it."
+text = "Find a [grapple]violet[/grapple] anchor up high. When it is in range, press {grapple} to swing to it."
 duration = 5.0
 max_time = 25.0
 requires_group = &"grapple_anchor"
 teaches_hint = &"grapple"
+ready_when = &"anchor_in_range"
+waypoint_group = &"grapple_anchor"
+nudge = "Follow the marker and aim at the anchor. The reticle widens when it is in range - then press {grapple}."
+nudge_after = 10.0
 
 [sub_resource type="Resource" id="Step_5"]
 script = ExtResource("2_step")
@@ -67,18 +79,20 @@ teaches_hint = &"ads"
 script = ExtResource("2_step")
 goal = &"reload"
 title = "RELOAD"
-text = "Reload with {reload}. Ammo is limited - amber crates refill it."
+text = "Reload with {reload}. Ammo is limited - [reward]amber[/reward] crates refill it."
 duration = 5.0
 max_time = 15.0
 requires_group = &""
 teaches_hint = &"reload"
+nudge = "A full magazine cannot reload: fire with {fire}, then press {reload}."
+nudge_after = 6.0
 
 [sub_resource type="Resource" id="Step_7"]
 script = ExtResource("2_step")
 goal = &""
 title = "COLORS"
-text = "CYAN is yours to use: pads and platforms. ORANGE will hurt you. AMBER is yours to take: ammo, money, crowd gifts. MAGENTA doors are where enemies come from."
-duration = 7.0
+text = "[player]CYAN[/player] is yours to use: pads and platforms. [grapple]VIOLET[/grapple] anchors catch your grapple. [hazard]ORANGE[/hazard] will hurt you. [reward]AMBER[/reward] is yours to take: ammo, money, crowd gifts. [spawn]MAGENTA[/spawn] doors are where enemies come from."
+duration = 8.0
 max_time = 0.0
 requires_group = &""
 teaches_hint = &""
