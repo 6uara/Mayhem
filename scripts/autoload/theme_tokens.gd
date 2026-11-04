@@ -16,8 +16,8 @@ const PLAYER := Color("#35E0D4")  ## yours: health, ammo, grapple. Shape: square
 const ENEMY  := Color("#FF3B54")  ## threat, damage in, hitmarkers. Shape: diamond/chevron
 const REWARD := Color("#FFB020")  ## currency, pickups, Host voice. Shape: circle
 ## Lava orange, not the acid green this shipped with - the pool material is meant to
-## read as molten rock, and this is the one colour every hazard, the elite-wave
-## stripe and the elite archetype itself are keyed to. Distinct from ENEMY's
+## read as molten rock, and this is the one colour every hazard and the elite-wave
+## stripe are keyed to. Distinct from ENEMY's
 ## crimson-pink on purpose: one is "this attacks you", the other is "this burns you".
 const HAZARD := Color("#FC3A00")  ## traps, elite waves, power-ups. Shape: triangle
 const HEAL   := Color("#8AF0C4")  ## healing VFX only, never UI
@@ -228,7 +228,6 @@ const DEATH_FLASH_TIME   := 0.18
 const DEATH_FLASH_ENERGY := 4.0
 ## A body this tall gets the burst at scale 1; taller and shorter scale with it.
 const DEATH_BURST_HEIGHT := 1.8
-const ENEMY_ELITE    := Color("#FC3A00")
 const ENEMY_HEALER   := Color("#B45CFF")
 const ENEMY_SUMMONER := Color("#FF3BC1")
 ## Warning yellow, and the only enemy outside the warm red-to-magenta family. The
@@ -252,7 +251,6 @@ const ENEMY_FLYER    := Color("#9966F2")
 const ENEMY_HEIGHT := {
 	"rusher": 1.2,
 	"ranger": 1.9,
-	"elite": 2.8,
 	"healer": 2.0,
 	"summoner": 2.2,
 	"bomber": 1.0,
@@ -272,7 +270,6 @@ const EMISSIVE_MAX_AREA := 0.08  ## fraction of an enemy's surface that may be e
 const TELL_RUSHER_CROUCH  := 0.40
 const TELL_RANGER_CHARGE  := 0.80
 const TELL_RANGER_AIMLINE := 0.20  ## line is visible this long before the shot
-const TELL_ELITE_WINDUP   := 1.20
 const TELL_SUMMON_PLATE   := 1.50
 ## The Bomber's fuse blink, accelerating from the first step to the second as the
 ## count runs out. Same language as the vanishing platform (PLATFORM_BLINK_STEP /

@@ -780,7 +780,7 @@ func get_target_velocity() -> Vector3:
 
 
 ## Inside this, the enemy stops flanking and comes straight in. Scaled off its
-## own reach so a long-armed elite commits sooner than a rusher.
+## own reach so a long-armed enemy commits sooner than a rusher.
 ##
 ## Salvo para los que no se acercan nunca. Un arquetipo que kitea pelea parado a
 ## `preferred_distance`, asi que atarle el commit a `attack_range` lo compromete
@@ -1187,7 +1187,7 @@ func _apply_fuse_ring() -> void:
 		_fuse_material.emission_enabled = true
 		fuse_ring.material_override = _fuse_material
 	# HAZARD y no el amarillo del cuerpo: el anillo dice "esto te quema", que es
-	# la misma frase que dicen el charco del Elite y las trampas del arena. El
+	# la misma frase que dicen los charcos y las trampas del arena. El
 	# color del cuerpo identifica al arquetipo, el del piso identifica al peligro.
 	_fuse_material.albedo_color = Color(Tokens.WORLD_HAZARD, 0.2)
 	_fuse_material.emission = Tokens.WORLD_HAZARD

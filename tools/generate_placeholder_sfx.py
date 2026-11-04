@@ -597,7 +597,7 @@ def main() -> None:
     _write("world/grapple_release.wav", grapple_release(rng))
     _write("world/bounce_pad.wav", bounce_pad(rng))
     # Per-archetype pitches, so threats are identifiable without looking.
-    for name, pitch in [("rusher", 1.25), ("ranger", 1.0), ("elite", 0.6),
+    for name, pitch in [("rusher", 1.25), ("ranger", 1.0),
                         ("healer", 1.5), ("summoner", 0.8)]:
         _write("enemies/%s_spawn.wav" % name, enemy_spawn(rng, pitch))
         _write("enemies/%s_windup.wav" % name, enemy_windup(rng, pitch))

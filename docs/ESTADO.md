@@ -19,8 +19,7 @@ Base: `develop`. Suite: ver [TESTING.md](TESTING.md#estado-actual-de-la-suite).
 ## 1. Dónde está el juego
 
 **Todo el trabajo de sistemas está hecho.** El loop completo existe y está
-cubierto por tests: diez oleadas, ocho arquetipos (siete en rotación, el Elite en
-el banco), cuatro armas, dos modos de juego, 24 mejoras comunes y 20 raras (cuatro de sinergia), tienda
+cubierto por tests: diez oleadas, siete arquetipos, cuatro armas, dos modos de juego, 24 mejoras comunes y 20 raras (cuatro de sinergia), tienda
 con reroll, bonos de estilo, rating de la transmisión, reglas de transmisión por
 oleada, curación (mejora y botiquín del público), trofeos, tabla por arena, Host
 con guion completo en subtítulos, tutorial de arranque, coliseo generado con
@@ -208,12 +207,19 @@ de mover cuerpos de la ola 10.
 | El tutorial y los hints nombran el botón del joystick si es lo último que se tocó (nombres Xbox, texto y no glifos) | `TutorialHintManager.prompt_event()`, `SettingsManager.PAD_BUTTON_NAMES` |
 | Textos viejos corregidos: el ancla es violeta (decía cian), el mantle es automático (decía mantener saltar), COLORS suma el violeta. Colores de la ley pintados en el texto | `tutorial_steps.tres` |
 
+### Lo que entró el 2026-11-04 (sin Elite ni créditos, rama `chore/remove-elite-and-credits`)
+
+| Qué | Dónde |
+|---|---|
+| El arquetipo Elite, que ninguna ola traía, se borró: datos, árbol, slam y sonidos. Las olas 5 y 10 siguen siendo olas grandes (`is_elite_wave`: franja, sin regla), pero anuncian "WAVE N" en vez de "THE WARDEN ENTERS" | `EnemyData.Archetype` (los números no se corrieron), `HUD._on_wave_started()` |
+| La pantalla de créditos salió del menú. **Falta antes de publicar:** el aviso de licencia de Godot y de los addons MIT ya no se muestra en ningún lado | `main_menu.tscn` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
-| R1 | **Modelos** de piezas de arena, interactuables y un enemigo (Elite). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19; los brazos de Meshy, 2026-10-28, llegaron sin textura y usan un material liso hasta que haya una), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
-| R2 | **Audio de armas, enemigos e impactos.** Armas (2026-10-31): SMG, rifle y escopeta tienen disparo, recarga y vacío nuevos, armados de packs CC0 (Kenney Sci-fi Sounds y "gun reload sounds" de OpenGameArt; no piden créditos); la pistola se quedó con los suyos a propósito. Los disparos del SMG y la escopeta son capas de estallido, metal y grave: suenan a arma sci-fi, no a pólvora. El del rifle (2026-11-03) es una grabación real de un AK-47 de The Free Firearm Sound Library (OpenGameArt, CC0), elegida de oído: ese pack también trae opciones realistas para las otras armas; falta juzgar en juego el rifle junto a ellas. Enemigos (2026-10-31): Ranger, Bomber, Healer, Summoner, Environmental y Flyer con sonidos nuevos de los mismos packs más "monster sound effects 2" y "80 CC0 creature SFX #2" (CC0), varias voces con modulación en anillo para que suenen a robot; el Rusher entero, el ataque y la mecha del Bomber y la muerte del Healer se quedaron con los suyos a propósito. El Elite (en el banco) y los impactos siguen con los de `tools/generate_placeholder_sfx.py`. Falta la mezcla real en juego | Audio |
+| R1 | **Modelos** de piezas de arena, interactuables. Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19; los brazos de Meshy, 2026-10-28, llegaron sin textura y usan un material liso hasta que haya una), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
+| R2 | **Audio de armas, enemigos e impactos.** Armas (2026-10-31): SMG, rifle y escopeta tienen disparo, recarga y vacío nuevos, armados de packs CC0 (Kenney Sci-fi Sounds y "gun reload sounds" de OpenGameArt; no piden créditos); la pistola se quedó con los suyos a propósito. Los disparos del SMG y la escopeta son capas de estallido, metal y grave: suenan a arma sci-fi, no a pólvora. El del rifle (2026-11-03) es una grabación real de un AK-47 de The Free Firearm Sound Library (OpenGameArt, CC0), elegida de oído: ese pack también trae opciones realistas para las otras armas; falta juzgar en juego el rifle junto a ellas. Enemigos (2026-10-31): Ranger, Bomber, Healer, Summoner, Environmental y Flyer con sonidos nuevos de los mismos packs más "monster sound effects 2" y "80 CC0 creature SFX #2" (CC0), varias voces con modulación en anillo para que suenen a robot; el Rusher entero, el ataque y la mecha del Bomber y la muerte del Healer se quedaron con los suyos a propósito. Los impactos siguen con los de `tools/generate_placeholder_sfx.py`. Falta la mezcla real en juego | Audio |
 | R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-11-03: los números y costos de las cuatro raras de sinergia, `nudge_after` de cada paso del tutorial y el sonido de paso cumplido (`card_deal.wav`, sin oír). Desde el 2026-10-21: los números de la caída rápida, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 
 ## 3. Abierto — necesita una decisión

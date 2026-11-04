@@ -20,7 +20,7 @@ func test_the_burst_takes_the_colour_of_the_enemy() -> void:
 
 
 func test_a_bigger_enemy_bursts_bigger() -> void:
-	_burst.play_at(Vector3.ZERO, Tokens.ENEMY_ELITE, Tokens.DEATH_BURST_HEIGHT * 1.5)
+	_burst.play_at(Vector3.ZERO, Tokens.ENEMY_SUMMONER, Tokens.DEATH_BURST_HEIGHT * 1.5)
 	assert_almost_eq(_burst.scale.x, 1.5, 0.001)
 
 

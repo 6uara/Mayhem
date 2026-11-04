@@ -33,15 +33,9 @@ func _waves() -> Array[WaveData]:
 
 ## Arquetipos que existen en el repo y a propósito **no** se spawnean.
 ##
-## El Elite sale del pool mientras se lo reworkea. Su problema no es de números:
-## es el único arquetipo cuya pregunta al jugador se superpone con la del Rusher
-## -viene de frente y pega fuerte- y el `CombatDirector` lo deja en evidencia,
-## porque pide el mismo puesto que el melee básico y no aporta un ángulo nuevo.
-## Las olas de élite mientras tanto son olas de masa.
-##
-## La lista es la excepción **nombrada**: sacar un arquetipo tiene que costar una
+## Hoy no hay ninguno. La lista es la excepción **nombrada**: sacar un arquetipo tiene que costar una
 ## línea acá y no el silencio de un test que se dejó de correr.
-const BENCHED: Array[StringName] = [&"elite"]
+const BENCHED: Array[StringName] = []
 
 
 ## Todo arquetipo con `.tres` propio tiene que aparecer en alguna ola, salvo los

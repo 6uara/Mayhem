@@ -37,8 +37,8 @@ tests/integration/
 
 - `test_spec_conformance.gd` — cross-checks that code matches stated design
   intent rather than testing behavior in isolation: e.g.
-  `test_the_elite_shares_the_hazard_accent` asserts `elite.body_color.g` tracks
-  `Tokens.HAZARD.g`, and `test_shop_timer_matches_the_spec` asserts
+  `test_enemies_use_the_spec_colours` asserts each archetype's body color tracks
+  its token, and `test_shop_timer_matches_the_spec` asserts
   `ShopScreen.duration == Tokens.SHOP_TIMER`. This file is where "the docs and
   the code agree" gets enforced mechanically.
 - `test_player_movement.gd` — added when the movement-feel pass landed (gravity

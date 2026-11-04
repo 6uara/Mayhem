@@ -38,13 +38,11 @@ func test_upgrades_and_rares_go_to_separate_tabs() -> void:
 	assert_eq(_ids(_section(CodexCatalog.SECTION_RARES)).size(), shop.rare_upgrades.size())
 
 
-## Lo que el jugador puede encontrarse, y nada mas: el Elite esta en el banco.
+## Lo que el jugador puede encontrarse, y nada mas.
 func test_the_enemy_tab_lists_what_the_waves_bring_in_order_of_appearance() -> void:
 	var debuts: Dictionary = CodexCatalog.enemy_debuts()
 	var entries: Array = _section(CodexCatalog.SECTION_ENEMIES)["entries"]
 	assert_eq(entries.size(), debuts.size())
-	assert_does_not_have(_ids(_section(CodexCatalog.SECTION_ENEMIES)), &"elite",
-		"ninguna ola trae al Elite")
 	var last: int = 0
 	for entry: Dictionary in entries:
 		var wave: int = 0

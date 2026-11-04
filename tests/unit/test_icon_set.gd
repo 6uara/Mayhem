@@ -36,7 +36,7 @@ func test_every_upgrade_has_an_icon() -> void:
 	assert_gt(checked, 0, "no se reviso ninguna mejora")
 
 
-## Los ocho arquetipos, contra los `.tres` que existen y no contra una lista.
+## Los arquetipos, contra los `.tres` que existen y no contra una lista.
 func test_every_enemy_archetype_has_an_icon() -> void:
 	var dir: DirAccess = DirAccess.open("res://data/enemies")
 	assert_not_null(dir)

@@ -2,7 +2,7 @@ extends GutTest
 ## Guards the authored archetypes: every one of them must be complete, or an
 ## enemy spawns with no brain, no silhouette or no audio and nothing errors.
 
-const ARCHETYPES: Array[String] = ["rusher", "ranger", "elite", "healer", "summoner",
+const ARCHETYPES: Array[String] = ["rusher", "ranger", "healer", "summoner",
 	"bomber", "environmental", "flyer"]
 
 
@@ -32,7 +32,6 @@ func test_every_archetype_is_readable_by_silhouette_and_sound() -> void:
 func test_archetype_enum_matches_the_resource() -> void:
 	assert_eq(_load("rusher").archetype, EnemyData.Archetype.RUSHER)
 	assert_eq(_load("ranger").archetype, EnemyData.Archetype.RANGER)
-	assert_eq(_load("elite").archetype, EnemyData.Archetype.ELITE)
 	assert_eq(_load("healer").archetype, EnemyData.Archetype.HEALER)
 	assert_eq(_load("summoner").archetype, EnemyData.Archetype.SUMMONER)
 	assert_eq(_load("bomber").archetype, EnemyData.Archetype.BOMBER)
@@ -58,16 +57,8 @@ func test_every_attack_is_telegraphed() -> void:
 		assert_gt(data.attack_windup, 0.0, "%s attack_windup" % name)
 
 
-func test_elite_hits_hardest_and_telegraphs_longest() -> void:
-	var elite: EnemyData = _load("elite")
-	for name: String in ARCHETYPES:
-		var data: EnemyData = _load(name)
-		assert_true(elite.damage >= data.damage, "elite damage vs %s" % name)
-		assert_true(elite.attack_windup >= data.attack_windup, "elite windup vs %s" % name)
-
-
 func test_rewards_scale_with_threat() -> void:
-	assert_gt(_load("elite").reward_currency, _load("rusher").reward_currency)
+	assert_gt(_load("summoner").reward_currency, _load("rusher").reward_currency)
 
 
 ## Una espoleta incompleta no falla: el Bomber camina hasta vos, hace tic, y no

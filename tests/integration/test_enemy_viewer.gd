@@ -14,7 +14,7 @@ func before_each() -> void:
 
 
 func test_it_lists_every_archetype() -> void:
-	assert_eq(_viewer._archetypes.size(), 8, "los ocho arquetipos de data/enemies")
+	assert_eq(_viewer._archetypes.size(), 7, "los siete arquetipos de data/enemies")
 	assert_not_null(_viewer._enemy, "y muestra el primero al abrir")
 
 

@@ -171,7 +171,7 @@ func test_a_bomber_that_blew_up_on_its_own_pays_for_nothing() -> void:
 
 # ----------------------------------------------------------------- el charco
 
-## El charco le sobrevive al frasco que lo dejo y al Elite que lo golpeo, asi que
+## El charco le sobrevive al frasco que lo dejo, asi que
 ## el dueno tiene que ser el actor y no el volumen - que ademas vuelve al pool.
 func test_a_hazard_pool_credits_whoever_left_it() -> void:
 	var zone: HazardZone = add_child_autofree(load(HAZARD_SCENE).instantiate())

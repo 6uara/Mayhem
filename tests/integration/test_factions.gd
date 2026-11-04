@@ -151,7 +151,7 @@ func test_it_retargets_when_its_target_dies() -> void:
 
 # -------------------------------------------------------------------- el daño
 
-## §2.2: el charco del Elite lastimaba a la horda entera, que es fuego amigo que
+## §2.2: un charco enemigo lastimaba a la horda entera, que es fuego amigo que
 ## el plan reserva **solo** para la explosion del Bomber.
 func test_a_pool_does_not_burn_its_owners_own_faction() -> void:
 	var pool_owner: Enemy = await _spawn(RUSHER, Vector3(40.0, 0.0, 0.0))

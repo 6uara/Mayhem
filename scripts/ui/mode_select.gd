@@ -6,7 +6,7 @@ extends Control
 ## tienda vende armas y cada una se compra; en ONE GUN el arma se elige aca y es
 ## la de las diez oleadas, y la tienda solo vende mejoras.
 ##
-## Armado por codigo, como `CreditsPanel`: son dos botones y una fila de armas que
+## Armado por codigo: son dos botones y una fila de armas que
 ## sale del catalogo de la tienda, y un arma nueva en el catalogo aparece aca sin
 ## tocar una escena.
 

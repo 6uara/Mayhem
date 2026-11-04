@@ -13,7 +13,7 @@ extends GutTest
 
 const ARCHETYPES: Array[String] = [
 	"rusher", "ranger", "flyer", "bomber",
-	"elite", "environmental", "healer", "summoner",
+	"environmental", "healer", "summoner",
 ]
 
 ## The share of the drawn vertices that has to fall inside the hitbox radius.
@@ -26,7 +26,7 @@ const ARCHETYPES: Array[String] = [
 ##
 ## Measured when this was written (radius of that 75th vertex -> hitbox):
 ## rusher 0.59 -> 0.60, ranger 0.42 -> 0.45, flyer 0.45 -> 0.55,
-## bomber 0.50 -> 0.70, elite 0.75 -> 1.00, environmental 0.54 -> 0.60,
+## bomber 0.50 -> 0.70, environmental 0.54 -> 0.60,
 ## healer 0.22 -> 0.45, summoner 0.76 -> 0.80.
 const COVERED_FRACTION: float = 0.75
 
