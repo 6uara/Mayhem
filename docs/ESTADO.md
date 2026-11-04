@@ -212,7 +212,7 @@ de mover cuerpos de la ola 10.
 | Qué | Dónde |
 |---|---|
 | El arquetipo Elite, que ninguna ola traía, se borró: datos, árbol, slam y sonidos. Las olas 5 y 10 siguen siendo olas grandes (`is_elite_wave`: franja, sin regla), pero anuncian "WAVE N" en vez de "THE WARDEN ENTERS" | `EnemyData.Archetype` (los números no se corrieron), `HUD._on_wave_started()` |
-| La pantalla de créditos salió del menú. **Falta antes de publicar:** el aviso de licencia de Godot y de los addons MIT ya no se muestra en ningún lado | `main_menu.tscn` |
+| La pantalla de créditos salió del menú, con su panel | `main_menu.tscn` |
 
 ## 2. Bloquea el release
 
