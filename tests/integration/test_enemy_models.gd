@@ -66,7 +66,7 @@ func test_no_enemy_brings_a_camera_or_a_light_into_the_arena() -> void:
 ## would be nothing shipped left to prove it with.
 const _ARCHETYPES: Array[String] = [
 	"rusher", "ranger", "flyer", "bomber",
-	"elite", "environmental", "healer", "summoner",
+	"environmental", "healer", "summoner",
 ]
 
 

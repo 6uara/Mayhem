@@ -139,7 +139,7 @@ func test_the_shot_converges_on_what_the_crosshair_points_at() -> void:
 ## The player aims at the silhouette. A mesh wider than its hitbox has an outer
 ## band that is quietly bulletproof, which reads in play as shots passing through.
 func test_no_enemy_is_narrower_to_shoot_than_it_looks() -> void:
-	for archetype: String in ["rusher", "elite"]:
+	for archetype: String in ["rusher", "summoner"]:
 		var enemy_data: EnemyData = load("res://data/enemies/%s.tres" % archetype)
 		var mesh: Mesh = enemy_data.mesh
 		var footprint: float = maxf(mesh.get_aabb().size.x, mesh.get_aabb().size.z)
@@ -154,10 +154,10 @@ func test_no_enemy_is_narrower_to_shoot_than_it_looks() -> void:
 ## The two radii do different jobs: the body capsule is a navmesh contract, the
 ## hitbox answers "did that look like a hit". Widening one must not widen the other.
 func test_a_wide_hitbox_does_not_widen_the_navigation_body() -> void:
-	var elite: EnemyData = load("res://data/enemies/elite.tres")
-	assert_gt(elite.hitbox_radius, elite.collision_radius,
-		"precondition: the elite is the archetype that needed a wider hitbox")
-	assert_lt(elite.collision_radius, 0.85,
+	var summoner: EnemyData = load("res://data/enemies/summoner.tres")
+	assert_gt(summoner.hitbox_radius, summoner.collision_radius,
+		"precondition: the summoner has the widest hitbox over its body")
+	assert_lt(summoner.collision_radius, 0.85,
 		"the body capsule has to stay under the navmesh bake's agent radius")
 
 

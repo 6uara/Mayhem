@@ -38,8 +38,7 @@ func _activate() -> void:
 	ObjectPool.release(self)
 
 
-## Mismo gesto que `ActionEliteSlam._leave_pool()`, y a propósito: es el
-## precedente de que el radio y la duración de un `HazardZone` son argumentos.
+## El radio y la duración de un `HazardZone` son argumentos justamente para esto.
 func _leave_pool() -> void:
 	if hazard_scene == null:
 		return

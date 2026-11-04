@@ -17,14 +17,12 @@ const WEAPON_VIEWER_SCENE_PATH: String = "res://scenes/main/weapon_viewer.tscn"
 @onready var _codex_button: Button = $Root/Panel/Margin/Layout/CodexButton
 @onready var _options_button: Button = $Root/Panel/Margin/Layout/OptionsButton
 @onready var _feedback_button: Button = $Root/Panel/Margin/Layout/FeedbackButton
-@onready var _credits_button: Button = $Root/Panel/Margin/Layout/CreditsButton
 @onready var _quit_button: Button = $Root/Panel/Margin/Layout/QuitButton
 @onready var _best: Label = $Root/Panel/Margin/Layout/BestRow/Value
 @onready var _footer: Label = $Root/Panel/Margin/Layout/Footer
 @onready var _settings: SettingsScreen = $Settings
 @onready var _leaderboard: LeaderboardPanel = $Leaderboard
 @onready var _arena_select: ArenaSelect = $ArenaSelect
-@onready var _credits: CreditsPanel = $Credits
 @onready var _feedback: FeedbackPanel = $Feedback
 
 ## Armado por codigo: ver ModeSelect.
@@ -41,12 +39,10 @@ func _ready() -> void:
 	_codex_button.pressed.connect(_on_codex_pressed)
 	_options_button.pressed.connect(_on_options_pressed)
 	_feedback_button.pressed.connect(_on_feedback_pressed)
-	_credits_button.pressed.connect(_on_credits_pressed)
 	_quit_button.pressed.connect(get_tree().quit)
 	_settings.closed.connect(_on_panel_closed)
 	_leaderboard.closed.connect(_on_panel_closed)
 	_arena_select.closed.connect(_on_panel_closed)
-	_credits.closed.connect(_on_panel_closed)
 	_feedback.closed.connect(_on_panel_closed)
 	_arena_select.arena_chosen.connect(_on_arena_chosen)
 	_mode_select = ModeSelect.new()
@@ -160,11 +156,6 @@ func _on_codex_closed() -> void:
 func _on_options_pressed() -> void:
 	_root.visible = false
 	_settings.open()
-
-
-func _on_credits_pressed() -> void:
-	_root.visible = false
-	_credits.open()
 
 
 func _on_feedback_pressed() -> void:

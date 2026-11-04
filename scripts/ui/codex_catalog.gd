@@ -25,7 +25,7 @@ const ECONOMY_CONFIG_PATH: String = "res://data/economy/economy_config.tres"
 ## estaticos, y llamarlos por la instancia es un warning.
 const KillBonus := preload("res://scripts/autoload/kill_bonus_tracker.gd")
 ## Las oleadas por numero, como las arma game.tscn. El codex lee de aca que
-## enemigos existen: uno que ninguna ola trae (el Elite, en el banco) no se puede
+## enemigos existen: uno que ninguna ola trae no se puede
 ## encontrar, y una ficha de algo que no se ve confunde mas de lo que explica.
 const WAVE_PATH_FORMAT: String = "res://data/waves/wave_%02d.tres"
 
@@ -264,7 +264,7 @@ static func rule_entries() -> Array[Dictionary]:
 			continue
 		var when: String = "From wave %d" % pool.from_wave
 		if pool.skip_elite_waves:
-			when += ", not on elite waves"
+			when += ", not on the big waves"
 		entries.append(_entry(rule.id, _title_case(rule.title), "HOUSE RULE", Tokens.HAZARD,
 			rule.description, [["OFFERED", when], ["LASTS", "One wave"]]))
 	for contract: BroadcastRule in pool.contracts:

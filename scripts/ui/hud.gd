@@ -964,10 +964,7 @@ func _on_wave_started(wave_index: int, config: WaveData) -> void:
 	_wave_number.add_theme_color_override("font_color",
 		Tokens.HAZARD if is_elite else Tokens.TEXT)
 	_set_elite_stripe(is_elite)
-	if is_elite:
-		announce("ELITE", "THE WARDEN ENTERS", Tokens.HAZARD)
-	else:
-		announce("WAVE %d" % (wave_index + 1), "", Tokens.REWARD)
+	announce("WAVE %d" % (wave_index + 1), "", Tokens.HAZARD if is_elite else Tokens.REWARD)
 
 
 # Overlays

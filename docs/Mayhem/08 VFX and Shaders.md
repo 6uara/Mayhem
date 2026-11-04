@@ -103,8 +103,7 @@ own (below) and this one keeps only the dark-red molten skin.
 
 ## `acid_pool.gdshader`
 
-The hazard pool (`scenes/arena/hazard_zone.tscn`): arena traps, the Elite's slam
-and the flasks. A flat 2.3×2.3 quad (radius 1 = damage radius, the margin is for the stain) that `HazardZone`
+The hazard pool (`scenes/arena/hazard_zone.tscn`): arena traps and the flasks. A flat 2.3×2.3 quad (radius 1 = damage radius, the margin is for the stain) that `HazardZone`
 scales to the damage radius — it replaced a 0.08 m `CylinderMesh` that read as a
 coin lying on the floor.
 

@@ -5,7 +5,9 @@ extends Resource
 ## archetype; this resource is what makes a Rusher a Rusher - silhouette, audio,
 ## stats and behavior tree all come from here.
 
-enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL, FLYER }
+## Con el 3 explicito porque los .tres guardan el numero: el 2 era el Elite, que ya
+## no existe, y correr los demas cambiaria de arquetipo a todos los enemigos.
+enum Archetype { RUSHER, RANGER, HEALER = 3, SUMMONER, BOMBER, ENVIRONMENTAL, FLYER }
 
 @export var id: StringName = &""
 @export var display_name: String = ""
@@ -24,7 +26,7 @@ enum Archetype { RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL,
 @export var attack_range: float = 2.0
 @export var attack_cooldown: float = 1.5
 @export var mass: float = 1.0
-## 0 = fully staggered by every hit, 1 = immovable. Elites sit high.
+## 0 = fully staggered by every hit, 1 = immovable.
 @export var stagger_resistance: float = 0.0
 
 @export_group("Movement")

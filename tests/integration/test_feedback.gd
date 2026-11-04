@@ -1,6 +1,5 @@
 extends GutTest
-## Los creditos y el formulario de feedback: las dos pantallas que faltaban para
-## poder publicar.
+## El formulario de feedback.
 ##
 ## El feedback no es un extra: sin el, lo unico que llega de un playtest es lo
 ## que el jugador se acuerde de contar despues.
@@ -20,29 +19,6 @@ func _panel(path: String) -> Control:
 	return _menu.get_node(path)
 
 
-# --------------------------------------------------------------- creditos
-
-func test_the_menu_has_a_way_into_the_credits() -> void:
-	var credits: CreditsPanel = _panel("Credits")
-	_panel("Root/Panel/Margin/Layout/CreditsButton").pressed.emit()
-	await wait_frames(2)
-
-	assert_true(credits.visible)
-	assert_false(_panel("Root").visible, "el panel reemplaza al menu, no se apila")
-	credits.close()
-	await wait_frames(2)
-	assert_true(_panel("Root").visible, "y volver aterriza en el menu")
-
-
-func test_the_credits_list_is_built_from_the_data() -> void:
-	var credits: CreditsPanel = _panel("Credits")
-	credits.open()
-	await wait_frames(2)
-	var sections: VBoxContainer = _panel("Credits/Panel/Margin/Layout/Scroll/Sections")
-	assert_gt(sections.get_child_count(), CreditsPanel.SECTIONS.size(),
-		"un titulo por seccion y una fila por linea, nada autorado a mano")
-
-
 # --------------------------------------------------------------- feedback
 
 func test_the_menu_has_a_way_into_the_feedback_form() -> void:
@@ -50,7 +26,10 @@ func test_the_menu_has_a_way_into_the_feedback_form() -> void:
 	_panel("Root/Panel/Margin/Layout/FeedbackButton").pressed.emit()
 	await wait_frames(2)
 	assert_true(feedback.visible)
+	assert_false(_panel("Root").visible, "el panel reemplaza al menu, no se apila")
 	feedback.close()
+	await wait_frames(2)
+	assert_true(_panel("Root").visible, "y volver aterriza en el menu")
 
 
 ## El que importa: se reporta durante la run, no al final.

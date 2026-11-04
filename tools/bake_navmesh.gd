@@ -17,7 +17,7 @@ const ARENA_PATH: String = "res://scenes/arena/greybox_arena.tscn"
 const OUTPUT_PATH: String = "res://scenes/arena/greybox_arena_navmesh.tres"
 ## Frames to let the CSG shapes resolve before the geometry is parsed.
 const SETTLE_FRAMES: int = 4
-## Wide enough for the biggest archetype (the Elite, at 0.75), so no enemy is ever
+## Wide enough for any archetype (the widest was 0.75), so no enemy is ever
 ## routed closer to an edge than its own body can survive.
 const AGENT_RADIUS: float = 0.85
 

@@ -199,8 +199,8 @@ freezes the background and skips the count-up.
 ## Main menu
 
 `scripts/ui/main_menu.gd` — Play / Create Arena / Leaderboard / Options /
-Credits / Quit, plus a `Footer` with version and copyright. Every panel
-(`SettingsScreen`, `LeaderboardPanel`, `ArenaSelect`, `CreditsPanel`,
+Quit, plus a `Footer` with version and copyright. Every panel
+(`SettingsScreen`, `LeaderboardPanel`, `ArenaSelect`,
 `FeedbackPanel`) follows the same shape: instanced as a child, `open()` /
 `close()` / a `closed` signal, `_root.visible = false` when hidden.
 
@@ -270,14 +270,6 @@ an anonymous row does. If a global leaderboard is ever wanted, `submit_score()`
 stays the single entry point, so a Steam Leaderboards call (target is Steam
 via GodotSteam) would be one added call, not a rewrite.
 
-## Credits panel
-
-`scripts/ui/credits_panel.gd` + `scenes/ui/credits_panel.tscn`, opened from a
-"CREDITS" button between Options and Quit, same `open()`/`close()`/`closed`
-pattern and `ui_cancel` handling as `LeaderboardPanel`. Content comes from a
-data constant (`SECTIONS`, same idea as `SettingsScreen.SCHEMA`) rather than
-text authored in the `.tscn` — authorship, engine and tools, typefaces:
-adding a line is adding one entry to `SECTIONS`. No licence text is shown.
 
 ## Codex
 
@@ -292,8 +284,7 @@ Nine tabs: weapons, upgrades, rares, gadgets, enemies, attachments, house rules
 every tab reads the pool the game itself reads (`shop_catalog.tres`,
 `crowd_drop_table.tres`, `attachment_catalog.tres`, `rule_pool.tres`,
 `request_pool.tres`, `KillBonusTracker.BONUS_LABEL`), and the enemy tab lists the
-archetypes the ten waves spawn, in order of debut — so the benched Elite is not
-there. A new `.tres` in any pool shows up with no other change.
+archetypes the ten waves spawn, in order of debut. A new `.tres` in any pool shows up with no other change.
 
 The text comes from fields that already existed (`description`, `summary`) plus
 three added for it: `WeaponData.codex_blurb`, `EnemyData.codex_blurb` and

@@ -45,7 +45,7 @@ extends Resource
 ## "esquivar" en una decision economica y no solo en una de supervivencia.
 ## Cero lo apaga entero.
 @export var currency_loss_per_damage: float = 1.0
-## Tope por golpe, para que un unico impacto de Elite no vacie la billetera y
+## Tope por golpe, para que un unico impacto fuerte no vacie la billetera y
 ## deje la tienda sin sentido. Cero significa sin tope.
 @export var currency_loss_max_per_hit: int = 40
 

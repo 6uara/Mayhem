@@ -10,7 +10,7 @@ actualizado: 2026-10-28
 timing, size and threshold in the game is meant to trace back to a constant in
 this file** — nothing should be hardcoded elsewhere. `tests/unit/test_theme_tokens.gd`
 and `tests/unit/test_spec_conformance.gd` pin specific values and cross-checks
-(e.g. the Elite archetype's body color must track `Tokens.HAZARD`) so drift
+(e.g. the Summoner's body color must track its token) so drift
 between code and design intent fails a test instead of shipping silently.
 
 ## The one law (interactive/world color)
@@ -55,9 +55,8 @@ Color is never the only signal — each accent has a companion shape
 the hazard pool got a real molten-rock shader material (see
 [[08 VFX and Shaders#lava_pool.gdshader]]) and it made more sense for the token
 to match what the material actually renders than to fight it. This was a
-deliberate, discussed change (not a silent recolor): the Elite enemy archetype's
-`body_color`, `ENEMY_ELITE`, and `GLOW_HAZARD` all moved with it, because they
-were already deliberately coupled to `HAZARD` for the elite-wave HUD stripe.
+deliberate, discussed change (not a silent recolor): `GLOW_HAZARD` moved with
+it, because it was already deliberately coupled to `HAZARD` for the elite-wave HUD stripe.
 `ENEMY` (`#FF3B54`, crimson-pink) stays visually distinct from the
 `HAZARD` orange on purpose — "this attacks you" and "this burns you" need to
 read as different threats.
@@ -133,7 +132,7 @@ the rare glow's pulse and sheen, and the shake; plain motion stays.
 
 ## Enemy identity
 
-`ENEMY_RUSHER` / `_RANGER` / `_ELITE` / `_HEALER` / `_SUMMONER` — dominant color
+`ENEMY_RUSHER` / `_RANGER` / `_HEALER` / `_SUMMONER` — dominant color
 per archetype (silhouette is the primary read, color confirms). `ENEMY_HEIGHT`
 dictionary doubles as the canonical list of archetype names used elsewhere in
 tests (`for archetype in Tokens.ENEMY_HEIGHT.keys(): ...`). `EMISSIVE_MAX_AREA = 0.08`

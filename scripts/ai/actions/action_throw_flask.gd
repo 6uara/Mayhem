@@ -8,7 +8,7 @@ extends ActionLeaf
 ## donde estás parado, no pegarte. Un Environmental que acierta y uno que erra por
 ## poco te obligan a moverte igual, y esa es toda la diferencia con el Ranger.
 ##
-## Vive todo acá y no en `Enemy` a propósito, siguiendo a `ActionEliteSlam`: la
+## Vive todo acá y no en `Enemy` a propósito: la
 ## hoja se ocupa de su propio `ObjectPool` y de sus propios números. Además evita
 ## un ciclo - `EnemyFlask` hereda de `ThrownUtility`, que nombra a `Enemy`, así que
 ## si `enemy.gd` nombrara al frasco el compilador tendría que resolver un círculo,

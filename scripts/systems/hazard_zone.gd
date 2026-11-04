@@ -6,7 +6,7 @@ extends Area3D
 ## smaller - and there is always a 0.6s warning before it can hurt anyone. A hazard
 ## that damages outside its own decal is a bug, not a difficulty setting.
 ##
-## Used for arena traps and for the Elite's slam, which is why the radius and
+## Used for arena traps and for the Environmental's flasks, which is why the radius and
 ## duration are arguments rather than constants.
 
 signal expired()
@@ -19,7 +19,7 @@ signal expired()
 ## is the promise, and a promise that leaks upward through a floor is worse than no
 ## telegraph at all.
 @export var damage_height: float = 2.2
-## 0 = permanent arena trap. Above 0 = a temporary pool, like the Elite's slam.
+## 0 = permanent arena trap. Above 0 = a temporary pool, like a flask's.
 @export var duration: float = 0.0
 @export var radius: float = 3.0:
 	set(value):
@@ -125,7 +125,7 @@ func arm() -> void:
 		telegraph.state = TelegraphComponent.State.ACTIVE
 
 
-## Reconfigures a pooled hazard - the Elite's slam uses this.
+## Reconfigures a pooled hazard - the Environmental's flask uses this.
 func setup(hazard_damage: float, hazard_radius: float, hazard_duration: float,
 		hazard_attacker: Node = null) -> void:
 	damage = hazard_damage
@@ -229,7 +229,7 @@ func _on_released() -> void:
 func _damage(body: Node3D) -> void:
 	if not body.is_in_group(&"player") and not body.is_in_group(&"enemy"):
 		return
-	# Un charco con dueño no quema a los del dueño. Antes sí: el charco del Elite
+	# Un charco con dueño no quema a los del dueño. Antes sí: un charco enemigo
 	# lastimaba a la horda entera, que es el fuego amigo que §5.2 del plan reserva
 	# **sólo** para la explosión del Bomber. Una trampa del arena no tiene dueño y
 	# sigue quemando a todo el mundo, que es lo correcto para una trampa.

@@ -1,7 +1,6 @@
 class_name StunGrenade
 extends ThrownUtility
-## Stuns every enemy in radius. The answer to being surrounded, and the reason
-## elites are survivable at close range.
+## Stuns every enemy in radius. The answer to being surrounded.
 
 @export var stun_duration: float = 2.5
 @export var flash_mesh: MeshInstance3D

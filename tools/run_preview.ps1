@@ -16,7 +16,7 @@
 # Godot recibia "rusher" como resolucion.
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    # rusher / ranger / elite / healer / summoner, mas los modos walk, front y
+    # rusher / ranger / healer / summoner, mas los modos walk, front y
     # measure. Se pasan tal cual al script de Godot.
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$PreviewArgs = @("rusher"),

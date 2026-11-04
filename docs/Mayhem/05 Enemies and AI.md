@@ -6,7 +6,7 @@ actualizado: 2026-10-28
 
 # Enemies and AI
 
-## One scene, eight archetypes
+## One scene, seven archetypes
 
 `scenes/enemies/enemy.tscn` + `scripts/actors/enemy.gd` (~2480 lines, the largest
 script in the codebase by a wide margin) is shared by every archetype. How it
@@ -21,12 +21,12 @@ the presentation decides *how*. Tests reach the model through
 Rusher: silhouette, stats, behavior tree, audio. `Enemy` itself is architecture-
 agnostic — it reads `data.*` and never branches on archetype by name.
 
-`Archetype` enum: `RUSHER, RANGER, ELITE, HEALER, SUMMONER, BOMBER, ENVIRONMENTAL, FLYER`.
+`Archetype` enum: `RUSHER, RANGER, HEALER = 3, SUMMONER, BOMBER, ENVIRONMENTAL, FLYER`
+(the 2 was the Elite, deleted on 2026-11-04; `.tres` files store the number).
 
-**The Elite is benched**: its data, behavior tree and tests are intact, but no
-wave spawns it — its question overlapped the Rusher's. Waves 5 and 10 are still
-flagged `is_elite_wave` and are mass waves instead. The exclusion is named in
-`test_wave_composition.gd` (`const BENCHED`). See
+Waves 5 and 10 are still flagged `is_elite_wave` and are mass waves. The Elite
+archetype they once brought was benched because its question overlapped the
+Rusher's, and later deleted. See
 [PLAN_COMBAT_DIRECTOR §6](../historial/PLAN_COMBAT_DIRECTOR.md).
 
 `EnemyData` field groups: **Stats** (health/speed/damage/range/cooldown/mass,
@@ -46,7 +46,7 @@ proportions and the halo is what separates their silhouettes at range),
 Data instances: `data/enemies/{rusher,ranger,elite,healer,summoner,bomber,environmental,flyer}.tres`.
 
 **Models today:** Rusher, Ranger, Bomber, Healer, Flyer, Summoner and Environmental have a
-`model_scene`; the Elite is still the grey-box primitive.
+`model_scene`.
 Behavior trees: `scenes/enemies/ai/tree_{archetype}.tscn`.
 
 `EnemyData.mesh` is the grey-box silhouette and is drawn centred on the body
@@ -54,7 +54,7 @@ capsule (`collision_height * 0.5`), the same place `_resize_capsule` puts the
 shapes and the same pivot `tools/bake_enemy_meshes.gd` bakes into a real model.
 It used to be pinned at `y = 0.9` by the scene — half of the 1.8m capsule the
 scene was authored with, and therefore right for no archetype that actually
-exists. The Ranger got away with it, the Elite and the Summoner sat low, and
+exists. The Ranger got away with it, the Summoner sat low, and
 anything shorter than 1.8m floated. Archetypes with a `model_scene` never
 noticed either way, since the primitive is hidden under a model.
 
@@ -321,8 +321,7 @@ appeared once the enemy had reached you, with nothing to do about it.
   line of sight — otherwise it launches into the wall in between.
 
 `ActionTelegraph` was already the wind-up and is unchanged; only the strike it
-leads into is new. The **Elite keeps its slam** — the acid pool is what makes it
-area denial rather than a large Rusher.
+leads into is new.
 
 `ConditionPlayerInRange` gained `use_leap_range` so the tree opens the branch at
 the archetype's leap range (7m) rather than its punch range (2.2m). Expressing
@@ -448,7 +447,7 @@ Almost none of this is new code, which was the point of building it second:
 - The arc, the landing and the pooled lifetime are `ThrownUtility` — the same
   base the player's three thrown utilities use. It really is the same object with
   a different payload.
-- The pool is a `HazardZone`, unmodified, exactly like the Elite's slam. That
+- The pool is a `HazardZone`, unmodified. That
   matters more than it sounds: the pool inherits the 0.6s warning and the
   decal-drawn-at-the-damage-radius law **for free**, so a new archetype cannot
   break the telegraph by accident. A bespoke area could have skipped both and
@@ -469,7 +468,7 @@ version was one special case being treated as the only one:
   it is lobbed *over* the horde, and stopping on the first ally turns area denial
   into a puddle at its own feet. So the payload picks.
 
-The throw lives entirely in the leaf, not on `Enemy`, following `ActionEliteSlam`.
+The throw lives entirely in the leaf, not on `Enemy`.
 That also avoids a cycle: `EnemyFlask` extends `ThrownUtility`, which names
 `Enemy`, so an `enemy.gd` that named the flask would close the loop — see the
 note in `Explosion._victims()` for what that failure looks like.
@@ -641,7 +640,7 @@ Los dos filtros de §2.2 quedaron abiertos así:
   y el daño se cae un metro después.
 
 `HazardZone` también aprendió bandos: un charco con dueño no quema a los del
-dueño. Antes sí — el charco del Elite lastimaba a la horda entera, que es el fuego
+dueño. Antes sí — un charco enemigo lastimaba a la horda entera, que es el fuego
 amigo que el plan reserva sólo para el Bomber. Una trampa del arena no tiene dueño
 y sigue quemando a todo el mundo, que es lo correcto para una trampa. Por el mismo
 motivo, "ally" pasó a significar algo en `heal_nearby_allies()`: el Healer cura a
@@ -686,7 +685,7 @@ Tres reglas que no son obvias:
   si la cadena se atribuyera a sí misma, elegir dónde matarlo no pagaría nada.
 - **El charco es del actor, no del volumen.** `HazardZone.attacker` se setea en
   `setup()`, porque el `HazardZone` vuelve al pool y el próximo lo reusa,
-  mientras que el Elite o el Environmental que lo dejó no.
+  mientras que el Environmental que lo dejó no.
 
 `enemy_killed` y `kill_credited` siguen siendo dos señales porque ahora sí
 contestan cosas distintas: la primera es "murió uno" y la cobra el contador de la
@@ -701,7 +700,7 @@ Tests en `tests/integration/test_kill_attribution.gd`.
 can't be assigned directly, since Godot's fbx importer produces a full node
 hierarchy with a root-level transform (rotation from the Z-up→Y-up conversion,
 plus whatever scale the source file's units imply), not a standalone mesh
-resource. SpiderBot (the old Rusher) and UAL1_Standard (Elite) were baked offline this way:
+resource. SpiderBot (the old Rusher) was baked offline this way:
 `SurfaceTool.append_from(mesh, surface, transform)` walks the composed local
 transform down to the mesh node and bakes it into a new `ArrayMesh`, then the
 result is recentred on its own AABB and rescaled to the archetype's
@@ -756,7 +755,7 @@ would be saying the same thing twice.
 
 `Enemy.apply_stun(duration)`, `apply_slow(multiplier)` / `clear_slow()`,
 `is_staggered()` — `stagger_resistance` (0–1) on `EnemyData` scales how much a
-hit actually staggers a given archetype (Elites resist almost entirely).
+hit actually staggers a given archetype.
 
 ## Navmesh baking
 
@@ -767,7 +766,7 @@ the committed bake at runtime; `bake_on_ready` is a dev-only escape hatch for
 iterating on layout and must stay `false` in anything committed — baking CSG
 geometry at runtime pulls meshes back from the GPU, which Godot itself warns is
 a real cost. `AGENT_RADIUS = 0.85` in the bake tool is sized for the largest
-archetype (Elite, 0.75).
+archetype the game had (0.75); the widest today is smaller.
 
 ## AI tick rate
 

@@ -6,7 +6,7 @@ extends GutTest
 ## Labels that need no explanation. A button whose text is not here and has no
 ## tooltip fails - add the tooltip, or add the label here if it truly is obvious.
 const SELF_EXPLANATORY: Array[String] = [
-	"Back", "Quit", "Resume", "Options", "Credits", "Main Menu", "Play",
+	"Back", "Quit", "Resume", "Options", "Main Menu", "Play",
 ]
 
 const SCENES: Array[String] = [
@@ -19,7 +19,6 @@ const SCENES: Array[String] = [
 	"res://scenes/ui/match_overlay.tscn",
 	"res://scenes/ui/shop_screen.tscn",
 	"res://scenes/ui/leaderboard_panel.tscn",
-	"res://scenes/ui/credits_panel.tscn",
 ]
 
 const SettingsGuard = preload("res://tests/settings_guard.gd")
