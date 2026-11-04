@@ -157,3 +157,30 @@ func test_the_hint_does_not_sit_on_the_timer() -> void:
 	TutorialHintManager.hint_shown.emit("MANTENE [E] PARA EL GANCHO", 3.0)
 	await wait_physics_frames(2)
 	assert_false(_rect(HINT).intersects(_rect("TimerCluster")))
+
+
+## El panel del tutorial crecio con las teclas: todos los pasos que se envian, y sus
+## ayudas, tienen que entrar en la banda entre el reloj y la zona sin UI.
+func test_every_tutorial_step_fits_the_band() -> void:
+	_hud.get_node("Root/AnnounceLayer").visible = false
+	var catalog: TutorialStepCatalog = load(TutorialDirector.STEPS_PATH)
+	var screen: Rect2 = _screen()
+	var forbidden := Rect2(screen.position + (screen.size - Tokens.NO_UI_ZONE) * 0.5,
+		Tokens.NO_UI_ZONE)
+	var panel: Control = _hud.get_node("Root/TutorialPanel")
+	var total: int = catalog.steps.size()
+	for index: int in total:
+		var step: TutorialStep = catalog.steps[index]
+		for text: String in [step.text, step.nudge]:
+			if text == "":
+				continue
+			TutorialHintManager.show_tutorial_step(step.title,
+				TutorialDirector.resolve_rich_text(text), index, total, step.goal == &"",
+				TutorialDirector.actions_in(step.text), step.setup_action, true)
+			await wait_physics_frames(3)
+			# La entrada anima la posicion: se mide donde descansa.
+			var rest := Rect2(Vector2(panel.global_position.x, 160.0), panel.size)
+			assert_false(rest.intersects(forbidden), "%s entra en la zona sin UI: %s" % [step.title, rest])
+			assert_false(rest.intersects(_rect("TimerCluster")), "%s pisa el reloj" % step.title)
+			assert_true(screen.encloses(rest), "%s se sale de pantalla" % step.title)
+	TutorialHintManager.tutorial_ended.emit()

@@ -234,6 +234,22 @@ const REBINDABLE_ACTIONS: Array = [
 ]
 
 
+## Gamepad inputs by the Xbox names, which is what Godot's button indices follow.
+const PAD_BUTTON_NAMES: Dictionary = {
+	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_BACK: "Back", JOY_BUTTON_GUIDE: "Guide", JOY_BUTTON_START: "Start",
+	JOY_BUTTON_LEFT_STICK: "L3", JOY_BUTTON_RIGHT_STICK: "R3",
+	JOY_BUTTON_LEFT_SHOULDER: "LB", JOY_BUTTON_RIGHT_SHOULDER: "RB",
+	JOY_BUTTON_DPAD_UP: "D-Pad Up", JOY_BUTTON_DPAD_DOWN: "D-Pad Down",
+	JOY_BUTTON_DPAD_LEFT: "D-Pad Left", JOY_BUTTON_DPAD_RIGHT: "D-Pad Right",
+}
+const PAD_AXIS_NAMES: Dictionary = {
+	JOY_AXIS_LEFT_X: "Left Stick", JOY_AXIS_LEFT_Y: "Left Stick",
+	JOY_AXIS_RIGHT_X: "Right Stick", JOY_AXIS_RIGHT_Y: "Right Stick",
+	JOY_AXIS_TRIGGER_LEFT: "LT", JOY_AXIS_TRIGGER_RIGHT: "RT",
+}
+
+
 ## Binds `event` as the keyboard/mouse input of `action`.
 ##
 ## Only the keyboard and mouse events are replaced: a gamepad binding on the same
@@ -264,6 +280,16 @@ func get_primary_event(action: StringName) -> InputEvent:
 	return null
 
 
+## The gamepad event of an action, or null.
+func get_gamepad_event(action: StringName) -> InputEvent:
+	if not InputMap.has_action(action):
+		return null
+	for event: InputEvent in InputMap.action_get_events(action):
+		if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+			return event
+	return null
+
+
 ## What a binding is called on screen. Physical keycodes, so it names the key by
 ## where it is and a WASD layout reads the same on an AZERTY board.
 func describe_event(event: InputEvent) -> String:
@@ -281,6 +307,12 @@ func describe_event(event: InputEvent) -> String:
 			MOUSE_BUTTON_WHEEL_UP: return "Wheel Up"
 			MOUSE_BUTTON_WHEEL_DOWN: return "Wheel Down"
 			_: return "Mouse %d" % mouse.button_index
+	var button := event as InputEventJoypadButton
+	if button != null:
+		return PAD_BUTTON_NAMES.get(button.button_index, "Pad %d" % button.button_index)
+	var axis := event as InputEventJoypadMotion
+	if axis != null:
+		return PAD_AXIS_NAMES.get(axis.axis, "Axis %d" % axis.axis)
 	return "-"
 
 

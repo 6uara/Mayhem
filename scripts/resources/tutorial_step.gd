@@ -16,7 +16,11 @@ extends Resource
 @export var title: String = ""
 ## El texto. `{accion}` entre llaves se reemplaza por la tecla que tenga
 ## asignada esa accion del InputMap ahora mismo, asi que un rebind no lo deja
-## mintiendo: "Grapple with {grapple}." -> "Grapple with E.".
+## mintiendo: "Grapple with {grapple}." -> "Grapple with E.". Las teclas que nombra
+## son las que la HUD dibuja, y la primera es la que el paso pide.
+##
+## `[player]`, `[grapple]`, `[hazard]`, `[reward]` y `[spawn]` pintan una palabra con
+## ese color de la ley, sin escribir el color en el dato: "[grapple]violet[/grapple]".
 @export_multiline var text: String = ""
 ## Segundos en pantalla de un paso informativo.
 @export var duration: float = 5.0
@@ -30,3 +34,18 @@ extends Resource
 ## El hint de primera vez que este paso ya enseño (TutorialHintManager). Hacer el
 ## paso lo marca como visto, para que despues no se repita.
 @export var teaches_hint: StringName = &""
+
+@export_group("Guidance")
+## Cuando la tecla del paso sirve de verdad: hasta entonces no se enciende, y late
+## `setup_action` si la hay. Los que entiende el director: running, airborne,
+## anchor_in_range. Vacio = sirve siempre.
+@export var ready_when: StringName = &""
+## Lo que hay que apretar antes: saltar para picar. Se dibuja adelante, con una flecha.
+@export var setup_action: StringName = &""
+## Grupo cuyo nodo mas cercano se marca en pantalla mientras dura el paso.
+@export var waypoint_group: StringName = &""
+## Ayuda mas concreta para quien no le sale, en lugar del texto. Mismo formato.
+## Vacio = sin ayuda.
+@export_multiline var nudge: String = ""
+## Segundos en el paso hasta mostrar `nudge`. Conviene antes de `max_time`.
+@export var nudge_after: float = 8.0

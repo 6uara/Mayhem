@@ -197,13 +197,24 @@ de mover cuerpos de la ola 10.
 |---|---|
 | `CHANGELOG.md` generado desde los Conventional Commits, con la versión que toca según semver (en 0.x un cambio que rompe sube la minor). Tag `v0.3.0` (local, retroactivo, sobre `7290bf7`, el commit que puso esa versión) como punto de partida. El paso va primero en el checklist del build | `tools/changelog.py`, [EXPORT.md](EXPORT.md#checklist-before-tagging-a-build) |
 
+### Lo que entró el 2026-11-03 (tutorial, rama `feat/tutorial-key-prompts`)
+
+| Qué | Dónde |
+|---|---|
+| Teclas dibujadas en el panel del tutorial: la que el paso pide late, se rellena al apretarla y queda rellena al cumplir el paso. WASD en T invertida, botones de mouse como un mouse. Las teclas también van resaltadas en el texto. Sale del InputMap, así que un rebind se ve en el acto | `KeyCap`, `TutorialKeys`, `TutorialDirector.resolve_rich_text()` |
+| La tecla late cuando sirve: la picada en el aire ([SPACE] > [CTRL]), el slide corriendo, el gancho con un ancla al alcance. Antes late la preparación | `TutorialStep.ready_when`, `setup_action` |
+| Marcador hacia el ancla más cercana durante el paso del gancho, con distancia; fuera de pantalla se pega al borde y apunta | `TutorialWaypoint`, `TutorialStep.waypoint_group` |
+| Ayuda más concreta para quien se traba en un paso, en lugar del texto | `TutorialStep.nudge`, `nudge_after` |
+| El tutorial y los hints nombran el botón del joystick si es lo último que se tocó (nombres Xbox, texto y no glifos) | `TutorialHintManager.prompt_event()`, `SettingsManager.PAD_BUTTON_NAMES` |
+| Textos viejos corregidos: el ancla es violeta (decía cian), el mantle es automático (decía mantener saltar), COLORS suma el violeta. Colores de la ley pintados en el texto | `tutorial_steps.tres` |
+
 ## 2. Bloquea el release
 
 | # | Qué | Tipo |
 |---|---|---|
 | R1 | **Modelos** de piezas de arena, interactuables y un enemigo (Elite). Ya resuelto: brazos y Summoner con modelo y clips (2026-10-19; los brazos de Meshy, 2026-10-28, llegaron sin textura y usan un material liso hasta que haya una), Environmental con modelo y clips (2026-10-22), armas escaladas a las manos, y (2026-10-20) lanzador de gancho en la muñeca con cable y una silueta por gadget del público (`tools/build_gadget_meshes.gd`). Falta un pase en juego mirando el cable del gancho contra el ancla. Pedido de arte en [HANDOFF_ARTE.md](handoffs/HANDOFF_ARTE.md) | Arte |
-| R2 | **Audio de armas, enemigos e impactos.** Armas (2026-10-31): SMG, rifle y escopeta tienen disparo, recarga y vacío nuevos, armados de packs CC0 (Kenney Sci-fi Sounds y "gun reload sounds" de OpenGameArt; no piden créditos); la pistola se quedó con los suyos a propósito. Los disparos son capas de estallido, metal y grave: suenan a arma sci-fi, no a pólvora; para algo realista quedan el pack de f8studios (licencia sin confirmar) o Sonniss GDC. Enemigos (2026-10-31): Ranger, Bomber, Healer, Summoner, Environmental y Flyer con sonidos nuevos de los mismos packs más "monster sound effects 2" y "80 CC0 creature SFX #2" (CC0), varias voces con modulación en anillo para que suenen a robot; el Rusher entero, el ataque y la mecha del Bomber y la muerte del Healer se quedaron con los suyos a propósito. El Elite (en el banco) y los impactos siguen con los de `tools/generate_placeholder_sfx.py`. Falta la mezcla real en juego | Audio |
-| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-11-03: los números y costos de las cuatro raras de sinergia. Desde el 2026-10-21: los números de la caída rápida, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
+| R2 | **Audio de armas, enemigos e impactos.** Armas (2026-10-31): SMG, rifle y escopeta tienen disparo, recarga y vacío nuevos, armados de packs CC0 (Kenney Sci-fi Sounds y "gun reload sounds" de OpenGameArt; no piden créditos); la pistola se quedó con los suyos a propósito. Los disparos del SMG y la escopeta son capas de estallido, metal y grave: suenan a arma sci-fi, no a pólvora. El del rifle (2026-11-03) es una grabación real de un AK-47 de The Free Firearm Sound Library (OpenGameArt, CC0), elegida de oído: ese pack también trae opciones realistas para las otras armas; falta juzgar en juego el rifle junto a ellas. Enemigos (2026-10-31): Ranger, Bomber, Healer, Summoner, Environmental y Flyer con sonidos nuevos de los mismos packs más "monster sound effects 2" y "80 CC0 creature SFX #2" (CC0), varias voces con modulación en anillo para que suenen a robot; el Rusher entero, el ataque y la mecha del Bomber y la muerte del Healer se quedaron con los suyos a propósito. El Elite (en el banco) y los impactos siguen con los de `tools/generate_placeholder_sfx.py`. Falta la mezcla real en juego | Audio |
+| R3 | **Playtest de los sistemas nuevos.** Rating, reglas, raras y tutorial tienen tests pero ningún número jugado: `data/economy/rating_config.tres`, los costos de las raras y la duración de los pasos del tutorial son de escritorio. También las oleadas nuevas del 2026-10-21 (conteos y `par_time`): la 9 y la 10 pueden pasar el techo de CPU de §5. Desde el 2026-10-16 también: pagos de contratos, `peak_bonus` y `walkout_after`, metas y tiempos de los pedidos, costos de las raras por arma, umbrales de maestría (`attachment_catalog.tres`) y los números de cada attachment. Desde el 2026-11-03: los números y costos de las cuatro raras de sinergia, `nudge_after` de cada paso del tutorial y el sonido de paso cumplido (`card_deal.wav`, sin oír). Desde el 2026-10-21: los números de la caída rápida, `weapon_offer_chance`, el tope de brillo del Summoner y `PlayerPerks.RAM_MIN_SPEED` | Balance |
 
 ## 3. Abierto — necesita una decisión
 
@@ -233,8 +244,10 @@ de mover cuerpos de la ola 10.
 - **Las olas elite** quedan como olas de masa (decisión del 2026-10-09). El
   Campeón de [PLAN_MEJORAS §2.1](planes/PLAN_MEJORAS.md) queda en el banco.
 - **Dificultad.** Toca la identidad ("una run") y la tabla.
-- **Aim assist para gamepad** y **carteles de tecla con glifos de botón** (hoy
-  HUD, hints y tutorial muestran la tecla del teclado).
+- **Aim assist para gamepad** y **carteles de tecla con glifos de botón** (el
+  tutorial y los hints nombran el botón en texto; la HUD muestra la del teclado).
+- **Hint de primera vez `move`:** dice "WASD" fijo, no sigue un rebind ni el
+  joystick (`tutorial_hints.tres`; un hint nombra una sola acción).
 - **Tamaño de la arena por defecto:** 128 m de lado. La perilla es `FLOOR` en
   `tools/make_default_arena.gd`.
 - **`Fast Winch` en 2 stacks**, pendiente de playtest.

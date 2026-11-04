@@ -342,7 +342,8 @@ scene (and its `MovementComponent`) is recreated every run.
 `{action}` in a hint's text substitutes the actually-bound key for
 `TutorialHint.action`, read live from `InputMap` — a remapped key is never
 wrong. Hints with no single key to name (movement, the shop) leave `action`
-empty and skip substitution.
+empty and skip substitution. On a gamepad it names the button (`prompt_event()`:
+the last device pressed, `input_device_changed`).
 
 ## KillBonusTracker
 
