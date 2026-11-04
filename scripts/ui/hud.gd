@@ -11,6 +11,8 @@ const LOW_AMMO_PIP_STEP: int = 2  ## above AMMO_PIP_MAX, one pip per 2 rounds
 ## Brillo minimo de la viñeta de daño, y cuanto daño la lleva al maximo.
 const DAMAGE_FLASH_FLOOR: float = 0.5
 const DAMAGE_FLASH_FULL_AT: float = 40.0
+## El cumplido de un paso del tutorial.
+const TUTORIAL_DONE_SOUND: AudioStream = preload("res://assets/audio/sfx/ui/card_deal.wav")
 
 @onready var _root: Control = $Root
 @onready var _reticle: Reticle = $Root/Reticle
@@ -142,6 +144,9 @@ func _ready() -> void:
 	TutorialHintManager.tutorial_step_shown.connect(_on_tutorial_step_shown)
 	TutorialHintManager.tutorial_step_completed.connect(_on_tutorial_step_completed)
 	TutorialHintManager.tutorial_ended.connect(_on_tutorial_ended)
+	TutorialHintManager.tutorial_key_ready_changed.connect(_tutorial_keys.set_key_ready)
+	TutorialHintManager.tutorial_nudged.connect(_on_tutorial_nudged)
+	TutorialHintManager.tutorial_waypoint_changed.connect(_on_tutorial_waypoint_changed)
 	EventBus.broadcast_rule_started.connect(_on_broadcast_rule_started)
 	EventBus.broadcast_rule_ended.connect(_on_broadcast_rule_ended)
 	EventBus.broadcast_contract_started.connect(_on_contract_started)
@@ -193,30 +198,55 @@ func _build_rule_chip() -> void:
 ## que los hints dejan libre mientras el tutorial corre.
 var _tutorial_panel: PanelContainer
 var _tutorial_header: Label
-var _tutorial_body: Label
+var _tutorial_body: RichTextLabel
 var _tutorial_footer: Label
+var _tutorial_keys: TutorialKeys
+var _tutorial_waypoint: TutorialWaypoint
+## El paso en pantalla. Se vuelve a dibujar el mismo cuando cambia una tecla, y eso
+## no es un paso nuevo: no entra de nuevo.
+var _tutorial_index_shown: int = -1
 
 
 func _build_tutorial_panel() -> void:
+	_tutorial_waypoint = TutorialWaypoint.new()
+	_tutorial_waypoint.name = "TutorialWaypoint"
+	_root.add_child(_tutorial_waypoint)
 	_tutorial_panel = PanelContainer.new()
 	_tutorial_panel.name = "TutorialPanel"
 	_tutorial_panel.theme_type_variation = &"SubtitlePanel"
 	_tutorial_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tutorial_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_tutorial_panel.offset_left = -340.0
-	_tutorial_panel.offset_right = 340.0
+	_tutorial_panel.offset_left = -420.0
+	_tutorial_panel.offset_right = 420.0
 	_tutorial_panel.offset_top = 160.0
 	_tutorial_panel.offset_bottom = 270.0
+	# Las teclas a la izquierda, primero en el orden de lectura: el texto explica
+	# lo que ya se vio. Al lado y no arriba, porque la banda tiene 130 de alto.
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", Tokens.PANEL_PADDING)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_panel.add_child(row)
+	_tutorial_keys = TutorialKeys.new()
+	_tutorial_keys.name = "Keys"
+	row.add_child(_tutorial_keys)
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation", 6)
 	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tutorial_panel.add_child(layout)
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(layout)
 	_tutorial_header = Label.new()
 	_tutorial_header.theme_type_variation = &"HUDLabel"
 	_tutorial_header.add_theme_color_override("font_color", Tokens.PLAYER)
 	layout.add_child(_tutorial_header)
-	_tutorial_body = Label.new()
+	_tutorial_body = RichTextLabel.new()
+	_tutorial_body.bbcode_enabled = true
+	_tutorial_body.fit_content = true
+	_tutorial_body.scroll_active = false
+	_tutorial_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Sin ancho propio, con fit_content mide la altura envolviendo letra por letra.
+	_tutorial_body.custom_minimum_size.x = Tokens.TUTORIAL_TEXT_W
 	_tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tutorial_body.add_theme_color_override("default_color", Tokens.TEXT)
 	layout.add_child(_tutorial_body)
 	_tutorial_footer = Label.new()
 	_tutorial_footer.theme_type_variation = &"HUDLabel"
@@ -227,28 +257,49 @@ func _build_tutorial_panel() -> void:
 
 
 func get_tutorial_text() -> String:
-	return _tutorial_body.text if _tutorial_panel != null and _tutorial_panel.visible else ""
+	return _tutorial_body.get_parsed_text() if _tutorial_panel != null and _tutorial_panel.visible else ""
 
 
-func _on_tutorial_step_shown(title: String, text: String, index: int, total: int,
-		is_info: bool) -> void:
+func get_tutorial_keys() -> TutorialKeys:
+	return _tutorial_keys
+
+
+func _on_tutorial_step_shown(title: String, text: String, index: int, total: int, is_info: bool,
+		actions: Array[StringName], setup_action: StringName, key_ready: bool) -> void:
 	_hint_box.visible = false
 	_tutorial_header.text = "TUTORIAL  %d/%d  -  %s" % [index + 1, total, title]
 	_tutorial_body.text = text
-	_tutorial_footer.text = "%s  skip tutorial%s" % [
-		TutorialHintManager.key_label(&"skip_tutorial"),
+	_tutorial_footer.text = "[%s]  skip tutorial%s" % [
+		TutorialHintManager.key_label(&"skip_tutorial").to_upper(),
 		"" if is_info else "   -   do it to continue"]
+	_tutorial_keys.show_actions(actions, setup_action, key_ready)
 	_tutorial_panel.modulate = Color.WHITE
 	_tutorial_panel.visible = true
+	if index != _tutorial_index_shown:
+		_tutorial_index_shown = index
+		UiMotion.enter(_tutorial_panel)
 
 
 func _on_tutorial_step_completed() -> void:
 	_tutorial_header.text += "   DONE"
 	_tutorial_panel.modulate = Color(Tokens.PLAYER, 1.0).lightened(0.6)
+	_tutorial_keys.mark_done()
+	AudioPool.play_2d(TUTORIAL_DONE_SOUND, AudioPool.BUS_UI, -4.0)
+
+
+func _on_tutorial_nudged(text: String) -> void:
+	_tutorial_body.text = text
+	UiMotion.punch(_tutorial_keys)
+
+
+func _on_tutorial_waypoint_changed(target: Node3D) -> void:
+	_tutorial_waypoint.target = target
 
 
 func _on_tutorial_ended() -> void:
 	_tutorial_panel.visible = false
+	_tutorial_waypoint.target = null
+	_tutorial_index_shown = -1
 
 
 func get_rule_text() -> String:

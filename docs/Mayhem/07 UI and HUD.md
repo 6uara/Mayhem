@@ -1,7 +1,7 @@
 ---
 tags: [mayhem, ui, hud]
 estado: referencia
-actualizado: 2026-11-02
+actualizado: 2026-11-03
 ---
 
 # UI and HUD
@@ -330,6 +330,29 @@ saved as the hint id `__tutorial_complete`, cleared by Options > *Reset tutorial
 Skip: `skip_tutorial` (T / right stick click) or the pause menu's *Skip tutorial*.
 While it runs, `TutorialHintManager` silences first-time hints and relays the
 steps to the HUD's `TutorialPanel`; doing a step marks its hint seen.
+
+How a step guides, all of it data on the step:
+
+- **Keys.** The actions named in `text` (`{jump}`) are the keys `TutorialKeys`
+  draws as `KeyCap`s, and the first one is what the step asks for. A cap pulses
+  while asked (static under *Reduce flashing*), fills while held and stays filled
+  once done. `{move}` is an inverted T, or one stick on a pad; left and right mouse
+  are a drawn mouse. The body text highlights the same keys (`resolve_rich_text()`).
+- **`ready_when` / `setup_action`.** A key only pulses when it works now: `airborne`,
+  `running`, `anchor_in_range`. Until then `setup_action` pulses, drawn first with
+  an arrow: `[SPACE] > [CTRL]`. Pressing a key that is not ready still lights it,
+  which tells the player they found the right one.
+- **`waypoint_group`.** `TutorialWaypoint` marks the nearest node of that group
+  with its distance; off screen it sticks to the edge and points the way. It sits
+  over the no-UI zone on purpose: it marks the world, and only during that step.
+- **`nudge` / `nudge_after`.** A more concrete line replaces `text` for a player
+  who is stuck, before `max_time` moves on regardless.
+- **Colours.** `[player]`, `[grapple]`, `[hazard]`, `[reward]`, `[spawn]` in a text
+  paint a word with that law colour, so no hex lives in the data.
+
+A rebind or a change of device (`TutorialHintManager.input_device_changed`) redraws
+the current step without restarting it. `test_every_tutorial_step_fits_the_band`
+keeps every shipped text between the timer and the no-UI zone.
 
 ## Mode select
 
