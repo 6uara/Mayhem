@@ -36,9 +36,9 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 48.0
-offset_top = 32.0
+offset_top = 24.0
 offset_right = -48.0
-offset_bottom = -32.0
+offset_bottom = -24.0
 mouse_filter = 2
 alignment = 1
 theme_override_constants/separation = 14
@@ -57,12 +57,12 @@ alignment = 1
 theme_override_constants/separation = 16
 
 [node name="RestartButton" type="Button" parent="EndPanel/VBox/Buttons"]
-custom_minimum_size = Vector2(220, 0)
+custom_minimum_size = Vector2(220, 44)
 tooltip_text = "Start a new run from wave 1."
 text = "Restart"
 
 [node name="MenuButton" type="Button" parent="EndPanel/VBox/Buttons"]
-custom_minimum_size = Vector2(220, 0)
+custom_minimum_size = Vector2(220, 44)
 text = "Main Menu"
 
 [node name="ScoreEntry" parent="." instance=ExtResource("2_score_entry")]

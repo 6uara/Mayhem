@@ -65,12 +65,22 @@ func _ready() -> void:
 	_card_button.custom_minimum_size = _restart_button.custom_minimum_size
 	_restart_button.get_parent().add_child(_card_button)
 	# El analisis de la run, entre el titulo y los botones. Armado por codigo:
-	# depende de cuantas oleadas, enemigos y trofeos hubo.
+	# depende de cuantas oleadas, enemigos y trofeos hubo. Con scroll propio porque
+	# es lo unico de alto variable: suelto, una run larga crecia hasta sacar los
+	# botones de la pantalla, y no habia forma de volver al menu.
 	_summary = RunSummary.new()
 	_summary.name = "Summary"
+	_summary.alignment = BoxContainer.ALIGNMENT_CENTER
+	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := ScrollContainer.new()
+	scroll.name = "SummaryScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_summary)
 	var layout: Node = _end_details.get_parent()
-	layout.add_child(_summary)
-	layout.move_child(_summary, _end_details.get_index() + 1)
+	layout.add_child(scroll)
+	layout.move_child(scroll, _end_details.get_index() + 1)
 	var mood := ShaderMaterial.new()
 	mood.shader = RUN_END_SHADER
 	mood.set_shader_parameter(&"base_color", Tokens.VOID)

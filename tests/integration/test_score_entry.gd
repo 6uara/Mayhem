@@ -92,6 +92,58 @@ func test_saving_the_name_reveals_the_end_screen() -> void:
 		"el mejor puntaje que muestra la pantalla ya incluye esta run")
 
 
+## La run mas cargada que se puede dar: todas las oleadas, todos los enemigos,
+## trofeos y maestria en cada arma. El resumen crecia sin tope y se llevaba puestos
+## los botones: no habia forma de salir de la pantalla de fin.
+func test_a_long_run_keeps_the_way_out_on_screen() -> void:
+	# En un SubViewport de 1080: es la pantalla logica mas baja que deja el stretch
+	# del proyecto, y la ventana de los tests en headless mide otra cosa.
+	var screen := SubViewport.new()
+	screen.size = Vector2i(1920, 1080)
+	add_child_autofree(screen)
+	var overlay: CanvasLayer = load(OVERLAY_SCENE).instantiate()
+	screen.add_child(overlay)
+	await wait_frames(2)
+	_fill_a_long_run()
+	EventBus.run_finished.emit(394712, 1310.0, 6, false)
+	await wait_frames(2)
+	var info: Dictionary = overlay.get("_pending_info")
+	info["lines"] = ["Pistol mastery  +840 XP  -  level 3  -  UNLOCKED Extended Mag",
+		"SMG mastery  +320 XP  -  level 2", "Rifle mastery  +280 XP  -  level 1",
+		"Shotgun mastery  +410 XP  -  level 2  -  UNLOCKED Choke"]
+	var skip: Button = overlay.get_node("ScoreEntry/Panel/Margin/Layout/Footer/SkipButton")
+	skip.pressed.emit()
+	await wait_seconds(Tokens.UI_ENTER_TIME + 0.1)
+
+	var bounds := Rect2(Vector2.ZERO, Vector2(screen.size))
+	var layout: Control = overlay.get_node("EndPanel/VBox")
+	for path: String in ["Title", "Buttons/RestartButton", "Buttons/MenuButton"]:
+		var rect: Rect2 = (layout.get_node(path) as Control).get_global_rect()
+		assert_true(bounds.encloses(rect), "%s %s adentro de %s" % [path, rect, bounds])
+	RunRecord.reset()
+
+
+func _fill_a_long_run() -> void:
+	RunRecord.reset()
+	var waves: Array[Dictionary] = []
+	for index: int in 10:
+		waves.append({"wave": index, "duration": 60.0 + index * 10.0, "damage": 40.0,
+			"kills": 30, "cleared": true})
+	RunRecord.wave_log = waves
+	RunRecord.kills = 331
+	RunRecord.killed_by = &"ranger"
+	RunRecord.damage_by_cause = {&"ranger": 264.0, &"bomber": 173.0, &"arena": 134.0,
+		&"flyer": 25.0, &"rusher": 23.0}
+	RunRecord.kills_by_type = {&"rusher": 218, &"ranger": 55, &"healer": 17, &"bomber": 14,
+		&"summoner": 15, &"environmental": 12, &"flyer": 8}
+	RunRecord.kills_by_weapon = {&"pistol": 140, &"rifle_ak": 60, &"shotgun": 71, &"smg": 60}
+	RunRecord.best_burst = 7
+	RunRecord.longest_kill = 58.0
+	RunRecord.best_style_bonuses = 4
+	RunRecord.best_style_total = 180
+	RunRecord._trophies.assign(RunRecord.TROPHY_INFO.keys().slice(0, 4))
+
+
 ## Saltar no tira la partida: anota con el nombre por defecto. Un puntaje perdido
 ## molesta mas que una fila que dice PLAYER.
 func test_skipping_still_records_the_run() -> void:

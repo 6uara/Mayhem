@@ -281,13 +281,20 @@ func _build_extras() -> Control:
 	if weapons != "":
 		lines.append(weapons)
 	lines.append_array(_extra_lines)
-	for line: String in lines:
-		var label := Label.new()
-		label.text = line
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override(&"font_size", Tokens.SIZE_LABEL)
-		label.add_theme_color_override(&"font_color", Tokens.MUTED)
-		box.add_child(label)
+	if not lines.is_empty():
+		# En fila y no una por renglon: con cuatro armas, esta lista sola se comia
+		# 130 px de una pantalla que ya viene justa.
+		var flow := HFlowContainer.new()
+		flow.name = "Lines"
+		flow.alignment = FlowContainer.ALIGNMENT_CENTER
+		flow.add_theme_constant_override(&"h_separation", Tokens.CLUSTER_GAP * 2)
+		for line: String in lines:
+			var label := Label.new()
+			label.text = line
+			label.add_theme_font_size_override(&"font_size", Tokens.SIZE_LABEL)
+			label.add_theme_color_override(&"font_color", Tokens.MUTED)
+			flow.add_child(label)
+		box.add_child(flow)
 	if box.get_child_count() == 0:
 		box.free()
 		return null
