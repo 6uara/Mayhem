@@ -78,3 +78,5 @@ wave_index = 8
 spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResource("Group_1"), SubResource("Group_2"), SubResource("Group_3"), SubResource("Group_4"), SubResource("Group_5"), SubResource("Group_6"), SubResource("Group_7")])
 par_time = 138.0
 completion_bonus = 150
+enemy_health_multiplier = 1.9
+enemy_speed_multiplier = 1.3

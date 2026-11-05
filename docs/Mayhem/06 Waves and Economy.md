@@ -32,6 +32,10 @@ timer from a previous match/restart can't fire into the new one.
 enforced by `tests/unit/test_wave_content.gd`:
 
 - Elite wave every 5th (`wave_index % 5 == 4` — waves 5 and 10).
+- Enemies toughen with the wave: `enemy_health_multiplier` and
+  `enemy_speed_multiplier` stay at 1 through wave 3, never drop, and reach 2.0 and
+  1.35 at wave 10. `Enemy.setup()` reads them through
+  `WaveManager.get_enemy_scaling()`, so summoned adds scale too.
 - Enemy count never decreases wave-over-wave (waves 5/10 excluded from the direct
   comparison, since an elite wave deliberately trades bodies for an elite).
 - `par_time` rises across normal waves; an elite wave's `par_time` must exceed

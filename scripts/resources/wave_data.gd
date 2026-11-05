@@ -9,6 +9,12 @@ extends Resource
 @export var par_time: float = 60.0
 @export var completion_bonus: int = 100
 @export var is_elite_wave: bool = false
+## Cuanto mas duros y mas rapidos salen los enemigos de esta oleada, sobre lo que
+## dice su EnemyData. Crece oleada a oleada y arranca en 1 a proposito: de las
+## primeras siete runs del build, una gano sobrada y cinco no pasaron de la ola 5.
+## Un aumento parejo le pegaba mas a quien ya perdia temprano.
+@export var enemy_health_multiplier: float = 1.0
+@export var enemy_speed_multiplier: float = 1.0
 
 
 func get_total_enemy_count() -> int:

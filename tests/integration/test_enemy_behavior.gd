@@ -27,6 +27,37 @@ func test_enemy_is_active_after_setup() -> void:
 	assert_not_null(_enemy.data, "data")
 
 
+## Todo enemigo que sale durante una oleada, tambien el invocado, pasa por `setup()`.
+func test_a_later_wave_sends_tougher_and_faster_enemies() -> void:
+	var rusher: EnemyData = load("res://data/enemies/rusher.tres")
+	var wave := WaveData.new()
+	wave.enemy_health_multiplier = 2.0
+	wave.enemy_speed_multiplier = 1.5
+	var saved_waves: Array[WaveData] = WaveManager.waves
+	WaveManager.waves = [wave] as Array[WaveData]
+	WaveManager.current_index = 0
+	WaveManager.is_wave_active = true
+	var tough := ObjectPool.acquire(load("res://scenes/enemies/enemy.tscn")) as Enemy
+	tough.setup(rusher, Vector3.ZERO)
+	WaveManager.reset()
+	WaveManager.waves = saved_waves
+
+	assert_eq(tough.health.max_health, rusher.max_health * 2.0)
+	assert_eq(tough.health.current_health, rusher.max_health * 2.0, "sale con la vida llena")
+	assert_almost_eq(tough.agent.max_speed, rusher.move_speed * 1.5, 0.001)
+	assert_almost_eq(tough.get_move_speed(), rusher.move_speed * 1.5, 0.001)
+
+
+func test_outside_a_wave_an_enemy_comes_out_as_its_data_says() -> void:
+	var rusher: EnemyData = load("res://data/enemies/rusher.tres")
+	WaveManager.reset()
+	var plain := ObjectPool.acquire(load("res://scenes/enemies/enemy.tscn")) as Enemy
+	plain.setup(rusher, Vector3.ZERO)
+
+	assert_eq(plain.health.max_health, rusher.max_health)
+	assert_almost_eq(plain.get_move_speed(), rusher.move_speed, 0.001)
+
+
 func test_enemy_finds_the_player() -> void:
 	assert_not_null(_enemy.get_player(), "player group lookup")
 	assert_almost_eq(_enemy.get_distance_to_player(), 20.0, 0.5)

@@ -112,6 +112,16 @@ func spawn_summoned(enemy_data: EnemyData, position: Vector3) -> Node:
 	return enemy
 
 
+## Vida (x) y velocidad (y) de mas para un enemigo que sale ahora. Lo lee
+## `Enemy.setup()`. Afuera de una oleada (el visor, la consola) no hay nada que
+## escalar: el enemigo sale con lo que dice su EnemyData.
+func get_enemy_scaling() -> Vector2:
+	var wave: WaveData = get_current_wave()
+	if wave == null or not is_wave_active:
+		return Vector2.ONE
+	return Vector2(wave.enemy_health_multiplier, wave.enemy_speed_multiplier)
+
+
 func get_current_wave() -> WaveData:
 	if current_index < 0 or current_index >= waves.size():
 		return null
