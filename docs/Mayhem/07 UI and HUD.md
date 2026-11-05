@@ -158,7 +158,8 @@ hit that way than by resetting every system by hand.
 
 **The end screen (2026-11-02)** is a run analysis, not a paragraph. A meta line
 (arena, mode, how far, time, run code, Best) and `RunSummary`
-(`scripts/ui/run_summary.gd`, built in code) under the title:
+(`scripts/ui/run_summary.gd`, built in code) under the title, inside its own
+`ScrollContainer` so a long run cannot push the buttons off the screen:
 
 - **Score** counting up, a `NEW BEST` / `BEST n (-x)` badge against the best
   *before* this run, and one split bar of where it came from (kills, style,
