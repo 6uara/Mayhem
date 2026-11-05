@@ -80,3 +80,5 @@ spawn_groups = Array[ExtResource("2_group")]([SubResource("Group_0"), SubResourc
 par_time = 160.0
 completion_bonus = 300
 is_elite_wave = true
+enemy_health_multiplier = 2.0
+enemy_speed_multiplier = 1.35

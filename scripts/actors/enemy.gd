@@ -201,6 +201,8 @@ var is_marked: bool = false
 ## EnemyRuleModifier.
 var _rule_speed: float = 1.0
 var _rule_damage: float = 1.0
+## Lo que la oleada en la que salio le suma a la velocidad. Ver WaveData.
+var _wave_speed: float = 1.0
 
 ## Contra quién está peleando. Era `_player` y se llamaba así porque no había otra
 ## cosa que pudiera ser; ahora es el hostil más cercano, que para la horda de hoy
@@ -537,11 +539,13 @@ func setup(enemy_data: EnemyData, spawn_position: Vector3) -> void:
 	var rule: Vector3 = BroadcastRules.enemy_multipliers(data.id)
 	_rule_speed = rule.y
 	_rule_damage = rule.z
+	var wave_scaling: Vector2 = WaveManager.get_enemy_scaling()
+	_wave_speed = wave_scaling.y
 	if health != null:
-		health.max_health = data.max_health * rule.x
+		health.max_health = data.max_health * rule.x * wave_scaling.x
 		health.reset()
 	if agent != null:
-		agent.max_speed = data.move_speed * _rule_speed
+		agent.max_speed = data.move_speed * _rule_speed * _wave_speed
 	is_marked = BroadcastRules.should_mark_spawn()
 	presentation.set_marked(is_marked)
 	_set_hitboxes_enabled(true)
@@ -942,7 +946,7 @@ func get_move_speed() -> float:
 	# El apuron detras del que retrocede (CombatDirector.pursuit_multiplier). Se
 	# ve sin cartel: el paso del modelo sale de la velocidad, asi que acelera con
 	# ella.
-	return speed * _slow_multiplier * _rule_speed * CombatDirector.pursuit_multiplier(self)
+	return speed * _slow_multiplier * _rule_speed * _wave_speed 		* CombatDirector.pursuit_multiplier(self)
 
 
 ## El daño de un golpe o un disparo, con lo que la regla de la oleada le sume.

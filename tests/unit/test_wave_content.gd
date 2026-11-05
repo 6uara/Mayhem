@@ -27,6 +27,22 @@ func test_every_spawn_group_is_complete() -> void:
 			assert_false(group.spawn_door_ids.is_empty(), "wave %d group doors" % i)
 
 
+## Quien recien aprende no paga el aumento, y quien llega lejos lo paga entero. Si
+## las primeras dejan de valer 1, o la curva baja en algun punto, el aumento dejo
+## de ser una rampa.
+func test_enemies_toughen_as_the_run_goes_on_and_not_before() -> void:
+	for i: int in range(1, 4):
+		assert_eq(_load(i).enemy_health_multiplier, 1.0, "vida en la ola %d" % i)
+		assert_eq(_load(i).enemy_speed_multiplier, 1.0, "velocidad en la ola %d" % i)
+	for i: int in range(2, WAVE_COUNT + 1):
+		assert_true(_load(i).enemy_health_multiplier >= _load(i - 1).enemy_health_multiplier,
+			"la vida no baja en la ola %d" % i)
+		assert_true(_load(i).enemy_speed_multiplier >= _load(i - 1).enemy_speed_multiplier,
+			"la velocidad no baja en la ola %d" % i)
+	assert_gt(_load(WAVE_COUNT).enemy_health_multiplier, 1.5)
+	assert_gt(_load(WAVE_COUNT).enemy_speed_multiplier, 1.2)
+
+
 func test_wave_index_matches_the_filename() -> void:
 	for i: int in range(1, WAVE_COUNT + 1):
 		assert_eq(_load(i).wave_index, i - 1, "wave %d index" % i)
